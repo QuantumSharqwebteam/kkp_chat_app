@@ -6,6 +6,7 @@ class AppTheme {
     useMaterial3: true,
     primarySwatch: Colors.blue,
     scaffoldBackgroundColor: Colors.white,
+    fontFamily: 'Poppins',
     appBarTheme: AppBarTheme(
       color: Colors.white,
       elevation: 4,
