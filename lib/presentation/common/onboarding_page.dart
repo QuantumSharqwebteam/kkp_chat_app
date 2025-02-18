@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/app_colors.dart';
+import 'package:kkp_chat_app/config/routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});
@@ -22,11 +25,16 @@ class OnboardingPage extends StatelessWidget {
                       'assets/icons/logo.png',
                       height: 50,
                     ),
-                    Text(
-                      'Skip',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, Routes.login);
+                      },
+                      child: Text(
+                        'Skip',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -48,6 +56,62 @@ class OnboardingPage extends StatelessWidget {
                   style: TextStyle(fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
+                SizedBox(height: Utils().height(context) * 0.08),
+                CustomButton(
+                  text: 'Get Started',
+                  onPressed: () {
+                    Navigator.pushNamed(context, Routes.signUp);
+                  },
+                  borderRadius: 10,
+                  backgroundColor: AppColors.blue,
+                  borderColor: Colors.black,
+                  borderWidth: 2,
+                  width: Utils().width(context) * 0.5,
+                  height: 45,
+                  fontSize: 12,
+                ),
+                Spacer(),
+                SizedBox(
+                  width: Utils().width(context) * 0.7,
+                  child: Text.rich(
+                    TextSpan(
+                      text: 'By using KKP chat application, You agree to the ',
+                      style: TextStyle(fontSize: 12),
+                      children: [
+                        WidgetSpan(
+                          child: InkWell(
+                            onTap: () {},
+                            child: Text(
+                              'Terms',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' and ',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        WidgetSpan(
+                          child: InkWell(
+                            onTap: () {},
+                            child: Text(
+                              'Privacy Policy',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(height: 20),
               ],
             ),
           ),
