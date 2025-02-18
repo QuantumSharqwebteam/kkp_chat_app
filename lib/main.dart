@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
+import 'package:kkp_chat_app/config/routes.dart';
+import 'package:kkp_chat_app/config/theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,12 +15,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'KKP Chat App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        fontFamily: 'Poppins',
-        useMaterial3: true,
-      ),
-      home: OnboardingPage(),
+      theme: AppTheme.lightTheme,
+      initialRoute: Routes.home,
+      onGenerateRoute: generateRoute,
     );
   }
 }
