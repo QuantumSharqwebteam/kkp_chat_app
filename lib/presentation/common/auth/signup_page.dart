@@ -1,18 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:kkp_chat_app/config/routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
 class SignupPage extends StatelessWidget {
   SignupPage({super.key});
+
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _repass = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      persistentFooterAlignment: AlignmentDirectional.center,
+      persistentFooterButtons: [
+        Text.rich(
+          TextSpan(
+            text: 'Already have an Account? ',
+            style: TextStyle(fontSize: 12),
+            children: [
+              WidgetSpan(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pushNamed(context, Routes.login);
+                  },
+                  child: Text(
+                    'Login',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -57,22 +85,24 @@ class SignupPage extends StatelessWidget {
                 SizedBox(height: 15),
                 Text(
                   'OR',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: 15),
                 // Name textField
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Full Name',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 5),
+                      child: Text(
+                        'Full Name',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                     ),
+                    SizedBox(height: 5),
                     CustomTextField(
                       controller: _name,
-                      borderRadius: 10,
-                      height: 45,
                       maxLines: 1,
                       keyboardType: TextInputType.name,
                       hintText: 'Enter your full name',
@@ -84,15 +114,17 @@ class SignupPage extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Email',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 5),
+                      child: Text(
+                        'Email',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                     ),
+                    SizedBox(height: 5),
                     CustomTextField(
                       controller: _email,
-                      borderRadius: 10,
-                      height: 45,
                       maxLines: 1,
                       keyboardType: TextInputType.emailAddress,
                       hintText: 'Enter your Email',
@@ -104,21 +136,57 @@ class SignupPage extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Password',
-                      style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 5),
+                      child: Text(
+                        'Password',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
                     ),
+                    SizedBox(height: 5),
                     CustomTextField(
-                      controller: _email,
-                      borderRadius: 10,
-                      height: 45,
+                      controller: _pass,
+                      helperText: 'Must be atleast 8 characters',
                       maxLines: 1,
                       isPassword: true,
                       keyboardType: TextInputType.visiblePassword,
                       hintText: 'Create a Password',
                     ),
                   ],
+                ),
+                SizedBox(height: 10),
+                // Password textField
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 5),
+                      child: Text(
+                        'Confirm Password',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    CustomTextField(
+                      controller: _repass,
+                      helperText: 'Must be atleast 8 characters',
+                      borderRadius: 10,
+                      height: 45,
+                      maxLines: 1,
+                      isPassword: true,
+                      keyboardType: TextInputType.visiblePassword,
+                      hintText: 'Confirm Password',
+                    ),
+                  ],
+                ),
+                SizedBox(height: 40),
+                CustomButton(
+                  text: 'Create Account',
+                  onPressed: () {
+                    Navigator.pushNamed(context, Routes.login);
+                  },
                 ),
               ],
             ),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
+import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
+import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common/home_screen.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
 
@@ -9,6 +12,9 @@ class Routes {
   static const String onBoarding = '/onBoarding';
   static const String signUp = '/signUp';
   static const String login = '/login';
+  static const String forgot = '/forgot';
+  static const String newPass = '/newPass';
+  static const String verification = '/verification';
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
@@ -24,6 +30,15 @@ Route<dynamic> generateRoute(RouteSettings settings) {
 
     case Routes.login:
       return MaterialPageRoute(builder: (_) => LoginPage());
+
+    case Routes.forgot:
+      return MaterialPageRoute(builder: (_) => ForgotPassPage());
+
+    case Routes.newPass:
+      return MaterialPageRoute(builder: (_) => NewPassPage());
+
+    case Routes.verification:
+      return MaterialPageRoute(builder: (_) => VerificationPage());
 
     default:
       return MaterialPageRoute(builder: (_) => HomeScreen());
