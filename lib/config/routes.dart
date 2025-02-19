@@ -37,6 +37,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case Routes.login:
       return MaterialPageRoute(builder: (_) => LoginPage());
 
+    case Routes.marketingHostScreen:
+      return MaterialPageRoute(builder: (_) => MarketingHost());
+
     case Routes.forgot:
       return MaterialPageRoute(builder: (_) => ForgotPassPage());
 
@@ -48,12 +51,6 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     //Marketing side routes
     case Routes.agentHomeScreen:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());
-    //Marketing side Routes
-
-    case Routes.marketingHostScreen:
-      return MaterialPageRoute(
-        builder: (_) => MarketingHost(),
-      );
 
     default:
       return MaterialPageRoute(builder: (_) => HomeScreen());
