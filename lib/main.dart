@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'KKP Chat App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      initialRoute: Routes.onBoarding,
+      initialRoute: Routes.marketingHostScreen,
       onGenerateRoute: generateRoute,
     );
   }

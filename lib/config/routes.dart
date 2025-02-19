@@ -8,6 +8,7 @@ import 'package:kkp_chat_app/presentation/common/home_screen.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/notifications_page.dart';
 
 class Routes {
   static const String home = '/home';
@@ -21,6 +22,7 @@ class Routes {
   //marketing side
   static const String marketingHostScreen = "Marketing_host";
   static const String agentHomeScreen = "AgentHomeScreen";
+  static const String marketingNotifications = "Notification_page";
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
@@ -51,6 +53,8 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     //Marketing side routes
     case Routes.agentHomeScreen:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());
+    case Routes.marketingNotifications:
+      return MaterialPageRoute(builder: (_) => NotificationsScreen());
 
     default:
       return MaterialPageRoute(builder: (_) => HomeScreen());
