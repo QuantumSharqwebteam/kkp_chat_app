@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/app_colors.dart';
 
 class CustomButton extends StatelessWidget {
   const CustomButton({
@@ -6,17 +7,17 @@ class CustomButton extends StatelessWidget {
     required this.text,
     this.onPressed,
     this.width = double.infinity,
-    this.height = 55,
+    this.height = 45,
     this.backgroundColor,
     this.textColor,
     this.fontSize,
-    this.borderRadius = 20,
+    this.borderRadius = 10,
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-    this.elevation = 2.0,
-    this.borderColor,
-    this.borderWidth = 0,
-    this.image, // ✅ Accepts Widget instead of String
-    this.imagePosition = ImagePosition.leading, // ✅ Image position
+    this.elevation = 0,
+    this.borderColor = Colors.black,
+    this.borderWidth = 1,
+    this.image,
+    this.imagePosition = ImagePosition.leading,
   });
 
   final String text;
@@ -42,7 +43,7 @@ class CustomButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor ?? Colors.blue, // Default color
+          backgroundColor: backgroundColor ?? AppColors.blue,
           elevation: elevation,
           // padding: padding,
           shape: RoundedRectangleBorder(
@@ -65,7 +66,7 @@ class CustomButton extends StatelessWidget {
               text,
               style: TextStyle(
                 color: textColor ?? Colors.white,
-                fontSize: fontSize ?? 16.0,
+                fontSize: fontSize ?? 14.0,
                 fontWeight: FontWeight.w600,
               ),
             ),

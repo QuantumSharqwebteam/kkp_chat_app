@@ -5,21 +5,23 @@ class CustomTextField extends StatefulWidget {
     super.key,
     required this.controller,
     this.width = double.infinity,
-    this.height = 55,
+    this.height = 45,
     this.isPassword = false,
     this.keyboardType,
     this.errorText,
-    this.borderRadius = 20,
+    this.borderRadius = 10,
     this.hintText,
+    this.helperText,
+    this.helperStyle,
     this.condition,
     this.textStyle,
     this.hintStyle,
-    this.suffixIcon, // Custom suffix icon
-    this.prefixIcon, // Custom prefix icon
-    this.readOnly = false, // Added readOnly option
+    this.suffixIcon,
+    this.prefixIcon,
+    this.readOnly = false,
     this.backgroundColor,
-    this.minLines = 1, // Added minLines
-    this.maxLines = 1, // Added maxLines
+    this.minLines = 1,
+    this.maxLines = 1,
   });
 
   final double width;
@@ -30,6 +32,8 @@ class CustomTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final String? errorText;
   final String? hintText;
+  final String? helperText;
+  final TextStyle? helperStyle;
   final bool Function(String)? condition;
   final TextStyle? textStyle;
   final TextStyle? hintStyle;
@@ -70,67 +74,89 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: widget.width,
-      height: widget.height,
-      child: TextField(
-        obscuringCharacter: '*',
-        controller: widget.controller,
-        keyboardType: widget.keyboardType,
-        obscureText: widget.isPassword ? _isObscured : false,
-        style: widget.textStyle ?? const TextStyle(fontSize: 16.0),
-        readOnly: widget.readOnly,
-        minLines: widget.minLines,
-        maxLines: widget.maxLines,
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: widget.backgroundColor ?? Colors.white,
-          hintText: widget.hintText,
-          hintStyle: widget.hintStyle ??
-              const TextStyle(fontSize: 14.0, color: Colors.grey),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            borderSide: BorderSide(
-              color: widget.errorText != null ? Colors.red : Colors.grey,
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            borderSide: BorderSide(
-              color:
-                  widget.errorText != null ? Colors.red : Colors.grey.shade400,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            borderSide: BorderSide(
-              color: widget.errorText != null ? Colors.red : Colors.grey,
-              width: 2,
-            ),
-          ),
-          prefixIcon: widget.prefixIcon,
-          suffixIcon: widget.suffixIcon ??
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.isPassword)
-                    IconButton(
-                      icon: Icon(_isObscured
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () {
-                        setState(() => _isObscured = !_isObscured);
-                      },
-                    ),
-                  if (_showCheckmark)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 12),
-                      child: Icon(Icons.check_circle, color: Colors.black),
-                    ),
-                ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: TextField(
+            obscuringCharacter: '*',
+            controller: widget.controller,
+            keyboardType: widget.keyboardType,
+            obscureText: widget.isPassword ? _isObscured : false,
+            style: widget.textStyle ?? const TextStyle(fontSize: 16.0),
+            readOnly: widget.readOnly,
+            minLines: widget.minLines,
+            maxLines: widget.maxLines,
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: widget.backgroundColor ?? Colors.white,
+              hintText: widget.hintText,
+              hintStyle: widget.hintStyle ??
+                  TextStyle(fontSize: 14.0, color: Colors.grey),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                borderSide: BorderSide(
+                  color: widget.errorText != null
+                      ? Colors.red
+                      : Colors.grey.shade400,
+                ),
               ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                borderSide: BorderSide(
+                  color: widget.errorText != null
+                      ? Colors.red
+                      : Colors.grey.shade400,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(widget.borderRadius),
+                borderSide: BorderSide(
+                  color: widget.errorText != null ? Colors.red : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              prefixIcon: widget.prefixIcon,
+              suffixIcon: widget.suffixIcon ??
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.isPassword)
+                        IconButton(
+                          icon: Icon(_isObscured
+                              ? Icons.visibility_off
+                              : Icons.visibility),
+                          onPressed: () {
+                            setState(() => _isObscured = !_isObscured);
+                          },
+                        ),
+                      if (_showCheckmark)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 12),
+                          child: Icon(Icons.check_circle, color: Colors.black),
+                        ),
+                    ],
+                  ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+            ),
+          ),
         ),
-      ),
+        if (widget.helperText != null) // Helper text below the text field
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              widget.helperText!,
+              style: widget.helperStyle ??
+                  const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                  ),
+            ),
+          ),
+      ],
     );
   }
 }

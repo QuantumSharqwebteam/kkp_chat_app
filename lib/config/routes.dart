@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
+import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
+import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common/home_screen.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
@@ -15,6 +18,9 @@ class Routes {
   //marketing side
   static const String marketingHostScreen = "Marketing_host";
   static const String agentHomeScreen = "AgentHomeScreen";
+  static const String forgot = '/forgot';
+  static const String newPass = '/newPass';
+  static const String verification = '/verification';
 }
 
 Route<dynamic> generateRoute(RouteSettings settings) {
@@ -31,15 +37,21 @@ Route<dynamic> generateRoute(RouteSettings settings) {
     case Routes.login:
       return MaterialPageRoute(builder: (_) => LoginPage());
 
-    //Marketing side Routes
-    case Routes.agentHomeScreen:
-      return MaterialPageRoute(
-        builder: (_) => AgentHomeScreen(),
-      );
     case Routes.marketingHostScreen:
       return MaterialPageRoute(
         builder: (_) => MarketingHost(),
       );
+    case Routes.forgot:
+      return MaterialPageRoute(builder: (_) => ForgotPassPage());
+
+    case Routes.newPass:
+      return MaterialPageRoute(builder: (_) => NewPassPage());
+
+    case Routes.verification:
+      return MaterialPageRoute(builder: (_) => VerificationPage());
+    //Marketing side routes
+    case Routes.agentHomeScreen:
+      return MaterialPageRoute(builder: (_) => AgentHomeScreen());
 
     default:
       return MaterialPageRoute(builder: (_) => HomeScreen());
