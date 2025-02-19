@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes.dart';
-import 'package:kkp_chat_app/config/theme.dart';
+import 'package:kkp_chat_app/config/theme/theme.dart';
 
 void main() {
   runApp(const MyApp());
