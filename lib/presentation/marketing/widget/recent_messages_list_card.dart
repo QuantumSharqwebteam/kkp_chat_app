@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
 
 class RecentMessagesListCard extends StatelessWidget {
   final String name;
@@ -8,6 +9,7 @@ class RecentMessagesListCard extends StatelessWidget {
   final String time;
   final String image;
   final bool isActive;
+  final void Function() onTap;
 
   const RecentMessagesListCard({
     super.key,
@@ -16,33 +18,17 @@ class RecentMessagesListCard extends StatelessWidget {
     required this.time,
     required this.image,
     required this.isActive,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Stack(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundImage: AssetImage(image),
-          ),
-          // Green dot for active users
-          if (isActive)
-            Positioned(
-              bottom: 2,
-              right: 2,
-              child: _buildStatusIndicator(color: AppColors.activeGreen),
-            ),
-          // Red dot for inactive users
-          if (!isActive)
-            Positioned(
-              bottom: 2,
-              right: 2,
-              child: _buildStatusIndicator(color: AppColors.inActiveRed),
-            ),
-        ],
+      onTap: onTap,
+      leading: ProfileAvatar(
+        image: image,
+        isActive: isActive,
       ),
       title: Text(
         name,
@@ -59,22 +45,6 @@ class RecentMessagesListCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatusIndicator({required Color color}) {
-    return Container(
-      height: 10,
-      width: 10,
-      decoration:
-          BoxDecoration(color: color, shape: BoxShape.circle, boxShadow: [
-        BoxShadow(
-          blurRadius: 4,
-          spreadRadius: 0,
-          offset: const Offset(0, 4),
-          color: AppColors.shadowColor,
-        )
-      ]),
     );
   }
 }

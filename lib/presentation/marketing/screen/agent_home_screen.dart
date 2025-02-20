@@ -243,6 +243,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             time: message['time'],
             image: message['image'],
             isActive: message['isActive'],
+            onTap: () {},
           ),
         );
       },

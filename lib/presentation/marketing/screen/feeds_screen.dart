@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/customer_list_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/filter_button.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
 
@@ -13,43 +14,43 @@ class FeedsScreen extends StatefulWidget {
 class _FeedsScreenState extends State<FeedsScreen> {
   List<Map<String, dynamic>> messages = [
     {
-      "name": "Ramesh Jain",
-      "message": "Can you describe....",
+      "name": "Marketing Agent 1",
+      "message": "Hi any update....",
       "time": "2m",
       "image": "assets/images/user1.png",
       "isActive": false // Inactive user
     },
     {
-      "name": "Rumika Mehra",
-      "message": "How much does.......",
+      "name": "Marketing Agent 2",
+      "message": "Hi any update....",
       "time": "3m",
       "image": "assets/images/user4.png",
       "isActive": true // Active user
     },
     {
-      "name": "Rumi",
-      "message": "I'm interested in.......",
+      "name": "Marketing Agent 3",
+      "message": "Hi any update....",
       "time": "3m",
       "image": "assets/images/user1.png",
       "isActive": false
     },
     {
-      "name": "Riya",
-      "message": "I'm interested in.......",
+      "name": "Marketing Agent 3",
+      "message": "Hi any update....",
       "time": "3m",
       "image": "assets/images/user2.png",
       "isActive": true // Active user
     },
     {
-      "name": "Radhika",
-      "message": "Typing...",
+      "name": "Marketing Agent 4",
+      "message": "Hi any update....",
       "time": "3m",
       "image": "assets/images/user3.png",
       "isActive": false
     },
     {
-      "name": "Amit Kumar",
-      "message": "Let's connect soon!",
+      "name": "Marketing Agent 5",
+      "message": "Hi any update....",
       "time": "4m",
       "image": "assets/images/user4.png",
       "isActive": true // Active user
@@ -155,6 +156,17 @@ class _FeedsScreenState extends State<FeedsScreen> {
             time: message['time'],
             image: message['image'],
             isActive: message['isActive'],
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CustomersListScreen(
+                    agentName: message['name'],
+                    agentImage: message['image'],
+                  ),
+                ),
+              );
+            },
           ),
         );
       },

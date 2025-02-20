@@ -51,12 +51,11 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
     case MarketingRoutes.verification:
       return MaterialPageRoute(builder: (_) => VerificationPage());
 
-    case Routes.privacy:
+    case MarketingRoutes.privacy:
       return MaterialPageRoute(builder: (_) => PrivacyPage());
-    case Routes.settings:
+    case MarketingRoutes.settings:
       return MaterialPageRoute(builder: (_) => SettingsPage());
 
-    //Marketing side routes
     case MarketingRoutes.agentHomeScreen:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());
     case MarketingRoutes.marketingNotifications:
