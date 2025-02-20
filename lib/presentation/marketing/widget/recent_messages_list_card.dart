@@ -25,7 +25,7 @@ class RecentMessagesListCard extends StatelessWidget {
       leading: Stack(
         children: [
           CircleAvatar(
-            radius: 24,
+            radius: 30,
             backgroundImage: AssetImage(image),
           ),
           // Green dot for active users
@@ -48,7 +48,7 @@ class RecentMessagesListCard extends StatelessWidget {
         name,
         style: AppTextStyles.black14_600,
       ),
-      subtitle: Text(message, style: AppTextStyles.grey10_600),
+      subtitle: Text(message, style: AppTextStyles.grey12_600),
       trailing: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

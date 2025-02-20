@@ -8,4 +8,6 @@ class AppColors {
   static const grey707070 = Color(0xff707070);
   static var shadowColor = Colors.black.withValues(alpha: 0.25);
   static const errorRed = Color(0xffF31111);
+  static const marketingNavBarColor = Color(0xff0058CC);
+  static const dividerColor = Color(0xffF0EEEE);
 }

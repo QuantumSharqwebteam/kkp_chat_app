@@ -27,8 +27,8 @@ class AppTextStyles {
     color: Colors.black.withValues(alpha: 0.74),
     fontWeight: FontWeight.w600,
   );
-  static const grey10_600 = TextStyle(
-    fontSize: 10,
+  static const grey12_600 = TextStyle(
+    fontSize: 12,
     color: AppColors.grey707070,
     fontWeight: FontWeight.w600,
   );
