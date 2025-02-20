@@ -54,7 +54,8 @@ class ForgotPassPage extends StatelessWidget {
                     CustomButton(
                       text: 'Submit',
                       onPressed: () {
-                        Navigator.pushNamed(context, Routes.verification);
+                        Navigator.pushNamed(
+                            context, MarketingRoutes.verification);
                       },
                     ),
                     SizedBox(height: 20),

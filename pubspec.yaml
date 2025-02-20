@@ -38,6 +38,7 @@ dependencies:
   pinput: ^5.0.1
   motion_tab_bar: ^2.0.4
   motion_tab_bar_v2: ^0.4.0
+  carousel_slider: ^5.0.0
 
 dev_dependencies:
   flutter_test:

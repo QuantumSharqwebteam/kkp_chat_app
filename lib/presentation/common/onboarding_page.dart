@@ -27,7 +27,7 @@ class OnboardingPage extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, Routes.login);
+                        Navigator.pushNamed(context, MarketingRoutes.login);
                       },
                       child: Text(
                         'Skip',
@@ -60,7 +60,7 @@ class OnboardingPage extends StatelessWidget {
                 CustomButton(
                   text: 'Get Started',
                   onPressed: () {
-                    Navigator.pushNamed(context, Routes.signUp);
+                    Navigator.pushNamed(context, MarketingRoutes.signUp);
                   },
                   borderRadius: 10,
                   backgroundColor: AppColors.blue,
