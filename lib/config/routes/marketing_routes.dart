@@ -4,7 +4,6 @@ import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
-import 'package:kkp_chat_app/presentation/common/home_screen.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
@@ -27,9 +26,6 @@ class Routes {
 
 Route<dynamic> generateRoute(RouteSettings settings) {
   switch (settings.name) {
-    case Routes.home:
-      return MaterialPageRoute(builder: (_) => HomeScreen());
-
     case Routes.onBoarding:
       return MaterialPageRoute(builder: (_) => OnboardingPage());
 
@@ -57,6 +53,6 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => NotificationsScreen());
 
     default:
-      return MaterialPageRoute(builder: (_) => HomeScreen());
+      return MaterialPageRoute(builder: (_) => AgentHomeScreen());
   }
 }
