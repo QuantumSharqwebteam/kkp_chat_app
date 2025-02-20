@@ -5,6 +5,8 @@ import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
+import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
+import 'package:kkp_chat_app/presentation/common/settings/settings_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/notifications_page.dart';
@@ -17,6 +19,8 @@ class Routes {
   static const String forgot = '/forgot';
   static const String newPass = '/newPass';
   static const String verification = '/verification';
+  static const String privacy = "/privacy";
+  static const String settings = "/settings";
 
   //marketing side
   static const String marketingHostScreen = "Marketing_host";
@@ -46,6 +50,12 @@ Route<dynamic> generateRoute(RouteSettings settings) {
 
     case Routes.verification:
       return MaterialPageRoute(builder: (_) => VerificationPage());
+
+    case Routes.privacy:
+      return MaterialPageRoute(builder: (_) => PrivacyPage());
+    case Routes.settings:
+      return MaterialPageRoute(builder: (_) => SettingsPage());
+
     //Marketing side routes
     case Routes.agentHomeScreen:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());

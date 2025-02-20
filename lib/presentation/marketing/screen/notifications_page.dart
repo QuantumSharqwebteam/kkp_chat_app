@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 
 class NotificationsScreen extends StatelessWidget {
   final List<Map<String, dynamic>> notifications = [
@@ -146,15 +147,20 @@ class NotificationsScreen extends StatelessWidget {
 
   Widget _buildFooter() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        children: [
-          Text(
-            "By using KKP chat application, You agree\nto the Terms and Privacy Policy",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: AppTextStyles.black10_600
+              .copyWith(color: Color(0xff121927), fontWeight: FontWeight.w500),
+          children: [
+            const TextSpan(text: "By using KKP chat application, you agree\n"),
+            TextSpan(
+                text: "to the Terms and Privacy Policy",
+                style: AppTextStyles.black10_600
+                    .copyWith(fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }

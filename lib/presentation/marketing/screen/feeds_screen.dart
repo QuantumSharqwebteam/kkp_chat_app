@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/presentation/marketing/widget/filter_button.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
 
 class FeedsScreen extends StatefulWidget {
@@ -113,28 +114,23 @@ class _FeedsScreenState extends State<FeedsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 5,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          _buildFilterButton(Icons.search, "All Chats"),
-          SizedBox(width: 10),
-          _buildFilterButton(null, "Pinned Messages"),
+          FilterButton(icon: Icons.search_rounded),
+          FilterButton(
+            onTap: () {
+              //Navigate to all chats page
+            },
+            text: "All Chats",
+          ),
+          FilterButton(
+            onTap: () {
+              //Navigate to all pinned messages page
+            },
+            text: "Pinned Messages",
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterButton(IconData? icon, String text) {
-    return ElevatedButton.icon(
-      onPressed: () {},
-      icon: icon != null ? Icon(icon, size: 18) : SizedBox.shrink(),
-      label: Text(text),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        elevation: 1,
       ),
     );
   }

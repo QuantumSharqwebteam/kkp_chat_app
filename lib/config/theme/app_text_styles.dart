@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 
 class AppTextStyles {
+  static const black22_600 = TextStyle(
+    fontSize: 22,
+    color: Colors.black,
+    fontWeight: FontWeight.w600,
+  );
   static const black15_500 = TextStyle(
     fontSize: 15,
     color: Colors.black,
@@ -31,6 +36,16 @@ class AppTextStyles {
     fontSize: 12,
     color: AppColors.grey707070,
     fontWeight: FontWeight.w600,
+  );
+  static const grey5C5C5C_16_600 = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.grey5C5C5C,
+  );
+  static const blue4A76CD_24_600 = TextStyle(
+    fontSize: 24,
+    fontWeight: FontWeight.w600,
+    color: AppColors.blue4A76CD,
   );
   static const black10_600 = TextStyle(
     fontSize: 10,
