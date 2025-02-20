@@ -9,7 +9,7 @@ import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dar
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/notifications_page.dart';
 
-class Routes {
+class MarketingRoutes {
   static const String home = '/home';
   static const String onBoarding = '/onBoarding';
   static const String signUp = '/signUp';
@@ -24,32 +24,32 @@ class Routes {
   static const String marketingNotifications = "Notification_page";
 }
 
-Route<dynamic> generateRoute(RouteSettings settings) {
+Route<dynamic> generateMarketingRoute(RouteSettings settings) {
   switch (settings.name) {
-    case Routes.onBoarding:
+    case MarketingRoutes.onBoarding:
       return MaterialPageRoute(builder: (_) => OnboardingPage());
 
-    case Routes.signUp:
+    case MarketingRoutes.signUp:
       return MaterialPageRoute(builder: (_) => SignupPage());
 
-    case Routes.login:
+    case MarketingRoutes.login:
       return MaterialPageRoute(builder: (_) => LoginPage());
 
-    case Routes.marketingHostScreen:
+    case MarketingRoutes.marketingHostScreen:
       return MaterialPageRoute(builder: (_) => MarketingHost());
 
-    case Routes.forgot:
+    case MarketingRoutes.forgot:
       return MaterialPageRoute(builder: (_) => ForgotPassPage());
 
-    case Routes.newPass:
+    case MarketingRoutes.newPass:
       return MaterialPageRoute(builder: (_) => NewPassPage());
 
-    case Routes.verification:
+    case MarketingRoutes.verification:
       return MaterialPageRoute(builder: (_) => VerificationPage());
     //Marketing side routes
-    case Routes.agentHomeScreen:
+    case MarketingRoutes.agentHomeScreen:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());
-    case Routes.marketingNotifications:
+    case MarketingRoutes.marketingNotifications:
       return MaterialPageRoute(builder: (_) => NotificationsScreen());
 
     default:

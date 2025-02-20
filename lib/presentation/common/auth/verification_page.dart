@@ -118,7 +118,7 @@ class VerificationPage extends StatelessWidget {
                       CustomButton(
                         text: 'Verify',
                         onPressed: () {
-                          Navigator.pushNamed(context, Routes.newPass);
+                          Navigator.pushNamed(context, MarketingRoutes.newPass);
                         },
                         width: Utils().width(context) * 0.38,
                         fontSize: 12,

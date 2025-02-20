@@ -26,7 +26,7 @@ class SignupPage extends StatelessWidget {
               WidgetSpan(
                 child: InkWell(
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.login);
+                    Navigator.pushNamed(context, MarketingRoutes.login);
                   },
                   child: Text(
                     'Login',
@@ -185,7 +185,7 @@ class SignupPage extends StatelessWidget {
                 CustomButton(
                   text: 'Create Account',
                   onPressed: () {
-                    Navigator.pushNamed(context, Routes.login);
+                    Navigator.pushNamed(context, MarketingRoutes.login);
                   },
                 ),
               ],

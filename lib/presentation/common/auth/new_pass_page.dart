@@ -77,7 +77,7 @@ class NewPassPage extends StatelessWidget {
                       CustomButton(
                         text: 'Reset Password',
                         onPressed: () {
-                          Navigator.pushNamed(context, Routes.login);
+                          Navigator.pushNamed(context, MarketingRoutes.login);
                         },
                       ),
                       SizedBox(height: 20),

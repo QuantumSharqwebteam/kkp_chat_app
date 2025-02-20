@@ -22,7 +22,7 @@ class LoginPage extends StatelessWidget {
               WidgetSpan(
                 child: InkWell(
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.signUp);
+                    Navigator.pushNamed(context, MarketingRoutes.signUp);
                   },
                   child: Text(
                     'Signup',
@@ -133,7 +133,7 @@ class LoginPage extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: InkWell(
                     onTap: () {
-                      Navigator.pushNamed(context, Routes.forgot);
+                      Navigator.pushNamed(context, MarketingRoutes.forgot);
                     },
                     child: Text(
                       'Forgot Password?',
@@ -147,7 +147,7 @@ class LoginPage extends StatelessWidget {
                 CustomButton(
                   text: 'Login',
                   onPressed: () {
-                    Navigator.pushNamed(context, Routes.home);
+                    Navigator.pushNamed(context, MarketingRoutes.home);
                   },
                 ),
               ],

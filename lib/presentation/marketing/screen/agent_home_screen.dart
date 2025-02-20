@@ -155,7 +155,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           Text("Let's find latest messages", style: AppTextStyles.black12_400),
       trailing: IconButton(
         onPressed: () {
-          Navigator.pushNamed(context, Routes.marketingNotifications);
+          Navigator.pushNamed(context, MarketingRoutes.marketingNotifications);
         },
         icon: const Icon(
           Icons.notifications_active_outlined,
