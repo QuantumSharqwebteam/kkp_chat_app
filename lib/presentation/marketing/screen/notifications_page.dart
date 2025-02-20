@@ -106,7 +106,6 @@ class NotificationsScreen extends StatelessWidget {
                     SizedBox(height: 4),
                     Text(notification['time'],
                         style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    if (notification['hasAction']) _buildActionButtons(),
                   ],
                 ),
               ),
@@ -114,34 +113,6 @@ class NotificationsScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          _buildButton("Accept", Colors.black, Colors.white),
-          SizedBox(width: 8),
-          _buildButton("Decline", Colors.white, Colors.black),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildButton(String text, Color bgColor, Color textColor) {
-    return ElevatedButton(
-      onPressed: () {},
-      style: ElevatedButton.styleFrom(
-        backgroundColor: bgColor,
-        foregroundColor: textColor,
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        side: BorderSide(color: Colors.black),
-      ),
-      child: Text(text,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 

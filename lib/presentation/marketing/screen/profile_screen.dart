@@ -119,7 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             context,
             Icons.notifications_none_rounded,
             "Notification",
-            MarketingRoutes.marketingHostScreen,
+            MarketingRoutes.marketingNotifications,
           ),
           _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
               MarketingRoutes.privacy),
