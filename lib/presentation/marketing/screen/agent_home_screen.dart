@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_search_bar.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/direct_messages_list_item.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
 
@@ -168,30 +169,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   // Search Bar
   Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.20),
-            blurRadius: 3,
-            spreadRadius: 0,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Center(
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: "Search Here",
-            border: InputBorder.none,
-            prefixIcon: Icon(Icons.search, color: Colors.grey),
-          ),
-        ),
-      ),
-    );
+    return CustomSearchBar();
   }
 
   // Direct Messages Section
