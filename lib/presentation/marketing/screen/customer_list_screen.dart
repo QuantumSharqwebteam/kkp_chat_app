@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
 
 class CustomersListScreen extends StatefulWidget {
   final String agentName;
@@ -102,7 +103,17 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                   ),
                   trailing: Icon(Icons.arrow_forward_ios),
                   onTap: () {
-                    // Handle customer click
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          customerName: customer['name'],
+                          customerImage: customer['image'],
+                          agentName: widget.agentName,
+                          agentImage: widget.agentImage,
+                        ),
+                      ),
+                    );
                   },
                 );
               },
