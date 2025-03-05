@@ -15,4 +15,6 @@ class AppColors {
   static const blue4A76CD = Color(0xff4A76CD);
   static const grey525252 = Color(0xff525252);
   static const greyDBDDE1 = Color(0xffDBDDE1);
+  static var foregroundMutedGrey = Color(0xffAAAAAA);
+  static var helperOrange = Color(0xffDF6D14);
 }

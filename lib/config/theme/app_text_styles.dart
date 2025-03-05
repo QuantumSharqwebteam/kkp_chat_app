@@ -32,6 +32,11 @@ class AppTextStyles {
     color: Colors.black,
     fontWeight: FontWeight.w600,
   );
+  static const black18_600 = TextStyle(
+    fontSize: 18,
+    color: Colors.black,
+    fontWeight: FontWeight.w600,
+  );
   static var black12_700 = TextStyle(
     fontSize: 12,
     color: Colors.black.withValues(alpha: 0.74),
@@ -61,6 +66,17 @@ class AppTextStyles {
     fontSize: 10,
     color: Colors.black,
     fontWeight: FontWeight.w600,
+  );
+  static const black10_500 = TextStyle(
+    fontSize: 10,
+    color: Colors.black,
+    fontWeight: FontWeight.w500,
+  );
+
+  static const black8_500 = TextStyle(
+    fontSize: 8,
+    color: Colors.black,
+    fontWeight: FontWeight.w500,
   );
   static const white8_600 = TextStyle(
     fontSize: 8,
