@@ -9,17 +9,18 @@ class ProductItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       elevation: 5,
+      shadowColor: Colors.black,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
       child: Container(
         width: 170,
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 239, 239, 239),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Padding(
-          padding: EdgeInsetsDirectional.only(top: 8, end: 8, start: 8),
+          padding: EdgeInsetsDirectional.only(top: 5, end: 5, start: 5),
           child: Column(
             children: [
               ClipRRect(
@@ -31,7 +32,6 @@ class ProductItem extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-              SizedBox(height: 5),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -40,12 +40,12 @@ class ProductItem extends StatelessWidget {
                 ),
               ),
               Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
                     'Color ',
-                    style: AppTextStyles.black12_400
-                        .copyWith(color: Colors.grey.shade700),
+                    style: AppTextStyles.black10_500
+                        .copyWith(color: Colors.grey.shade500),
                   ),
                   Container(
                     decoration: BoxDecoration(
@@ -53,8 +53,8 @@ class ProductItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(50),
                       border: Border.all(color: Colors.black54, width: 1),
                     ),
-                    height: 12,
-                    width: 12,
+                    height: 15,
+                    width: 15,
                   ),
                   SizedBox(width: 2),
                   Container(
@@ -63,8 +63,8 @@ class ProductItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(50),
                       border: Border.all(color: Colors.black54, width: 1),
                     ),
-                    height: 12,
-                    width: 12,
+                    height: 15,
+                    width: 15,
                   ),
                   SizedBox(width: 2),
                   Container(
@@ -73,29 +73,64 @@ class ProductItem extends StatelessWidget {
                       borderRadius: BorderRadius.circular(50),
                       border: Border.all(color: Colors.black54, width: 1),
                     ),
-                    height: 12,
-                    width: 12,
+                    height: 15,
+                    width: 15,
                   ),
                 ],
               ),
+              Spacer(),
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(
-                    Icons.circle,
-                    size: 10,
-                    color: product['inStock'] == 'true'
-                        ? AppColors.activeGreen
-                        : AppColors.errorRed,
+                  Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: product['inStock'] == 'true'
+                                ? AppColors.activeGreen
+                                : AppColors.inActiveRed,
+                            width: 2.0,
+                          ),
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: product['inStock'] == 'true'
+                                  ? AppColors.activeGreen
+                                  : AppColors.inActiveRed,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        product['inStock'] == 'true'
+                            ? " In Stock"
+                            : " Out of Stock",
+                        style: AppTextStyles.black8_500.copyWith(
+                            fontSize: 8,
+                            color: product['inStock'] == 'true'
+                                ? AppColors.activeGreen
+                                : AppColors.errorRed),
+                      ),
+                    ],
                   ),
-                  Text(
-                    product['inStock'] == 'true' ? "In Stock" : "Out of Stock",
-                    style: AppTextStyles.black8_500.copyWith(
-                        color: product['inStock'] == 'true'
-                            ? AppColors.activeGreen
-                            : AppColors.errorRed),
-                  ),
+                  product['inStock'] == 'true'
+                      ? Text(
+                          '(100 units available)',
+                          style: AppTextStyles.black8_500
+                              .copyWith(color: Colors.grey.shade600),
+                        )
+                      : SizedBox.shrink(),
                 ],
               ),
+              Spacer(),
             ],
           ),
         ),

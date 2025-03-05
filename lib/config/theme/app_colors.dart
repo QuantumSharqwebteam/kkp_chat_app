@@ -10,4 +10,6 @@ class AppColors {
   static const errorRed = Color(0xffF31111);
   static const marketingNavBarColor = Color(0xff0058CC);
   static const dividerColor = Color(0xffF0EEEE);
+  static var foregroundMutedGrey = Color(0xffAAAAAA);
+  static var helperOrange = Color(0xffDF6D14);
 }

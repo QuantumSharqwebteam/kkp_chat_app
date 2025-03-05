@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/customer/widget/product_item.dart';
 
 class CustomerHomePage extends StatelessWidget {
@@ -17,17 +16,17 @@ class CustomerHomePage extends StatelessWidget {
 
   final List<Map<String, String>> products = [
     {
-      'imageUrl': 'assets/images/user1.png',
+      'imageUrl': 'assets/images/product1.png',
       'title': 'Denim Jacket',
       'inStock': 'true'
     },
     {
-      'imageUrl': 'assets/images/user2.png',
+      'imageUrl': 'assets/images/product1.png',
       'title': 'T-Shirt',
       'inStock': 'false'
     },
     {
-      'imageUrl': 'assets/images/user3.png',
+      'imageUrl': 'assets/images/product1.png',
       'title': 'Sneakers',
       'inStock': 'true'
     },
@@ -37,11 +36,17 @@ class CustomerHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size(double.infinity, 100),
+        child: SafeArea(
+          child: _customAppBar(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              _customAppBar(context),
+              // _customAppBar(context),
               SizedBox(height: 10),
               _carousel(),
               SizedBox(height: 10),
@@ -55,56 +60,50 @@ class CustomerHomePage extends StatelessWidget {
                   ),
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _enquirySupport(),
-                        SizedBox(height: 20),
-                        Text(
-                          'New Products',
-                          style: AppTextStyles.black16_600,
-                        ),
-                        // ProductItem(product: products[0]),
-                        SizedBox(
-                          height:
-                              200, // Set a fixed height for the scrollable list
-                          child: ListView.builder(
-                            padding: EdgeInsets.only(bottom: 5),
-                            scrollDirection: Axis.horizontal,
-                            itemCount: products.length,
-                            itemBuilder: (context, index) {
-                              final product = products[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 16.0),
-                                child: ProductItem(product: product),
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                          'New Products',
-                          style: AppTextStyles.black16_600,
-                        ),
-                        // ProductItem(product: products[0]),
-                        SizedBox(
-                          height:
-                              200, // Set a fixed height for the scrollable list
-                          child: ListView.builder(
-                            padding: EdgeInsets.only(bottom: 5),
-                            scrollDirection: Axis.horizontal,
-                            itemCount: products.length,
-                            itemBuilder: (context, index) {
-                              final product = products[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 16.0),
-                                child: ProductItem(product: product),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                    _enquirySupport(),
+                    SizedBox(height: 20),
+                    Text(
+                      'New Products',
+                      style: AppTextStyles.black18_600,
+                    ),
+                    // ProductItem(product: products[0]),
+                    SizedBox(
+                      height: 200, // Set a fixed height for the scrollable list
+                      child: ListView.builder(
+                        padding: EdgeInsets.only(bottom: 5),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 16.0),
+                            child: ProductItem(product: product),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      'Previous Products',
+                      style: AppTextStyles.black18_600,
+                    ),
+                    // ProductItem(product: products[0]),
+                    SizedBox(
+                      height: 200, // Set a fixed height for the scrollable list
+                      child: ListView.builder(
+                        padding: EdgeInsets.only(bottom: 5),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 16.0),
+                            child: ProductItem(product: product),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -126,14 +125,17 @@ class CustomerHomePage extends StatelessWidget {
       title: Text("John", style: AppTextStyles.black16_500),
       subtitle:
           Text("Let's find latest messages", style: AppTextStyles.black12_400),
-      trailing: IconButton(
-        onPressed: () {
-          Navigator.pushNamed(context, CustomerRoutes.customerNotification);
-        },
-        icon: const Icon(
-          Icons.notifications_active_outlined,
-          color: Colors.black,
-          size: 28,
+      trailing: Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: IconButton(
+          onPressed: () {
+            Navigator.pushNamed(context, CustomerRoutes.customerNotification);
+          },
+          icon: const Icon(
+            Icons.notifications_active_outlined,
+            color: Colors.black,
+            size: 28,
+          ),
         ),
       ),
     );
@@ -168,7 +170,7 @@ Widget _enquirySupport() {
       leading: Stack(children: [
         CircleAvatar(
           radius: 25,
-          backgroundImage: AssetImage("assets/images/profile.png"),
+          backgroundImage: AssetImage("assets/images/user4.png"),
         ),
         Positioned(
           bottom: 0,
