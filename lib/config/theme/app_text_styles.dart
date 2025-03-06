@@ -37,6 +37,7 @@ class AppTextStyles {
     color: Colors.black,
     fontWeight: FontWeight.w600,
   );
+
   static var black12_700 = TextStyle(
     fontSize: 12,
     color: Colors.black.withValues(alpha: 0.74),
@@ -46,6 +47,11 @@ class AppTextStyles {
     fontSize: 14,
     color: Colors.black.withValues(alpha: 0.74),
     fontWeight: FontWeight.w600,
+  );
+  static var black14_400 = TextStyle(
+    fontSize: 14,
+    color: Colors.black,
+    fontWeight: FontWeight.w400,
   );
   static const grey12_600 = TextStyle(
     fontSize: 12,
