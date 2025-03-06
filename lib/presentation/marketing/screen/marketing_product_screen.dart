@@ -169,7 +169,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_upload, size: 50, color: Colors.grey[600]),
+            Icon(Icons.cloud_upload, size: 100, color: AppColors.grey7B7B7B),
             SizedBox(height: 10),
             Text("Upload Product", style: TextStyle(fontSize: 14)),
           ],
