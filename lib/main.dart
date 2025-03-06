@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
+import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/theme.dart';
 
 void main() {
@@ -15,8 +15,8 @@ class MyApp extends StatelessWidget {
       title: 'KKP Chat App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      initialRoute: CustomerRoutes.customerHost,
-      onGenerateRoute: generateCustomerRoute,
+      initialRoute: MarketingRoutes.marketingHostScreen,
+      onGenerateRoute: generateMarketingRoute,
     );
   }
 }

@@ -2,6 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
+import 'package:dotted_border/dotted_border.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -18,8 +24,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       TextEditingController(text: "2000 Stocks Available");
   String? selectedImage;
   List<Color> selectedColors = [
-    Colors.red,
-    Colors.blue,
+    Colors.black, //default color
   ];
 
   void pickImage() async {
@@ -47,7 +52,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 Colors.green,
                 Colors.yellow,
                 Colors.blue,
-                Colors.grey
+                Colors.grey,
+                Colors.lightGreen,
               ],
               pickerColor: Colors.black,
               onColorChanged: (color) {
@@ -68,7 +74,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: AppColors.background,
         title: const Text("Add Product"),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -78,134 +86,102 @@ class _AddProductScreenState extends State<AddProductScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          spacing: 20,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ImagePickerWidget(
-                selectedImage: selectedImage, pickImage: pickImage),
-            const SizedBox(height: 16),
-            ProductTextField(controller: nameController, label: "Product Name"),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                    child: ProductTextField(
-                        controller: priceController,
-                        label: "Price",
-                        isNumeric: true)),
-                const SizedBox(width: 16),
-                Expanded(
-                    child: ProductTextField(
-                        controller: reviewController,
-                        label: "Review",
-                        isNumeric: true)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text("Color"),
-            ColorPickerWidget(
-                selectedColors: selectedColors, pickColor: pickColor),
-            const SizedBox(height: 16),
-            ProductTextField(
-                controller: stockController, label: "Stock Available"),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {},
-                child: const Text("Add Product"),
-              ),
+            _buildImagePickerContainer(selectedImage, pickImage),
+            const SizedBox(height: 30),
+            _buildProductDetails(),
+            CustomButton(
+              onPressed: () {
+                Utils().showSuccessDialog(context, "Added Sucessfully");
+              },
+              text: "Add Product",
+              fontSize: 18,
+              borderColor: AppColors.blue,
+              backgroundColor: AppColors.blue,
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class ImagePickerWidget extends StatelessWidget {
-  final String? selectedImage;
-  final VoidCallback pickImage;
-
-  const ImagePickerWidget(
-      {super.key, required this.selectedImage, required this.pickImage});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: pickImage,
-      child: Container(
-        height: 200,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(10),
-          color: Colors.grey[200],
-        ),
-        child: selectedImage == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.cloud_upload, size: 40, color: Colors.grey),
-                  const Text("Upload Product Image"),
-                  TextButton(
-                    onPressed: pickImage,
-                    child: const Text("Choose File"),
-                  )
-                ],
-              )
-            : Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: ClipRRect(
-                  clipBehavior: Clip.antiAlias,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.file(
-                    File(selectedImage!),
-                    fit: BoxFit.fitWidth,
-                    height: 100,
-                  ),
+  Widget _buildProductDetails() {
+    return Container(
+      padding: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 3,
+              spreadRadius: 0,
+              offset: Offset(0, 1),
+              color: Colors.black.withValues(alpha: 0.15),
+            )
+          ]),
+      child: Column(
+        spacing: 10,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          //product name
+          Text("Product Name", style: AppTextStyles.black14_600),
+          CustomTextField(
+            controller: nameController,
+            hintText: 'Name',
+          ),
+          // price and review textfields
+          Row(
+            spacing: 10,
+            children: [
+              Expanded(
+                child: Text("Price", style: AppTextStyles.black14_600),
+              ),
+              Expanded(
+                child: Text("Review", style: AppTextStyles.black14_600),
+              ),
+            ],
+          ),
+          Row(
+            spacing: 10,
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  controller: priceController,
+                  hintText: "₹0.00",
                 ),
               ),
+              Expanded(
+                child: CustomTextField(
+                  controller: reviewController,
+                  hintText: "0",
+                ),
+              ),
+            ],
+          ),
+          Text("Color", style: AppTextStyles.black14_600),
+          //color selector list
+          _buildColorPickerWidget(),
+          Text("Stock Availaible", style: AppTextStyles.black14_600),
+          CustomTextField(
+            controller: stockController,
+            hintText: "2000 Stocks Available",
+          ),
+        ],
       ),
     );
   }
-}
 
-class ProductTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool isNumeric;
-
-  const ProductTextField(
-      {super.key,
-      required this.controller,
-      required this.label,
-      this.isNumeric = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
-      decoration: InputDecoration(labelText: label),
-    );
-  }
-}
-
-class ColorPickerWidget extends StatelessWidget {
-  final List<Color> selectedColors;
-  final VoidCallback pickColor;
-
-  const ColorPickerWidget(
-      {super.key, required this.selectedColors, required this.pickColor});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildColorPickerWidget() {
     return Wrap(
       spacing: 8.0,
       children: selectedColors
           .map((color) => GestureDetector(
                 onTap: () {
-                  selectedColors.remove(color);
+                  setState(() {
+                    selectedColors.remove(color);
+                  });
                 },
                 child: CircleAvatar(
                   backgroundColor: color,
@@ -223,6 +199,70 @@ class ColorPickerWidget extends StatelessWidget {
             ),
           ),
         ),
+    );
+  }
+
+  Widget _buildImagePickerContainer(
+      String? selectedImage, VoidCallback pickImage) {
+    return SizedBox(
+      width: double.maxFinite,
+      child: GestureDetector(
+        onTap: pickImage,
+        child: Card(
+          color: Colors.white,
+          surfaceTintColor: Colors.white,
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: DottedBorder(
+              color:
+                  AppColors.greyAAAAAA.withValues(alpha: 0.67), // Border color
+              strokeWidth: 2, // Border width
+              dashPattern: [6, 4], // Dotted pattern (adjust as needed)
+              borderType: BorderType.RRect,
+              radius: Radius.circular(12),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(10),
+                  child: selectedImage == null
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.cloud_upload_rounded,
+                                size: 50, color: AppColors.grey7B7B7B),
+                            Text(
+                              "Upload Product Image",
+                              style: AppTextStyles.black16_500.copyWith(
+                                color: AppColors.grey7B7B7B,
+                              ),
+                            ),
+                            CustomButton(
+                                width: Utils().width(context) * 0.35,
+                                fontSize: 13,
+                                backgroundColor: AppColors.background,
+                                onPressed: pickImage,
+                                textColor: AppColors.blue,
+                                borderColor: AppColors.background,
+                                text: "Choose File")
+                          ],
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: ClipRRect(
+                            clipBehavior: Clip.antiAlias,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(selectedImage),
+                              fit: BoxFit.fitWidth,
+                              height: 100,
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

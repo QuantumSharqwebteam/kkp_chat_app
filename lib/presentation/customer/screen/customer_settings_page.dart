@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
@@ -29,10 +28,11 @@ class CustomerSettingsPage extends StatelessWidget {
               color: AppColors.background,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: CustomSearchBar(
-                  width: Utils().width(context),
-                  enable: true,
-                  controller: searchController,
-                  hintText: 'Search'),
+                width: Utils().width(context),
+                enable: true,
+                controller: searchController,
+                hintText: 'Search',
+              ),
             ),
             SettingsTile(
               numberOfTiles: 1,

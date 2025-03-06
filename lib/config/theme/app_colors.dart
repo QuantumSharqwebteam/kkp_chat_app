@@ -20,4 +20,6 @@ class AppColors {
   static const redF11515 = Color(0xffF11515);
   static const messageBubbleColor = Color(0xff0056FB);
   static const blue1976D2 = Color(0xff1976D2);
+  static const grey7B7B7B = Color(0xff7B7B7B);
+  static const greyAAAAAA = Color(0xffAAAAAA);
 }
