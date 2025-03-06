@@ -7,6 +7,7 @@ import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
 import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
 import 'package:kkp_chat_app/presentation/common/settings/settings_page.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/notifications_page.dart';
@@ -26,6 +27,7 @@ class MarketingRoutes {
   static const String marketingHostScreen = "Marketing_host";
   static const String agentHomeScreen = "AgentHomeScreen";
   static const String marketingNotifications = "Notification_page";
+  static const String addProductScreen = "Add_Product_screen";
 }
 
 Route<dynamic> generateMarketingRoute(RouteSettings settings) {
@@ -60,6 +62,8 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());
     case MarketingRoutes.marketingNotifications:
       return MaterialPageRoute(builder: (_) => NotificationsScreen());
+    case MarketingRoutes.addProductScreen:
+      return MaterialPageRoute(builder: (_) => AddProductScreen());
 
     default:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());

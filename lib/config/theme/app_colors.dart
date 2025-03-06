@@ -17,4 +17,7 @@ class AppColors {
   static const greyDBDDE1 = Color(0xffDBDDE1);
   static var foregroundMutedGrey = Color(0xffAAAAAA);
   static var helperOrange = Color(0xffDF6D14);
+  static const redF11515 = Color(0xffF11515);
+  static const messageBubbleColor = Color(0xff0056FB);
+  static const blue1976D2 = Color(0xff1976D2);
 }

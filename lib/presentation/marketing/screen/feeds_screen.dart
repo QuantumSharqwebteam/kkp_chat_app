@@ -18,44 +18,44 @@ class _FeedsScreenState extends State<FeedsScreen> {
       "message": "Hi any update....",
       "time": "2m",
       "image": "assets/images/user1.png",
-      "isActive": false // Inactive user
+      "isActive": false,
+      "isPinned": true
     },
     {
       "name": "Marketing Agent 2",
       "message": "Hi any update....",
       "time": "3m",
       "image": "assets/images/user4.png",
-      "isActive": true // Active user
+      "isActive": true,
+      "isPinned": true
     },
     {
       "name": "Marketing Agent 3",
       "message": "Hi any update....",
-      "time": "3m",
+      "time": "2hr",
       "image": "assets/images/user1.png",
-      "isActive": false
-    },
-    {
-      "name": "Marketing Agent 3",
-      "message": "Hi any update....",
-      "time": "3m",
-      "image": "assets/images/user2.png",
-      "isActive": true // Active user
+      "isActive": false,
+      "isPinned": false
     },
     {
       "name": "Marketing Agent 4",
       "message": "Hi any update....",
-      "time": "3m",
+      "time": "3hr",
       "image": "assets/images/user3.png",
-      "isActive": false
+      "isActive": false,
+      "isPinned": true
     },
     {
       "name": "Marketing Agent 5",
       "message": "Hi any update....",
       "time": "4m",
       "image": "assets/images/user4.png",
-      "isActive": true // Active user
+      "isActive": true,
+      "isPinned": false
     },
   ];
+
+  bool showPinned = false;
 
   @override
   Widget build(BuildContext context) {
@@ -66,9 +66,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(color: Colors.white),
               child: Column(
                 children: [
                   _buildFilterButtons(),
@@ -76,7 +74,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -86,8 +84,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
     return Stack(
       children: [
         Container(
-          padding: EdgeInsets.only(top: 50),
-          width: double.maxFinite,
+          padding: const EdgeInsets.only(top: 50),
+          width: double.infinity,
           height: 231,
           color: AppColors.background,
           child: Image.asset(
@@ -105,7 +103,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
             height: 30,
             width: 30,
           ),
-        )
+        ),
       ],
     );
   }
@@ -115,19 +113,22 @@ class _FeedsScreenState extends State<FeedsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
-        spacing: 5,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           FilterButton(icon: Icons.search_rounded),
           FilterButton(
             onTap: () {
-              //Navigate to all chats page
+              setState(() {
+                showPinned = false; // Show all messages
+              });
             },
             text: "All Chats",
           ),
           FilterButton(
             onTap: () {
-              //Navigate to all pinned messages page
+              setState(() {
+                showPinned = true; // Show pinned messages
+              });
             },
             text: "Pinned Messages",
           ),
@@ -138,36 +139,38 @@ class _FeedsScreenState extends State<FeedsScreen> {
 
   // Recent Messages List with Dividers
   Widget _buildRecentMessages() {
+    List<Map<String, dynamic>> filteredMessages = showPinned
+        ? messages.where((msg) => msg['isPinned'] == true).toList()
+        : messages;
+
     return ListView.separated(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      itemCount: messages.length,
-      physics: AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      itemCount: filteredMessages.length,
+      physics: const AlwaysScrollableScrollPhysics(),
       separatorBuilder: (context, index) => Divider(
         thickness: 1,
         color: AppColors.dividerColor,
       ),
       itemBuilder: (context, index) {
-        final message = messages[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: RecentMessagesListCard(
-            name: message['name'],
-            message: message['message'],
-            time: message['time'],
-            image: message['image'],
-            isActive: message['isActive'],
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CustomersListScreen(
-                    agentName: message['name'],
-                    agentImage: message['image'],
-                  ),
+        final message = filteredMessages[index];
+        return RecentMessagesListCard(
+          name: message['name'],
+          message: message['message'],
+          time: message['time'],
+          image: message['image'],
+          isActive: message['isActive'],
+          isPinned: message['isPinned']!,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CustomersListScreen(
+                  agentName: message['name'],
+                  agentImage: message['image'],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         );
       },
     );
