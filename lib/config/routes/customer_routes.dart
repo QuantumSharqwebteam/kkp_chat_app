@@ -9,6 +9,7 @@ import 'package:kkp_chat_app/presentation/customer/screen/customer_home_page.dar
 import 'package:kkp_chat_app/presentation/customer/screen/customer_host.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_notification_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
 
 class CustomerRoutes {
   static const String customerHome = '/customerHome';
@@ -23,6 +24,7 @@ class CustomerRoutes {
   static const String customerNotification = "customerNotification";
   static const String customerProductDescriptionPage =
       "customerProductDescription";
+  static const String customerSupportChat = "customerSuppoertChat";
 }
 
 Route<dynamic> generateCustomerRoute(RouteSettings settings) {
@@ -54,6 +56,15 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
     case CustomerRoutes.customerProductDescriptionPage:
       return MaterialPageRoute(
           builder: (_) => CustomerProductDescriptionPage());
+
+    case CustomerRoutes.customerSupportChat:
+      return MaterialPageRoute(
+          builder: (_) => ChatScreen(
+                agentImage: 'assets/images/user4.png',
+                agentName: 'Product Enquirers',
+                customerImage: 'assets/images/profile.png',
+                customerName: 'John',
+              ));
 
     default:
       return MaterialPageRoute(builder: (_) => CustomerHomePage());

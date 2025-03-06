@@ -46,7 +46,6 @@ class CustomerHomePage extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // _customAppBar(context),
               SizedBox(height: 10),
               _carousel(),
               SizedBox(height: 10),
@@ -62,7 +61,10 @@ class CustomerHomePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _enquirySupport(),
+                    _enquirySupport(onTap: () {
+                      Navigator.pushNamed(
+                          context, CustomerRoutes.customerSupportChat);
+                    }),
                     SizedBox(height: 20),
                     Text(
                       'New Products',
@@ -159,7 +161,7 @@ class CustomerHomePage extends StatelessWidget {
   }
 }
 
-Widget _enquirySupport() {
+Widget _enquirySupport({VoidCallback? onTap}) {
   return Card(
     color: Colors.white,
     elevation: 5,
@@ -167,6 +169,7 @@ Widget _enquirySupport() {
       borderRadius: BorderRadius.circular(10),
     ),
     child: ListTile(
+      onTap: onTap,
       leading: Stack(children: [
         CircleAvatar(
           radius: 25,

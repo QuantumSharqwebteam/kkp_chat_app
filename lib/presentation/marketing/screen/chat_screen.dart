@@ -24,6 +24,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _chatController = TextEditingController();
+
+  @override
+  void dispose() {
+    _chatController.dispose();
+    super.dispose();
+  }
+
   List<Map<String, dynamic>> messages = [
     {"text": "Hi, sir", "isMe": false},
     {
