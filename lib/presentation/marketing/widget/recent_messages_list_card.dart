@@ -9,6 +9,7 @@ class RecentMessagesListCard extends StatelessWidget {
   final String time;
   final String image;
   final bool isActive;
+  final bool isPinned;
   final void Function() onTap;
 
   const RecentMessagesListCard({
@@ -18,6 +19,7 @@ class RecentMessagesListCard extends StatelessWidget {
     required this.time,
     required this.image,
     required this.isActive,
+    this.isPinned = false,
     required this.onTap,
   });
 
@@ -35,16 +37,19 @@ class RecentMessagesListCard extends StatelessWidget {
         style: AppTextStyles.black14_600,
       ),
       subtitle: Text(message, style: AppTextStyles.grey12_600),
-      trailing: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(time, style: AppTextStyles.black10_600),
-          CircleAvatar(
-            radius: 3,
-            backgroundColor: AppColors.inActiveRed,
-          ),
-        ],
-      ),
+      trailing: isPinned
+          ? const Icon(Icons.push_pin,
+              color: AppColors.redF11515, size: 16) // Pinned icon
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(time, style: AppTextStyles.black10_600),
+                CircleAvatar(
+                  radius: 3,
+                  backgroundColor: AppColors.inActiveRed,
+                ),
+              ],
+            ),
     );
   }
 }
