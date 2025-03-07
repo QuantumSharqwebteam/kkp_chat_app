@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
+import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
@@ -16,7 +16,8 @@ class _MarketingHostState extends State<MarketingHost> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    AgentHomeScreen(),
+    //AgentHomeScreen(),
+    AdminHome(),
     MarketingProductScreen(),
     ProfileScreen(),
     FeedsScreen(),
