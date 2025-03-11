@@ -22,7 +22,8 @@ class Splash extends StatelessWidget {
                 height: 50,
                 backgroundColor: AppColors.blue,
                 onPressed: () {
-                  Navigator.pushNamed(context, CustomerRoutes.customerHost);
+                  Navigator.pushNamed(
+                      context, CustomerRoutes.customerProfileSetup);
                 },
               ),
               SizedBox(height: 20),
