@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
@@ -22,6 +23,8 @@ class MarketingRoutes {
   static const String verification = '/verification';
   static const String privacy = "/privacy";
   static const String settings = "/settings";
+  // admin side
+  static const String adminHome = "/adminHome";
 
   //marketing side
   static const String marketingHostScreen = "Marketing_host";
@@ -64,6 +67,11 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => NotificationsScreen());
     case MarketingRoutes.addProductScreen:
       return MaterialPageRoute(builder: (_) => AddProductScreen());
+
+    //admin side
+
+    case MarketingRoutes.adminHome:
+      return MaterialPageRoute(builder: (_) => AdminHome());
 
     default:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());

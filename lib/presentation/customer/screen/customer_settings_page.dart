@@ -28,10 +28,11 @@ class CustomerSettingsPage extends StatelessWidget {
               color: AppColors.background,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: CustomSearchBar(
-                  width: Utils().width(context),
-                  enable: true,
-                  controller: searchController,
-                  hintText: 'Search'),
+                width: Utils().width(context),
+                enable: true,
+                controller: searchController,
+                hintText: 'Search',
+              ),
             ),
             SettingsTile(
               numberOfTiles: 1,
