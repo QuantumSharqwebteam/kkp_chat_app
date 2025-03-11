@@ -16,8 +16,18 @@ class MarketingNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return MotionTabBar(
       initialSelectedTab: _getTabName(selectedIndex),
-      labels: ["Home", "Product", "Profile", "Feed"],
-      icons: [Icons.home_filled, Icons.shopping_cart, Icons.person, Icons.feed],
+      labels: [
+        "Home",
+        "Feed",
+        "Product",
+        "Profile",
+      ],
+      icons: [
+        Icons.home_filled,
+        Icons.feed,
+        Icons.shopping_bag_rounded,
+        Icons.person_add_alt_1,
+      ],
       tabSize: 40,
       tabBarHeight: 55,
       textStyle: const TextStyle(

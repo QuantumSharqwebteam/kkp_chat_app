@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/admin/widgets/agent_management_list_tile.dart';
+import 'package:kkp_chat_app/presentation/admin/widgets/home_chart.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/my_vertical_divider.dart';
 
 class AdminHome extends StatefulWidget {
@@ -63,6 +67,7 @@ class _AdminHomeState extends State<AdminHome> {
             _buildTrafficChart(),
             _buildTrafficStatsCard(),
             _buildCategorySection(),
+            _buildCustomerInquriesButton(),
             _buildAgentManagementSection()
           ],
         ),
@@ -92,120 +97,7 @@ class _AdminHomeState extends State<AdminHome> {
             const SizedBox(height: 20),
             SizedBox(
               height: 210,
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(show: false),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 20,
-                        interval: 5000,
-                        getTitlesWidget: (value, meta) {
-                          switch (value.toInt()) {
-                            case 0:
-                              return const Text("0K",
-                                  style: TextStyle(fontSize: 10));
-                            case 5000:
-                              return const Text("5K",
-                                  style: TextStyle(fontSize: 10));
-                            case 10000:
-                              return const Text("10K",
-                                  style: TextStyle(fontSize: 10));
-                            case 15000:
-                              return const Text("15K",
-                                  style: TextStyle(fontSize: 10));
-                            default:
-                              return Container();
-                          }
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          switch (value.toInt()) {
-                            case 0:
-                              return const Text("JAN",
-                                  style: TextStyle(fontSize: 10));
-                            case 1:
-                              return const Text("Feb",
-                                  style: TextStyle(fontSize: 10));
-                            case 2:
-                              return const Text("MAR 1",
-                                  style: TextStyle(fontSize: 10));
-                            case 3:
-                              return const Text("2",
-                                  style: TextStyle(fontSize: 10));
-                            case 4:
-                              return const Text("3",
-                                  style: TextStyle(fontSize: 10));
-                            case 5:
-                              return const Text("4",
-                                  style: TextStyle(fontSize: 10));
-                            case 6:
-                              return const Text("5",
-                                  style: TextStyle(fontSize: 10));
-                            case 7:
-                              return const Text("6",
-                                  style: TextStyle(fontSize: 10));
-                            case 8:
-                              return const Text("7",
-                                  style: TextStyle(fontSize: 10));
-                            case 9:
-                              return const Text("8",
-                                  style: TextStyle(fontSize: 10));
-                            case 10:
-                              return const Text("9",
-                                  style: TextStyle(fontSize: 10));
-                            default:
-                              return Container();
-                          }
-                        },
-                      ),
-                    ),
-                    rightTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: [
-                        const FlSpot(0, 1000),
-                        const FlSpot(1, 4000),
-                        const FlSpot(2, 3000),
-                        const FlSpot(3, 7000),
-                        const FlSpot(4, 6000),
-                        const FlSpot(5, 11000),
-                        const FlSpot(6, 9000),
-                        const FlSpot(7, 12000),
-                        const FlSpot(8, 14000),
-                        const FlSpot(9, 15000),
-                      ],
-                      isCurved: false,
-                      color: Colors.grey, // Dashed line color
-                      barWidth: 1,
-                      isStrokeCapRound: true,
-                      belowBarData: BarAreaData(show: false),
-                      dashArray: [4, 4], // Dotted Line
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(
-                            radius: 3,
-                            color: Colors.white, // Outer dot color
-                            strokeColor: Colors.blue,
-                            strokeWidth: 4,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: HomeChart(),
             ),
           ],
         ),
@@ -224,12 +116,14 @@ class _AdminHomeState extends State<AdminHome> {
         child: Row(
           spacing: 10,
           children: [
-            _buildStatItem("Visitors", "86K", "+52% mo/mo", Colors.green),
+            _buildStatItem(
+                "Visitors", "86K", "+52% mo/mo", AppColors.green22C55E),
             MyVerticalDivider(height: 80),
             _buildStatItem(
-                "Unique Visitors", "80K", "+58% mo/mo", Colors.green),
+                "Unique Visitors", "80K", "+58% mo/mo", AppColors.greyAAAAAA),
             MyVerticalDivider(height: 80),
-            _buildStatItem("Page View", "224K", "+14% mo/mo", Colors.green),
+            _buildStatItem(
+                "Page View", "224K", "+14% mo/mo", AppColors.greyAAAAAA),
           ],
         ),
       ),
@@ -241,11 +135,9 @@ class _AdminHomeState extends State<AdminHome> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(title,
-            style: const TextStyle(fontSize: 14, color: Colors.black54)),
+        Text(title, style: AppTextStyles.black60alpha_12_500),
         const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(value, style: AppTextStyles.black16_600),
         const SizedBox(height: 4),
         Text(change, style: TextStyle(fontSize: 12, color: color)),
       ],
@@ -264,21 +156,20 @@ class _AdminHomeState extends State<AdminHome> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RichText(
-            text: const TextSpan(
+            text: TextSpan(
               children: [
                 TextSpan(
                   text: "Category ",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black,
+                  style: AppTextStyles.black16_600.copyWith(
+                    color: AppColors.black60opac,
                   ),
                 ),
                 TextSpan(
                   text: "Search wise",
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    fontWeight: FontWeight.w300,
+                    color: AppColors.black60opac,
                   ),
                 ),
               ],
@@ -293,12 +184,13 @@ class _AdminHomeState extends State<AdminHome> {
             mainAxisSpacing: 8,
             childAspectRatio: 3.5,
             children: [
-              _categoryItem("Shirt", "12K"),
-              _categoryItem("Pant", "8K"),
-              _categoryItem("T-Shirt", "10K"),
-              _categoryItem("Jeans", "16K"),
-              _categoryItem("Hoodies", "22K", highlight: true),
-              _categoryItem("Jacket", "18K"),
+              _categoryItem("Shirt", "12K", ImageConstants.shirt),
+              _categoryItem("Pant", "8K", ImageConstants.pant),
+              _categoryItem("T-Shirt", "10K", ImageConstants.tshirt),
+              _categoryItem("Jeans", "16K", ImageConstants.jeans),
+              _categoryItem("Hoodies", "22K", ImageConstants.hoodiies,
+                  highlight: true),
+              _categoryItem("Jacket", "18K", ImageConstants.jacket),
             ],
           ),
         ],
@@ -306,7 +198,8 @@ class _AdminHomeState extends State<AdminHome> {
     );
   }
 
-  Widget _categoryItem(String title, String count, {bool highlight = false}) {
+  Widget _categoryItem(String title, String count, String icon,
+      {bool highlight = false}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -318,6 +211,11 @@ class _AdminHomeState extends State<AdminHome> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: const TextStyle(fontSize: 14)),
+          Image.asset(
+            icon,
+            height: 21,
+            width: 21,
+          ),
           Text(
             count,
             style: TextStyle(
@@ -329,6 +227,17 @@ class _AdminHomeState extends State<AdminHome> {
         ],
       ),
     );
+  }
+
+  Widget _buildCustomerInquriesButton() {
+    return CustomButton(
+        onPressed: () {
+          Navigator.pushNamed(context, MarketingRoutes.addAgent);
+        },
+        height: Utils().height(context) * 0.06,
+        fontSize: 18,
+        borderRadius: 10,
+        text: "Customer Inquries");
   }
 
   Widget _buildAgentManagementSection() {
@@ -347,30 +256,36 @@ class _AdminHomeState extends State<AdminHome> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Agent Management",
-            style: AppTextStyles.black16_500,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Agent Management",
+                style: AppTextStyles.black16_700
+                    .copyWith(color: AppColors.black60opac),
+              ),
+              GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(
+                        context, MarketingRoutes.agentProfileList);
+                  },
+                  child: Text("See All")),
+            ],
           ),
           // Agent Status Bar
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 10),
-            padding: EdgeInsets.all(12),
+            margin: EdgeInsets.symmetric(horizontal: 2, vertical: 10),
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.backgroundEEEDED,
               borderRadius: BorderRadius.circular(25),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatusItem("Active", activeCount, Colors.green),
-                _buildStatusItem("Offline", offlineCount, Colors.blue),
+                _buildStatusItem("Active", activeCount, AppColors.activeGreen),
+                _buildStatusItem("Offline", offlineCount, AppColors.blue),
               ],
             ),
           ),
@@ -420,7 +335,7 @@ class _AdminHomeState extends State<AdminHome> {
         ),
         const SizedBox(width: 5),
         CircleAvatar(
-          radius: 14,
+          radius: 17,
           backgroundColor: color,
           child: Text(
             count.toString(),
