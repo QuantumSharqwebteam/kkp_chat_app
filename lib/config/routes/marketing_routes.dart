@@ -31,6 +31,23 @@ class MarketingRoutes {
   static const String agentHomeScreen = "AgentHomeScreen";
   static const String marketingNotifications = "Notification_page";
   static const String addProductScreen = "Add_Product_screen";
+
+  static List<String> allRoutes = [
+    home,
+    onBoarding,
+    signUp,
+    login,
+    forgot,
+    verification,
+    newPass,
+    privacy,
+    settings,
+    adminHome,
+    agentHomeScreen,
+    marketingHostScreen,
+    marketingNotifications,
+    addProductScreen
+  ];
 }
 
 Route<dynamic> generateMarketingRoute(RouteSettings settings) {

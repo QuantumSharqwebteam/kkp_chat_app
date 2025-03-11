@@ -9,6 +9,7 @@ import 'package:kkp_chat_app/presentation/customer/screen/customer_home_page.dar
 import 'package:kkp_chat_app/presentation/customer/screen/customer_host.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_notification_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_setup_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
 
 class CustomerRoutes {
@@ -25,6 +26,22 @@ class CustomerRoutes {
   static const String customerProductDescriptionPage =
       "customerProductDescription";
   static const String customerSupportChat = "customerSuppoertChat";
+  static const String customerProfileSetup = "customerProfileSetup";
+
+  static List<String> allRoutes = [
+    customerHome,
+    onBoarding,
+    signUp,
+    login,
+    forgot,
+    newPass,
+    verification,
+    customerHost,
+    customerNotification,
+    customerProductDescriptionPage,
+    customerSupportChat,
+    customerProfileSetup,
+  ];
 }
 
 Route<dynamic> generateCustomerRoute(RouteSettings settings) {
@@ -56,6 +73,9 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
     case CustomerRoutes.customerProductDescriptionPage:
       return MaterialPageRoute(
           builder: (_) => CustomerProductDescriptionPage());
+
+    case CustomerRoutes.customerProfileSetup:
+      return MaterialPageRoute(builder: (_) => CustomerProfileSetupPage());
 
     case CustomerRoutes.customerSupportChat:
       return MaterialPageRoute(

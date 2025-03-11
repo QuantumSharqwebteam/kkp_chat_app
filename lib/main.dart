@@ -22,9 +22,9 @@ class MyApp extends StatelessWidget {
         "/splash": (context) => Splash(),
       },
       onGenerateRoute: (settings) {
-        if (settings.name == CustomerRoutes.customerHost) {
+        if (CustomerRoutes.allRoutes.contains(settings.name)) {
           return generateCustomerRoute(settings);
-        } else if (settings.name == MarketingRoutes.marketingHostScreen) {
+        } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
           return generateMarketingRoute(settings);
         } else {
           return null;
