@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/presentation/admin/screens/add_agent.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
+
 import 'package:kkp_chat_app/presentation/marketing/widget/marketing_nav_bar.dart';
 
 class MarketingHost extends StatefulWidget {
@@ -18,9 +19,10 @@ class _MarketingHostState extends State<MarketingHost> {
   final List<Widget> _screens = [
     //AgentHomeScreen(),
     AdminHome(),
-    MarketingProductScreen(),
-    ProfileScreen(),
     FeedsScreen(),
+    MarketingProductScreen(),
+    //ProfileScreen(),
+    AddAgent(),
   ];
 
   void _onTabSelected(int index) {

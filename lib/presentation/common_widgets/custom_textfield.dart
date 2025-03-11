@@ -80,7 +80,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         SizedBox(
           width: widget.width,
           height: widget.height,
-          child: TextField(
+          child: TextFormField(
             obscuringCharacter: '*',
             controller: widget.controller,
             keyboardType: widget.keyboardType,

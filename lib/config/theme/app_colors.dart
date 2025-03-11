@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   static const blue = Color(0xff2F82EF);
+  static const blue00ABE9 = Color(0xff00ABE9);
   static const background = Color(0xffF0F4FF);
   static const activeGreen = Color(0xff12DD1B);
   static const inActiveRed = Color(0xffF31111);
@@ -23,4 +24,7 @@ class AppColors {
   static const grey7B7B7B = Color(0xff7B7B7B);
   static const greyAAAAAA = Color(0xffAAAAAA);
   static const greyD9D9D9 = Color(0xffD9D9D9);
+  static const green22C55E = Color(0xff22C55E);
+  static var black60opac = Color(0xff000000).withValues(alpha: 0.60);
+  static var backgroundEEEDED = Color(0xffEEEDED).withValues(alpha: 0.46);
 }

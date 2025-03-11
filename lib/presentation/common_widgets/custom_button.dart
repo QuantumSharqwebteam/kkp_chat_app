@@ -14,7 +14,7 @@ class CustomButton extends StatelessWidget {
     this.borderRadius = 10,
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
     this.elevation = 0,
-    this.borderColor = Colors.black,
+    this.borderColor = AppColors.blue,
     this.borderWidth = 1,
     this.image,
     this.imagePosition = ImagePosition.leading,
@@ -50,7 +50,7 @@ class CustomButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(borderRadius),
             side: borderWidth > 0
                 ? BorderSide(
-                    color: borderColor ?? Colors.black, width: borderWidth)
+                    color: borderColor ?? AppColors.blue, width: borderWidth)
                 : BorderSide.none,
           ),
         ),
