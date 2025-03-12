@@ -71,8 +71,27 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildRecentlyAddedProductsList(),
+            _buildProductsList(),
           ],
+        ),
+      ),
+      floatingActionButton: SizedBox(
+        height: 110,
+        width: 110,
+        child: FloatingActionButton(
+          elevation: 10,
+          tooltip: "Upload new product here",
+          onPressed: () {
+            Navigator.pushNamed(context, MarketingRoutes.addProductScreen);
+          },
+          backgroundColor: Colors.white,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Icon(Icons.cloud_upload, size: 80, color: AppColors.grey7B7B7B),
+              Text("Upload Product", style: AppTextStyles.black10_600),
+            ],
+          ),
         ),
       ),
     );
@@ -80,10 +99,11 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
+      automaticallyImplyLeading: false,
       toolbarHeight: Utils().height(context) * 0.14,
       backgroundColor: AppColors.background,
       title: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -105,32 +125,16 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
             ],
           ),
           CustomSearchBar(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildRecentlyAddedProductsList() {
+  Widget _buildProductsList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text("Fashion"),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                "See more",
-                style: TextStyle(
-                  decoration: TextDecoration.underline,
-                  color: AppColors.errorRed,
-                ),
-              ),
-            ),
-          ],
-        ),
         GridView.builder(
           padding: EdgeInsets.only(bottom: 5),
           shrinkWrap: true,
@@ -141,40 +145,40 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
             maxCrossAxisExtent: 250,
             mainAxisExtent: 200,
           ),
-          itemCount: products.length + 1, // Added +1 for upload tile
+          itemCount: products.length,
           itemBuilder: (context, index) {
-            if (index == 0) {
-              // Show "Upload Product" tile as first item
-              return _buildUploadProductContainer();
-            } else {
-              final product = products[index - 1]; // Adjust index
-              return ProductItem(product: product);
-            }
+            final product = products[index];
+            return ProductItem(
+              product: product,
+              onTap: () {
+                Navigator.pushNamed(
+                    context, MarketingRoutes.marketingProductDescription);
+              },
+            );
           },
         ),
-        SizedBox(height: 10),
       ],
     );
   }
 
-  Widget _buildUploadProductContainer() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, MarketingRoutes.addProductScreen);
-      },
-      child: Card(
-        color: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 5,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_upload, size: 100, color: AppColors.grey7B7B7B),
-            SizedBox(height: 10),
-            Text("Upload Product", style: TextStyle(fontSize: 14)),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildUploadProductContainer() {
+  //   return GestureDetector(
+  //     onTap: () {
+  //       Navigator.pushNamed(context, MarketingRoutes.addProductScreen);
+  //     },
+  //     child: Card(
+  //       color: Colors.white,
+  //       surfaceTintColor: Colors.white,
+  //       elevation: 5,
+  //       child: Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           Icon(Icons.cloud_upload, size: 100, color: AppColors.grey7B7B7B),
+  //           SizedBox(height: 10),
+  //           Text("Upload Product", style: TextStyle(fontSize: 14)),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }

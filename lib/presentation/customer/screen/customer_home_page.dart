@@ -82,7 +82,15 @@ class CustomerHomePage extends StatelessWidget {
                           final product = products[index];
                           return Padding(
                             padding: const EdgeInsets.only(right: 16.0),
-                            child: ProductItem(product: product),
+                            child: ProductItem(
+                              product: product,
+                              onTap: () {
+                                Navigator.pushNamed(
+                                    context,
+                                    CustomerRoutes
+                                        .customerProductDescriptionPage);
+                              },
+                            ),
                           );
                         },
                       ),
@@ -103,7 +111,15 @@ class CustomerHomePage extends StatelessWidget {
                           final product = products[index];
                           return Padding(
                             padding: const EdgeInsets.only(right: 16.0),
-                            child: ProductItem(product: product),
+                            child: ProductItem(
+                              product: product,
+                              onTap: () {
+                                Navigator.pushNamed(
+                                    context,
+                                    CustomerRoutes
+                                        .customerProductDescriptionPage);
+                              },
+                            ),
                           );
                         },
                       ),

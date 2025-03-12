@@ -1,14 +1,16 @@
 class ImageConstants {
-  static String imageBase = "assets/images";
-  static String iconBase = "assets/icons";
+  static const String imageBase = "assets/images";
+  static const String iconBase = "assets/icons";
 
   //Image assets
+  static const String userImage = "$imageBase/user1.png";
 
   //Icons asstes
-  static String shirt = "$iconBase/shirt.png";
-  static String pant = "$iconBase/pant.png";
-  static String tshirt = "$iconBase/t-shirt.png";
-  static String jeans = "$iconBase/jeans.png";
-  static String hoodiies = "$iconBase/hoodiies.png";
-  static String jacket = "$iconBase/jacket.png";
+  static const String shirt = "$iconBase/shirt.png";
+  static const String pant = "$iconBase/pant.png";
+  static const String tshirt = "$iconBase/t-shirt.png";
+  static const String jeans = "$iconBase/jeans.png";
+  static const String hoodiies = "$iconBase/hoodiies.png";
+  static const String jacket = "$iconBase/jacket.png";
+  static const String deleteProduct = "$iconBase/deleteProduct.png";
 }

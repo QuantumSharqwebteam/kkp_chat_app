@@ -103,7 +103,13 @@ class CustomerProductsPage extends StatelessWidget {
                     itemCount: 2, //products.length,
                     itemBuilder: (context, index) {
                       final product = products[index];
-                      return ProductItem(product: product);
+                      return ProductItem(
+                        product: product,
+                        onTap: () {
+                          Navigator.pushNamed(context,
+                              CustomerRoutes.customerProductDescriptionPage);
+                        },
+                      );
                     },
                   ),
                   SizedBox(height: 10),
@@ -137,7 +143,13 @@ class CustomerProductsPage extends StatelessWidget {
                     itemCount: products.length,
                     itemBuilder: (context, index) {
                       final product = products[index];
-                      return ProductItem(product: product);
+                      return ProductItem(
+                        product: product,
+                        onTap: () {
+                          Navigator.pushNamed(context,
+                              CustomerRoutes.customerProductDescriptionPage);
+                        },
+                      );
                     },
                   ),
                   SizedBox(height: 20),
