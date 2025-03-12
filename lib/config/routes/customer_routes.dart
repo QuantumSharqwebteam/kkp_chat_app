@@ -10,6 +10,10 @@ import 'package:kkp_chat_app/presentation/customer/screen/customer_host.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_notification_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_setup_page.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/settings/archive_settings_page.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/settings/change_password.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/settings/password_and_security.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/settings/save_login_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
 
 class CustomerRoutes {
@@ -27,6 +31,10 @@ class CustomerRoutes {
       "customerProductDescription";
   static const String customerSupportChat = "customerSuppoertChat";
   static const String customerProfileSetup = "customerProfileSetup";
+  static const String passwordAndSecurity = "passwordAndSecurity";
+  static const String changePassword = "changePassword";
+  static const String saveLogin = "saveLogin";
+  static const String archiveSettings = "archiveSettings";
 
   static List<String> allRoutes = [
     customerHome,
@@ -41,6 +49,10 @@ class CustomerRoutes {
     customerProductDescriptionPage,
     customerSupportChat,
     customerProfileSetup,
+    passwordAndSecurity,
+    changePassword,
+    saveLogin,
+    archiveSettings,
   ];
 }
 
@@ -76,6 +88,18 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
 
     case CustomerRoutes.customerProfileSetup:
       return MaterialPageRoute(builder: (_) => CustomerProfileSetupPage());
+
+    case CustomerRoutes.passwordAndSecurity:
+      return MaterialPageRoute(builder: (_) => PasswordAndSecurity());
+
+    case CustomerRoutes.changePassword:
+      return MaterialPageRoute(builder: (_) => ChangePassword());
+
+    case CustomerRoutes.saveLogin:
+      return MaterialPageRoute(builder: (_) => SaveLoginPage());
+
+    case CustomerRoutes.archiveSettings:
+      return MaterialPageRoute(builder: (_) => ArchiveSettingsPage());
 
     case CustomerRoutes.customerSupportChat:
       return MaterialPageRoute(

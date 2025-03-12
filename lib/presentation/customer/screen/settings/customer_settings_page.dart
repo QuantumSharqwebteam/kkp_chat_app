@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
@@ -36,12 +37,18 @@ class CustomerSettingsPage extends StatelessWidget {
             ),
             SettingsTile(
               numberOfTiles: 1,
-              leadingIcons: [Icons.account_circle_outlined],
+              leadingIcons: [Icons.shield_moon_outlined],
+              onTaps: [
+                () {
+                  Navigator.pushNamed(
+                      context, CustomerRoutes.passwordAndSecurity);
+                }
+              ],
               title: 'Your account',
-              titles: ['Account Centre'],
+              titles: ['Password and Security'],
               subtitles: ['Password, security, personal details,ad preference'],
               description:
-                  'Manage your connected experiance and account settings across',
+                  'Manage your connected experiance and account settings across devices',
             ),
             SizedBox(height: 10),
             Divider(
@@ -56,6 +63,12 @@ class CustomerSettingsPage extends StatelessWidget {
               ],
               title: 'How you use KKP',
               titles: ['Archive', 'Notifications'],
+              onTaps: [
+                () {
+                  Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
+                },
+                () {}
+              ],
             ),
             SizedBox(height: 10),
             Divider(

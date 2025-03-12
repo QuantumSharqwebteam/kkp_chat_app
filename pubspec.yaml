@@ -43,6 +43,8 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   dotted_border: ^2.1.0
   fl_chart: ^0.70.2
+  flutter_slidable: ^4.0.0
+  table_calendar: ^3.2.0
 
 dev_dependencies:
   flutter_test:
