@@ -163,8 +163,7 @@ class _ArchiveSettingsPageState extends State<ArchiveSettingsPage>
                       onDaySelected: (selectedDay, focusedDay) {
                         setState(() {
                           _selectedDay = selectedDay;
-                          _focusedDay =
-                              focusedDay; // Update `_focusedDay` to maintain calendar view
+                          _focusedDay = focusedDay;
                         });
                       },
                       onFormatChanged: (format) {
@@ -173,8 +172,7 @@ class _ArchiveSettingsPageState extends State<ArchiveSettingsPage>
                         });
                       },
                       onPageChanged: (focusedDay) {
-                        _focusedDay =
-                            focusedDay; // Update `_focusedDay` to maintain calendar view
+                        _focusedDay = focusedDay;
                       },
                       eventLoader: _getEventsForDay,
                     ),
