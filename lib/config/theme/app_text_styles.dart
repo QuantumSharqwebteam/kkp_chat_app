@@ -7,6 +7,11 @@ class AppTextStyles {
     color: Colors.black,
     fontWeight: FontWeight.w600,
   );
+  static const black28_600 = TextStyle(
+    fontSize: 28,
+    color: Colors.black,
+    fontWeight: FontWeight.w600,
+  );
   static const black15_500 = TextStyle(
     fontSize: 15,
     color: Colors.black,
@@ -36,6 +41,11 @@ class AppTextStyles {
     fontSize: 20,
     color: Colors.black,
     fontWeight: FontWeight.w600,
+  );
+  static const black20_500 = TextStyle(
+    fontSize: 20,
+    color: Colors.black,
+    fontWeight: FontWeight.w500,
   );
   static const black18_600 = TextStyle(
     fontSize: 18,
