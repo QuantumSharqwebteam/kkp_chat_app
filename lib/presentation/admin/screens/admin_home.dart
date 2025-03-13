@@ -232,7 +232,7 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _buildCustomerInquriesButton() {
     return CustomButton(
         onPressed: () {
-          Navigator.pushNamed(context, MarketingRoutes.addAgent);
+          Navigator.pushNamed(context, MarketingRoutes.customerInquriesPage);
         },
         height: Utils().height(context) * 0.06,
         fontSize: 18,

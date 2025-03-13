@@ -20,8 +20,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController reviewController = TextEditingController();
-  final TextEditingController stockController =
-      TextEditingController(text: "2000 Stocks Available");
+  final TextEditingController stockController = TextEditingController();
+  List<String> availableSizes = ["S", "M", "L", "XL"];
+  Set<String> selectedSizes = {}; // Store selected sizes
+
   String? selectedImage;
   List<Color> selectedColors = [
     Colors.black, //default color
@@ -90,7 +92,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildImagePickerContainer(selectedImage, pickImage),
-            const SizedBox(height: 30),
             _buildProductDetails(),
             CustomButton(
               onPressed: () {
@@ -98,8 +99,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
               },
               text: "Add Product",
               fontSize: 18,
-              borderColor: AppColors.blue,
-              backgroundColor: AppColors.blue,
+              borderColor: AppColors.blue00ABE9,
+              backgroundColor: AppColors.blue00ABE9,
             ),
           ],
         ),
@@ -139,7 +140,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: Text("Price", style: AppTextStyles.black14_600),
               ),
               Expanded(
-                child: Text("Review", style: AppTextStyles.black14_600),
+                child: Text("Size", style: AppTextStyles.black14_600),
               ),
             ],
           ),
@@ -153,10 +154,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 ),
               ),
               Expanded(
-                child: CustomTextField(
-                  controller: reviewController,
-                  hintText: "0",
-                ),
+                child: _buildSizeSelection(),
               ),
             ],
           ),
@@ -170,6 +168,47 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSizeSelection() {
+    return Wrap(
+      spacing: 5,
+      children: availableSizes.map((size) {
+        bool isSelected = selectedSizes.contains(size);
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              if (isSelected) {
+                selectedSizes.remove(size);
+              } else {
+                selectedSizes.add(size);
+              }
+            });
+          },
+          child: Container(
+            height: 42,
+            width: 30,
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.grey707070 : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected ? AppColors.greyE5E7EB : Colors.grey,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                size,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isSelected ? Colors.white : AppColors.greyAAAAAA,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -252,8 +291,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             borderRadius: BorderRadius.circular(10),
                             child: Image.file(
                               File(selectedImage),
-                              fit: BoxFit.fitWidth,
-                              height: 100,
+                              fit: BoxFit.fill,
+                              height: 120,
                             ),
                           ),
                         ),

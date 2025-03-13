@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/add_agent.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/agent_profile_list.dart';
+import 'package:kkp_chat_app/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
@@ -13,6 +14,7 @@ import 'package:kkp_chat_app/presentation/common/settings/settings_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_descrption_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/notifications_page.dart';
 
 class MarketingRoutes {
@@ -29,12 +31,15 @@ class MarketingRoutes {
   static const String adminHome = "/adminHome";
   static const String addAgent = "/addAgentPage";
   static const String agentProfileList = "/agentProfileList";
+  static const String customerInquriesPage = "/customerInquriesPage";
 
   //marketing side
   static const String marketingHostScreen = "Marketing_host";
   static const String agentHomeScreen = "AgentHomeScreen";
   static const String marketingNotifications = "Notification_page";
   static const String addProductScreen = "Add_Product_screen";
+  static const String marketingProductDescription =
+      "Marketing_Product_Description_Page";
 
   static List<String> allRoutes = [
     home,
@@ -53,6 +58,8 @@ class MarketingRoutes {
     addProductScreen,
     addAgent,
     agentProfileList,
+    customerInquriesPage,
+    marketingProductDescription
   ];
 }
 
@@ -81,15 +88,22 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
 
     case MarketingRoutes.privacy:
       return MaterialPageRoute(builder: (_) => PrivacyPage());
+
     case MarketingRoutes.settings:
       return MaterialPageRoute(builder: (_) => SettingsPage());
 
     case MarketingRoutes.agentHomeScreen:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());
+
     case MarketingRoutes.marketingNotifications:
       return MaterialPageRoute(builder: (_) => NotificationsScreen());
+
     case MarketingRoutes.addProductScreen:
       return MaterialPageRoute(builder: (_) => AddProductScreen());
+
+    case MarketingRoutes.marketingProductDescription:
+      return MaterialPageRoute(
+          builder: (_) => MarketingProductDescrptionPage());
 
     //admin side
 
@@ -99,6 +113,8 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => AddAgent());
     case MarketingRoutes.agentProfileList:
       return MaterialPageRoute(builder: (_) => AgentProfilesPage());
+    case MarketingRoutes.customerInquriesPage:
+      return MaterialPageRoute(builder: (_) => CustomerInquiriesPage());
 
     default:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());
