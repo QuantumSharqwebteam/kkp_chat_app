@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/colored_divider.dart';
@@ -46,6 +47,12 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
             SettingsTile(
               numberOfTiles: 1,
               leadingIcons: [Icons.account_circle_outlined],
+              onTaps: [
+                () {
+                  Navigator.pushNamed(
+                      context, CustomerRoutes.passwordAndSecurity);
+                }
+              ],
               title: 'Your account',
               titles: ['Account Centre'],
               subtitles: ['Password, security, personal details,ad preference'],
