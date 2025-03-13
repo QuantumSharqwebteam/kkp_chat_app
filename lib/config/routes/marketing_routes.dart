@@ -15,7 +15,8 @@ import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.da
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_descrption_page.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/notifications_page.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/settings/marketing_settings.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/marketings_notifications_page.dart';
 
 class MarketingRoutes {
   static const String home = '/home';
@@ -40,6 +41,7 @@ class MarketingRoutes {
   static const String addProductScreen = "Add_Product_screen";
   static const String marketingProductDescription =
       "Marketing_Product_Description_Page";
+  static const String marketingSettings = "/Marketing_Settings";
 
   static List<String> allRoutes = [
     home,
@@ -59,7 +61,8 @@ class MarketingRoutes {
     addAgent,
     agentProfileList,
     customerInquriesPage,
-    marketingProductDescription
+    marketingProductDescription,
+    marketingSettings,
   ];
 }
 
@@ -113,10 +116,17 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => AddAgent());
     case MarketingRoutes.agentProfileList:
       return MaterialPageRoute(builder: (_) => AgentProfilesPage());
+
     case MarketingRoutes.customerInquriesPage:
       return MaterialPageRoute(builder: (_) => CustomerInquiriesPage());
 
+    case MarketingRoutes.marketingSettings:
+      return MaterialPageRoute(builder: (_) => MarketingSettingsPage());
+
     default:
-      return MaterialPageRoute(builder: (_) => AgentHomeScreen());
+      return MaterialPageRoute(
+          builder: (_) => Scaffold(
+                body: Center(child: Text("no such page available")),
+              ));
   }
 }

@@ -30,6 +30,7 @@ class _AddAgentState extends State<AddAgent> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text('Profile'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -38,103 +39,112 @@ class _AddAgentState extends State<AddAgent> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 5,
-            children: [
-              // Profile Upload Section
-              Center(
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey.shade300,
-                      child: const Icon(Icons.person,
-                          size: 50, color: Colors.white),
+          padding: const EdgeInsets.all(8.0),
+          child: Card(
+            color: Colors.white,
+            elevation: 10,
+            surfaceTintColor: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 5,
+                children: [
+                  // Profile Upload Section
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.grey.shade300,
+                          child: const Icon(Icons.person,
+                              size: 50, color: Colors.white),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.blue,
+                          ),
+                          child:
+                              const Icon(Icons.camera_alt, color: Colors.white),
+                        ),
+                      ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.blue,
-                      ),
-                      child: const Icon(Icons.camera_alt, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Input Fields
-              Text("Full Name"),
-              CustomTextField(
-                controller: fullNameController,
-                hintText: 'Enter full name',
-                prefixIcon: const Icon(Icons.person),
-              ),
-              Text("Email Address"),
-              CustomTextField(
-                controller: emailController,
-                hintText: 'Enter email address',
-                keyboardType: TextInputType.emailAddress,
-                prefixIcon: const Icon(Icons.email),
-              ),
-              Text("Phone number"),
-              CustomTextField(
-                controller: phoneController,
-                hintText: 'Enter phone number',
-                keyboardType: TextInputType.phone,
-                prefixIcon: const Icon(Icons.phone),
-              ),
-              Text("Agent Id"),
-              CustomTextField(
-                controller: agentIdController,
-                hintText: 'Create Agent ID',
-                prefixIcon: const Icon(Icons.badge),
-              ),
-              Text("Password"),
-              CustomTextField(
-                controller: passwordController,
-                hintText: 'Create Password',
-                isPassword: true,
-                prefixIcon: const Icon(Icons.lock),
-              ),
-              Text("Role"),
-
-              // Role Dropdown
-              DropdownButtonFormField<String>(
-                value: selectedRole,
-                items: roles
-                    .map((role) => DropdownMenuItem(
-                          value: role,
-                          child: Text(role),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  selectedRole = value!;
-                },
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade400),
                   ),
-                  prefixIcon: const Icon(Icons.person_outline),
-                ),
+
+                  // Input Fields
+                  Text("Full Name"),
+                  CustomTextField(
+                    controller: fullNameController,
+                    hintText: 'Enter full name',
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                  Text("Email Address"),
+                  CustomTextField(
+                    controller: emailController,
+                    hintText: 'Enter email address',
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: const Icon(Icons.email),
+                  ),
+                  Text("Phone number"),
+                  CustomTextField(
+                    controller: phoneController,
+                    hintText: 'Enter phone number',
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: const Icon(Icons.phone),
+                  ),
+                  Text("Agent Id"),
+                  CustomTextField(
+                    controller: agentIdController,
+                    hintText: 'Create Agent ID',
+                    prefixIcon: const Icon(Icons.badge),
+                  ),
+                  Text("Password"),
+                  CustomTextField(
+                    controller: passwordController,
+                    hintText: 'Create Password',
+                    isPassword: true,
+                    prefixIcon: const Icon(Icons.lock),
+                  ),
+                  Text("Role"),
+
+                  // Role Dropdown
+                  DropdownButtonFormField<String>(
+                    value: selectedRole,
+                    items: roles
+                        .map((role) => DropdownMenuItem(
+                              value: role,
+                              child: Text(role),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      selectedRole = value!;
+                    },
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      prefixIcon: const Icon(Icons.person_outline),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Add Agent Button
+                  CustomButton(
+                    onPressed: () {
+                      Utils().showSuccessDialog(context, "Added Sucessfully");
+                    },
+                    fontSize: 18,
+                    backgroundColor: AppColors.blue00ABE9,
+                    text: "Add Agent",
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              // Add Agent Button
-              CustomButton(
-                onPressed: () {
-                  Utils().showSuccessDialog(context, "Added Sucessfully");
-                },
-                fontSize: 18,
-                backgroundColor: AppColors.blue00ABE9,
-                text: "Add Agent",
-              ),
-            ],
+            ),
           ),
         ),
       ),

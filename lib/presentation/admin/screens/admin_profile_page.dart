@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
-class AdminProfilePage extends StatelessWidget {
+class AdminProfilePage extends StatefulWidget {
   const AdminProfilePage({super.key});
 
+  @override
+  State<AdminProfilePage> createState() => _AdminProfilePageState();
+}
+
+class _AdminProfilePageState extends State<AdminProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Text('Profile'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -16,6 +25,7 @@ class AdminProfilePage extends StatelessWidget {
         ),
         actions: [
           PopupMenuButton<int>(
+            color: Colors.white,
             surfaceTintColor: Colors.white,
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
@@ -41,7 +51,8 @@ class AdminProfilePage extends StatelessWidget {
             const SizedBox(height: 20),
             _buildInfoFields(),
             const Spacer(),
-            _buildAddAgentButton(context),
+            _buildAddAgentButton(),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -53,7 +64,7 @@ class AdminProfilePage extends StatelessWidget {
       color: Colors.white,
       surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
+      elevation: 5,
       child: SizedBox(
         width: double.maxFinite,
         child: Padding(
@@ -62,19 +73,39 @@ class AdminProfilePage extends StatelessWidget {
             children: [
               Stack(
                 children: [
-                  const CircleAvatar(
-                    radius: 40,
-                    backgroundImage: AssetImage(ImageConstants.userImage),
+                  Container(
+                    height: Utils().height(context) * 0.15,
+                    width: Utils().width(context) * 0.32,
+                    padding: EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              spreadRadius: 0,
+                              blurRadius: 6,
+                              offset: Offset(0, 4)),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            spreadRadius: 0,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          )
+                        ]),
+                    child: const CircleAvatar(
+                      backgroundImage: AssetImage(ImageConstants.userImage),
+                    ),
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: CircleAvatar(
                       backgroundColor: Colors.blue,
-                      radius: 12,
+                      radius: 16,
                       child: Icon(
                         Icons.lock,
-                        size: 16,
+                        size: 18,
                         color: Colors.white,
                       ),
                     ),
@@ -84,11 +115,11 @@ class AdminProfilePage extends StatelessWidget {
               const SizedBox(height: 10),
               const Text(
                 'Arun',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const Text(
                 'Senior Admin',
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ],
           ),
@@ -98,58 +129,65 @@ class AdminProfilePage extends StatelessWidget {
   }
 
   Widget _buildInfoFields() {
-    return Column(
-      spacing: 10,
-      children: [
-        _buildInfoRow(Icons.person, 'Name', 'Arun'),
-        _buildInfoRow(Icons.email, 'Email', 'Arun@gmail.com'),
-        _buildInfoRow(Icons.phone, 'Enter Your Mobile No.', '9968445522'),
-      ],
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Card(
       color: Colors.white,
       surfaceTintColor: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 10,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        child: Row(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.blue),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: Colors.grey)),
-                Text(value,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
+            _buildInputField(Icons.person, 'Name', 'Arun'),
+            _buildInputField(Icons.email, 'Email', 'Arun@gmail.com'),
+            _buildInputField(
+                Icons.phone, 'Enter Your Mobile No.', '9966445522'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAddAgentButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
+  Widget _buildInputField(IconData icon, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8.0, bottom: 4),
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        Row(
+          children: [
+            Icon(icon, color: Colors.grey),
+            const SizedBox(width: 8),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+        const Divider(thickness: 1, color: Colors.grey),
+        const SizedBox(height: 8), // Spacing between fields
+      ],
+    );
+  }
+
+  Widget _buildAddAgentButton() {
+    return CustomButton(
         onPressed: () {
           Navigator.pushNamed(context, MarketingRoutes.addAgent);
         },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+        image: Icon(
+          Icons.person_add_alt_1_rounded,
+          color: Colors.white,
+          size: 28,
         ),
-        child:
-            const Text('Add New Agent', style: TextStyle(color: Colors.white)),
-      ),
-    );
+        backgroundColor: AppColors.blue00ABE9,
+        fontSize: 18,
+        borderColor: AppColors.blue00ABE9,
+        text: "Add new agent");
   }
 }

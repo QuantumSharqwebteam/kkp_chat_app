@@ -29,4 +29,5 @@ class AppColors {
   static var black60opac = Color(0xff000000).withValues(alpha: 0.60);
   static var backgroundEEEDED = Color(0xffEEEDED).withValues(alpha: 0.46);
   static const blue0056FB = Color(0xff0056FB);
+  static const greyB2BACD = Color(0xffB2BACD);
 }

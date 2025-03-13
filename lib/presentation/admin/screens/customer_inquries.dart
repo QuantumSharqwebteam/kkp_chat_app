@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_drop_down.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_bar.dart';
 
 class CustomerInquiriesPage extends StatefulWidget {
@@ -12,16 +16,19 @@ class CustomerInquiriesPage extends StatefulWidget {
 
 class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
   bool showFilters = false;
-  String selectedAgent = 'All';
+  String selectedAgent = 'All Agents';
   String selectedDateRange = 'Last 30 days';
+  String selectedQuality = "Quality";
+  int currentIndex = 0; // For pagination
 
-  List<String> agents = ['All', 'Agent Sam', 'Agent Sammy'];
+  List<String> agents = ['All Agents', 'Agent Sam', 'Agent Sammy'];
   List<String> dateRanges = [
     'Today',
     'Last Week',
     'Last Month',
     'Last 30 days'
   ];
+  List<String> qualities = ["Quality", "Standard", "Premium"];
 
   List<Map<String, dynamic>> inquiries = [
     {
@@ -49,6 +56,42 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
       'rate': 'Rs. 50,000'
     },
     {
+      'agent': 'Agent Sam',
+      'customer': 'Alice',
+      'date': 'Feb 5, 2025',
+      'status': 'Confirmed',
+      'sNo': '03',
+      'quality': 'Silk',
+      'weave': 'Satin',
+      'quantity': '300 pcs',
+      'composition': '100% Silk',
+      'rate': 'Rs. 70,000'
+    },
+    {
+      'agent': 'Agent Sammy',
+      'customer': 'Bob',
+      'date': 'Feb 10, 2025',
+      'status': 'Pending',
+      'sNo': '04',
+      'quality': 'Linen',
+      'weave': 'Twill',
+      'quantity': '600 pcs',
+      'composition': '80% Cotton, 20% Linen',
+      'rate': 'Rs. 60,000'
+    },
+    {
+      'agent': 'Agent Sam',
+      'customer': 'Sarah',
+      'date': 'Jan 15, 2025',
+      'status': 'Confirmed',
+      'sNo': '01',
+      'quality': 'Premium Cotton',
+      'weave': 'Plain',
+      'quantity': '500 pcs',
+      'composition': '100% Cotton',
+      'rate': 'Rs. 50,000'
+    },
+    {
       'agent': 'Agent Sammy',
       'customer': 'John',
       'date': 'Jan 15, 2025',
@@ -60,7 +103,45 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
       'composition': '100% Cotton',
       'rate': 'Rs. 50,000'
     },
+    {
+      'agent': 'Agent Sam',
+      'customer': 'Alice',
+      'date': 'Feb 5, 2025',
+      'status': 'Confirmed',
+      'sNo': '03',
+      'quality': 'Silk',
+      'weave': 'Satin',
+      'quantity': '300 pcs',
+      'composition': '100% Silk',
+      'rate': 'Rs. 70,000'
+    },
+    {
+      'agent': 'Agent Sammy',
+      'customer': 'Bob',
+      'date': 'Feb 10, 2025',
+      'status': 'Pending',
+      'sNo': '04',
+      'quality': 'Linen',
+      'weave': 'Twill',
+      'quantity': '600 pcs',
+      'composition': '80% Cotton, 20% Linen',
+      'rate': 'Rs. 60,000'
+    },
   ];
+
+  void toggleShowFilters() {
+    setState(() {
+      showFilters = !showFilters;
+    });
+  }
+
+  void loadMore() {
+    setState(() {
+      if (currentIndex + 2 < inquiries.length) {
+        currentIndex += 2;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,46 +155,66 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
+          spacing: 10, // Flutter 3.29+ feature
           children: [
-            _buildSearchBar(),
-            const SizedBox(height: 10),
-            _buildFilters(),
-            const SizedBox(height: 10),
+            _buildSearchRow(),
+            if (showFilters) _buildFilters(),
             Expanded(child: _buildInquiryList()),
-            // _buildNextButton(),
+            if (currentIndex + 2 < inquiries.length) _buildNextButton(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSearchBar() {
-    return CustomSearchBar();
+  Widget _buildSearchRow() {
+    return Row(
+      spacing: 10,
+      children: [
+        Expanded(child: CustomSearchBar()),
+        GestureDetector(
+          onTap: toggleShowFilters,
+          child: Container(
+            width: 50,
+            height: 42,
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(width: 1, color: AppColors.greyB2BACD)),
+            child: CustomImage(
+              imagePath: ImageConstants.filterIcon,
+              height: 25,
+              width: 25,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildFilters() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10.0),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.start,
+        spacing: 10,
         children: [
-          DropdownButton<String>(
-            dropdownColor: Colors.white,
+          CustomDropDown(
             value: selectedAgent,
-            items: agents.map((agent) {
-              return DropdownMenuItem(value: agent, child: Text(agent));
-            }).toList(),
+            items: agents,
             onChanged: (value) => setState(() => selectedAgent = value!),
           ),
-          DropdownButton<String>(
-            dropdownColor: Colors.white,
+          CustomDropDown(
             value: selectedDateRange,
-            items: dateRanges.map((range) {
-              return DropdownMenuItem(value: range, child: Text(range));
-            }).toList(),
+            items: dateRanges,
             onChanged: (value) => setState(() => selectedDateRange = value!),
+          ),
+          CustomDropDown(
+            value: selectedQuality,
+            items: qualities,
+            onChanged: (value) => setState(() => selectedQuality = value!),
           ),
         ],
       ),
@@ -122,7 +223,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
 
   Widget _buildInquiryList() {
     return ListView.builder(
-      itemCount: inquiries.length,
+      itemCount: currentIndex + 2 <= inquiries.length
+          ? currentIndex + 2
+          : inquiries.length,
       itemBuilder: (context, index) {
         final inquiry = inquiries[index];
         return _buildInquiryCard(inquiry);
@@ -139,6 +242,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 10, // Flutter 3.29+ feature
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -160,6 +264,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
                   ],
                 ),
                 Column(
+                  spacing: 5, // Flutter 3.29+ feature
                   children: [
                     Text(inquiry['date']),
                     Text(inquiry['status'],
@@ -184,6 +289,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
   Widget _buildInquiryDetails(Map<String, dynamic> inquiry) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 5, // Flutter 3.29+ feature
       children: [
         _buildDetailRow('S.No.', inquiry['sNo']),
         _buildDetailRow('Quality', inquiry['quality']),
@@ -196,27 +302,24 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
   }
 
   Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-          ),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
     );
   }
 
-  // Widget _buildNextButton() {
-  //   return ElevatedButton(
-  //     onPressed: () {},
-  //     child: const Text('Next'),
-  //   );
-  // }
+  Widget _buildNextButton() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: CustomButton(
+        width: Utils().width(context) * 0.35,
+        onPressed: loadMore,
+        text: "Next",
+        fontSize: 16,
+      ),
+    );
+  }
 }

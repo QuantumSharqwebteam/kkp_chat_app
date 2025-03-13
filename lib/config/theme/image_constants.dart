@@ -13,4 +13,5 @@ class ImageConstants {
   static const String hoodiies = "$iconBase/hoodiies.png";
   static const String jacket = "$iconBase/jacket.png";
   static const String deleteProduct = "$iconBase/deleteProduct.png";
+  static const String filterIcon = "$iconBase/filter.png";
 }
