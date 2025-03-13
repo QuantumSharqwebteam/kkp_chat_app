@@ -49,12 +49,25 @@ class _AdminHomeState extends State<AdminHome> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: AppColors.background,
-        title: const Text("Admin Dashboard"),
+        title: const Text(
+          "Admin Dashboard",
+          style: AppTextStyles.black18_600,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_active_outlined),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(
+                  context, MarketingRoutes.marketingNotifications);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () {
+              Navigator.pushNamed(context, MarketingRoutes.marketingSettings);
+            },
           ),
         ],
       ),

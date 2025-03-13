@@ -127,7 +127,13 @@ class MarketingProductDescrptionPage extends StatelessWidget {
                           CustomButton(
                             text: 'Remove',
                             onPressed: () {
-                              Utils().showRemoveProductDialog(context, () {});
+                              Utils().showRemoveProductDialog(
+                                context,
+                                "Remove Product",
+                                "Are you sure you want to remove this product?",
+                                "remove",
+                                () {},
+                              );
                             },
                             image: Icon(
                               Icons.delete_rounded,

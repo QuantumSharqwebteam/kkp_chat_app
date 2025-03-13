@@ -24,7 +24,14 @@ class Utils {
     );
   }
 
-  void showRemoveProductDialog(BuildContext context, VoidCallback onRemove) {
+  void showRemoveProductDialog(
+    BuildContext context,
+    String title,
+    String description,
+    String actionButtonText,
+    VoidCallback onRemove, {
+    IconData? icon,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -45,17 +52,19 @@ class Utils {
                   color: Colors.red.shade100,
                   shape: BoxShape.circle,
                 ),
-                child: Image.asset(
-                  ImageConstants.deleteProduct,
-                  height: 30,
-                  width: 30,
-                ),
+                child: icon != null
+                    ? Icon(icon, size: 30, color: AppColors.inActiveRed)
+                    : Image.asset(
+                        ImageConstants.deleteProduct,
+                        height: 30,
+                        width: 30,
+                      ),
               ),
               SizedBox(height: 16),
 
               // Title
               Text(
-                "Remove Product",
+                title,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -65,7 +74,7 @@ class Utils {
 
               // Message
               Text(
-                "Are you sure you want to remove this product?",
+                description,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: Colors.black54),
               ),
@@ -81,7 +90,7 @@ class Utils {
                         borderColor: AppColors.inActiveRed,
                         fontSize: 16,
                         backgroundColor: AppColors.inActiveRed,
-                        text: "Remove"),
+                        text: actionButtonText),
                   ),
                   SizedBox(width: 10),
                   Expanded(

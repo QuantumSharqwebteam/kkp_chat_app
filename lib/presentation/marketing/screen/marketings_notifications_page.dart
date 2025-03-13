@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
 
 class NotificationsScreen extends StatelessWidget {
   final List<Map<String, dynamic>> notifications = [
@@ -48,11 +48,15 @@ class NotificationsScreen extends StatelessWidget {
           TextButton(
             onPressed: () {},
             child: Text(
-              "Mark as read",
+              "Mark all read",
               style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.blue,
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.blue,
+                decorationThickness: 3,
+              ),
             ),
           ),
         ],
@@ -60,7 +64,7 @@ class NotificationsScreen extends StatelessWidget {
       body: Column(
         children: [
           Expanded(child: _buildNotificationList()),
-          _buildFooter(),
+          // _buildFooter(),
         ],
       ),
     );
@@ -116,23 +120,23 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(
-          style: AppTextStyles.black10_600
-              .copyWith(color: Color(0xff121927), fontWeight: FontWeight.w500),
-          children: [
-            const TextSpan(text: "By using KKP chat application, you agree\n"),
-            TextSpan(
-                text: "to the Terms and Privacy Policy",
-                style: AppTextStyles.black10_600
-                    .copyWith(fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildFooter() {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 20),
+  //     child: RichText(
+  //       textAlign: TextAlign.center,
+  //       text: TextSpan(
+  //         style: AppTextStyles.black10_600
+  //             .copyWith(color: Color(0xff121927), fontWeight: FontWeight.w500),
+  //         children: [
+  //           const TextSpan(text: "By using KKP chat application, you agree\n"),
+  //           TextSpan(
+  //               text: "to the Terms and Privacy Policy",
+  //               style: AppTextStyles.black10_600
+  //                   .copyWith(fontWeight: FontWeight.bold)),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }
