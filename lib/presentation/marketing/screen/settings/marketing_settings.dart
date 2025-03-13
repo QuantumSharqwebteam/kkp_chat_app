@@ -137,6 +137,12 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               ],
               title: 'More info and support',
               titles: ['Help', 'About'],
+              onTaps: [
+                () {},
+                () {
+                  Navigator.pushNamed(context, CustomerRoutes.aboutSettingPage);
+                }
+              ],
             ),
             TextButton.icon(
               onPressed: () {

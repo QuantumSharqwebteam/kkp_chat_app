@@ -43,13 +43,12 @@ class _ManageCustomersState extends State<ManageCustomers> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         centerTitle: false,
         backgroundColor: Colors.white,
         title: Text(
           "View and manage customers ",
-          style: AppTextStyles.black18_600,
+          style: AppTextStyles.black16_500,
         ),
         actions: [
           CircleAvatar(
@@ -78,41 +77,47 @@ class _ManageCustomersState extends State<ManageCustomers> {
               separatorBuilder: (context, index) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final customer = customers[index];
-                return ListTile(
-                  tileColor: Colors.white,
-                  leading: ProfileAvatar(
-                      image: customer["image"], isActive: customer["isActive"]),
-                  title: Text(
-                    customer['name'],
-                    style: AppTextStyles.black14_600,
-                  ),
-                  subtitle: Text(
-                    customer['role'],
-                    style: AppTextStyles.grey12_600,
-                  ),
-                  trailing: PopupMenuButton<int>(
-                    color: Colors.white,
-                    surfaceTintColor: Colors.white,
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (value) {
-                      if (value == 1) {
-                        Utils().showSuccessDialog(context, "Block");
-                      } else if (value == 2) {}
-                    },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 1,
-                        child: Text('Block Chat'),
-                      ),
-                      const PopupMenuItem(
-                        value: 2,
-                        child: Text('Remove Chat'),
-                      ),
-                      const PopupMenuItem(
-                        value: 3,
-                        child: Text('More details'),
-                      ),
-                    ],
+                return Card(
+                  color: Colors.white,
+                  surfaceTintColor: Colors.white,
+                  elevation: 5,
+                  child: ListTile(
+                    tileColor: Colors.white,
+                    leading: ProfileAvatar(
+                        image: customer["image"],
+                        isActive: customer["isActive"]),
+                    title: Text(
+                      customer['name'],
+                      style: AppTextStyles.black14_600,
+                    ),
+                    subtitle: Text(
+                      customer['role'],
+                      style: AppTextStyles.grey12_600,
+                    ),
+                    trailing: PopupMenuButton<int>(
+                      color: Colors.white,
+                      surfaceTintColor: Colors.white,
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (value) {
+                        if (value == 1) {
+                          Utils().showSuccessDialog(context, "Block");
+                        } else if (value == 2) {}
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 1,
+                          child: Text('Block Chat'),
+                        ),
+                        const PopupMenuItem(
+                          value: 2,
+                          child: Text('Remove Chat'),
+                        ),
+                        const PopupMenuItem(
+                          value: 3,
+                          child: Text('More details'),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
