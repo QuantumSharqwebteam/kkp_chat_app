@@ -10,8 +10,11 @@ import 'package:kkp_chat_app/presentation/customer/screen/customer_host.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_notification_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_setup_page.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/settings/about_settings_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/archive_settings_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/change_password.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/settings/notification_settings.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/settings/order_enquiries.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/password_and_security.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/save_login_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
@@ -35,6 +38,9 @@ class CustomerRoutes {
   static const String changePassword = "changePassword";
   static const String saveLogin = "saveLogin";
   static const String archiveSettings = "archiveSettings";
+  static const String notificationSettings = "notificationSettings";
+  static const String orderEnquiries = "orderEnquiries";
+  static const String aboutSettingPage = "aboutSettingPage";
 
   static List<String> allRoutes = [
     customerHome,
@@ -53,6 +59,9 @@ class CustomerRoutes {
     changePassword,
     saveLogin,
     archiveSettings,
+    notificationSettings,
+    orderEnquiries,
+    aboutSettingPage,
   ];
 }
 
@@ -101,14 +110,24 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
     case CustomerRoutes.archiveSettings:
       return MaterialPageRoute(builder: (_) => ArchiveSettingsPage());
 
+    case CustomerRoutes.notificationSettings:
+      return MaterialPageRoute(builder: (_) => NotificationSettings());
+
+    case CustomerRoutes.orderEnquiries:
+      return MaterialPageRoute(builder: (_) => OrderEnquiries());
+
+    case CustomerRoutes.aboutSettingPage:
+      return MaterialPageRoute(builder: (_) => AboutSettingsPage());
+
     case CustomerRoutes.customerSupportChat:
       return MaterialPageRoute(
-          builder: (_) => ChatScreen(
-                agentImage: 'assets/images/user4.png',
-                agentName: 'Product Enquirers',
-                customerImage: 'assets/images/profile.png',
-                customerName: 'John',
-              ));
+        builder: (_) => ChatScreen(
+          agentImage: 'assets/images/user4.png',
+          agentName: 'Product Enquirers',
+          customerImage: 'assets/images/profile.png',
+          customerName: 'John',
+        ),
+      );
 
     default:
       return MaterialPageRoute(builder: (_) => CustomerHomePage());

@@ -10,6 +10,14 @@ class SettingsTile extends StatelessWidget {
   final List<VoidCallback?>? onTaps;
   final bool isDense;
 
+  // New styling parameters
+  final TextStyle? titleStyle;
+  final TextStyle? tileTitleStyle;
+  final TextStyle? tileSubtitleStyle;
+  final TextStyle? descriptionStyle;
+  final Color? iconColor;
+  final Color? trailingIconColor;
+
   const SettingsTile({
     super.key,
     this.title = '',
@@ -20,6 +28,12 @@ class SettingsTile extends StatelessWidget {
     this.description,
     this.onTaps,
     this.isDense = false,
+    this.titleStyle,
+    this.tileTitleStyle,
+    this.tileSubtitleStyle,
+    this.descriptionStyle,
+    this.iconColor,
+    this.trailingIconColor,
   });
 
   @override
@@ -32,10 +46,11 @@ class SettingsTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               title!,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black),
+              style: titleStyle ??
+                  TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black),
             ),
           ),
         Column(
@@ -48,16 +63,17 @@ class SettingsTile extends StatelessWidget {
                   ? Icon(
                       leadingIcons![index],
                       size: 30,
-                      color: Colors.black,
+                      color: iconColor ?? Colors.black,
                     )
                   : null,
               title: titles != null && index < titles!.length
                   ? Text(
                       titles![index],
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black),
+                      style: tileTitleStyle ??
+                          TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black),
                     )
                   : null,
               subtitle: subtitles != null &&
@@ -65,16 +81,17 @@ class SettingsTile extends StatelessWidget {
                       subtitles![index] != null
                   ? Text(
                       subtitles![index]!,
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: Colors.black),
+                      style: tileSubtitleStyle ??
+                          TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.black),
                     )
                   : null,
               trailing: Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 20,
-                color: Colors.black,
+                color: trailingIconColor ?? Colors.black,
               ),
             );
           }).toList(),
@@ -84,10 +101,11 @@ class SettingsTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               description!,
-              style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black),
+              style: descriptionStyle ??
+                  TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black),
             ),
           ),
       ],
