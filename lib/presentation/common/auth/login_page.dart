@@ -210,6 +210,18 @@ class _LoginPageState extends State<LoginPage> {
                     }
                   },
                 ),
+                SizedBox(height: 20),
+                CustomButton(
+                  text: 'Admin',
+                  onPressed: () {
+                    // if (_email.text.trim().isNotEmpty ||
+                    //     _pass.text.trim().isNotEmpty) {
+                    //   _login(context, _email.text, _pass.text);
+                    // }
+                    Navigator.pushNamed(
+                        context, MarketingRoutes.marketingHostScreen);
+                  },
+                ),
               ],
             ),
           ),
