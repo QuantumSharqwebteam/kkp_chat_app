@@ -42,7 +42,7 @@ class _SaveLoginPageState extends State<SaveLoginPage> {
                 trailing: Switch(
                   thumbColor: WidgetStatePropertyAll(Colors.black),
                   trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
-                  activeTrackColor: AppColors.greyD9D9D9,
+                  activeTrackColor: AppColors.blue,
                   inactiveTrackColor: AppColors.greyD9D9D9,
                   value: isSavedLoginEnabled,
                   onChanged: (newValue) {

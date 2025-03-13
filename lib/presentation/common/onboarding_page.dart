@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
 class OnboardingPage extends StatelessWidget {
@@ -60,7 +61,7 @@ class OnboardingPage extends StatelessWidget {
                 CustomButton(
                   text: 'Get Started',
                   onPressed: () {
-                    Navigator.pushNamed(context, MarketingRoutes.signUp);
+                    Navigator.pushNamed(context, MarketingRoutes.login);
                   },
                   borderRadius: 10,
                   backgroundColor: AppColors.blue,
@@ -96,13 +97,18 @@ class OnboardingPage extends StatelessWidget {
                         ),
                         WidgetSpan(
                           child: InkWell(
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => PrivacyPage()));
+                            },
                             child: Text(
                               'Privacy Policy',
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.blue),
                             ),
                           ),
                         ),

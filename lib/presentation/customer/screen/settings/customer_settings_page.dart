@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
+import 'package:kkp_chat_app/presentation/common/splash.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
 
@@ -67,7 +69,10 @@ class CustomerSettingsPage extends StatelessWidget {
                 () {
                   Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
                 },
-                () {}
+                () {
+                  Navigator.pushNamed(
+                      context, CustomerRoutes.notificationSettings);
+                }
               ],
             ),
             SizedBox(height: 10),
@@ -80,6 +85,11 @@ class CustomerSettingsPage extends StatelessWidget {
               numberOfTiles: 1,
               leadingIcons: [Icons.shopping_cart_outlined],
               titles: ['Order Enquirer'],
+              onTaps: [
+                () {
+                  Navigator.pushNamed(context, CustomerRoutes.orderEnquiries);
+                }
+              ],
             ),
             SizedBox(height: 10),
             Divider(
@@ -94,7 +104,36 @@ class CustomerSettingsPage extends StatelessWidget {
               ],
               title: 'More info and support',
               titles: ['Help', 'About'],
+              onTaps: [
+                () {},
+                () {
+                  Navigator.pushNamed(context, CustomerRoutes.aboutSettingPage);
+                }
+              ],
             ),
+            Divider(
+              color: Colors.black,
+              thickness: 1,
+            ),
+            SettingsTile(
+              onTaps: [
+                () {
+                  Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => LoginPage()),
+                      (route) => false);
+                }
+              ],
+              numberOfTiles: 1,
+              leadingIcons: [
+                Icons.logout_rounded,
+              ],
+              titles: ['Log out'],
+              tileTitleStyle: TextStyle(
+                  color: AppColors.redF11515, fontWeight: FontWeight.w600),
+              iconColor: AppColors.redF11515,
+            ),
+            SizedBox(height: 20),
           ],
         ),
       ),

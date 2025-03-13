@@ -1,14 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preferences.dart';
+import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
+import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
-class LoginPage extends StatelessWidget {
-  LoginPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  AuthApi auth = AuthApi();
   final _email = TextEditingController();
   final _pass = TextEditingController();
+  String emailError = '';
+  String passError = '';
+
+  Future<void> _login(context, String email, String pass) async {
+    try {
+      await auth.login(email, pass).then((value) {
+        if (value['message'] == 'User logged in successfully') {
+          Sharedpreferences.saveToken(value['token']);
+          Sharedpreferences.saveUserType(value['role'].toString());
+          if (value['role'].toString() == "0") {
+            //customer
+            Navigator.pushNamed(context, CustomerRoutes.customerHost);
+          } else if (value['role'].toString() == "1") {
+            //admin
+            Navigator.pushNamed(context, MarketingRoutes.marketingHostScreen);
+          } else if (value['role'].toString() == "2") {
+            //agent
+            Navigator.pushNamed(context, MarketingRoutes.marketingHostScreen);
+          } else if (value['role'].toString() == "3") {
+            //agent head
+            Navigator.pushNamed(context, MarketingRoutes.marketingHostScreen);
+          } else {
+            // Invalid user type
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(value['message']),
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("wjhdfjbs $e"),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,7 +75,8 @@ class LoginPage extends StatelessWidget {
               WidgetSpan(
                 child: InkWell(
                   onTap: () {
-                    Navigator.pushNamed(context, MarketingRoutes.signUp);
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (_) => SignupPage()));
                   },
                   child: Text(
                     'Signup',
@@ -98,6 +152,7 @@ class LoginPage extends StatelessWidget {
                     ),
                     SizedBox(height: 5),
                     CustomTextField(
+                      errorText: emailError.trim().isEmpty ? null : emailError,
                       controller: _email,
                       maxLines: 1,
                       keyboardType: TextInputType.emailAddress,
@@ -120,6 +175,7 @@ class LoginPage extends StatelessWidget {
                     ),
                     SizedBox(height: 5),
                     CustomTextField(
+                      errorText: passError.trim().isEmpty ? null : passError,
                       controller: _pass,
                       maxLines: 1,
                       isPassword: true,
@@ -133,7 +189,8 @@ class LoginPage extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: InkWell(
                     onTap: () {
-                      Navigator.pushNamed(context, MarketingRoutes.forgot);
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => ForgotPassPage()));
                     },
                     child: Text(
                       'Forgot Password?',
@@ -147,7 +204,22 @@ class LoginPage extends StatelessWidget {
                 CustomButton(
                   text: 'Login',
                   onPressed: () {
-                    Navigator.pushNamed(context, MarketingRoutes.home);
+                    if (_email.text.trim().isNotEmpty ||
+                        _pass.text.trim().isNotEmpty) {
+                      _login(context, _email.text, _pass.text);
+                    }
+                  },
+                ),
+                SizedBox(height: 20),
+                CustomButton(
+                  text: 'Admin',
+                  onPressed: () {
+                    // if (_email.text.trim().isNotEmpty ||
+                    //     _pass.text.trim().isNotEmpty) {
+                    //   _login(context, _email.text, _pass.text);
+                    // }
+                    Navigator.pushNamed(
+                        context, MarketingRoutes.marketingHostScreen);
                   },
                 ),
               ],

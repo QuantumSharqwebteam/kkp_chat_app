@@ -1,17 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preferences.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
-class SignupPage extends StatelessWidget {
-  SignupPage({super.key});
+class SignupPage extends StatefulWidget {
+  const SignupPage({super.key});
 
+  @override
+  State<SignupPage> createState() => _SignupPageState();
+}
+
+class _SignupPageState extends State<SignupPage> {
+  AuthApi auth = AuthApi();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _repass = TextEditingController();
+
+  // Future<void> _signup(context, String email, String pass) async {
+  //   try {
+  //     await auth.signup(email, pass).then((value) {
+  //       if (value['message'] == 'User logged in successfully') {
+  //         Sharedpreferences.saveToken(value['token']);
+  //         Sharedpreferences.saveUserType(value['role'].toString());
+  //       } else {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text(value['message']),
+  //           ),
+  //         );
+  //       }
+  //     });
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(
+  //         content: Text(" $e"),
+  //       ),
+  //     );
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

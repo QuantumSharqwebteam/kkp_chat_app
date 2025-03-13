@@ -81,6 +81,17 @@ class SettingsPage extends StatelessWidget {
               title: 'More info and support',
               titles: ['Help', 'About'],
             ),
+            Divider(
+              color: Colors.black,
+              thickness: 1,
+            ),
+            SettingsTile(
+              numberOfTiles: 1,
+              leadingIcons: [
+                Icons.logout_rounded,
+              ],
+              titles: ['Logout'],
+            ),
           ],
         ),
       ),
