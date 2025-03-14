@@ -48,7 +48,7 @@ class OnboardingPage extends StatelessWidget {
                 Text(
                   '“Instant Inquiries,\n Seamless Sales.”',
                   style: TextStyle(
-                    fontSize: 36,
+                    fontSize: 26,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
