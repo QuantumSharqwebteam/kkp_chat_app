@@ -3,10 +3,14 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/colored_circles.dart';
 
+import '../../../data/models/product_model.dart';
+
 class ProductItem extends StatelessWidget {
   const ProductItem({super.key, required this.product, required this.onTap});
-  final Map<String, String> product;
+
+  final Product product;
   final void Function() onTap;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -24,22 +28,27 @@ class ProductItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(15),
           ),
           child: Padding(
-            padding: EdgeInsetsDirectional.only(top: 5, end: 5, start: 5),
+            padding: const EdgeInsetsDirectional.only(top: 5, end: 5, start: 5),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                      15), // Set the desired border radius
-                  child: Image.asset(
-                    product['imageUrl']!,
-                    height: 120,
-                    fit: BoxFit.contain,
+                Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(15),
+                    child: Image.network(
+                      product.imageUrl, // Fetching from API
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(Icons.broken_image, size: 120);
+                      },
+                    ),
                   ),
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    product['title']!,
+                    product.productName,
                     style: AppTextStyles.black16_500,
                   ),
                 ),
@@ -53,22 +62,17 @@ class ProductItem extends StatelessWidget {
                         style: AppTextStyles.black10_500
                             .copyWith(color: Colors.grey.shade500),
                       ),
-                      ColoredCircles(colors: [
-                        Colors.red,
-                        Colors.yellow,
-                        Colors.blue,
-                        Colors.white,
-                        Colors.green,
-                        Colors.red,
-                        Colors.yellow,
-                        Colors.blue,
-                        Colors.white,
-                        Colors.green,
-                      ], size: 15),
+                      ColoredCircles(
+                        colors: product.colors.map((color) {
+                          return Color(int.parse(color.colorCode.replaceAll(
+                              "#", "0xff"))); // Convert hex to Color
+                        }).toList(),
+                        size: 15,
+                      ),
                     ],
                   ),
                 ),
-                Spacer(),
+                const Spacer(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -80,7 +84,7 @@ class ProductItem extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: product['inStock'] == 'true'
+                              color: product.stock > 0
                                   ? AppColors.activeGreen
                                   : AppColors.inActiveRed,
                               width: 2.0,
@@ -92,7 +96,7 @@ class ProductItem extends StatelessWidget {
                               height: 5,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: product['inStock'] == 'true'
+                                color: product.stock > 0
                                     ? AppColors.activeGreen
                                     : AppColors.inActiveRed,
                               ),
@@ -100,27 +104,26 @@ class ProductItem extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          product['inStock'] == 'true'
-                              ? " In Stock"
-                              : " Out of Stock",
+                          product.stock > 0 ? " In Stock" : " Out of Stock",
                           style: AppTextStyles.black8_500.copyWith(
-                              fontSize: 8,
-                              color: product['inStock'] == 'true'
-                                  ? AppColors.activeGreen
-                                  : AppColors.errorRed),
+                            fontSize: 8,
+                            color: product.stock > 0
+                                ? AppColors.activeGreen
+                                : AppColors.errorRed,
+                          ),
                         ),
                       ],
                     ),
-                    product['inStock'] == 'true'
+                    product.stock > 0
                         ? Text(
-                            '(100 units available)',
+                            '(${product.stock} units available)',
                             style: AppTextStyles.black8_500
                                 .copyWith(color: Colors.grey.shade600),
                           )
-                        : SizedBox.shrink(),
+                        : const SizedBox.shrink(),
                   ],
                 ),
-                Spacer(),
+                const Spacer(),
               ],
             ),
           ),

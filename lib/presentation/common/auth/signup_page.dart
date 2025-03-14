@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preferences.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
@@ -16,33 +16,46 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   AuthApi auth = AuthApi();
+  final AuthRepository _authRepository = AuthRepository();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _repass = TextEditingController();
+  bool _isLoading = false;
 
-  // Future<void> _signup(context, String email, String pass) async {
-  //   try {
-  //     await auth.signup(email, pass).then((value) {
-  //       if (value['message'] == 'User logged in successfully') {
-  //         Sharedpreferences.saveToken(value['token']);
-  //         Sharedpreferences.saveUserType(value['role'].toString());
-  //       } else {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(
-  //             content: Text(value['message']),
-  //           ),
-  //         );
-  //       }
-  //     });
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(" $e"),
-  //       ),
-  //     );
-  //   }
-  // }
+  void _signup() async {
+    if (_pass.text != _repass.text) {
+      Utils().showSuccessDialog(context, "Passwords do not match!");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await _authRepository.signup(
+        _email.text,
+        _pass.text,
+      );
+
+      if (response['success'] == true) {
+        Utils().showSuccessDialog(context, "Signup successful! Please login.");
+        Future.delayed(Duration(seconds: 2), () {
+          Navigator.pushNamed(context, MarketingRoutes.login);
+        });
+      } else {
+        Utils()
+            .showSuccessDialog(context, response['message'] ?? "Signup failed");
+      }
+    } catch (e) {
+      Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -213,12 +226,12 @@ class _SignupPageState extends State<SignupPage> {
                   ],
                 ),
                 SizedBox(height: 40),
-                CustomButton(
-                  text: 'Create Account',
-                  onPressed: () {
-                    Navigator.pushNamed(context, MarketingRoutes.login);
-                  },
-                ),
+                _isLoading
+                    ? CircularProgressIndicator()
+                    : CustomButton(
+                        text: 'Create Account',
+                        onPressed: _signup,
+                      ),
               ],
             ),
           ),

@@ -19,6 +19,8 @@ import 'package:kkp_chat_app/presentation/customer/screen/settings/password_and_
 import 'package:kkp_chat_app/presentation/customer/screen/settings/save_login_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
 
+import '../../data/models/product_model.dart';
+
 class CustomerRoutes {
   static const String customerHome = '/customerHome';
   static const String onBoarding = '/onBoarding';
@@ -92,8 +94,17 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => CustomerNotificationPage());
 
     case CustomerRoutes.customerProductDescriptionPage:
+      final product = settings.arguments as Product?;
+      if (product == null) {
+        return MaterialPageRoute(
+          builder: (_) => const Scaffold(
+            body: Center(child: Text("Error: No product data provided")),
+          ),
+        );
+      }
       return MaterialPageRoute(
-          builder: (_) => CustomerProductDescriptionPage());
+        builder: (_) => CustomerProductDescriptionPage(product: product),
+      );
 
     case CustomerRoutes.customerProfileSetup:
       return MaterialPageRoute(builder: (_) => CustomerProfileSetupPage());

@@ -3,58 +3,51 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/data/models/product_model.dart';
+import 'package:kkp_chat_app/data/repositories/product_repository.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkp_chat_app/presentation/customer/widget/custom_app_bar.dart';
+
 import 'package:kkp_chat_app/presentation/customer/widget/product_item.dart';
 
-class CustomerHomePage extends StatelessWidget {
-  CustomerHomePage({super.key});
+class CustomerHomePage extends StatefulWidget {
+  const CustomerHomePage({super.key});
 
-  final List<String> imageUrls = [
-    "assets/images/carousel_image1.png",
-    "assets/images/carousel_image1.png",
-    "assets/images/carousel_image1.png",
-  ];
+  @override
+  State<CustomerHomePage> createState() => _CustomerHomePageState();
+}
 
-  final List<Map<String, String>> products = [
-    {
-      'imageUrl': 'assets/images/product1.png',
-      'title': 'Denim Jacket',
-      'inStock': 'true'
-    },
-    {
-      'imageUrl': 'assets/images/product1.png',
-      'title': 'T-Shirt',
-      'inStock': 'false'
-    },
-    {
-      'imageUrl': 'assets/images/product1.png',
-      'title': 'Sneakers',
-      'inStock': 'true'
-    },
-    // Add more products as needed
-  ];
+class _CustomerHomePageState extends State<CustomerHomePage> {
+  final ProductRepository _productRepository = ProductRepository();
+  late Future<List<Product>> _productsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _productsFuture = _productRepository.getProducts();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: Size(double.infinity, 100),
-        child: SafeArea(
-          child: CustomAppBar(),
-        ),
+        preferredSize: const Size(double.infinity, 100),
+        child: SafeArea(child: CustomAppBar()),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             children: [
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               _carousel(),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Container(
-                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                 decoration: BoxDecoration(
                   color: Colors.black.withAlpha(15),
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
@@ -66,63 +59,106 @@ class CustomerHomePage extends StatelessWidget {
                       Navigator.pushNamed(
                           context, CustomerRoutes.customerSupportChat);
                     }),
-                    SizedBox(height: 20),
-                    Text(
-                      'New Products',
-                      style: AppTextStyles.black18_600,
-                    ),
-                    // ProductItem(product: products[0]),
-                    SizedBox(
-                      height: 200, // Set a fixed height for the scrollable list
-                      child: ListView.builder(
-                        padding: EdgeInsets.only(bottom: 5),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: products.length,
-                        itemBuilder: (context, index) {
-                          final product = products[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 16.0),
-                            child: ProductItem(
-                              product: product,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                    context,
-                                    CustomerRoutes
-                                        .customerProductDescriptionPage);
+                    const SizedBox(height: 20),
+
+                    //new products list
+                    Text('New Products', style: AppTextStyles.black18_600),
+
+                    FutureBuilder<List<Product>>(
+                      future: _productsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return ShimmerGrid();
+                        } else if (snapshot.hasError) {
+                          return Center(
+                              child: Text("Error: ${snapshot.error}"));
+                        } else if (!snapshot.hasData ||
+                            snapshot.data!.isEmpty) {
+                          return const Center(
+                              child: Text("No products available"));
+                        }
+
+                        final products = snapshot.data!;
+                        final newProducts = products.length >= 2
+                            ? products.sublist(0, 2)
+                            : products;
+                        final previousProducts = products.length >= 2
+                            ? products.sublist(
+                                products.length - 2, products.length)
+                            : products;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GridView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 15),
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                childAspectRatio: 0.8,
+                              ),
+                              itemCount: newProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = newProducts[index];
+                                return ProductItem(
+                                  product: product,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CustomerProductDescriptionPage(
+                                                product: product),
+                                      ),
+                                    );
+                                  },
+                                );
                               },
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Previous Products',
-                      style: AppTextStyles.black18_600,
-                    ),
-                    // ProductItem(product: products[0]),
-                    SizedBox(
-                      height: 200, // Set a fixed height for the scrollable list
-                      child: ListView.builder(
-                        padding: EdgeInsets.only(bottom: 5),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: products.length,
-                        itemBuilder: (context, index) {
-                          final product = products[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 16.0),
-                            child: ProductItem(
-                              product: product,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                    context,
-                                    CustomerRoutes
-                                        .customerProductDescriptionPage);
+                            const SizedBox(height: 20),
+                            //previous products lists
+                            Text('Previous Products',
+                                style: AppTextStyles.black18_600),
+
+                            GridView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 15),
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                childAspectRatio: 0.8,
+                              ),
+                              itemCount: previousProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = previousProducts[index];
+                                return ProductItem(
+                                  product: product,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CustomerProductDescriptionPage(
+                                                product: product),
+                                      ),
+                                    );
+                                  },
+                                );
                               },
                             ),
-                          );
-                        },
-                      ),
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -135,6 +171,12 @@ class CustomerHomePage extends StatelessWidget {
   }
 
   Widget _carousel() {
+    List<String> imageUrls = [
+      "assets/images/carousel_image1.png",
+      "assets/images/carousel_image1.png",
+      "assets/images/carousel_image1.png",
+    ];
+
     return CarouselSlider(
       options: CarouselOptions(
         autoPlay: true,
@@ -162,7 +204,7 @@ Widget _enquirySupport({VoidCallback? onTap}) {
     child: ListTile(
       onTap: onTap,
       leading: Stack(children: [
-        CircleAvatar(
+        const CircleAvatar(
           radius: 25,
           backgroundImage: AssetImage("assets/images/user4.png"),
         ),
@@ -184,19 +226,10 @@ Widget _enquirySupport({VoidCallback? onTap}) {
           ),
         ),
       ]),
-      title: Text(
-        'Product Enquirers',
-        style: AppTextStyles.black16_600,
-      ),
-      subtitle: Text(
-        'How may I Help you?',
-        overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.black12_400,
-      ),
-      trailing: Text(
-        '2m',
-        style: AppTextStyles.black12_700,
-      ),
+      title: Text('Product Enquirers', style: AppTextStyles.black16_600),
+      subtitle: Text('How may I Help you?',
+          overflow: TextOverflow.ellipsis, style: AppTextStyles.black12_400),
+      trailing: Text('2m', style: AppTextStyles.black12_700),
     ),
   );
 }

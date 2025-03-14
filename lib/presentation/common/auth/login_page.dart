@@ -23,8 +23,12 @@ class _LoginPageState extends State<LoginPage> {
   final _pass = TextEditingController();
   String emailError = '';
   String passError = '';
+  bool isLoading = false;
 
   Future<void> _login(context, String email, String pass) async {
+    setState(() {
+      isLoading = true;
+    });
     try {
       await auth.login(email, pass).then((value) {
         if (value['message'] == 'User logged in successfully') {
@@ -52,6 +56,9 @@ class _LoginPageState extends State<LoginPage> {
             ),
           );
         }
+        setState(() {
+          isLoading = false;
+        });
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -59,6 +66,10 @@ class _LoginPageState extends State<LoginPage> {
           content: Text("wjhdfjbs $e"),
         ),
       );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -201,15 +212,17 @@ class _LoginPageState extends State<LoginPage> {
                 ),
 
                 SizedBox(height: 40),
-                CustomButton(
-                  text: 'Login',
-                  onPressed: () {
-                    if (_email.text.trim().isNotEmpty ||
-                        _pass.text.trim().isNotEmpty) {
-                      _login(context, _email.text, _pass.text);
-                    }
-                  },
-                ),
+                isLoading
+                    ? const CircularProgressIndicator()
+                    : CustomButton(
+                        text: 'Login',
+                        onPressed: () {
+                          if (_email.text.trim().isNotEmpty ||
+                              _pass.text.trim().isNotEmpty) {
+                            _login(context, _email.text, _pass.text);
+                          }
+                        },
+                      ),
                 SizedBox(height: 20),
                 CustomButton(
                   text: 'Admin',

@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/product_model.dart';
+import 'package:kkp_chat_app/data/repositories/product_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/colored_circles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/edit_product_screen.dart';
 
 import '../../../config/theme/app_text_styles.dart';
 
-class MarketingProductDescrptionPage extends StatelessWidget {
-  const MarketingProductDescrptionPage({super.key});
+class MarketingProductDescrptionPage extends StatefulWidget {
+  final Product product;
+  const MarketingProductDescrptionPage({super.key, required this.product});
 
+  @override
+  State<MarketingProductDescrptionPage> createState() =>
+      _MarketingProductDescrptionPageState();
+}
+
+class _MarketingProductDescrptionPageState
+    extends State<MarketingProductDescrptionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,11 +46,14 @@ class MarketingProductDescrptionPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset(
-              'assets/images/description.png',
-              height: Utils().height(context) * 0.54,
+            Image.network(
+              widget.product.imageUrl,
+              height: Utils().height(context) * 0.6,
               width: Utils().width(context),
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.broken_image, size: 120);
+              },
             ),
             Padding(
               padding: const EdgeInsets.only(
@@ -49,7 +62,7 @@ class MarketingProductDescrptionPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Men\'s wear. Raymond T-shirts',
+                    widget.product.productName,
                     style: AppTextStyles.black22_600,
                   ),
                   const SizedBox(height: 10),
@@ -58,11 +71,11 @@ class MarketingProductDescrptionPage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Price:600",
+                        "Price : ₹${widget.product.price.toString()}",
                         style: AppTextStyles.black16_500,
                       ),
                       Text(
-                        "Sizes: S M L XL",
+                        "Sizes: ${widget.product.sizes.toString()}",
                         style: AppTextStyles.black16_500,
                       )
                     ],
@@ -77,18 +90,24 @@ class MarketingProductDescrptionPage extends StatelessWidget {
                             .copyWith(color: Colors.black, fontSize: 17),
                       ),
                       SizedBox(height: 5),
-                      ColoredCircles(colors: [
-                        Colors.red,
-                        Colors.yellow,
-                        Colors.blue,
-                        Colors.white,
-                        Colors.green,
-                      ], size: 35),
+                      ColoredCircles(
+                        colors: widget.product.colors.map((color) {
+                          return Color(int.parse(
+                              color.colorCode.replaceAll("#", "0xff")));
+                        }).toList(),
+                        size: 35,
+                      ),
                       SizedBox(height: 10),
+                      // Stock Info
                       Text(
-                        'Only 50 left in Stock',
-                        style: AppTextStyles.black10_500
-                            .copyWith(color: AppColors.inActiveRed),
+                        widget.product.stock > 0
+                            ? 'Only ${widget.product.stock} left in Stock'
+                            : 'Out of Stock',
+                        style: AppTextStyles.black12_400.copyWith(
+                          color: widget.product.stock > 0
+                              ? AppColors.activeGreen
+                              : AppColors.inActiveRed,
+                        ),
                       ),
                       SizedBox(height: 20),
                       Row(
@@ -132,7 +151,33 @@ class MarketingProductDescrptionPage extends StatelessWidget {
                                 "Remove Product",
                                 "Are you sure you want to remove this product?",
                                 "remove",
-                                () {},
+                                () async {
+                                  Navigator.pop(context); // Close the dialog
+
+                                  final ProductRepository productRepository =
+                                      ProductRepository();
+                                  bool success = await productRepository
+                                      .deleteProduct(widget.product.productId);
+
+                                  if (success) {
+                                    if (context.mounted) {
+                                      Utils().showSuccessDialog(context,
+                                          "Product deleted successfully");
+                                    }
+                                    if (context.mounted) {
+                                      Navigator.pop(context);
+                                    } // Navigate back to the previous page
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                "Failed to delete product")),
+                                      );
+                                    }
+                                  }
+                                },
                               );
                             },
                             image: Icon(

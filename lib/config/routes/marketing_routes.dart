@@ -18,6 +18,8 @@ import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_des
 import 'package:kkp_chat_app/presentation/marketing/screen/settings/marketing_settings.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketings_notifications_page.dart';
 
+import '../../data/models/product_model.dart';
+
 class MarketingRoutes {
   static const String home = '/home';
   static const String onBoarding = '/onBoarding';
@@ -105,8 +107,18 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (_) => AddProductScreen());
 
     case MarketingRoutes.marketingProductDescription:
+      final product = settings.arguments as Product?;
+      if (product == null) {
+        return MaterialPageRoute(
+          builder: (_) => const Scaffold(
+            body: Center(child: Text("Error: No product data provided")),
+          ),
+        );
+      }
       return MaterialPageRoute(
-          builder: (_) => MarketingProductDescrptionPage());
+          builder: (_) => MarketingProductDescrptionPage(
+                product: product,
+              ));
 
     //admin side
 

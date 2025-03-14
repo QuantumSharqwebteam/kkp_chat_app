@@ -24,7 +24,7 @@ class OnboardingPage extends StatelessWidget {
                   children: [
                     Image.asset(
                       'assets/icons/logo.png',
-                      height: 50,
+                      height: 45,
                     ),
                     GestureDetector(
                       onTap: () {
@@ -43,6 +43,7 @@ class OnboardingPage extends StatelessWidget {
                 Image.asset(
                   'assets/images/onBoarding.png',
                   width: Utils().width(context) * 0.8,
+                  height: 270,
                 ),
                 Text(
                   '“Instant Inquiries,\n Seamless Sales.”',
@@ -57,7 +58,7 @@ class OnboardingPage extends StatelessWidget {
                   style: TextStyle(fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: Utils().height(context) * 0.08),
+                SizedBox(height: Utils().height(context) * 0.04),
                 CustomButton(
                   text: 'Get Started',
                   onPressed: () {

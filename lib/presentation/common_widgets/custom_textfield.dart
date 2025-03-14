@@ -85,7 +85,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             controller: widget.controller,
             keyboardType: widget.keyboardType,
             obscureText: widget.isPassword ? _isObscured : false,
-            style: widget.textStyle ?? const TextStyle(fontSize: 16.0),
+            style: widget.textStyle ?? const TextStyle(fontSize: 14.0),
             readOnly: widget.readOnly,
             minLines: widget.minLines,
             maxLines: widget.maxLines,

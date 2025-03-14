@@ -2,14 +2,67 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
-class ChangePassword extends StatelessWidget {
-  ChangePassword({super.key});
+class ChangePassword extends StatefulWidget {
+  const ChangePassword({super.key});
+
+  @override
+  State<ChangePassword> createState() => _ChangePasswordState();
+}
+
+class _ChangePasswordState extends State<ChangePassword> {
+  final AuthRepository _authRepository = AuthRepository();
+
   final _currentPass = TextEditingController();
+
   final _newPass = TextEditingController();
+
   final _newRepass = TextEditingController();
+
+  bool _isLoading = false;
+
+  void _changePassword() async {
+    if (_newPass.text != _newRepass.text) {
+      Utils().showSuccessDialog(context, "New passwords do not match!");
+      return;
+    }
+
+    if (_currentPass.text == _newPass.text) {
+      Utils().showSuccessDialog(context, "New password must be different!");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await _authRepository.updatePassword(
+        _currentPass.text,
+        _newPass.text,
+      );
+
+      if (response['success'] == true) {
+        Utils().showSuccessDialog(context, "Password changed successfully!");
+        Future.delayed(Duration(seconds: 2), () {
+          Navigator.pop(context);
+        });
+      } else {
+        Utils().showSuccessDialog(
+            context, response['message'] ?? "Failed to update password");
+      }
+    } catch (e) {
+      Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,15 +109,17 @@ class ChangePassword extends StatelessWidget {
                 ),
               ),
               Spacer(),
-              CustomButton(
-                text: 'Change Password',
-                onPressed: () {},
-                borderRadius: 30,
-                height: 50,
-                borderColor: Colors.black,
-                fontSize: 16,
-                backgroundColor: AppColors.blue00ABE9,
-              ),
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : CustomButton(
+                      text: 'Change Password',
+                      onPressed: _changePassword,
+                      borderRadius: 30,
+                      height: 50,
+                      borderColor: Colors.black,
+                      fontSize: 16,
+                      backgroundColor: AppColors.blue00ABE9,
+                    ),
               SizedBox(height: 20),
             ],
           ),
