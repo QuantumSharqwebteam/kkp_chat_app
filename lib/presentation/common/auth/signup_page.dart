@@ -40,16 +40,25 @@ class _SignupPageState extends State<SignupPage> {
       );
 
       if (response['success'] == true) {
-        Utils().showSuccessDialog(context, "Signup successful! Please login.");
-        Future.delayed(Duration(seconds: 2), () {
-          Navigator.pushNamed(context, MarketingRoutes.login);
-        });
+        if (mounted) {
+          Utils()
+              .showSuccessDialog(context, "Signup successful! Please login.");
+        }
+        // Future.delayed(Duration(seconds: 2), () {
+        //   if (mounted) {
+        //     Navigator.pushNamed(context, MarketingRoutes.login);
+        //   }
+        // });
       } else {
-        Utils()
-            .showSuccessDialog(context, response['message'] ?? "Signup failed");
+        if (mounted) {
+          Utils().showSuccessDialog(
+              context, response['message'] ?? "Signup failed");
+        }
       }
     } catch (e) {
-      Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+      if (mounted) {
+        Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+      }
     } finally {
       setState(() {
         _isLoading = false;
