@@ -14,7 +14,8 @@ class AuthRepository {
   }
 
   Future<Map<String, dynamic>> updatePassword(
-      String currentPassword, String newPassword) {
-    return _authApi.updatePassword(currentPassword, newPassword);
+      String currentPassword, String newPassword, String email) {
+    return _authApi.updatePasswordFromSettings(
+        currentPassword, newPassword, email);
   }
 }

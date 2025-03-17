@@ -1,14 +1,14 @@
 class Address {
-  final String houseNo;
-  final String streetName;
-  final String city;
-  final String pincode;
+  final String? houseNo;
+  final String? streetName;
+  final String? city;
+  final String? pincode;
 
   Address({
-    required this.houseNo,
-    required this.streetName,
-    required this.city,
-    required this.pincode,
+    this.houseNo,
+    this.streetName,
+    this.city,
+    this.pincode,
   });
 
   // Named constructor to create an Address instance from a JSON map

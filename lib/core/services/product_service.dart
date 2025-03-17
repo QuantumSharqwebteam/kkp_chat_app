@@ -6,9 +6,13 @@ class ProductService {
   final String _baseUrl =
       "https://ps4smsnf44.execute-api.us-east-1.amazonaws.com/product";
 
+  final http.Client client;
+
+  ProductService({http.Client? client}) : client = client ?? http.Client();
+
   Future<List<Product>> fetchProducts() async {
     try {
-      final response = await http.get(Uri.parse("$_baseUrl/getAll"));
+      final response = await client.get(Uri.parse("$_baseUrl/getAll"));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -26,7 +30,7 @@ class ProductService {
   // Delete product API
   Future<bool> deleteProduct(String productId) async {
     try {
-      final response = await http.delete(
+      final response = await client.delete(
         Uri.parse("$_baseUrl/delete/$productId"),
       );
 

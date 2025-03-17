@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
 
@@ -89,6 +91,18 @@ class SettingsPage extends StatelessWidget {
               numberOfTiles: 1,
               leadingIcons: [
                 Icons.logout_rounded,
+              ],
+              onTaps: [
+                () async {
+                  await SharedPreferenceHelper.removeToken();
+                  await SharedPreferenceHelper.removeUserType();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginPage()),
+                        (route) => false);
+                  }
+                }
               ],
               titles: ['Logout'],
             ),

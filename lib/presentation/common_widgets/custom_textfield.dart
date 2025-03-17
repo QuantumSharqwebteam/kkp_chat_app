@@ -22,6 +22,7 @@ class CustomTextField extends StatefulWidget {
     this.backgroundColor,
     this.minLines = 1,
     this.maxLines = 1,
+    this.onChanged, // Add onChanged callback
   });
 
   final double width;
@@ -43,6 +44,7 @@ class CustomTextField extends StatefulWidget {
   final int? minLines;
   final int? maxLines;
   final Color? backgroundColor;
+  final ValueChanged<String>? onChanged; // Define onChanged callback
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -79,7 +81,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       children: [
         SizedBox(
           width: widget.width,
-          height: widget.height,
+          height: widget.errorText != null ? widget.height + 20 : widget.height,
           child: TextFormField(
             obscuringCharacter: '*',
             controller: widget.controller,
@@ -89,8 +91,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
             readOnly: widget.readOnly,
             minLines: widget.minLines,
             maxLines: widget.maxLines,
+            onChanged: widget.onChanged, // Pass onChanged callback
             decoration: InputDecoration(
               filled: true,
+              errorText: widget.errorText,
               fillColor: widget.backgroundColor ?? Colors.white,
               hintText: widget.hintText,
               hintStyle: widget.hintStyle ??
