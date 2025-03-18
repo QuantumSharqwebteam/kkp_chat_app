@@ -25,7 +25,7 @@ class Utils {
     );
   }
 
-  void showRemoveProductDialog(
+  void showDialogWithActions(
     BuildContext context,
     String title,
     String description,
