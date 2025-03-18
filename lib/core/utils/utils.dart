@@ -30,7 +30,7 @@ class Utils {
     String title,
     String description,
     String actionButtonText,
-    VoidCallback onRemove, {
+    VoidCallback action, {
     IconData? icon,
   }) {
     showDialog(
@@ -87,7 +87,7 @@ class Utils {
                 children: [
                   Expanded(
                     child: CustomButton(
-                        onPressed: onRemove,
+                        onPressed: action,
                         borderColor: AppColors.inActiveRed,
                         fontSize: 16,
                         backgroundColor: AppColors.inActiveRed,
