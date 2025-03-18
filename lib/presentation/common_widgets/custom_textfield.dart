@@ -84,7 +84,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
       children: [
         SizedBox(
           width: widget.width,
-          height: widget.errorText != null ? widget.height + 20 : widget.height,
+          height: widget.errorText != null
+              ? widget.height + 20
+              : widget.errorText != null
+                  ? widget.height + 20
+                  : widget.height,
           child: TextFormField(
             obscuringCharacter: '*',
             controller: widget.controller,
@@ -96,6 +100,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             maxLines: widget.maxLines,
             inputFormatters: widget.inputFormatters, // ✅ Apply inputFormatters
             onChanged: widget.onChanged, // Pass onChanged callback
+
             decoration: InputDecoration(
               filled: true,
               errorText: widget.errorText,
