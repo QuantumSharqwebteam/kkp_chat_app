@@ -4,9 +4,9 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/products/product_item.dart';
 
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
-import 'package:kkp_chat_app/presentation/customer/widget/product_item.dart';
 
 import '../../../data/models/product_model.dart';
 import '../../../data/repositories/product_repository.dart';

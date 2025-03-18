@@ -8,7 +8,7 @@ import 'package:kkp_chat_app/data/repositories/product_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
-import 'package:kkp_chat_app/presentation/customer/widget/product_item.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/products/product_item.dart';
 
 class CustomerProductsPage extends StatefulWidget {
   const CustomerProductsPage({super.key});
