@@ -5,7 +5,6 @@ import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
 
 class Splash extends StatefulWidget {
