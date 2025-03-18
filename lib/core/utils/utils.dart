@@ -20,6 +20,7 @@ class Utils {
   void showSuccessDialog(BuildContext context, String message) {
     showDialog(
       context: context,
+      barrierDismissible: true, // Prevent manual dismissal
       builder: (context) => SuccessDialog(message: message),
     );
   }

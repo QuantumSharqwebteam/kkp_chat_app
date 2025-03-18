@@ -1,14 +1,74 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
-class NewPassPage extends StatelessWidget {
-  NewPassPage({super.key});
+class NewPassPage extends StatefulWidget {
+  const NewPassPage({super.key, required this.email});
+  final String email;
 
+  @override
+  State<NewPassPage> createState() => _NewPassPageState();
+}
+
+class _NewPassPageState extends State<NewPassPage> {
+  AuthApi auth = AuthApi();
   final _newpass = TextEditingController();
   final _repass = TextEditingController();
+  String? newpassError;
+  String? repassError;
+  bool _isloading = false;
+
+  Future<void> _changepassword(context) async {
+    _isloading = true;
+
+    if (_newpass.text.trim().isEmpty) {
+      setState(() {
+        newpassError = "Field can't be empty";
+        _isloading = false;
+      });
+      return;
+    }
+    if (_repass.text.trim().isEmpty) {
+      setState(() {
+        repassError = "Field can't be empty";
+        _isloading = false;
+      });
+      return;
+    }
+    if (_newpass.text.trim() != _repass.text.trim()) {
+      setState(() {
+        newpassError = repassError = "Passwords doesn't match";
+        _isloading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await auth.forgetPassword(_repass.text, widget.email);
+
+      if (response['message'] ==
+          'OTP Verified and New Password has been Set Successfully!') {
+        _isloading = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Password Changed Successfully")));
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return LoginPage();
+        }));
+      } else {
+        _isloading = false;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+      }
+    } catch (e) {
+      _isloading = false;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,12 +134,14 @@ class NewPassPage extends StatelessWidget {
                         hintText: 'Re-enter Password',
                       ),
                       SizedBox(height: 40),
-                      CustomButton(
-                        text: 'Reset Password',
-                        onPressed: () {
-                          Navigator.pushNamed(context, MarketingRoutes.login);
-                        },
-                      ),
+                      _isloading
+                          ? const CircularProgressIndicator()
+                          : CustomButton(
+                              text: 'Reset Password',
+                              onPressed: () {
+                                _changepassword(context);
+                              },
+                            ),
                       SizedBox(height: 20),
                     ],
                   ),

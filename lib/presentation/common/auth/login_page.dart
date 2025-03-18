@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preferences.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
@@ -25,29 +26,79 @@ class _LoginPageState extends State<LoginPage> {
   String passError = '';
   bool isLoading = false;
 
+  // Method to validate email format
+  bool _isValidEmail(String email) {
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+
   Future<void> _login(context, String email, String pass) async {
     setState(() {
       isLoading = true;
+      emailError = ''; // Clear previous email error
+      passError = ''; // Clear previous password error
     });
+
+    if (email.isEmpty) {
+      setState(() {
+        emailError = 'Email can\'t be empty';
+        isLoading = false;
+      });
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      setState(() {
+        emailError = 'Please enter a valid email address';
+        isLoading = false;
+      });
+      return;
+    }
+
+    if (pass.isEmpty) {
+      setState(() {
+        passError = 'Password can\'t be empty';
+        isLoading = false;
+      });
+      return;
+    }
+
     try {
-      await auth.login(email, pass).then((value) {
+      await auth.login(email, pass).then((value) async {
         if (value['message'] == 'User logged in successfully') {
-          Sharedpreferences.saveToken(value['token']);
-          Sharedpreferences.saveUserType(value['role'].toString());
+          if (kDebugMode) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(value['token'].toString())));
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(value['role'].toString())));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(_email.text)));
+          }
+          await SharedPreferenceHelper.saveToken(value['token'].toString());
+          await SharedPreferenceHelper.saveEmail(_email.text);
+          await SharedPreferenceHelper.saveUserType(value['role'].toString());
           if (value['role'].toString() == "0") {
             //customer
-            Navigator.pushNamed(context, CustomerRoutes.customerHost);
+            Navigator.pushReplacementNamed(
+                context, CustomerRoutes.customerHost);
           } else if (value['role'].toString() == "1") {
             //admin
-            Navigator.pushNamed(context, MarketingRoutes.marketingHostScreen);
+            Navigator.pushReplacementNamed(
+                context, MarketingRoutes.marketingHostScreen);
           } else if (value['role'].toString() == "2") {
             //agent
-            Navigator.pushNamed(context, MarketingRoutes.marketingHostScreen);
+            Navigator.pushReplacementNamed(
+                context, MarketingRoutes.marketingHostScreen);
           } else if (value['role'].toString() == "3") {
             //agent head
-            Navigator.pushNamed(context, MarketingRoutes.marketingHostScreen);
+            Navigator.pushReplacementNamed(
+                context, MarketingRoutes.marketingHostScreen);
           } else {
             // Invalid user type
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
+              return LoginPage();
+            }));
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -63,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("wjhdfjbs $e"),
+          content: Text("$e"),
         ),
       );
     } finally {
@@ -80,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
       persistentFooterButtons: [
         Text.rich(
           TextSpan(
-            text: 'Don\'t have a Account? ',
+            text: 'Don\'t have an Account? ',
             style: TextStyle(fontSize: 12),
             children: [
               WidgetSpan(
@@ -149,7 +200,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: 15),
-                // Name textField
+                // Email textField
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -172,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
                 SizedBox(height: 10),
-                // Email textField
+                // Password textField
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -210,27 +261,19 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-
                 SizedBox(height: 40),
                 isLoading
                     ? const CircularProgressIndicator()
                     : CustomButton(
                         text: 'Login',
                         onPressed: () {
-                          if (_email.text.trim().isNotEmpty ||
-                              _pass.text.trim().isNotEmpty) {
-                            _login(context, _email.text, _pass.text);
-                          }
+                          _login(context, _email.text, _pass.text);
                         },
                       ),
                 SizedBox(height: 20),
                 CustomButton(
                   text: 'Admin',
                   onPressed: () {
-                    // if (_email.text.trim().isNotEmpty ||
-                    //     _pass.text.trim().isNotEmpty) {
-                    //   _login(context, _email.text, _pass.text);
-                    // }
                     Navigator.pushNamed(
                         context, MarketingRoutes.marketingHostScreen);
                   },

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_bar.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/direct_messages_list_item.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
 
@@ -14,6 +14,7 @@ class AgentHomeScreen extends StatefulWidget {
 }
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
+  final _searchController = TextEditingController();
   List<Map<String, dynamic>> users = [
     {
       "name": "Rumi",
@@ -169,7 +170,11 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   // Search Bar
   Widget _buildSearchBar() {
-    return CustomSearchBar();
+    return CustomSearchBar(
+      enable: true,
+      controller: _searchController,
+      hintText: "search",
+    );
   }
 
   // Direct Messages Section

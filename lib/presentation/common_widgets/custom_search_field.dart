@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 
 class CustomSearchBar extends StatelessWidget {
-  final double width;
+  final double? width;
   final bool enable;
   final TextEditingController controller;
   final Function(String)? onChanged;
@@ -10,7 +10,7 @@ class CustomSearchBar extends StatelessWidget {
   final String hintText;
   const CustomSearchBar(
       {super.key,
-      required this.width,
+      this.width = double.maxFinite,
       required this.enable,
       required this.controller,
       this.onChanged,
@@ -18,9 +18,22 @@ class CustomSearchBar extends StatelessWidget {
       this.onSubmitted});
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       height: 50,
       width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.20),
+            blurRadius: 3,
+            spreadRadius: 0,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
       child: TextFormField(
         controller: controller,
         onChanged: onChanged, // Calls search function dynamically

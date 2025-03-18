@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_bar.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
+
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
 
 class TrackInquries extends StatefulWidget {
@@ -12,6 +13,7 @@ class TrackInquries extends StatefulWidget {
 }
 
 class _TrackInquriesState extends State<TrackInquries> {
+  final _searchController = TextEditingController();
   List<Map<String, dynamic>> messages = [
     {
       "name": "Ramesh Jain",
@@ -81,7 +83,11 @@ class _TrackInquriesState extends State<TrackInquries> {
 
   // Search Bar
   Widget _buildSearchBar() {
-    return CustomSearchBar();
+    return CustomSearchBar(
+      enable: true,
+      controller: _searchController,
+      hintText: "Search Inquries",
+    );
   }
 
   // Recent Messages List

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
@@ -28,7 +28,9 @@ class OnboardingPage extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, MarketingRoutes.login);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) {
+                          return LoginPage();
+                        }));
                       },
                       child: Text(
                         'Skip',
@@ -62,7 +64,9 @@ class OnboardingPage extends StatelessWidget {
                 CustomButton(
                   text: 'Get Started',
                   onPressed: () {
-                    Navigator.pushNamed(context, MarketingRoutes.login);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) {
+                      return LoginPage();
+                    }));
                   },
                   borderRadius: 10,
                   backgroundColor: AppColors.blue,

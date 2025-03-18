@@ -14,7 +14,7 @@ class ShimmerGrid extends StatelessWidget {
         crossAxisCount: 2, // 2 items per row
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
-        childAspectRatio: 0.8,
+        mainAxisExtent: 200,
       ),
       itemCount: 8, // Show 8 shimmer items
       itemBuilder: (context, index) {

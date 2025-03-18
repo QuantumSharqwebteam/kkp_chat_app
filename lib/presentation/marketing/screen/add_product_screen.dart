@@ -1,13 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/core/services/product_service.dart';
+import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/product_model.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 import 'package:dotted_border/dotted_border.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/full_screen_loader.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -17,6 +22,8 @@ class AddProductScreen extends StatefulWidget {
 }
 
 class _AddProductScreenState extends State<AddProductScreen> {
+  final ProductService productService = ProductService();
+  final S3UploadService s3UploadService = S3UploadService();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController reviewController = TextEditingController();
@@ -24,52 +31,138 @@ class _AddProductScreenState extends State<AddProductScreen> {
   List<String> availableSizes = ["S", "M", "L", "XL"];
   Set<String> selectedSizes = {}; // Store selected sizes
 
-  String? selectedImage;
+  File? selectedImage;
   List<Color> selectedColors = [
     Colors.black, //default color
   ];
-
+  bool isLoading = false;
+  // Controls loader visibility
   void pickImage() async {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
+
     if (pickedFile != null) {
       setState(() {
-        selectedImage = pickedFile.path;
+        selectedImage = File(pickedFile.path); // Store as File
       });
+      debugPrint('File Picked up : $selectedImage');
     }
   }
 
   void pickColor() async {
-    Color? pickedColor = await showDialog(
+    Color pickedColor =
+        selectedColors.isNotEmpty ? selectedColors.last : Colors.black;
+
+    Color? newColor = await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Pick a Color"),
           content: SingleChildScrollView(
-            child: BlockPicker(
-              availableColors: [
-                Colors.white,
-                Colors.black,
-                Colors.red,
-                Colors.green,
-                Colors.yellow,
-                Colors.blue,
-                Colors.grey,
-                Colors.lightGreen,
-              ],
-              pickerColor: Colors.black,
+            child: ColorPicker(
+              pickerColor: pickedColor,
               onColorChanged: (color) {
-                Navigator.pop(context, color);
+                pickedColor = color;
               },
+              labelTypes: [
+                ColorLabelType.rgb,
+              ],
+              pickerAreaBorderRadius: BorderRadius.circular(10),
             ),
           ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            TextButton(
+              child: const Text("Select"),
+              onPressed: () => Navigator.pop(context, pickedColor),
+            ),
+          ],
         );
       },
     );
-    if (pickedColor != null) {
+
+    if (newColor != null) {
       setState(() {
-        selectedColors.add(pickedColor);
+        selectedColors.add(newColor);
       });
+    }
+  }
+
+  void addProduct() async {
+    if (nameController.text.isEmpty ||
+        priceController.text.isEmpty ||
+        stockController.text.isEmpty ||
+        selectedSizes.isEmpty ||
+        selectedColors.isEmpty ||
+        selectedImage == null) {
+      Utils().showSuccessDialog(context, "Please fill all fields!");
+      return;
+    }
+    setState(() {
+      isLoading = true;
+    }); // Show loading dialog
+
+    //Upload Image to S3
+
+    String? imageUrl = await s3UploadService.uploadFile(selectedImage!);
+    if (imageUrl != null) {
+      debugPrint("Uploaded Image URL: $imageUrl"); // This is a String
+    }
+
+    // Navigator.pop(context); // Hide loading dialog
+    setState(() {
+      isLoading = false;
+    });
+    if (imageUrl == null) {
+      if (mounted) {
+        Utils().showSuccessDialog(
+            context, "Image upload failed. Try uploading different image.");
+      }
+      return;
+    }
+    // Convert colors to hex format
+    List<ProductColor> colorList = selectedColors.map((color) {
+      return ProductColor(
+        colorName: color.toString(), // You may replace this with proper names
+        colorCode:
+            '#${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}' // Red
+            '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0')}' // Green
+            '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0')}', // Blue
+      );
+    }).toList();
+
+    // Create Product model
+    Product newProduct = Product(
+      productName: nameController.text,
+      imageUrl: imageUrl, // Need an actual URL if backend requires it
+      colors: colorList,
+      sizes: selectedSizes.toList(),
+      stock: int.parse(stockController.text),
+      price: double.parse(priceController.text),
+      productId: "",
+    );
+
+    bool success = await productService.addProduct(newProduct);
+
+    if (success) {
+      if (mounted) {
+        Utils().showSuccessDialog(context, "Product added successfully!");
+      }
+      // Auto-close the dialog after 2 seconds and navigate back
+      Future.delayed(Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.pop(context); // Close success dialog
+          Navigator.pop(context, true); // Navigate back with result
+        }
+      });
+    } else {
+      if (mounted) {
+        Utils().showSuccessDialog(
+            context, "Failed to add product.Try Again later!");
+      }
     }
   }
 
@@ -85,25 +178,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          spacing: 20,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImagePickerContainer(selectedImage, pickImage),
-            _buildProductDetails(),
-            CustomButton(
-              onPressed: () {
-                Utils().showSuccessDialog(context, "Added Sucessfully");
-              },
-              text: "Add Product",
-              fontSize: 18,
-              borderColor: AppColors.blue00ABE9,
-              backgroundColor: AppColors.blue00ABE9,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              spacing: 20,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildImagePickerContainer(selectedImage, pickImage),
+                _buildProductDetails(),
+                CustomButton(
+                  onPressed: addProduct,
+                  text: "Add Product",
+                  fontSize: 18,
+                  borderColor: AppColors.blue00ABE9,
+                  backgroundColor: AppColors.blue00ABE9,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (isLoading) FullScreenLoader(), // Loader overlay
+        ],
       ),
     );
   }
@@ -151,6 +247,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: CustomTextField(
                   controller: priceController,
                   hintText: "₹0.00",
+                  keyboardType: TextInputType.number,
                 ),
               ),
               Expanded(
@@ -164,7 +261,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
           Text("Stock Availaible", style: AppTextStyles.black14_600),
           CustomTextField(
             controller: stockController,
-            hintText: "2000 Stocks Available",
+            hintText: "2000",
+            keyboardType: TextInputType.numberWithOptions(decimal: false),
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
         ],
       ),
@@ -242,7 +341,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Widget _buildImagePickerContainer(
-      String? selectedImage, VoidCallback pickImage) {
+      File? selectedImage, VoidCallback pickImage) {
     return SizedBox(
       width: double.maxFinite,
       child: GestureDetector(
@@ -261,7 +360,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               radius: Radius.circular(12),
               child: Center(
                 child: Container(
-                  padding: EdgeInsets.all(10),
+                  padding: EdgeInsets.all(5),
                   child: selectedImage == null
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -285,14 +384,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ],
                         )
                       : Padding(
-                          padding: const EdgeInsets.all(10.0),
+                          padding: const EdgeInsets.all(0),
                           child: ClipRRect(
                             clipBehavior: Clip.antiAlias,
                             borderRadius: BorderRadius.circular(10),
                             child: Image.file(
-                              File(selectedImage),
-                              fit: BoxFit.fill,
-                              height: 120,
+                              selectedImage,
+                              fit: BoxFit.fitWidth,
+                              height: 180,
+                              width: double.infinity,
                             ),
                           ),
                         ),

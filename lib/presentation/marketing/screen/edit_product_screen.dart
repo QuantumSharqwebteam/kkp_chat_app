@@ -1,54 +1,60 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/core/services/product_service.dart';
+import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/product_model.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/full_screen_loader.dart';
 
 import '../../../config/theme/app_text_styles.dart';
 
 class EditProductScreen extends StatefulWidget {
-  final String productName;
-  final double price;
-  final String stock;
-  final String? image;
-  final Set<String> selectedSizes;
-  final List<Color> selectedColors;
+  final Product product;
 
-  const EditProductScreen({
-    super.key,
-    required this.productName,
-    required this.price,
-    required this.stock,
-    this.image,
-    required this.selectedSizes,
-    required this.selectedColors,
-  });
+  const EditProductScreen({super.key, required this.product});
 
   @override
   State<EditProductScreen> createState() => _EditProductScreenState();
 }
 
 class _EditProductScreenState extends State<EditProductScreen> {
+  final ProductService productService = ProductService();
+  final S3UploadService s3UploadService = S3UploadService();
   late TextEditingController nameController;
   late TextEditingController priceController;
   late TextEditingController stockController;
-  late Set<String> selectedSizes;
-  late List<Color> selectedColors;
-  String? selectedImage;
+  Set<String> selectedSizes = {};
+  List<Color> selectedColors = [];
+  File? selectedImage;
+  bool isLoading = false;
+  String? productImage;
 
   @override
   void initState() {
     super.initState();
-    nameController = TextEditingController(text: widget.productName);
-    priceController = TextEditingController(text: widget.price.toString());
-    stockController = TextEditingController(text: widget.stock);
-    selectedSizes = widget.selectedSizes;
-    selectedColors = widget.selectedColors;
-    selectedImage = widget.image;
+    nameController = TextEditingController(text: widget.product.productName);
+    priceController =
+        TextEditingController(text: widget.product.price.toString());
+    stockController =
+        TextEditingController(text: widget.product.stock.toString());
+    selectedSizes = widget.product.sizes.toSet();
+    selectedColors = widget.product.colors.map((color) {
+      return Color.fromRGBO(
+        int.parse(color.colorCode.substring(1, 3), radix: 16),
+        int.parse(color.colorCode.substring(3, 5), radix: 16),
+        int.parse(color.colorCode.substring(5, 7), radix: 16),
+        1, // Full opacity
+      );
+    }).toList();
+
+    // selectedImage = widget.product.imageUrl;
+    productImage = widget.product.imageUrl;
   }
 
   void pickImage() async {
@@ -56,17 +62,77 @@ class _EditProductScreenState extends State<EditProductScreen> {
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
-        selectedImage = pickedFile.path;
+        selectedImage = File(pickedFile.path);
       });
     }
   }
 
-  void saveProduct() {
-    // Save edited product logic
-    if (kDebugMode) {
-      print("Product Saved: ${nameController.text}");
+  void updateProduct() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    // If a new image is selected, upload it
+    String? imageUrl = productImage;
+    if (selectedImage != null) {
+      imageUrl = await s3UploadService.uploadFile(selectedImage!);
+      if (imageUrl == null) {
+        setState(() {
+          isLoading = false;
+        });
+        if (mounted) {
+          Utils().showSuccessDialog(context, "Image upload failed. Try again.");
+        }
+        return;
+      }
     }
-    Utils().showSuccessDialog(context, "Product details updated");
+
+    // Convert colors to hex format
+    List<ProductColor> colorList = selectedColors.map((color) {
+      return ProductColor(
+        colorName: color.toString(), // You may replace this with proper names
+        colorCode:
+            '#${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}' // Red
+            '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0')}' // Green
+            '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0')}', // Blue
+      );
+    }).toList();
+
+    // Prepare data for API
+    Map<String, dynamic> updatedData = {
+      "productName": nameController.text,
+      "sizes": selectedSizes.toList(),
+      "stock": int.parse(stockController.text),
+      "price": double.parse(priceController.text),
+      "imageUrl": imageUrl,
+      "colors": colorList,
+    };
+
+    // Call update API
+    bool success = await productService.updateProduct(
+        widget.product.productId, updatedData);
+
+    setState(() {
+      isLoading = false;
+    });
+
+    if (success) {
+      if (mounted) {
+        Utils().showSuccessDialog(context, "Product updated successfully!");
+      }
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.pop(context);
+          Navigator.pop(context);
+          Navigator.pop(context, true);
+        } // Close with success
+      });
+    } else {
+      if (mounted) {
+        Utils().showSuccessDialog(
+            context, "Failed to update product. Try again later!");
+      }
+    }
   }
 
   @override
@@ -81,24 +147,29 @@ class _EditProductScreenState extends State<EditProductScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          spacing: 20,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImagePickerContainer(selectedImage, pickImage),
-            _buildProductDetails(),
-            const SizedBox(height: 20),
-            CustomButton(
-              onPressed: saveProduct,
-              text: "Update Product",
-              fontSize: 18,
-              borderColor: AppColors.blue00ABE9,
-              backgroundColor: AppColors.blue00ABE9,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              spacing: 20,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildImagePickerContainer(selectedImage, pickImage),
+                _buildProductDetails(),
+                const SizedBox(height: 20),
+                CustomButton(
+                  onPressed: updateProduct,
+                  text: "Update Product",
+                  fontSize: 18,
+                  borderColor: AppColors.blue00ABE9,
+                  backgroundColor: AppColors.blue00ABE9,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          if (isLoading) FullScreenLoader(), // Loader overlay
+        ],
       ),
     );
   }
@@ -146,6 +217,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 child: CustomTextField(
                   controller: priceController,
                   hintText: "₹0.00",
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
                 ),
               ),
               Expanded(
@@ -160,6 +232,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
           CustomTextField(
             controller: stockController,
             hintText: "2000 Stocks Available",
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
         ],
       ),
@@ -197,16 +271,19 @@ class _EditProductScreenState extends State<EditProductScreen> {
   Widget _buildColorPickerWidget() {
     return Wrap(
       spacing: 8.0,
-      children: selectedColors.map((color) {
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              selectedColors.remove(color);
-            });
-          },
-          child: CircleAvatar(backgroundColor: color, radius: 14),
-        );
-      }).toList()
+      children: selectedColors
+          .map((color) => GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedColors.remove(color);
+                  });
+                },
+                child: CircleAvatar(
+                  backgroundColor: color,
+                  radius: 14,
+                ),
+              ))
+          .toList()
         ..add(
           GestureDetector(
             onTap: pickColor,
@@ -221,7 +298,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   Widget _buildImagePickerContainer(
-      String? selectedImage, VoidCallback pickImage) {
+      File? selectedImage, VoidCallback pickImage) {
     return GestureDetector(
       onTap: pickImage,
       child: Card(
@@ -230,34 +307,35 @@ class _EditProductScreenState extends State<EditProductScreen> {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: selectedImage == null
-              ? Column(
-                  children: [
-                    const Icon(Icons.cloud_upload_rounded,
-                        size: 50, color: Colors.grey),
-                    const Text("Upload Product Image"),
-                    ElevatedButton(
-                      onPressed: pickImage,
-                      child: const Text("Choose File"),
-                    ),
-                  ],
-                )
+              ? (productImage != null && productImage!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        productImage!,
+                        fit: BoxFit.cover,
+                        height: 180,
+                        width: double.infinity,
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        const Icon(Icons.cloud_upload_rounded,
+                            size: 50, color: Colors.grey),
+                        const Text("Upload Product Image"),
+                        ElevatedButton(
+                          onPressed: pickImage,
+                          child: const Text("Choose File"),
+                        ),
+                      ],
+                    ))
               : ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: selectedImage.startsWith("assets/")
-                      ? Image.asset(
-                          // Display asset image
-                          selectedImage,
-                          fit: BoxFit.cover,
-                          height: 120,
-                          width: double.infinity,
-                        )
-                      : Image.file(
-                          // Display file image
-                          File(selectedImage),
-                          fit: BoxFit.cover,
-                          height: 120,
-                          width: double.infinity,
-                        ),
+                  child: Image.file(
+                    selectedImage,
+                    fit: BoxFit.fitWidth,
+                    height: 170,
+                    width: double.infinity,
+                  ),
                 ),
         ),
       ),
@@ -265,25 +343,43 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   void pickColor() async {
-    Color? pickedColor = await showDialog(
+    Color pickedColor =
+        selectedColors.isNotEmpty ? selectedColors.last : Colors.black;
+
+    Color? newColor = await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Pick a Color"),
           content: SingleChildScrollView(
-            child: BlockPicker(
-              pickerColor: Colors.black,
+            child: ColorPicker(
+              pickerColor: pickedColor,
               onColorChanged: (color) {
-                Navigator.pop(context, color);
+                pickedColor = color;
               },
+              labelTypes: [
+                ColorLabelType.rgb,
+              ],
+              pickerAreaBorderRadius: BorderRadius.circular(10),
             ),
           ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            TextButton(
+              child: const Text("Select"),
+              onPressed: () => Navigator.pop(context, pickedColor),
+            ),
+          ],
         );
       },
     );
-    if (pickedColor != null) {
+
+    if (newColor != null) {
       setState(() {
-        selectedColors.add(pickedColor);
+        selectedColors.add(newColor);
       });
     }
   }

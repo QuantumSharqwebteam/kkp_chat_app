@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
+import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
@@ -22,16 +24,72 @@ class _SignupPageState extends State<SignupPage> {
   final _pass = TextEditingController();
   final _repass = TextEditingController();
   bool _isLoading = false;
+  String? nameError;
+  String? emailError;
+  String? passError;
+  String? repassError;
 
-  void _signup() async {
-    if (_pass.text != _repass.text) {
-      Utils().showSuccessDialog(context, "Passwords do not match!");
+  // Method to validate email format
+  bool _isValidEmail(String email) {
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  Future<void> _signup(context) async {
+    setState(() {
+      _isLoading = true;
+      nameError =
+          emailError = passError = repassError = null; // Clear previous errors
+    });
+
+    if (_name.text.trim().isEmpty) {
+      setState(() {
+        nameError = "Name can't be Empty";
+        _isLoading = false;
+      });
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (_email.text.trim().isEmpty) {
+      setState(() {
+        emailError = "Email can't be Empty";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (!_isValidEmail(_email.text.trim())) {
+      setState(() {
+        emailError = "Please enter a valid email address";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_pass.text.trim().isEmpty) {
+      setState(() {
+        passError = "Password can't be Empty";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_repass.text.trim().isEmpty) {
+      setState(() {
+        repassError = "Re-enter Password can't be Empty";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_pass.text != _repass.text) {
+      setState(() {
+        passError = repassError = "Password doesn't match";
+        _isLoading = false;
+      });
+      return;
+    }
 
     try {
       final response = await _authRepository.signup(
@@ -39,21 +97,48 @@ class _SignupPageState extends State<SignupPage> {
         _pass.text,
       );
 
-      if (response['success'] == true) {
-        if (mounted) {
-          Utils()
-              .showSuccessDialog(context, "Signup successful! Please login.");
+      if (response['message'] == "User signed up successfully") {
+        try {
+          await SharedPreferenceHelper.saveToken(response['token'].toString());
+
+          await _saveUser(context, _name.text);
+
+          final result = await auth.sendOtp(_email.text);
+          if (result['message'] == "OTP sent") {
+            if (context.mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) {
+                    return VerificationPage(
+                      email: _email.text,
+                      isNewAccount: true,
+                    );
+                  },
+                ),
+              );
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(result['message'] + ' Try again later')));
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
+              return LoginPage();
+            }));
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString()),
+          ));
+          return;
         }
-        // Future.delayed(Duration(seconds: 2), () {
-        //   if (mounted) {
-        //     Navigator.pushNamed(context, MarketingRoutes.login);
-        //   }
-        // });
-      } else {
-        if (mounted) {
-          Utils().showSuccessDialog(
-              context, response['message'] ?? "Signup failed");
-        }
+      } else if (response['status'] == 400) {
+        setState(() {
+          emailError = "Email already exists.";
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response['message']),
+        ));
       }
     } catch (e) {
       if (mounted) {
@@ -63,6 +148,26 @@ class _SignupPageState extends State<SignupPage> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _saveUser(context, String name) async {
+    try {
+      final response = await auth.updateDetails(name, null, null, null, null);
+
+      if (response['message'] == "Item updated successfully") {
+        await SharedPreferenceHelper.saveName(
+            response['data']['name'].toString());
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+      return;
     }
   }
 
@@ -79,7 +184,10 @@ class _SignupPageState extends State<SignupPage> {
               WidgetSpan(
                 child: InkWell(
                   onTap: () {
-                    Navigator.pushNamed(context, MarketingRoutes.login);
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
+                      return LoginPage();
+                    }));
                   },
                   child: Text(
                     'Login',
@@ -156,6 +264,7 @@ class _SignupPageState extends State<SignupPage> {
                     SizedBox(height: 5),
                     CustomTextField(
                       controller: _name,
+                      errorText: nameError,
                       maxLines: 1,
                       keyboardType: TextInputType.name,
                       hintText: 'Enter your full name',
@@ -177,6 +286,7 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                     SizedBox(height: 5),
                     CustomTextField(
+                      errorText: emailError,
                       controller: _email,
                       maxLines: 1,
                       keyboardType: TextInputType.emailAddress,
@@ -200,7 +310,8 @@ class _SignupPageState extends State<SignupPage> {
                     SizedBox(height: 5),
                     CustomTextField(
                       controller: _pass,
-                      helperText: 'Must be atleast 8 characters',
+                      errorText: passError,
+                      helperText: 'Must be at least 8 characters',
                       maxLines: 1,
                       isPassword: true,
                       keyboardType: TextInputType.visiblePassword,
@@ -224,7 +335,8 @@ class _SignupPageState extends State<SignupPage> {
                     SizedBox(height: 5),
                     CustomTextField(
                       controller: _repass,
-                      helperText: 'Must be atleast 8 characters',
+                      errorText: repassError,
+                      helperText: 'Must be at least 8 characters',
                       borderRadius: 10,
                       height: 45,
                       maxLines: 1,
@@ -239,7 +351,9 @@ class _SignupPageState extends State<SignupPage> {
                     ? CircularProgressIndicator()
                     : CustomButton(
                         text: 'Create Account',
-                        onPressed: _signup,
+                        onPressed: () {
+                          _signup(context);
+                        },
                       ),
               ],
             ),

@@ -37,8 +37,9 @@ class ProductItem extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                     child: Image.network(
                       product.imageUrl, // Fetching from API
-                      height: 120,
-                      fit: BoxFit.contain,
+                      height: 150,
+                      width: double.maxFinite,
+                      fit: BoxFit.fitWidth,
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(Icons.broken_image, size: 120);
                       },

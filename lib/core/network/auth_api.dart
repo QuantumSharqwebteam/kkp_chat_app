@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/models/address_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 
 class AuthApi {
   static const baseUrl =
@@ -54,6 +54,8 @@ class AuthApi {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
+      } else if (response.statusCode == 400) {
+        return jsonDecode(response.body);
       } else {
         throw Exception('Failed to signup: ${response.body}');
       }
@@ -62,24 +64,39 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> updateDetails(String name, String number,
-      String customerType, String gstNo, Address address) async {
+  Future<Map<String, dynamic>> updateDetails(String? name, String? number,
+      String? customerType, String? gstNo, Address? address) async {
     const endPoint = 'user/updateUserDetails';
     final url = Uri.parse("$baseUrl$endPoint");
-    final body = {
-      "name": name,
-      "mobile": number,
-      "address": [
+
+    final body = <String, dynamic>{};
+
+    if (name != null) {
+      body["name"] = name;
+    }
+
+    if (number != null) {
+      body["mobile"] = number;
+    }
+
+    if (address != null) {
+      body["address"] = [
         {
-          "houseNo": address.houseNo,
-          "streetName": address.streetName,
-          "city": address.city,
-          "pincode": address.pincode,
+          if (address.houseNo != null) "houseNo": address.houseNo,
+          if (address.streetName != null) "streetName": address.streetName,
+          if (address.city != null) "city": address.city,
+          if (address.pincode != null) "pincode": address.pincode,
         }
-      ],
-      "customerType": customerType,
-      "GSTno": gstNo,
-    };
+      ];
+    }
+
+    if (customerType != null) {
+      body["customerType"] = customerType;
+    }
+
+    if (gstNo != null) {
+      body["GSTno"] = gstNo;
+    }
 
     try {
       final response = await client.post(url,
@@ -91,29 +108,60 @@ class AuthApi {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Failed to login: ${response.body}');
+        throw Exception('Failed to update details: ${response.body}');
       }
     } catch (e) {
-      throw Exception('Error during login: $e');
+      throw Exception('Error during update: $e');
     }
   }
 
-  //chnage password
-  Future<Map<String, dynamic>> updatePassword(
-      String currentPassword, String newPassword) async {
+//forget password
+  Future<Map<String, dynamic>> forgetPassword(
+      String password, String email) async {
     const endPoint = 'user/changePassword';
     final url = Uri.parse("$baseUrl$endPoint");
 
     try {
+      final body = {
+        "email": email,
+        "password": password,
+      };
+
+      final response = await client.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to change password: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error during password update: $e');
+    }
+  }
+
+  //change password
+  Future<Map<String, dynamic>> updatePasswordFromSettings(
+      String currentPassword, String newPassword, String email) async {
+    const endPoint = 'user/updatePassword';
+    final url = Uri.parse("$baseUrl$endPoint");
+
+    try {
       // Retrieve token from SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken');
+
+      final token = await SharedPreferenceHelper.getToken();
 
       if (token == null) {
         throw Exception('Token not found. Please log in again.');
       }
 
       final body = {
+        "email": email,
         "newPassword": newPassword,
         "currentPassword": currentPassword,
       };
@@ -122,8 +170,7 @@ class AuthApi {
         url,
         headers: {
           "Content-Type": "application/json",
-          "Authorization":
-              "Bearer $token", // Sending token from SharedPreferences
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -135,6 +182,52 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception('Error during password update: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> sendOtp(String email) async {
+    const endPoint = "user/getOTP/";
+    final url = Uri.parse('$baseUrl$endPoint$email');
+
+    try {
+      final response = await client.get(url, headers: {
+        "Content-Type": "application/json",
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      throw Exception(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyOtp(String email, int otp) async {
+    const endPoint = "user/verifyOtp";
+    final url = Uri.parse('$baseUrl$endPoint');
+    final body = jsonEncode({
+      "email": email,
+      "otp": otp,
+    });
+
+    try {
+      final response = await http.Client().post(
+        url,
+        body: body,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to verify OTP: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error verifying OTP: $e');
     }
   }
 }

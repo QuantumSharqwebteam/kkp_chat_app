@@ -3,6 +3,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
@@ -15,13 +16,9 @@ class ChangePassword extends StatefulWidget {
 
 class _ChangePasswordState extends State<ChangePassword> {
   final AuthRepository _authRepository = AuthRepository();
-
   final _currentPass = TextEditingController();
-
   final _newPass = TextEditingController();
-
   final _newRepass = TextEditingController();
-
   bool _isLoading = false;
 
   void _changePassword() async {
@@ -40,22 +37,30 @@ class _ChangePasswordState extends State<ChangePassword> {
     });
 
     try {
+      var email = await SharedPreferenceHelper.getEmail();
+
       final response = await _authRepository.updatePassword(
-        _currentPass.text,
-        _newPass.text,
-      );
+          _currentPass.text, _newPass.text, email!);
 
       if (response['success'] == true) {
-        Utils().showSuccessDialog(context, "Password changed successfully!");
+        if (mounted) {
+          Utils().showSuccessDialog(context, "Password changed successfully!");
+        }
         Future.delayed(Duration(seconds: 2), () {
-          Navigator.pop(context);
+          if (mounted) {
+            Navigator.pop(context);
+          }
         });
       } else {
-        Utils().showSuccessDialog(
-            context, response['message'] ?? "Failed to update password");
+        if (mounted) {
+          Utils().showSuccessDialog(
+              context, response['message'] ?? "Failed to update password");
+        }
       }
     } catch (e) {
-      Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+      if (mounted) {
+        Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+      }
     } finally {
       setState(() {
         _isLoading = false;
