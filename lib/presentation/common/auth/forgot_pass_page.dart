@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
@@ -13,7 +13,7 @@ class ForgotPassPage extends StatefulWidget {
 }
 
 class _ForgotPassPageState extends State<ForgotPassPage> {
-  AuthApi auth = AuthApi();
+  AuthRepository auth = AuthRepository();
   final _email = TextEditingController();
   String? errorText;
   bool _isloading = false;
@@ -29,7 +29,7 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
     _isloading = true;
 
     try {
-      final response = await auth.sendOtp(_email.text);
+      final response = await auth.sendOtp(email: _email.text);
       if (response['message'] == "OTP sent") {
         _isloading = false;
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
@@ -14,7 +14,7 @@ class NewPassPage extends StatefulWidget {
 }
 
 class _NewPassPageState extends State<NewPassPage> {
-  AuthApi auth = AuthApi();
+  AuthRepository auth = AuthRepository();
   final _newpass = TextEditingController();
   final _repass = TextEditingController();
   String? newpassError;
@@ -47,7 +47,8 @@ class _NewPassPageState extends State<NewPassPage> {
     }
 
     try {
-      final response = await auth.forgetPassword(_repass.text, widget.email);
+      final response = await auth.forgotPassword(
+          password: _repass.text, email: widget.email);
 
       if (response['message'] ==
           'OTP Verified and New Password has been Set Successfully!') {

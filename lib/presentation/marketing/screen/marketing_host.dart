@@ -34,10 +34,10 @@ class _MarketingHostState extends State<MarketingHost> {
   void _updateScreens() {
     setState(() {
       _screens = [
-        if (role == "1") AdminHome() else AgentHomeScreen(),
+        if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),
         FeedsScreen(),
         MarketingProductScreen(),
-        if (role == "1") AdminProfilePage() else ProfileScreen(),
+        if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
       ];
     });
   }

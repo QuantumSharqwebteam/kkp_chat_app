@@ -53,28 +53,6 @@ class PasswordAndSecurity extends StatelessWidget {
                         }
                       ],
                     ),
-                    SettingsTile(
-                      titles: ['Two-factor authentication'],
-                      numberOfTiles: 1,
-                      isDense: true,
-                      onTaps: [
-                        () {
-                          // Navigator.pushNamed(
-                          //     context, CustomerRoutes.changePassword);
-                        }
-                      ],
-                    ),
-                    SettingsTile(
-                      titles: ['Save and login'],
-                      numberOfTiles: 1,
-                      isDense: true,
-                      onTaps: [
-                        () {
-                          Navigator.pushNamed(
-                              context, CustomerRoutes.saveLogin);
-                        }
-                      ],
-                    ),
                   ],
                 ),
               ),

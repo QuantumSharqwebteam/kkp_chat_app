@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/data/models/product_model.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/data/repositories/product_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
@@ -23,7 +23,7 @@ class CustomerHomePage extends StatefulWidget {
 class _CustomerHomePageState extends State<CustomerHomePage> {
   final ProductRepository _productRepository = ProductRepository();
   late Future<List<Product>> _productsFuture;
-  AuthApi auth = AuthApi();
+  AuthRepository auth = AuthRepository();
   Profile? profileData;
   String? name;
 

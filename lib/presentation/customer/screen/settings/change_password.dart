@@ -15,13 +15,13 @@ class ChangePassword extends StatefulWidget {
 }
 
 class _ChangePasswordState extends State<ChangePassword> {
-  final AuthRepository _authRepository = AuthRepository();
+  AuthRepository auth = AuthRepository();
   final _currentPass = TextEditingController();
   final _newPass = TextEditingController();
   final _newRepass = TextEditingController();
   bool _isLoading = false;
 
-  void _changePassword() async {
+  void _changePassword(context) async {
     if (_newPass.text != _newRepass.text) {
       Utils().showSuccessDialog(context, "New passwords do not match!");
       return;
@@ -39,28 +39,23 @@ class _ChangePasswordState extends State<ChangePassword> {
     try {
       var email = await SharedPreferenceHelper.getEmail();
 
-      final response = await _authRepository.updatePassword(
-          _currentPass.text, _newPass.text, email!);
+      final response = await auth.updatePassword(
+          currentPassword: _currentPass.text,
+          newPassword: _newPass.text,
+          email: email!);
 
       if (response['success'] == true) {
-        if (mounted) {
-          Utils().showSuccessDialog(context, "Password changed successfully!");
-        }
+        Utils().showSuccessDialog(context, "Password changed successfully!");
+
         Future.delayed(Duration(seconds: 2), () {
-          if (mounted) {
-            Navigator.pop(context);
-          }
+          Navigator.pop(context);
         });
       } else {
-        if (mounted) {
-          Utils().showSuccessDialog(
-              context, response['message'] ?? "Failed to update password");
-        }
+        Utils().showSuccessDialog(
+            context, response['message'] ?? "Failed to update password");
       }
     } catch (e) {
-      if (mounted) {
-        Utils().showSuccessDialog(context, "Error: ${e.toString()}");
-      }
+      Utils().showSuccessDialog(context, "Error: ${e.toString()}");
     } finally {
       setState(() {
         _isLoading = false;
@@ -118,7 +113,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                   ? Center(child: CircularProgressIndicator())
                   : CustomButton(
                       text: 'Change Password',
-                      onPressed: _changePassword,
+                      onPressed: () => _changePassword(context),
                       borderRadius: 30,
                       height: 50,
                       borderColor: Colors.black,

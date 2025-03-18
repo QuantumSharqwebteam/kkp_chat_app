@@ -11,7 +11,8 @@ class AuthApi {
 
   AuthApi({http.Client? client}) : client = client ?? http.Client();
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(
+      {required String email, required String password}) async {
     const endPoint = 'user/login';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {
@@ -36,7 +37,8 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> signup(String email, String password) async {
+  Future<Map<String, dynamic>> signup(
+      {required String email, required String password}) async {
     const endPoint = 'user/signup';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {
@@ -137,7 +139,7 @@ class AuthApi {
 
 //forget password
   Future<Map<String, dynamic>> forgetPassword(
-      String password, String email) async {
+      {required String password, required String email}) async {
     const endPoint = 'user/changePassword';
     final url = Uri.parse("$baseUrl$endPoint");
 
@@ -205,7 +207,7 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> sendOtp(String email) async {
+  Future<Map<String, dynamic>> sendOtp({required String email}) async {
     const endPoint = "user/getOTP/";
     final url = Uri.parse('$baseUrl$endPoint$email');
 
@@ -248,7 +250,8 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> verifyOtp(String email, int otp) async {
+  Future<Map<String, dynamic>> verifyOtp(
+      {required String email, required int otp}) async {
     const endPoint = "user/verifyOtp";
     final url = Uri.parse('$baseUrl$endPoint');
     final body = jsonEncode({

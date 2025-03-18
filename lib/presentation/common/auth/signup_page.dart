@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
@@ -17,7 +16,7 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-  AuthApi auth = AuthApi();
+  AuthRepository auth = AuthRepository();
   final AuthRepository _authRepository = AuthRepository();
   final _name = TextEditingController();
   final _email = TextEditingController();
@@ -93,8 +92,8 @@ class _SignupPageState extends State<SignupPage> {
 
     try {
       final response = await _authRepository.signup(
-        _email.text,
-        _pass.text,
+        email: _email.text,
+        password: _pass.text,
       );
 
       if (response['message'] == "User signed up successfully") {
@@ -103,7 +102,7 @@ class _SignupPageState extends State<SignupPage> {
 
           await _saveUser(context, _name.text);
 
-          final result = await auth.sendOtp(_email.text);
+          final result = await auth.sendOtp(email: _email.text);
           if (result['message'] == "OTP sent") {
             if (context.mounted) {
               Navigator.pushReplacement(
@@ -153,7 +152,7 @@ class _SignupPageState extends State<SignupPage> {
 
   Future<void> _saveUser(context, String name) async {
     try {
-      final response = await auth.updateDetails(
+      final response = await auth.updateUserDetails(
           name: name,
           address: null,
           customerType: null,

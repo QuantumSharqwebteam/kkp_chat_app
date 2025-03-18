@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:pinput/pinput.dart';
@@ -23,7 +23,7 @@ class VerificationPage extends StatefulWidget {
 
 class _VerificationPageState extends State<VerificationPage> {
   final _otp = TextEditingController();
-  AuthApi auth = AuthApi();
+  AuthRepository auth = AuthRepository();
   bool _isVerifyLoading = false;
   bool _isResendEnabled = true;
   int _timerCount = 60;
@@ -57,7 +57,8 @@ class _VerificationPageState extends State<VerificationPage> {
     }
 
     try {
-      final response = await auth.verifyOtp(widget.email, int.parse(_otp.text));
+      final response =
+          await auth.verifyOtp(email: widget.email, otp: int.parse(_otp.text));
 
       if (response['message'] == "OTP Verified Successfully!") {
         ScaffoldMessenger.of(context)
@@ -103,7 +104,7 @@ class _VerificationPageState extends State<VerificationPage> {
   }
 
   void _resendOtp() async {
-    await auth.sendOtp(widget.email);
+    await auth.sendOtp(email: widget.email);
     setState(() {
       _isResendEnabled = false;
     });
@@ -233,7 +234,8 @@ class _VerificationPageState extends State<VerificationPage> {
                                   if (widget.isNewAccount == true) {
                                     if (context.mounted) {
                                       Navigator.pushReplacementNamed(context,
-                                          CustomerRoutes.customerProfileSetup);
+                                          CustomerRoutes.customerProfileSetup,
+                                          arguments: {"forUpdate": false});
                                     }
                                   } else {
                                     if (context.mounted) {

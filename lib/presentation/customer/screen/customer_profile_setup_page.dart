@@ -3,14 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/models/address_model.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
 class CustomerProfileSetupPage extends StatefulWidget {
-  const CustomerProfileSetupPage({super.key});
+  const CustomerProfileSetupPage({
+    super.key,
+    required this.forUpdate,
+    this.name,
+    this.email,
+    this.number,
+    this.gstNo,
+    this.panNo,
+    this.address,
+    this.isExportSelected = false,
+    this.isDomesticSelected = false,
+  });
+
+  final bool forUpdate;
+  final String? name;
+  final String? email;
+  final String? number;
+  final String? gstNo;
+  final String? panNo;
+  final String? address;
+  final bool isExportSelected;
+  final bool isDomesticSelected;
 
   @override
   State<CustomerProfileSetupPage> createState() =>
@@ -26,9 +47,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   final _streetNumber = TextEditingController();
   final _pinCode = TextEditingController();
   final _cityName = TextEditingController();
-  bool _isExportSelected = false;
-  bool _isDomesticSelected = false;
-  AuthApi auth = AuthApi();
+  late bool _isExportSelected;
+  late bool _isDomesticSelected;
+  AuthRepository auth = AuthRepository();
   String? _customerType;
   bool _isLoading = false;
 
@@ -41,6 +62,22 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   String? _cityNameError;
   String? _pinCodeError;
 
+  @override
+  void initState() {
+    super.initState();
+    // Initialize fields with passed arguments
+    if (widget.forUpdate) {
+      _phoneNumber.text = widget.number ?? '';
+      _gstNumber.text = widget.gstNo ?? '';
+      _panNumber.text = widget.panNo ?? '';
+      _houseFlatNumber.text =
+          widget.address ?? ''; // Assuming address contains house/flat number
+      _isExportSelected = widget.isExportSelected;
+      _isDomesticSelected = widget.isDomesticSelected;
+      _customerType = _isExportSelected ? 'Export' : 'Domestic';
+    }
+  }
+
   Future<void> _saveUserProfile(context) async {
     _isLoading = true;
     Address addressDetails = Address(
@@ -50,7 +87,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       streetName: _streetNumber.text,
     );
     try {
-      final response = await auth.updateDetails(
+      final response = await auth.updateUserDetails(
         name: null,
         number: _phoneNumber.text,
         customerType: _customerType,
@@ -63,7 +100,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         _isLoading = false;
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(response['message'])));
-        Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
+        if (widget.forUpdate) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
+        }
       } else {
         _isLoading = false;
         ScaffoldMessenger.of(context)
@@ -82,6 +123,17 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: widget.forUpdate
+          ? AppBar(
+              leading: IconButton(
+                icon: Icon(Icons.close),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+              title: Text('Update Profile'),
+            )
+          : null,
       persistentFooterAlignment: AlignmentDirectional.center,
       persistentFooterButtons: [
         Padding(
@@ -109,13 +161,17 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                           ? 'Finish'
                           : 'Next',
                       onPressed: () {
-                        if (validateStep()) {
+                        if (widget.forUpdate || validateStep()) {
                           if (_currentStep < getSteps(context).length - 1) {
                             setState(() {
                               _currentStep++;
                             });
                           } else {
-                            _saveUserProfile(context);
+                            if (!_isDataChanged()) {
+                              Navigator.pop(context);
+                            } else {
+                              _saveUserProfile(context);
+                            }
                           }
                         }
                       },
@@ -238,8 +294,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   CustomTextField(
                     controller: _phoneNumber,
                     height: 50,
+                    keyboardType: TextInputType.name,
                     hintText: 'Enter your mobile number',
-                    errorText: _phoneNumberError,
+                    errorText: widget.forUpdate ? null : _phoneNumberError,
                   ),
                 ],
               ),
@@ -255,7 +312,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     controller: _gstNumber,
                     height: 50,
                     hintText: 'Enter GST No.',
-                    errorText: _gstNumberError,
+                    keyboardType: TextInputType.text,
+                    maxLength: 15,
+                    errorText: widget.forUpdate ? null : _gstNumberError,
                   ),
                 ],
               ),
@@ -271,7 +330,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     controller: _panNumber,
                     height: 50,
                     hintText: 'Enter PAN No.',
-                    errorText: _panNumberError,
+                    keyboardType: TextInputType.text,
+                    maxLength: 10,
+                    errorText: widget.forUpdate ? null : _panNumberError,
                   ),
                 ],
               ),
@@ -310,7 +371,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       controller: _houseFlatNumber,
                       height: 50,
                       hintText: 'Enter house/flat no.',
-                      errorText: _houseFlatNumberError,
+                      keyboardType: TextInputType.text,
+                      errorText:
+                          widget.forUpdate ? null : _houseFlatNumberError,
                     ),
                   ],
                 ),
@@ -326,7 +389,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       controller: _streetNumber,
                       height: 50,
                       hintText: 'Enter Street Name',
-                      errorText: _streetNumberError,
+                      keyboardType: TextInputType.text,
+                      errorText: widget.forUpdate ? null : _streetNumberError,
                     ),
                   ],
                 ),
@@ -342,7 +406,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       controller: _cityName,
                       height: 50,
                       hintText: 'Enter City Name',
-                      errorText: _cityNameError,
+                      errorText: widget.forUpdate ? null : _cityNameError,
+                      keyboardType: TextInputType.text,
                     ),
                   ],
                 ),
@@ -358,7 +423,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       controller: _pinCode,
                       height: 50,
                       hintText: 'Enter Pincode',
-                      errorText: _pinCodeError,
+                      errorText: widget.forUpdate ? null : _pinCodeError,
+                      keyboardType: TextInputType.number,
                     ),
                   ],
                 ),
@@ -456,5 +522,14 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     }
 
     return isValid;
+  }
+
+  bool _isDataChanged() {
+    return _phoneNumber.text != widget.number ||
+        _gstNumber.text != widget.gstNo ||
+        _panNumber.text != widget.panNo ||
+        _houseFlatNumber.text != widget.address ||
+        _isExportSelected != widget.isExportSelected ||
+        _isDomesticSelected != widget.isDomesticSelected;
   }
 }

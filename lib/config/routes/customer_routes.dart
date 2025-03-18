@@ -10,20 +10,11 @@ import 'package:kkp_chat_app/presentation/customer/screen/settings/change_passwo
 import 'package:kkp_chat_app/presentation/customer/screen/settings/notification_settings.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/order_enquiries.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/password_and_security.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/save_login_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
 
 import '../../data/models/product_model.dart';
 
 class CustomerRoutes {
-  static const String customerHome = '/customerHome';
-  // static const String onBoarding = '/onBoarding';
-  // static const String signUp = '/signUp';
-  // static const String login = '/login';
-  // static const String forgot = '/forgot';
-  // static const String newPass = '/newPass';
-  // static const String verification = '/verification';
-
   static const String customerHost = "customerHost";
   static const String customerNotification = "customerNotification";
   static const String customerProductDescriptionPage =
@@ -32,14 +23,12 @@ class CustomerRoutes {
   static const String customerProfileSetup = "customerProfileSetup";
   static const String passwordAndSecurity = "passwordAndSecurity";
   static const String changePassword = "changePassword";
-  static const String saveLogin = "saveLogin";
   static const String archiveSettings = "archiveSettings";
   static const String notificationSettings = "notificationSettings";
   static const String orderEnquiries = "orderEnquiries";
   static const String aboutSettingPage = "aboutSettingPage";
 
   static List<String> allRoutes = [
-    customerHome,
     customerHost,
     customerNotification,
     customerProductDescriptionPage,
@@ -47,7 +36,6 @@ class CustomerRoutes {
     customerProfileSetup,
     passwordAndSecurity,
     changePassword,
-    saveLogin,
     archiveSettings,
     notificationSettings,
     orderEnquiries,
@@ -77,16 +65,26 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
       );
 
     case CustomerRoutes.customerProfileSetup:
-      return MaterialPageRoute(builder: (_) => CustomerProfileSetupPage());
+      final args = settings.arguments as Map<String, dynamic>?;
+      return MaterialPageRoute(
+        builder: (_) => CustomerProfileSetupPage(
+          forUpdate: args?['forUpdate'] ?? false,
+          name: args?['name'],
+          email: args?['email'],
+          number: args?['number'],
+          gstNo: args?['gstNo'],
+          panNo: args?['panNo'],
+          address: args?['address'],
+          isExportSelected: args?['isExportSelected'] ?? false,
+          isDomesticSelected: args?['isDomesticSelected'] ?? false,
+        ),
+      );
 
     case CustomerRoutes.passwordAndSecurity:
       return MaterialPageRoute(builder: (_) => PasswordAndSecurity());
 
     case CustomerRoutes.changePassword:
       return MaterialPageRoute(builder: (_) => ChangePassword());
-
-    case CustomerRoutes.saveLogin:
-      return MaterialPageRoute(builder: (_) => SaveLoginPage());
 
     case CustomerRoutes.archiveSettings:
       return MaterialPageRoute(builder: (_) => ArchiveSettingsPage());
