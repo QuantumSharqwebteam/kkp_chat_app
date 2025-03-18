@@ -30,6 +30,18 @@ class Product {
       productName: json['productName'],
     );
   }
+
+  // Convert Product object to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      "productName": productName,
+      "imageUrl": imageUrl,
+      "colors": colors.map((color) => color.toJson()).toList(),
+      "sizes": sizes,
+      "stock": stock,
+      "price": price,
+    };
+  }
 }
 
 class ProductColor {
@@ -46,5 +58,12 @@ class ProductColor {
       colorName: json['colorName'],
       colorCode: json['colorCode'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "colorName": colorName,
+      "colorCode": colorCode,
+    };
   }
 }

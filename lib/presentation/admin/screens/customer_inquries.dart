@@ -5,7 +5,7 @@ import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_bar.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 
 class CustomerInquiriesPage extends StatefulWidget {
   const CustomerInquiriesPage({super.key});
@@ -15,6 +15,7 @@ class CustomerInquiriesPage extends StatefulWidget {
 }
 
 class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
+  final _searchController = TextEditingController();
   bool showFilters = false;
   String selectedAgent = 'All Agents';
   String selectedDateRange = 'Last 30 days';
@@ -173,7 +174,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
     return Row(
       spacing: 10,
       children: [
-        Expanded(child: CustomSearchBar()),
+        Expanded(
+            child: CustomSearchBar(
+          enable: true,
+          controller: _searchController,
+          hintText: "Search",
+        )),
         GestureDetector(
           onTap: toggleShowFilters,
           child: Container(

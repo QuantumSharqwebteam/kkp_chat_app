@@ -80,10 +80,18 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                               "Price : ₹${product.price.toString()}",
                               style: AppTextStyles.black16_500,
                             ),
-                            Text(
-                              "Sizes: ${product.sizes.toString()}",
-                              style: AppTextStyles.black16_500,
-                            )
+                            Row(
+                              children: [
+                                Text("Sizes: ",
+                                    style: AppTextStyles.black16_500),
+                                ...product.sizes.map((size) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 3),
+                                      child: Text(size,
+                                          style: AppTextStyles.black16_500),
+                                    )),
+                              ],
+                            ),
                           ],
                         ),
                         SizedBox(height: 8),

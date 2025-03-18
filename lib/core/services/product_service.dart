@@ -43,4 +43,46 @@ class ProductService {
       throw Exception("Error deleting product: $e");
     }
   }
+
+  // Add product API
+  Future<bool> addProduct(Product product) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$_baseUrl/add"),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(product.toJson()), // Convert product to JSON
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return true; // Success
+      } else {
+        return false; // Failure
+      }
+    } catch (e) {
+      throw Exception("Error adding product: $e");
+    }
+  }
+
+  Future<bool> updateProduct(
+      String productId, Map<String, dynamic> updatedData) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$_baseUrl/update/$productId"),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(updatedData),
+      );
+
+      if (response.statusCode == 200) {
+        return true; // Success
+      } else {
+        return false; // Failure
+      }
+    } catch (e) {
+      throw Exception("Error updating product: $e");
+    }
+  }
 }
