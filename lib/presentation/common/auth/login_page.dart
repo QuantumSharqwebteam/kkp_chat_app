@@ -271,13 +271,6 @@ class _LoginPageState extends State<LoginPage> {
                         },
                       ),
                 SizedBox(height: 20),
-                CustomButton(
-                  text: 'Admin',
-                  onPressed: () {
-                    Navigator.pushNamed(
-                        context, MarketingRoutes.marketingHostScreen);
-                  },
-                ),
               ],
             ),
           ),

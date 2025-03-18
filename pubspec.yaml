@@ -83,7 +83,7 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - .env
+    - keys.env
     
   #   - images/a_dot_ham.jpeg
 
