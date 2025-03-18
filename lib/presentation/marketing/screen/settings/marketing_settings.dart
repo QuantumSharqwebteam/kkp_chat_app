@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/colored_divider.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
@@ -151,7 +153,16 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   "Log Out",
                   "Are you sure you want to logout?",
                   "Log out",
-                  () {},
+                  () async {
+                    await SharedPreferenceHelper.removeToken();
+                    await SharedPreferenceHelper.removeUserType();
+                    if (context.mounted) {
+                      Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginPage()),
+                          (route) => false);
+                    }
+                  },
                   icon: Icons.logout_outlined,
                 );
               },

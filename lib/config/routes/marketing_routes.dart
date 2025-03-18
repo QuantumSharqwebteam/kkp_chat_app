@@ -6,6 +6,7 @@ import 'package:kkp_chat_app/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_descrption_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/settings/marketing_settings.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketings_notifications_page.dart';
@@ -21,7 +22,6 @@ class MarketingRoutes {
   // static const String newPass = '/newPass';
   // static const String verification = '/verification';
   static const String privacy = "/privacy";
-  static const String settings = "/settings";
   // admin side
   static const String adminHome = "/adminHome";
   static const String addAgent = "/addAgentPage";
@@ -55,6 +55,9 @@ class MarketingRoutes {
 
 Route<dynamic> generateMarketingRoute(RouteSettings settings) {
   switch (settings.name) {
+    case MarketingRoutes.marketingHostScreen:
+      return MaterialPageRoute(builder: (_) => MarketingHost());
+
     case MarketingRoutes.privacy:
       return MaterialPageRoute(builder: (_) => PrivacyPage());
 
