@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -12,6 +15,19 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  void logout() async {
+    await SharedPreferenceHelper.removeToken();
+    await SharedPreferenceHelper.removeName();
+    await SharedPreferenceHelper.removeEmail();
+    await SharedPreferenceHelper.removeUserType();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginPage()),
+          (route) => false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,7 +176,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: CustomButton(
-        onPressed: () {},
+        onPressed: () {
+          Utils().showDialogWithActions(
+            context,
+            "Log out",
+            icon: Icons.logout_outlined,
+            "Are you sure you want to logOut",
+            "LogOut",
+            logout,
+          );
+        },
         borderWidth: 0,
         fontSize: 16,
         backgroundColor: AppColors.marketingNavBarColor,

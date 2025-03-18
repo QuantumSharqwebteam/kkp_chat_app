@@ -148,7 +148,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
             ),
             TextButton.icon(
               onPressed: () {
-                Utils().showRemoveProductDialog(
+                Utils().showDialogWithActions(
                   context,
                   "Log Out",
                   "Are you sure you want to logout?",

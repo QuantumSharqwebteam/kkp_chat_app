@@ -21,7 +21,7 @@ class MarketingProductDescrptionPage extends StatefulWidget {
 class _MarketingProductDescrptionPageState
     extends State<MarketingProductDescrptionPage> {
   Future<void> _removeProduct() async {
-    Utils().showRemoveProductDialog(
+    Utils().showDialogWithActions(
       context,
       "Remove Product",
       "Are you sure you want to remove this product?",

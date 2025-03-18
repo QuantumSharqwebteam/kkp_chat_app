@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/models/address_model.dart';
+import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 
@@ -275,6 +276,24 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception('Error verifying OTP: $e');
+    }
+  }
+
+  //get all Agents list
+  Future<List<Agent>> getAgent() async {
+    const endPoint = 'user/getAgent';
+    final url = Uri.parse("$baseUrl$endPoint");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        return parseAgents(response.body);
+      } else {
+        throw Exception('Failed to fetch agent details: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching agent details: $e');
     }
   }
 }
