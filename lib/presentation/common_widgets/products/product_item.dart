@@ -50,6 +50,8 @@ class ProductItem extends StatelessWidget {
                   child: Text(
                     product.productName,
                     style: AppTextStyles.black16_500,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 SingleChildScrollView(

@@ -5,11 +5,12 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/data/models/product_model.dart';
 import 'package:kkp_chat_app/data/repositories/product_repository.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkp_chat_app/presentation/customer/widget/custom_app_bar.dart';
 
-import 'package:kkp_chat_app/presentation/customer/widget/product_item.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/products/product_item.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -21,11 +22,17 @@ class CustomerHomePage extends StatefulWidget {
 class _CustomerHomePageState extends State<CustomerHomePage> {
   final ProductRepository _productRepository = ProductRepository();
   late Future<List<Product>> _productsFuture;
+  String? name;
 
   @override
   void initState() {
     super.initState();
     _productsFuture = _productRepository.getProducts();
+    _getName();
+  }
+
+  Future<void> _getName() async {
+    name = await SharedPreferenceHelper.getName();
   }
 
   @override
@@ -33,7 +40,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size(double.infinity, 100),
-        child: SafeArea(child: CustomAppBar()),
+        child: SafeArea(
+            child: CustomAppBar(
+          name: name!,
+        )),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -101,7 +111,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.8,
+                                mainAxisExtent: 250,
                               ),
                               itemCount: newProducts.length,
                               itemBuilder: (context, index) {

@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/address_model.dart';
+import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
@@ -21,12 +25,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   final _houseFlatNumber = TextEditingController();
   final _panNumber = TextEditingController();
   final _streetNumber = TextEditingController();
-  final _materialType = TextEditingController();
-  final _materialDescription = TextEditingController();
   final _pinCode = TextEditingController();
   final _cityName = TextEditingController();
   bool _isExportSelected = false;
   bool _isDomesticSelected = false;
+  AuthApi auth = AuthApi();
+  String? _customerType;
+  bool _isLoading = false;
 
   // Error texts for each field
   String? _phoneNumberError;
@@ -36,8 +41,44 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   String? _streetNumberError;
   String? _cityNameError;
   String? _pinCodeError;
-  String? _materialTypeError;
-  String? _materialDescriptionError;
+
+  Future<void> _saveUserProfile(context) async {
+    _isLoading = true;
+    Address addressDetails = Address(
+      city: _cityName.text,
+      houseNo: _houseFlatNumber.text,
+      pincode: _pinCode.text,
+      streetName: _streetNumber.text,
+    );
+    try {
+      final response = await auth.updateDetails(
+        name: null,
+        number: _phoneNumber.text,
+        customerType: _customerType,
+        gstNo: _gstNumber.text,
+        panNo: _panNumber.text,
+        address: addressDetails,
+      );
+
+      if (response['message'] == "Item updated successfully") {
+        _isLoading = false;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+        Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
+      } else {
+        _isLoading = false;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+      }
+    } catch (e) {
+      _isLoading = false;
+      if (kDebugMode) {
+        print(e.toString());
+      }
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,25 +103,27 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   },
                 ),
               Spacer(),
-              CustomButton(
-                text: _currentStep == getSteps(context).length - 1
-                    ? 'Finish'
-                    : 'Next',
-                onPressed: () {
-                  //  if (validateStep()) {
-                  if (_currentStep < getSteps(context).length - 1) {
-                    setState(() {
-                      _currentStep++;
-                    });
-                  } else {
-                    Navigator.pushNamed(context, CustomerRoutes.customerHost);
-                  }
-                  // }
-                },
-                backgroundColor: AppColors.blue,
-                width: Utils().width(context) * 0.4,
-                height: 50,
-              ),
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : CustomButton(
+                      text: _currentStep == getSteps(context).length - 1
+                          ? 'Finish'
+                          : 'Next',
+                      onPressed: () {
+                        if (validateStep()) {
+                          if (_currentStep < getSteps(context).length - 1) {
+                            setState(() {
+                              _currentStep++;
+                            });
+                          } else {
+                            _saveUserProfile(context);
+                          }
+                        }
+                      },
+                      backgroundColor: AppColors.blue,
+                      width: Utils().width(context) * 0.4,
+                      height: 50,
+                    ),
             ],
           ),
         ),
@@ -108,74 +151,167 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
 
   List<Widget> getSteps(BuildContext context) {
     return [
-      Column(
+      step_1(context),
+      step_2(context),
+    ];
+  }
+
+  Widget step_1(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          width: Utils().width(context) * 0.9,
+          child: Column(
+            children: [
+              SizedBox(
+                width: Utils().width(context) * 0.7,
+                child: Text(
+                  textAlign: TextAlign.center,
+                  'Some basic information to get you started.',
+                  style: AppTextStyles.black22_600,
+                ),
+              ),
+              SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Customer Type',
+                    style: AppTextStyles.black14_600,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Row(
+                        children: [
+                          Checkbox(
+                            visualDensity: VisualDensity.compact,
+                            value: _isExportSelected,
+                            activeColor: AppColors.blue,
+                            onChanged: (value) {
+                              setState(() {
+                                _isExportSelected = value!;
+                                _isDomesticSelected = !_isExportSelected;
+                                _customerType =
+                                    _isExportSelected ? 'Export' : 'Domestic';
+                              });
+                            },
+                          ),
+                          Text(
+                            'Export',
+                            style: AppTextStyles.black14_600,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _isDomesticSelected,
+                            visualDensity: VisualDensity.compact,
+                            activeColor: AppColors.blue,
+                            onChanged: (value) {
+                              setState(() {
+                                _isDomesticSelected = value!;
+                                _isExportSelected = !_isDomesticSelected;
+                                _customerType =
+                                    _isDomesticSelected ? 'Domestic' : 'Export';
+                              });
+                            },
+                          ),
+                          Text(
+                            'Domestic',
+                            style: AppTextStyles.black14_600,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Mobile number',
+                    style: AppTextStyles.black14_600,
+                  ),
+                  CustomTextField(
+                    controller: _phoneNumber,
+                    height: 50,
+                    hintText: 'Enter your mobile number',
+                    errorText: _phoneNumberError,
+                  ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'GST number',
+                    style: AppTextStyles.black14_600,
+                  ),
+                  CustomTextField(
+                    controller: _gstNumber,
+                    height: 50,
+                    hintText: 'Enter GST No.',
+                    errorText: _gstNumberError,
+                  ),
+                ],
+              ),
+              SizedBox(height: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PAN number',
+                    style: AppTextStyles.black14_600,
+                  ),
+                  CustomTextField(
+                    controller: _panNumber,
+                    height: 50,
+                    hintText: 'Enter PAN No.',
+                    errorText: _panNumberError,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget step_2(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
         children: [
+          SizedBox(
+            width: Utils().width(context) * 0.7,
+            child: Text(
+              textAlign: TextAlign.center,
+              'Some basic information to get you started.',
+              style: AppTextStyles.black22_600,
+            ),
+          ),
+          SizedBox(height: 16),
           SizedBox(
             width: Utils().width(context) * 0.9,
             child: Column(
               children: [
-                SizedBox(
-                  width: Utils().width(context) * 0.7,
-                  child: Text(
-                    textAlign: TextAlign.center,
-                    'Some basic information to get you started.',
-                    style: AppTextStyles.black22_600,
-                  ),
-                ),
-                SizedBox(height: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Customer Type',
+                      'House/Flat No.',
                       style: AppTextStyles.black14_600,
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Row(
-                          children: [
-                            Checkbox(
-                              visualDensity: VisualDensity.compact,
-                              value: _isExportSelected,
-                              activeColor: AppColors.blue,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isExportSelected = value!;
-                                  if (_isExportSelected) {
-                                    _isDomesticSelected = false;
-                                  }
-                                });
-                              },
-                            ),
-                            Text(
-                              'Export',
-                              style: AppTextStyles.black14_600,
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: _isDomesticSelected,
-                              visualDensity: VisualDensity.compact,
-                              activeColor: AppColors.blue,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isDomesticSelected = value!;
-                                  if (_isDomesticSelected) {
-                                    _isExportSelected = false;
-                                  }
-                                });
-                              },
-                            ),
-                            Text(
-                              'Domestic',
-                              style: AppTextStyles.black14_600,
-                            ),
-                          ],
-                        ),
-                      ],
+                    CustomTextField(
+                      controller: _houseFlatNumber,
+                      height: 50,
+                      hintText: 'Enter house/flat no.',
+                      errorText: _houseFlatNumberError,
                     ),
                   ],
                 ),
@@ -184,14 +320,14 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Mobile number',
+                      'Street Name',
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
-                      controller: _phoneNumber,
+                      controller: _streetNumber,
                       height: 50,
-                      hintText: 'Enter your mobile number',
-                      errorText: _phoneNumberError,
+                      hintText: 'Enter Street Name',
+                      errorText: _streetNumberError,
                     ),
                   ],
                 ),
@@ -200,14 +336,14 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'GST number',
+                      'City Name',
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
-                      controller: _gstNumber,
+                      controller: _cityName,
                       height: 50,
-                      hintText: 'Enter GST No.',
-                      errorText: _gstNumberError,
+                      hintText: 'Enter City Name',
+                      errorText: _cityNameError,
                     ),
                   ],
                 ),
@@ -216,14 +352,14 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'PAN number',
+                      'Pin Code',
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
-                      controller: _panNumber,
+                      controller: _pinCode,
                       height: 50,
-                      hintText: 'Enter PAN No.',
-                      errorText: _panNumberError,
+                      hintText: 'Enter Pincode',
+                      errorText: _pinCodeError,
                     ),
                   ],
                 ),
@@ -232,147 +368,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
           ),
         ],
       ),
-      SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              width: Utils().width(context) * 0.7,
-              child: Text(
-                textAlign: TextAlign.center,
-                'Some basic information to get you started.',
-                style: AppTextStyles.black22_600,
-              ),
-            ),
-            SizedBox(height: 16),
-            SizedBox(
-              width: Utils().width(context) * 0.9,
-              child: Column(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'House/Flat No.',
-                        style: AppTextStyles.black14_600,
-                      ),
-                      CustomTextField(
-                        controller: _houseFlatNumber,
-                        height: 50,
-                        hintText: 'Enter house/flat no.',
-                        errorText: _houseFlatNumberError,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Street Name',
-                        style: AppTextStyles.black14_600,
-                      ),
-                      CustomTextField(
-                        controller: _streetNumber,
-                        height: 50,
-                        hintText: 'Enter Street Name',
-                        errorText: _streetNumberError,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'City Name',
-                        style: AppTextStyles.black14_600,
-                      ),
-                      CustomTextField(
-                        controller: _cityName,
-                        height: 50,
-                        hintText: 'Enter City Name',
-                        errorText: _cityNameError,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pin Code',
-                        style: AppTextStyles.black14_600,
-                      ),
-                      CustomTextField(
-                        controller: _pinCode,
-                        height: 50,
-                        hintText: 'Enter Pincode',
-                        errorText: _pinCodeError,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              width: Utils().width(context) * 0.7,
-              child: Text(
-                textAlign: TextAlign.center,
-                'Some basic information to get you started.',
-                style: AppTextStyles.black22_600,
-              ),
-            ),
-            SizedBox(height: 16),
-            SizedBox(
-              width: Utils().width(context) * 0.9,
-              child: Column(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Material Type',
-                        style: AppTextStyles.black14_600,
-                      ),
-                      CustomTextField(
-                        controller: _materialType,
-                        height: 50,
-                        hintText: 'Enter Material Type',
-                        errorText: _materialTypeError,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Material Description',
-                        style: AppTextStyles.black14_600,
-                      ),
-                      CustomTextField(
-                        controller: _materialDescription,
-                        height: 100,
-                        minLines: 4,
-                        maxLines: 10,
-                        hintText: 'Enter Material Description',
-                        errorText: _materialDescriptionError,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    ];
+    );
   }
 
   bool validateStep() {
@@ -406,7 +402,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         _panNumberError = null;
       }
 
-      if (!_isExportSelected && !_isDomesticSelected) {
+      if (_customerType == null) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -457,24 +453,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         isValid = false;
       } else {
         _pinCodeError = null;
-      }
-    } else if (_currentStep == 2) {
-      if (_materialType.text.isEmpty) {
-        setState(() {
-          _materialTypeError = 'Material type is required';
-        });
-        isValid = false;
-      } else {
-        _materialTypeError = null;
-      }
-
-      if (_materialDescription.text.isEmpty) {
-        setState(() {
-          _materialDescriptionError = 'Material description is required';
-        });
-        isValid = false;
-      } else {
-        _materialDescriptionError = null;
       }
     }
 

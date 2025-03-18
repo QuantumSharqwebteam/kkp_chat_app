@@ -153,7 +153,13 @@ class _SignupPageState extends State<SignupPage> {
 
   Future<void> _saveUser(context, String name) async {
     try {
-      final response = await auth.updateDetails(name, null, null, null, null);
+      final response = await auth.updateDetails(
+          name: name,
+          address: null,
+          customerType: null,
+          gstNo: null,
+          number: null,
+          panNo: null);
 
       if (response['message'] == "Item updated successfully") {
         await SharedPreferenceHelper.saveName(

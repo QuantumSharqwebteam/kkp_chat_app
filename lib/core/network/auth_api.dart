@@ -64,10 +64,22 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> updateDetails(String? name, String? number,
-      String? customerType, String? gstNo, Address? address) async {
+  Future<Map<String, dynamic>> updateDetails({
+    String? name,
+    String? number,
+    String? customerType,
+    String? gstNo,
+    String? panNo,
+    Address? address,
+  }) async {
     const endPoint = 'user/updateUserDetails';
     final url = Uri.parse("$baseUrl$endPoint");
+
+    final token = await SharedPreferenceHelper.getToken();
+
+    if (token == null) {
+      throw Exception('Token not found. Please log in again.');
+    }
 
     final body = <String, dynamic>{};
 
@@ -76,7 +88,7 @@ class AuthApi {
     }
 
     if (number != null) {
-      body["mobile"] = number;
+      body["mobile"] = int.parse(number);
     }
 
     if (address != null) {
@@ -98,13 +110,21 @@ class AuthApi {
       body["GSTno"] = gstNo;
     }
 
-    try {
-      final response = await client.post(url,
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: jsonEncode(body));
+    if (panNo != null) {
+      body["PANno"] = panNo;
+    }
 
+    try {
+      final response = await client.put(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
+      print(body);
+      print(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
