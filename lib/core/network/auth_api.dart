@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/models/address_model.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 
 class AuthApi {
@@ -123,8 +124,7 @@ class AuthApi {
         },
         body: jsonEncode(body),
       );
-      print(body);
-      print(response.body);
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
@@ -221,6 +221,30 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception(e);
+    }
+  }
+
+  Future<Profile> getUserInfo() async {
+    const endPoint = "user/getInfo";
+    final url = Uri.parse('$baseUrl$endPoint');
+    final token = await SharedPreferenceHelper.getToken();
+
+    try {
+      final response = await http.get(url, headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token"
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Parse the JSON response into a Profile object
+        final jsonResponse = jsonDecode(response.body);
+        return Profile.fromJson(jsonResponse['message']);
+      } else {
+        // Handle error response
+        throw Exception('Failed to load user info: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching user info: $e');
     }
   }
 

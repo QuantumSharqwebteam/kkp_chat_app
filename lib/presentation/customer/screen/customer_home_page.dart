@@ -1,15 +1,16 @@
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/data/models/product_model.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/product_repository.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkp_chat_app/presentation/customer/widget/custom_app_bar.dart';
-
 import 'package:kkp_chat_app/presentation/common_widgets/products/product_item.dart';
 
 class CustomerHomePage extends StatefulWidget {
@@ -22,17 +23,34 @@ class CustomerHomePage extends StatefulWidget {
 class _CustomerHomePageState extends State<CustomerHomePage> {
   final ProductRepository _productRepository = ProductRepository();
   late Future<List<Product>> _productsFuture;
+  AuthApi auth = AuthApi();
+  Profile? profileData;
   String? name;
 
   @override
   void initState() {
     super.initState();
     _productsFuture = _productRepository.getProducts();
-    _getName();
+    _loadUserInfo();
   }
 
-  Future<void> _getName() async {
-    name = await SharedPreferenceHelper.getName();
+  Future<void> _loadUserInfo() async {
+    try {
+      profileData = await auth.getUserInfo();
+      if (mounted) {
+        setState(() {
+          name = profileData?.name; // Update the name variable
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        if (mounted) {
+          print(e.toString());
+          // ScaffoldMessenger.of(context)
+          //     .showSnackBar(SnackBar(content: Text(e.toString())));
+        }
+      }
+    }
   }
 
   @override
@@ -42,7 +60,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         preferredSize: const Size(double.infinity, 100),
         child: SafeArea(
             child: CustomAppBar(
-          name: name!,
+          name: name,
         )),
       ),
       body: SafeArea(

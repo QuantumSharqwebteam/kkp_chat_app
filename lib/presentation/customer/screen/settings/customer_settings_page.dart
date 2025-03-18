@@ -120,6 +120,8 @@ class CustomerSettingsPage extends StatelessWidget {
                 () async {
                   await SharedPreferenceHelper.removeToken();
                   await SharedPreferenceHelper.removeUserType();
+                  await SharedPreferenceHelper.removeUserType();
+                  await SharedPreferenceHelper.removeName();
                   if (context.mounted) {
                     Navigator.pushAndRemoveUntil(
                         context,

@@ -7,7 +7,7 @@ import 'package:kkp_chat_app/presentation/common/splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: "keys.env");
   runApp(const MyApp());
 }
 

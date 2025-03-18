@@ -4,7 +4,6 @@ import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/agent_profile_list.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
-import 'package:kkp_chat_app/presentation/common/settings/settings_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_descrption_page.dart';
@@ -41,7 +40,6 @@ class MarketingRoutes {
   static List<String> allRoutes = [
     home,
     privacy,
-    settings,
     adminHome,
     agentHomeScreen,
     marketingHostScreen,
@@ -59,9 +57,6 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
   switch (settings.name) {
     case MarketingRoutes.privacy:
       return MaterialPageRoute(builder: (_) => PrivacyPage());
-
-    case MarketingRoutes.settings:
-      return MaterialPageRoute(builder: (_) => SettingsPage());
 
     case MarketingRoutes.agentHomeScreen:
       return MaterialPageRoute(builder: (_) => AgentHomeScreen());

@@ -5,6 +5,7 @@ import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
@@ -20,6 +21,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   AuthApi auth = AuthApi();
+
   final _email = TextEditingController();
   final _pass = TextEditingController();
   String emailError = '';

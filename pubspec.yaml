@@ -2,7 +2,7 @@ name: kkp_chat_app
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -56,7 +56,6 @@ dependencies:
   path: ^1.9.0
   crypto: ^3.0.6
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -73,7 +72,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -83,8 +81,8 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - .env
-    
+    - keys.env
+
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -107,8 +105,8 @@ flutter:
         - asset: assets/fonts/poppins_medium.ttf
           weight: 500
         - asset: assets/fonts/poppins_semi.ttf
-          weight: 600  
-          
+          weight: 600
+
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf

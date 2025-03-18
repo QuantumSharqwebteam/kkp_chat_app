@@ -9,8 +9,8 @@ import 'package:mime/mime.dart';
 class S3UploadService {
   final String accessKey = dotenv.env["AWS_ACCESS_KEY"]!;
   final String secretKey = dotenv.env["AWS_SECRET_KEY"]!;
-  final String region = "us-east-1";
-  final String bucketName = "kkp-textile";
+  final String region = dotenv.env["AWS_REGION"]!;
+  final String bucketName = dotenv.env["AWS_BUCKET_NAME"]!;
 
   Future<String?> uploadFile(File file) async {
     try {
