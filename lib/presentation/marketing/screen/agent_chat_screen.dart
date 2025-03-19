@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/message_bubble.dart';
@@ -69,7 +70,10 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
           children: [
             CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
             const SizedBox(width: 5),
-            Text(widget.agentName!),
+            Text(
+              widget.agentName!,
+              style: AppTextStyles.black14_400,
+            ),
           ],
         ),
         actions: [
