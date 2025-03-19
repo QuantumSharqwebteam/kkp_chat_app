@@ -3,7 +3,6 @@ import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
 
 class CustomersListScreen extends StatefulWidget {
@@ -108,8 +107,17 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                   ),
                   trailing: Icon(Icons.arrow_forward_ios),
                   onTap: () {
-                    Navigator.pushNamed(
-                        context, MarketingRoutes.agentChatScreen);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AgentChatScreen(
+                          customerName: customer['name'],
+                          customerImage: customer['image'],
+                          agentName: widget.agentName,
+                          agentImage: widget.agentImage,
+                        ),
+                      ),
+                    );
                   },
                 );
               },

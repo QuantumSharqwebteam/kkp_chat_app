@@ -15,6 +15,19 @@ class CustomerHost extends StatefulWidget {
 
 class _CustomerHostState extends State<CustomerHost> {
   int _selectedIndex = 0;
+  final SocketService _socketService = SocketService();
+
+  @override
+  void initState() {
+    super.initState();
+    _socketService.initSocket(); // Establish socket connection globally
+  }
+
+  @override
+  void dispose() {
+    _socketService.disconnect(); // Disconnect when leaving the host screen
+    super.dispose();
+  }
 
   final List<Widget> _screens = [
     CustomerHomePage(),

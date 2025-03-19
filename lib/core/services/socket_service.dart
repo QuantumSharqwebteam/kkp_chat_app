@@ -1,86 +1,81 @@
+import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SocketService {
-  io.Socket? socket;
+  static final SocketService _instance = SocketService._internal();
+  factory SocketService() => _instance;
+
+  late io.Socket _socket;
   final String serverUrl = "https://video-call-server-gm7i.onrender.com";
   int retryCount = 0;
-  static const int maxRetries = 3;
-  late String socketId;
+  static const int maxRetries = 5;
+  String? socketId;
 
-  // Callback to handle received messages
   Function(dynamic data)? onReceiveMessage;
 
-  void connect() async {
-    socket = io.io(serverUrl, <String, dynamic>{
+  SocketService._internal();
+
+  void initSocket() {
+    _socket = io.io(serverUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
+      'reconnection': true, // Auto-reconnect enabled
+      'reconnectionAttempts': maxRetries,
+      'reconnectionDelay': 2000, // Delay between retries
     });
 
-    socket!.onConnect((_) {
-      print('Connected to server');
-      retryCount = 0; // Reset retry count on successful connection
-      socketId = socket!.id!; // Store the socket ID
+    _socket.onConnect((_) {
+      debugPrint('Connected to server');
+      retryCount = 0;
+      socketId = _socket.id;
       retrySendingMessages();
     });
 
-    socket!.onConnectError((error) {
-      print('Connection error: $error');
+    _socket.onConnectError((error) {
+      debugPrint('Connection error: $error');
       handleReconnect();
     });
 
-    socket!.onDisconnect((_) {
-      print('Disconnected from server');
+    _socket.onDisconnect((_) {
+      debugPrint('Disconnected from server');
       handleReconnect();
     });
 
-    socket!.on('socketId', (data) {
-      print('Socket ID: $data');
+    _socket.on('socketId', (data) {
+      debugPrint('Socket ID: $data');
       socketId = data;
     });
 
-    socket!.on('receiveMessage', (data) {
-      print('Received message: $data');
+    _socket.on('receiveMessage', (data) {
+      debugPrint('Received message: $data');
       if (onReceiveMessage != null) {
         onReceiveMessage!(data);
         //local save of chat will also be handled.
       }
     });
 
-    await _tryConnect();
+    connect();
   }
 
-  Future<void> _tryConnect() async {
-    try {
-      socket!.connect();
-    } catch (e) {
-      print('Failed to connect: $e');
-      handleReconnect();
-    }
-  }
-
-  void handleReconnect() async {
-    retryCount++;
-    if (retryCount <= maxRetries) {
-      print('Retrying connection... Attempt $retryCount');
-      await Future.delayed(Duration(seconds: 2)); // Wait before retrying
-      _tryConnect();
-    } else {
-      print('Max retry attempts reached. Connection failed.');
-    }
-  }
-
-  void sendMessage(String targetId, String message, String senderName) {
-    if (socket!.connected) {
-      socket!.emit('sendMessage',
-          {'targetId': targetId, 'message': message, 'senderName': senderName});
-    } else {
-      saveMessage(message);
-    }
+  void connect() {
+    _socket.connect();
   }
 
   void disconnect() {
-    socket!.disconnect();
+    _socket.disconnect();
+  }
+
+  void sendMessage(String targetId, String message, String senderName) {
+    if (_socket.connected && targetId.isNotEmpty) {
+      _socket.emit('sendMessage', {
+        'targetId': targetId, // Ensure message is sent to the correct user
+        'message': message,
+        'senderName': senderName,
+      });
+    } else {
+      saveMessage(message);
+    }
   }
 
   void retrySendingMessages() async {
@@ -88,8 +83,7 @@ class SocketService {
     List<String> pendingMessages = prefs.getStringList('pendingMessages') ?? [];
 
     for (String message in pendingMessages) {
-      sendMessage('targetId', message,
-          'senderName'); // Replace with actual targetId and senderName
+      sendMessage('targetId', message, 'senderName');
     }
 
     pendingMessages.clear();
@@ -101,5 +95,16 @@ class SocketService {
     List<String> pendingMessages = prefs.getStringList('pendingMessages') ?? [];
     pendingMessages.add(message);
     await prefs.setStringList('pendingMessages', pendingMessages);
+  }
+
+  void handleReconnect() async {
+    retryCount++;
+    if (retryCount <= maxRetries) {
+      debugPrint('Retrying connection... Attempt $retryCount');
+      await Future.delayed(Duration(seconds: 2));
+      connect();
+    } else {
+      debugPrint('Max retry attempts reached.');
+    }
   }
 }
