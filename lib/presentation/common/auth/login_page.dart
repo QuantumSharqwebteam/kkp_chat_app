@@ -272,6 +272,13 @@ class _LoginPageState extends State<LoginPage> {
                         },
                       ),
                 SizedBox(height: 20),
+                // CustomButton(
+                //   text: 'marketing',
+                //   onPressed: () {
+                //     Navigator.pushNamed(
+                //         context, MarketingRoutes.marketingHostScreen);
+                //   },
+                // ),
               ],
             ),
           ),

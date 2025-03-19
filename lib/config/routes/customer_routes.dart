@@ -10,7 +10,7 @@ import 'package:kkp_chat_app/presentation/customer/screen/settings/change_passwo
 import 'package:kkp_chat_app/presentation/customer/screen/settings/notification_settings.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/order_enquiries.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/settings/password_and_security.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/customer_chat_screen.dart';
 
 import '../../data/models/product_model.dart';
 
@@ -100,12 +100,7 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
 
     case CustomerRoutes.customerSupportChat:
       return MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          agentImage: 'assets/images/user4.png',
-          agentName: 'Product Enquirers',
-          customerImage: 'assets/images/profile.png',
-          customerName: 'John',
-        ),
+        builder: (_) => CustomerChatScreen(),
       );
 
     default:

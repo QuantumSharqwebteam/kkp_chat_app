@@ -4,7 +4,6 @@ import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/models/address_model.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
@@ -88,9 +87,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 return Text('No data available');
               } else {
                 final profile = snapshot.data!;
-                final Address address = profile.address?.isNotEmpty == true
-                    ? profile.address![0]
-                    : Address();
+                // final Address address = profile.address?.isNotEmpty == true
+                //     ? profile.address![0]
+                //     : Address();
 
                 return SingleChildScrollView(
                   child: Column(

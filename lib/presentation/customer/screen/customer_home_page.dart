@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/models/product_model.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
@@ -39,7 +40,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       profileData = await auth.getUserInfo();
       if (mounted) {
         setState(() {
-          name = profileData?.name; // Update the name variable
+          name = profileData?.name;
         });
       }
     } catch (e) {
@@ -85,7 +86,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   children: [
                     _enquirySupport(onTap: () {
                       Navigator.pushNamed(
-                          context, CustomerRoutes.customerSupportChat);
+                              context, CustomerRoutes.customerSupportChat)
+                          .then((_) {
+                        SocketService().connect();
+                      });
                     }),
                     const SizedBox(height: 20),
 

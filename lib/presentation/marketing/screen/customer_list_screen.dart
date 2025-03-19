@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/chat_screen.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
 
 class CustomersListScreen extends StatefulWidget {
   final String agentName;
@@ -26,25 +27,29 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
         "name": "Shyam Mohan",
         "role": "Customer",
         "image": "assets/images/user1.png",
-        "isActive": true
+        "isActive": true,
+        "socketId": "customerSocketId1" // Add socket ID for each customer
       },
       {
         "name": "Krishna Deor",
         "role": "Customer",
         "image": "assets/images/user2.png",
-        "isActive": false
+        "isActive": false,
+        "socketId": "customerSocketId2"
       },
       {
         "name": "Ramesh Textile",
         "role": "Customer",
         "image": "assets/images/user3.png",
-        "isActive": true
+        "isActive": true,
+        "socketId": "customerSocketId3"
       },
       {
         "name": "K.N Cottons",
         "role": "Customer",
         "image": "assets/images/user4.png",
-        "isActive": false
+        "isActive": false,
+        "socketId": "customerSocketId4"
       },
     ];
 
@@ -55,7 +60,6 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
         backgroundColor: Colors.white,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
-          // crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               backgroundImage: AssetImage(widget.agentImage),
@@ -77,7 +81,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
               bottom: 30,
             ),
             child: Text(
-              " Customers List",
+              "Customers List",
               style: AppTextStyles.blue4A76CD_24_600.copyWith(
                 color: AppColors.grey525252,
               ),
@@ -106,11 +110,9 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          customerName: customer['name'],
-                          customerImage: customer['image'],
-                          agentName: widget.agentName,
-                          agentImage: widget.agentImage,
+                        builder: (context) => AgentChatScreen(
+                          customerSocketId:
+                              "1234567890", //customer['socketId'], // Pass socket ID
                         ),
                       ),
                     );

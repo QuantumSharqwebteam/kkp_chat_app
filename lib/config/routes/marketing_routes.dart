@@ -5,6 +5,7 @@ import 'package:kkp_chat_app/presentation/admin/screens/agent_profile_list.dart'
 import 'package:kkp_chat_app/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_descrption_page.dart';
@@ -15,12 +16,7 @@ import '../../data/models/product_model.dart';
 
 class MarketingRoutes {
   static const String home = '/home';
-  // static const String onBoarding = '/onBoarding';
-  // static const String signUp = '/signUp';
-  // static const String login = '/login';
-  // static const String forgot = '/forgot';
-  // static const String newPass = '/newPass';
-  // static const String verification = '/verification';
+
   static const String privacy = "/privacy";
   // admin side
   static const String adminHome = "/adminHome";
@@ -29,6 +25,7 @@ class MarketingRoutes {
   static const String customerInquriesPage = "/customerInquriesPage";
 
   //marketing side
+  static const String agentChatScreen = "Agent_chat";
   static const String marketingHostScreen = "Marketing_host";
   static const String agentHomeScreen = "AgentHomeScreen";
   static const String marketingNotifications = "Notification_page";
@@ -50,6 +47,7 @@ class MarketingRoutes {
     customerInquriesPage,
     marketingProductDescription,
     marketingSettings,
+    agentChatScreen,
   ];
 }
 
@@ -98,6 +96,13 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
 
     case MarketingRoutes.marketingSettings:
       return MaterialPageRoute(builder: (_) => MarketingSettingsPage());
+
+    case MarketingRoutes.agentChatScreen:
+      // final args = settings.arguments;
+      return MaterialPageRoute(
+          builder: (_) => AgentChatScreen(
+                customerSocketId: "1234567890",
+              ));
 
     default:
       return MaterialPageRoute(
