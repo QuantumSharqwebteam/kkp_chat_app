@@ -22,7 +22,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     _socketService.connect();
 
     // Set the customer's socket ID after connecting
-    _socketService.socket?.on('1234567890', (data) {
+    // socketID
+    _socketService.socket?.on(" ", (data) {
       setState(() {
         customerSocketId = data;
       });
@@ -50,7 +51,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     String message = _messageController.text.trim();
     if (message.isNotEmpty) {
       String senderName = 'Customer'; // Replace with actual sender name
-      _socketService.sendMessage('agentSocketId', message, senderName);
+      //SOCKET ID pending
+      _socketService.sendMessage("SOCKET ID", message, senderName);
 
       setState(() {
         messages.add({

@@ -44,7 +44,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
     String message = _messageController.text.trim();
     if (message.isNotEmpty) {
       String senderName = 'Agent'; // Replace with actual sender name
-      _socketService.sendMessage(widget.customerSocketId, message, senderName);
+      _socketService.sendMessage("kfcuLPUpTBhQX_YMAAAO", message, senderName);
 
       setState(() {
         messages.add({
