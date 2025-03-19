@@ -99,10 +99,7 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
 
     case MarketingRoutes.agentChatScreen:
       // final args = settings.arguments;
-      return MaterialPageRoute(
-          builder: (_) => AgentChatScreen(
-                customerSocketId: "1234567890",
-              ));
+      return MaterialPageRoute(builder: (_) => AgentChatScreen());
 
     default:
       return MaterialPageRoute(

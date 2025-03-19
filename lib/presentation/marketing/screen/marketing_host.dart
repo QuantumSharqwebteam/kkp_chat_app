@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_profile_page.dart';
@@ -19,11 +20,19 @@ class _MarketingHostState extends State<MarketingHost> {
   int _selectedIndex = 0;
   String? role;
   List<Widget> _screens = [];
+  final SocketService _socketService = SocketService();
 
   @override
   void initState() {
     super.initState();
     _loadRole();
+    _socketService.initSocket(); // Establish socket connection globally
+  }
+
+  @override
+  void dispose() {
+    _socketService.disconnect(); // Disconnect when leaving the host screen
+    super.dispose();
   }
 
   Future<void> _loadRole() async {

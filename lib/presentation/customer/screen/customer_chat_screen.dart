@@ -1,39 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/marketing/widget/message_bubble.dart';
 
 class CustomerChatScreen extends StatefulWidget {
-  const CustomerChatScreen({super.key});
+  final String? customerName;
+  final String? customerImage;
+  final String? agentName;
+  final String? agentImage;
+
+  const CustomerChatScreen({
+    super.key,
+    this.customerName = "User",
+    this.customerImage = ImageConstants.userImage,
+    this.agentName = "Agent",
+    this.agentImage = "assets/images/user4.png",
+  });
 
   @override
   State<CustomerChatScreen> createState() => _CustomerChatScreenState();
 }
 
 class _CustomerChatScreenState extends State<CustomerChatScreen> {
+  final _chatController = TextEditingController();
   final SocketService _socketService = SocketService();
-  final TextEditingController _messageController = TextEditingController();
+
   List<Map<String, dynamic>> messages = [];
-  late String customerSocketId; // Store the customer's socket ID
 
   @override
   void initState() {
     super.initState();
-    _socketService.connect();
 
-    // Set the customer's socket ID after connecting
-    _socketService.socket?.on('1234567890', (data) {
-      setState(() {
-        customerSocketId = data;
-      });
-    });
-
+    // Listen for new messages
     _socketService.onReceiveMessage = (data) {
       setState(() {
         messages.add({
-          'message': data['message'],
-          'senderName': data['senderName'],
-          'isReceived': true,
+          "text": data['message'],
+          "isMe": data['senderId'] == _socketService.socketId
         });
       });
     };
@@ -41,34 +44,44 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
 
   @override
   void dispose() {
-    _socketService.disconnect();
-    _messageController.dispose();
+    _chatController.dispose();
     super.dispose();
   }
 
-  void _sendMessage() {
-    String message = _messageController.text.trim();
-    if (message.isNotEmpty) {
-      String senderName = 'Customer'; // Replace with actual sender name
-      _socketService.sendMessage('agentSocketId', message, senderName);
-
+  void sendMessage() {
+    if (_chatController.text.isNotEmpty) {
+      final messageText = _chatController.text.trim();
       setState(() {
-        messages.add({
-          'message': message,
-          'senderName': senderName,
-          'isReceived': false,
-        });
-        _messageController.clear();
+        messages.add({"text": messageText, "isMe": true});
       });
+
+      _socketService.sendMessage("targetId", messageText, widget.agentName!);
+      _chatController.clear();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Customer Support Chat', style: AppTextStyles.black18_600),
-        backgroundColor: AppColors.background,
+        title: Row(
+          children: [
+            CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
+            const SizedBox(width: 5),
+            Text(widget.agentName!),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.videocam_outlined, color: Colors.black),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.call_outlined, color: Colors.black),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -77,55 +90,34 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               padding: const EdgeInsets.all(10),
               itemCount: messages.length,
               itemBuilder: (context, index) {
-                Map<String, dynamic> message = messages[index];
-                return _buildMessage(message);
+                final msg = messages[index];
+                return MessageBubble(
+                  text: msg['text'],
+                  isMe: msg['isMe'],
+                  image:
+                      msg['isMe'] ? widget.agentImage! : widget.customerImage!,
+                );
               },
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(10),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: 'Type a message',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
+                    controller: _chatController,
+                    decoration: InputDecoration(hintText: "Type a message..."),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: _sendMessage,
+                  icon: Icon(Icons.send, color: Colors.blue),
+                  onPressed: sendMessage,
                 ),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMessage(Map<String, dynamic> message) {
-    bool isReceived = message['isReceived'];
-    return Align(
-      alignment: isReceived ? Alignment.centerLeft : Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isReceived ? Colors.grey[200] : AppColors.bluePrimary,
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Text(
-          message['message'],
-          style: TextStyle(
-            color: isReceived ? Colors.black : Colors.white,
-          ),
-        ),
       ),
     );
   }
