@@ -14,4 +14,13 @@ class ImageConstants {
   static const String jacket = "$iconBase/jacket.png";
   static const String deleteProduct = "$iconBase/deleteProduct.png";
   static const String filterIcon = "$iconBase/filter.png";
+  static const String inquiry = "$iconBase/inquiry.png";
+  static const String documents = "$iconBase/documents.png";
+  static const String photos = "$iconBase/photos.png";
+  static const String send = "$iconBase/send.png";
+  static const String video = "$iconBase/vidoe.png";
+  static const String rate = "$iconBase/rate.png";
+  static const String orderDecline = "$iconBase/orderDecline.png";
+  static const String orderConfimm = "$iconBase/orderConfirm.png";
+  static const String camera = "$iconBase/camera.png";
 }

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/message_bubble.dart';
+import 'package:intl/intl.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -37,7 +39,9 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
       setState(() {
         messages.add({
           "text": data['message'],
-          "isMe": data['senderId'] == _socketService.socketId
+          "isMe": data['senderId'] == _socketService.socketId,
+          "timestamp":
+              data['timestamp'] ?? DateTime.now().toUtc().toIso8601String(),
         });
       });
     };
@@ -52,13 +56,31 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
   void sendMessage() {
     if (_chatController.text.isNotEmpty) {
       final messageText = _chatController.text.trim();
+      final timestamp =
+          DateTime.now().toUtc().toIso8601String(); // Generate timestamp
+
       setState(() {
-        messages.add({"text": messageText, "isMe": true});
+        messages.add({
+          "text": messageText,
+          "isMe": true,
+          "timestamp": timestamp, // Store locally
+        });
       });
 
-      _socketService.sendMessage("targetId", messageText, widget.agentName!);
+      _socketService.sendMessage(
+        "0VhypeA6SrUBrEjbAAAE",
+        messageText,
+        widget.agentName!,
+        timestamp, // Send timestamp
+      );
+
       _chatController.clear();
     }
+  }
+
+  String formatTimestamp(String timestamp) {
+    final dateTime = DateTime.parse(timestamp).toLocal();
+    return DateFormat('hh:mm a').format(dateTime);
   }
 
   @override
@@ -72,18 +94,18 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
             const SizedBox(width: 5),
             Text(
               widget.agentName!,
-              style: AppTextStyles.black14_400,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
         ),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: Icon(Icons.videocam_outlined, color: Colors.black),
+            icon: const Icon(Icons.videocam_outlined, color: Colors.black),
           ),
           IconButton(
             onPressed: () {},
-            icon: Icon(Icons.call_outlined, color: Colors.black),
+            icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
       ),
@@ -100,26 +122,14 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                   isMe: msg['isMe'],
                   image:
                       msg['isMe'] ? widget.agentImage! : widget.customerImage!,
+                  timestamp: formatTimestamp(msg['timestamp']),
                 );
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _chatController,
-                    decoration: InputDecoration(hintText: "Type a message..."),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send, color: Colors.blue),
-                  onPressed: sendMessage,
-                ),
-              ],
-            ),
+          ChatInputField(
+            controller: _chatController,
+            onSend: sendMessage,
           ),
         ],
       ),

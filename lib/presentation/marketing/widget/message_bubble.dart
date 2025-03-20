@@ -5,12 +5,14 @@ class MessageBubble extends StatelessWidget {
   final String text;
   final bool isMe;
   final String image;
+  final String? timestamp;
 
   const MessageBubble({
     super.key,
     required this.text,
     required this.isMe,
     required this.image,
+    this.timestamp,
   });
 
   @override
@@ -27,7 +29,7 @@ class MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.7),
               decoration: BoxDecoration(
-                color: isMe ? AppColors.messageBubbleColor : Colors.white,
+                color: isMe ? AppColors.blue00ABE9 : Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(3),
                   topRight: Radius.circular(35),
@@ -38,9 +40,7 @@ class MessageBubble extends StatelessWidget {
               child: Text(
                 text,
                 style: TextStyle(
-                  color: isMe
-                      ? Colors.white.withValues(alpha: 0.74)
-                      : Colors.black,
+                  color: isMe ? Colors.white : Colors.black,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -53,7 +53,18 @@ class MessageBubble extends StatelessWidget {
                 backgroundImage: AssetImage(image),
                 radius: 12,
               ),
-            )
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Text(
+                timestamp!,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
         //if (isMe) CircleAvatar(backgroundImage: AssetImage(image)),
