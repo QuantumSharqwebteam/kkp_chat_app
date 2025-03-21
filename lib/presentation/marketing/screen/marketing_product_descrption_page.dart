@@ -78,7 +78,7 @@ class _MarketingProductDescrptionPageState
           children: [
             Image.network(
               widget.product.imageUrl,
-              height: Utils().height(context) * 0.6,
+              height: Utils().height(context) * 0.5,
               width: Utils().width(context),
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) =>
@@ -89,9 +89,10 @@ class _MarketingProductDescrptionPageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.product.productName,
+                  Text(widget.product.productName.toUpperCase(),
                       style: AppTextStyles.black22_600),
                   const SizedBox(height: 10),
+                  // price and sizes row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -110,13 +111,15 @@ class _MarketingProductDescrptionPageState
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 5),
+
                   Text(
-                    'Available Colors',
+                    'Available Colors:',
                     style: AppTextStyles.black16_500
                         .copyWith(color: Colors.black, fontSize: 17),
                   ),
                   const SizedBox(height: 5),
+
                   ColoredCircles(
                     colors: widget.product.colors.map((color) {
                       return Color(
@@ -125,6 +128,7 @@ class _MarketingProductDescrptionPageState
                     size: 35,
                   ),
                   const SizedBox(height: 10),
+
                   Text(
                     widget.product.stock > 0
                         ? 'Only ${widget.product.stock} left in Stock'
@@ -135,6 +139,16 @@ class _MarketingProductDescrptionPageState
                           : AppColors.inActiveRed,
                     ),
                   ),
+                  Text(
+                    "Description:",
+                    style: AppTextStyles.black16_500,
+                  ),
+                  Text(
+                    widget.product.description ?? "Not Available ",
+                    style: AppTextStyles.black60alpha_12_500,
+                    textAlign: TextAlign.justify,
+                  ),
+
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

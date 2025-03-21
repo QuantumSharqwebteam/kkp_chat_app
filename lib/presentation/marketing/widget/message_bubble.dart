@@ -23,7 +23,7 @@ class MessageBubble extends StatelessWidget {
         Stack(
           children: [
             Container(
-              margin: const EdgeInsets.all(8.0),
+              margin: const EdgeInsets.all(10.0),
               padding: const EdgeInsets.only(
                   left: 20, right: 10, top: 10, bottom: 10),
               constraints: BoxConstraints(
@@ -55,8 +55,8 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
             Positioned(
-              bottom: 0,
-              right: 0,
+              bottom: -4.3,
+              right: 10,
               child: Text(
                 timestamp!,
                 style: const TextStyle(

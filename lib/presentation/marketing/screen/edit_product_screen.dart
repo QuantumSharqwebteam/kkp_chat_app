@@ -29,6 +29,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late TextEditingController nameController;
   late TextEditingController priceController;
   late TextEditingController stockController;
+  late TextEditingController descriptionController;
   Set<String> selectedSizes = {};
   List<Color> selectedColors = [];
   File? selectedImage;
@@ -43,6 +44,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
         TextEditingController(text: widget.product.price.toString());
     stockController =
         TextEditingController(text: widget.product.stock.toString());
+    descriptionController =
+        TextEditingController(text: widget.product.description.toString());
     selectedSizes = widget.product.sizes.toSet();
     selectedColors = widget.product.colors.map((color) {
       return Color.fromRGBO(
@@ -52,8 +55,6 @@ class _EditProductScreenState extends State<EditProductScreen> {
         1, // Full opacity
       );
     }).toList();
-
-    // selectedImage = widget.product.imageUrl;
     productImage = widget.product.imageUrl;
   }
 
@@ -106,6 +107,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       "price": double.parse(priceController.text),
       "imageUrl": imageUrl,
       "colors": colorList,
+      "description": descriptionController.text,
     };
 
     // Call update API
@@ -234,6 +236,13 @@ class _EditProductScreenState extends State<EditProductScreen> {
             hintText: "2000 Stocks Available",
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+          //description field
+          Text("Description", style: AppTextStyles.black14_600),
+          CustomTextField(
+            controller: descriptionController,
+            hintText: "Describe about the product....... ",
+            maxLines: 8,
           ),
         ],
       ),

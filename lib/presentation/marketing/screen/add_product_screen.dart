@@ -28,6 +28,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController priceController = TextEditingController();
   final TextEditingController reviewController = TextEditingController();
   final TextEditingController stockController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
   List<String> availableSizes = ["S", "M", "L", "XL"];
   Set<String> selectedSizes = {}; // Store selected sizes
 
@@ -95,6 +96,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (nameController.text.isEmpty ||
         priceController.text.isEmpty ||
         stockController.text.isEmpty ||
+        descriptionController.text.isEmpty ||
         selectedSizes.isEmpty ||
         selectedColors.isEmpty ||
         selectedImage == null) {
@@ -137,12 +139,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
     // Create Product model
     Product newProduct = Product(
       productName: nameController.text,
-      imageUrl: imageUrl, // Need an actual URL if backend requires it
+      imageUrl: imageUrl, // here needs an actual url
       colors: colorList,
       sizes: selectedSizes.toList(),
       stock: int.parse(stockController.text),
       price: double.parse(priceController.text),
       productId: "",
+      description: descriptionController.text,
     );
 
     bool success = await productService.addProduct(newProduct);
@@ -181,9 +184,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
-              spacing: 20,
+              spacing: 10,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildImagePickerContainer(selectedImage, pickImage),
@@ -265,6 +268,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
             keyboardType: TextInputType.numberWithOptions(decimal: false),
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
+          //description filed
+          Text("Description", style: AppTextStyles.black14_600),
+          CustomTextField(
+            controller: descriptionController,
+            hintText: "Describe about the product....... ",
+            maxLines: 8,
+          )
         ],
       ),
     );

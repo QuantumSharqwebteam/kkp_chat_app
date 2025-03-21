@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
@@ -19,6 +20,7 @@ class MarketingSettingsPage extends StatefulWidget {
 }
 
 class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
+  final SocketService _socketService = SocketService();
   @override
   Widget build(BuildContext context) {
     final searchController = TextEditingController();
@@ -156,6 +158,9 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   () async {
                     await SharedPreferenceHelper.removeToken();
                     await SharedPreferenceHelper.removeUserType();
+                    await SharedPreferenceHelper.removeName();
+                    await SharedPreferenceHelper.removeEmail();
+                    _socketService.disconnect();
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                           context,
