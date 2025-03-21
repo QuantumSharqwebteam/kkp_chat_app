@@ -60,13 +60,13 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                     product.productName,
                     style: AppTextStyles.black22_600,
                   ),
-                  // Padding(
-                  //   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  //   child: Text(
-                  //     product.description,
-                  //     style: AppTextStyles.black12_400,
-                  //   ),
-                  // ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      product.description ?? "",
+                      style: AppTextStyles.black12_400,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),

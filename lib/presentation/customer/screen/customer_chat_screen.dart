@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
@@ -52,13 +53,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   void sendMessage() {
     if (_chatController.text.isNotEmpty) {
       final messageText = _chatController.text.trim();
+      final timestamp = DateTime.now().toUtc().toIso8601String();
       setState(() {
         messages.add({"text": messageText, "isMe": true});
       });
 
-      _socketService.sendMessage("targetId", messageText, widget.agentName!);
+      _socketService.sendMessage(
+        "0VhypeA6SrUBrEjbAAAE",
+        messageText,
+        widget.agentName!,
+        timestamp, // Send timestamp
+      );
       _chatController.clear();
     }
+  }
+
+  String formatTimestamp(String timestamp) {
+    final dateTime = DateTime.parse(timestamp).toLocal();
+    return DateFormat('hh:mm a').format(dateTime);
   }
 
   @override
@@ -100,6 +112,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                   isMe: msg['isMe'],
                   image:
                       msg['isMe'] ? widget.agentImage! : widget.customerImage!,
+                  timestamp: formatTimestamp(msg['timestamp']),
                 );
               },
             ),

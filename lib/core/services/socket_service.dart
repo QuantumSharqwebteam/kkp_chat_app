@@ -55,6 +55,11 @@ class SocketService {
       }
     });
 
+//     _socket.on('chatAssigned', (data) {
+//   debugPrint('Chat assigned: $data');
+//   // Update UI to reflect assigned agent
+// });
+
     connect();
   }
 
@@ -66,12 +71,14 @@ class SocketService {
     _socket.disconnect();
   }
 
-  void sendMessage(String targetId, String message, String senderName) {
+  void sendMessage(
+      String targetId, String message, String senderName, String? timestamp) {
     if (_socket.connected && targetId.isNotEmpty) {
       _socket.emit('sendMessage', {
-        'targetId': targetId, // Ensure message is sent to the correct user
+        'targetId': targetId,
         'message': message,
         'senderName': senderName,
+        'timestamp': timestamp, // Include timestamp in message payload
       });
     } else {
       saveMessage(message);
@@ -83,7 +90,7 @@ class SocketService {
     List<String> pendingMessages = prefs.getStringList('pendingMessages') ?? [];
 
     for (String message in pendingMessages) {
-      sendMessage('targetId', message, 'senderName');
+      sendMessage('targetId', message, 'senderName', "timeStamp");
     }
 
     pendingMessages.clear();
