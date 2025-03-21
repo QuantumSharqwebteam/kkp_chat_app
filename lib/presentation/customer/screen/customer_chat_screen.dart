@@ -58,7 +58,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
       final messageText = _chatController.text.trim();
       final timestamp = DateTime.now().toUtc().toIso8601String();
       setState(() {
-        messages.add({"text": messageText, "isMe": true});
+        messages.add({
+          "text": messageText,
+          "isMe": true,
+          "timestamp": timestamp, // Store locally
+        });
       });
 
       _socketService.sendMessage(

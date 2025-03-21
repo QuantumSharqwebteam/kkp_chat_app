@@ -60,13 +60,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                     product.productName,
                     style: AppTextStyles.black22_600,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      product.description ?? "",
-                      style: AppTextStyles.black12_400,
-                    ),
-                  ),
+
                   const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -121,6 +115,14 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                             color: product.stock > 0
                                 ? AppColors.activeGreen
                                 : AppColors.inActiveRed,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            product.description ?? "Not Available ",
+                            style: AppTextStyles.black60alpha_12_500,
+                            textAlign: TextAlign.justify,
                           ),
                         ),
                         const SizedBox(height: 10),
