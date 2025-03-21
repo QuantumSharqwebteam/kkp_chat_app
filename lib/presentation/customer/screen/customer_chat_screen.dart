@@ -4,6 +4,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/message_bubble.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat_input_field.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
@@ -38,7 +39,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
       setState(() {
         messages.add({
           "text": data['message'],
-          "isMe": data['senderId'] == _socketService.socketId
+          "isMe": data['senderId'] == _socketService.socketId,
+          "timestamp":
+              data['timestamp'] ?? DateTime.now().toUtc().toIso8601String(),
         });
       });
     };
@@ -117,22 +120,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _chatController,
-                    decoration: InputDecoration(hintText: "Type a message..."),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send, color: Colors.blue),
-                  onPressed: sendMessage,
-                ),
-              ],
-            ),
+          ChatInputField(
+            controller: _chatController,
+            onSend: sendMessage,
           ),
         ],
       ),
