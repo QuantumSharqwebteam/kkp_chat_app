@@ -51,6 +51,7 @@ class SocketService {
       debugPrint('Received message: $data');
       if (onReceiveMessage != null) {
         onReceiveMessage!(data);
+        //local save of chat will also be handled.
       }
     });
 
