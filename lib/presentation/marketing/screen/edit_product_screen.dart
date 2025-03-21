@@ -242,7 +242,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
           CustomTextField(
             controller: descriptionController,
             hintText: "Describe about the product....... ",
-            maxLines: 8,
+            maxLines: 16,
+            minLines: 2,
+            height: 120,
           ),
         ],
       ),

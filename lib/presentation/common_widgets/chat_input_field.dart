@@ -142,7 +142,7 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Image.asset(
