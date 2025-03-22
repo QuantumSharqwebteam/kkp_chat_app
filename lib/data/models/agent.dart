@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:kkp_chat_app/data/models/address_model.dart';
 
 class Agent {

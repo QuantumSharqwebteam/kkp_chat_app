@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/message_bubble.dart';
-import 'package:intl/intl.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
   final String? customerImage;
   final String? agentName;
   final String? agentImage;
+  final String? customerEmail;
+  final String? agentEmail;
 
   const AgentChatScreen({
     super.key,
@@ -18,6 +19,8 @@ class AgentChatScreen extends StatefulWidget {
     this.customerImage = ImageConstants.userImage,
     this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
+    required this.customerEmail,
+    required this.agentEmail,
   });
 
   @override
@@ -34,12 +37,18 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
   void initState() {
     super.initState();
 
+    // Initialize the socket service
+    _socketService.initSocket();
+
+    // Join the room with the agent's email and name
+    _socketService.joinRoom(widget.agentName!, widget.agentEmail!);
+
     // Listen for new messages
     _socketService.onReceiveMessage = (data) {
       setState(() {
         messages.add({
           "text": data['message'],
-          "isMe": data['senderId'] == _socketService.socketId,
+          "isMe": data['senderId'] == widget.agentEmail,
           "timestamp":
               data['timestamp'] ?? DateTime.now().toUtc().toIso8601String(),
         });
@@ -56,9 +65,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
   void sendMessage() {
     if (_chatController.text.isNotEmpty) {
       final messageText = _chatController.text.trim();
-      final timestamp =
-          DateTime.now().toUtc().toIso8601String(); // Generate timestamp
-
+      final timestamp = DateTime.now().toUtc().toIso8601String();
       setState(() {
         messages.add({
           "text": messageText,
@@ -68,12 +75,11 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
       });
 
       _socketService.sendMessage(
-        "ZR19xF3ymk2eburiAAAB",
+        widget.customerEmail!,
         messageText,
+        widget.agentEmail!,
         widget.agentName!,
-        timestamp, // Send timestamp
       );
-
       _chatController.clear();
     }
   }
@@ -100,11 +106,27 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              // Initiate a video call
+              _socketService.initiateCall(
+                widget.customerEmail!,
+                {}, // Replace with actual signal data
+                widget.agentEmail!,
+                widget.agentName!,
+              );
+            },
             icon: const Icon(Icons.videocam_outlined, color: Colors.black),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              // Initiate an audio call
+              _socketService.initiateCall(
+                widget.customerEmail!,
+                {}, // Replace with actual signal data
+                widget.agentEmail!,
+                widget.agentName!,
+              );
+            },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],

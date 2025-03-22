@@ -19,7 +19,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
       "time": "2m",
       "image": "assets/images/user1.png",
       "isActive": false,
-      "isPinned": true
+      "isPinned": true,
+      "email": "agent1@example.com" // Add email for identification
     },
     {
       "name": "Marketing Agent 2",
@@ -27,7 +28,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
       "time": "3m",
       "image": "assets/images/user4.png",
       "isActive": true,
-      "isPinned": true
+      "isPinned": true,
+      "email": "agent2@example.com"
     },
     {
       "name": "Marketing Agent 3",
@@ -35,7 +37,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
       "time": "2hr",
       "image": "assets/images/user1.png",
       "isActive": false,
-      "isPinned": false
+      "isPinned": false,
+      "email": "agent3@example.com"
     },
     {
       "name": "Marketing Agent 4",
@@ -43,7 +46,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
       "time": "3hr",
       "image": "assets/images/user3.png",
       "isActive": false,
-      "isPinned": true
+      "isPinned": true,
+      "email": "agent4@example.com"
     },
     {
       "name": "Marketing Agent 5",
@@ -51,7 +55,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
       "time": "4m",
       "image": "assets/images/user4.png",
       "isActive": true,
-      "isPinned": false
+      "isPinned": false,
+      "email": "agent5@example.com"
     },
   ];
 
@@ -167,6 +172,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
                 builder: (context) => CustomersListScreen(
                   agentName: message['name'],
                   agentImage: message['image'],
+                  agentEmail: message['email'], // Pass the agent's email
                 ),
               ),
             );

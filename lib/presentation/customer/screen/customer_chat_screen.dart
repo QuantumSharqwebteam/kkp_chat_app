@@ -11,6 +11,8 @@ class CustomerChatScreen extends StatefulWidget {
   final String? customerImage;
   final String? agentName;
   final String? agentImage;
+  final String? customerEmail;
+  final String? agentEmail;
 
   const CustomerChatScreen({
     super.key,
@@ -18,6 +20,8 @@ class CustomerChatScreen extends StatefulWidget {
     this.customerImage = ImageConstants.userImage,
     this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
+    required this.customerEmail,
+    required this.agentEmail,
   });
 
   @override
@@ -34,12 +38,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   void initState() {
     super.initState();
 
+    // Initialize the socket service
+    _socketService.initSocket();
+
+    // Join the room with the customer's email and name
+    _socketService.joinRoom(widget.customerName!, widget.customerEmail!);
+
     // Listen for new messages
     _socketService.onReceiveMessage = (data) {
       setState(() {
         messages.add({
           "text": data['message'],
-          "isMe": data['senderId'] == _socketService.socketId,
+          "isMe": data['senderId'] == widget.customerEmail,
           "timestamp":
               data['timestamp'] ?? DateTime.now().toUtc().toIso8601String(),
         });
@@ -66,10 +76,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
       });
 
       _socketService.sendMessage(
-        "0VhypeA6SrUBrEjbAAAE",
+        widget.agentEmail!,
         messageText,
-        widget.agentName!,
-        timestamp, // Send timestamp
+        widget.customerEmail!,
+        widget.customerName!,
       );
       _chatController.clear();
     }
@@ -97,11 +107,27 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              // Initiate a video call
+              _socketService.initiateCall(
+                widget.agentEmail!,
+                {}, // Replace with actual signal data
+                widget.customerEmail!,
+                widget.customerName!,
+              );
+            },
             icon: Icon(Icons.videocam_outlined, color: Colors.black),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              // Initiate an audio call
+              _socketService.initiateCall(
+                widget.agentEmail!,
+                {}, // Replace with actual signal data
+                widget.customerEmail!,
+                widget.customerName!,
+              );
+            },
             icon: Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
@@ -118,7 +144,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                   text: msg['text'],
                   isMe: msg['isMe'],
                   image:
-                      msg['isMe'] ? widget.agentImage! : widget.customerImage!,
+                      msg['isMe'] ? widget.customerImage! : widget.agentImage!,
                   timestamp: formatTimestamp(msg['timestamp']),
                 );
               },

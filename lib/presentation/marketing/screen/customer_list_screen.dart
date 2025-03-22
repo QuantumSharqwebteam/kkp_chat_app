@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
@@ -8,11 +7,13 @@ import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dar
 class CustomersListScreen extends StatefulWidget {
   final String agentName;
   final String agentImage;
+  final String agentEmail;
 
   const CustomersListScreen({
     super.key,
     required this.agentName,
     required this.agentImage,
+    required this.agentEmail,
   });
 
   @override
@@ -28,28 +29,28 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
         "role": "Customer",
         "image": "assets/images/user1.png",
         "isActive": true,
-        "socketId": "customerSocketId1" // Add socket ID for each customer
+        "email": "shyam.mohan@example.com" // Use email for identification
       },
       {
         "name": "Krishna Deor",
         "role": "Customer",
         "image": "assets/images/user2.png",
         "isActive": false,
-        "socketId": "customerSocketId2"
+        "email": "krishna.deor@example.com"
       },
       {
         "name": "Ramesh Textile",
         "role": "Customer",
         "image": "assets/images/user3.png",
         "isActive": true,
-        "socketId": "customerSocketId3"
+        "email": "ramesh.textile@example.com"
       },
       {
         "name": "K.N Cottons",
         "role": "Customer",
         "image": "assets/images/user4.png",
         "isActive": false,
-        "socketId": "customerSocketId4"
+        "email": "kn.cottons@example.com"
       },
     ];
 
@@ -115,6 +116,10 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                           customerImage: customer['image'],
                           agentName: widget.agentName,
                           agentImage: widget.agentImage,
+                          customerEmail:
+                              customer['email'], // Pass the customer's email
+                          agentEmail:
+                              widget.agentEmail, // Pass the agent's email
                         ),
                       ),
                     );

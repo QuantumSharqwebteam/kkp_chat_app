@@ -10,38 +10,30 @@ class SocketService {
   factory SocketService() => _instance;
 
   late io.Socket _socket;
-  final String serverUrl = dotenv.env['SOCKET_IO_URL']!;
+  final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
   int retryCount = 0;
   static const int maxRetries = 5;
-  String? socketId;
-
-  // Store online users (userId -> socketId mapping)
-  final Map<String, String> onlineUsers = {};
 
   Function(dynamic data)? onReceiveMessage;
   Function(dynamic data)? onIncomingCall;
-  Function(dynamic data)? onCallAnswered;
-  Function(dynamic data)? onCallTerminated;
   Function(dynamic data)? onMediaStatusChanged;
+  Function(dynamic data)? onCallAnswered;
+  Function()? onCallTerminated;
 
   SocketService._internal();
 
   void initSocket() {
-    _socket = io.io(
-      serverUrl,
-      <String, dynamic>{
-        'transports': ['websocket'],
-        'autoConnect': false,
-        'reconnection': true,
-        'reconnectionAttempts': maxRetries,
-        'reconnectionDelay': 2000,
-      },
-    );
+    _socket = io.io(serverUrl, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+      'reconnection': true,
+      'reconnectionAttempts': maxRetries,
+      'reconnectionDelay': 2000,
+    });
 
     _socket.onConnect((_) {
       debugPrint('Connected to server');
       retryCount = 0;
-      socketId = _socket.id;
       retrySendingMessages();
     });
 
@@ -55,51 +47,39 @@ class SocketService {
       handleReconnect();
     });
 
-    // Get my socket ID
-    _socket.on('socketId', (data) {
-      debugPrint('Socket ID: $data');
-      socketId = data;
-    });
-
-    // Get online users and store socket IDs
-    _socket.on('roomMembers', (data) {
-      debugPrint('Online Users: $data');
-      if (data is List) {
-        onlineUsers.clear();
-        for (var user in data) {
-          if (user is Map<String, dynamic> &&
-              user.containsKey('userId') &&
-              user.containsKey('id')) {
-            onlineUsers[user['userId']] =
-                user['id']; // Store userId -> socketId
-          }
-        }
-      }
-    });
-
     _socket.on('receiveMessage', (data) {
       debugPrint('Received message: $data');
-      onReceiveMessage?.call(data);
+      if (onReceiveMessage != null) {
+        onReceiveMessage!(data);
+      }
     });
 
     _socket.on('incomingCall', (data) {
       debugPrint('Incoming call: $data');
-      onIncomingCall?.call(data);
-    });
-
-    _socket.on('callAnswered', (data) {
-      debugPrint('Call answered: $data');
-      onCallAnswered?.call(data);
-    });
-
-    _socket.on('callTerminated', (data) {
-      debugPrint('Call terminated: $data');
-      onCallTerminated?.call(data);
+      if (onIncomingCall != null) {
+        onIncomingCall!(data);
+      }
     });
 
     _socket.on('mediaStatusChanged', (data) {
       debugPrint('Media status changed: $data');
-      onMediaStatusChanged?.call(data);
+      if (onMediaStatusChanged != null) {
+        onMediaStatusChanged!(data);
+      }
+    });
+
+    _socket.on('callAnswered', (data) {
+      debugPrint('Call answered: $data');
+      if (onCallAnswered != null) {
+        onCallAnswered!(data);
+      }
+    });
+
+    _socket.on('callTerminated', (data) {
+      debugPrint('Call terminated');
+      if (onCallTerminated != null) {
+        onCallTerminated!();
+      }
     });
 
     connect();
@@ -113,85 +93,74 @@ class SocketService {
     _socket.disconnect();
   }
 
-  void joinRoom(String user, String userId, Function(dynamic) callback) {
-    debugPrint("Joining room: user=$user, userId=$userId");
-
-    _socket.emitWithAck('join', {'user': user, 'userId': userId},
-        ack: (response) {
-      debugPrint("Join room response: $response");
-
-      if (response is Map<String, dynamic> && response.containsKey('id')) {
-        onlineUsers[userId] = response['id']; // Store my own socket ID
-      }
-
-      callback(response);
-    });
+  void joinRoom(String user, String userId) {
+    _socket.emit('join', {'user': user, 'userId': userId});
   }
 
-  void sendMessage(
-      String targetUserId, String message, String senderId, String senderName) {
-    String? targetSocketId = onlineUsers[targetUserId];
-
-    if (targetSocketId == null) {
-      debugPrint("User $targetUserId is offline or not found.");
-      return;
-    }
-
-    String timestamp = DateTime.now().toIso8601String();
-
-    if (_socket.connected) {
+  void sendMessage(String targetEmail, String message, String senderEmail,
+      String senderName) {
+    if (_socket.connected && targetEmail.isNotEmpty) {
       _socket.emit('sendMessage', {
-        'targetId':
-            targetUserId, // this will be the socket id to whom the sender is sending message
+        'targetId': targetEmail,
         'message': message,
-        'senderId':
-            senderId, // this will be the current user email who is sending message
+        'senderId': senderEmail,
         'senderName': senderName,
-        'timestamp': timestamp,
       });
     } else {
       saveMessage(targetUserId, message, senderId, senderName);
     }
   }
 
-  void initiateCall(
-      String targetId, dynamic signalData, String senderId, String senderName) {
+  void initiateCall(String targetEmail, dynamic signalData, String senderEmail,
+      String senderName) {
     _socket.emit('initiateCall', {
-      'targetId': targetId,
+      'targetId': targetEmail,
       'signalData': signalData,
-      'senderId': senderId,
+      'senderId': senderEmail,
       'senderName': senderName,
     });
   }
 
-  void answerCall(
-      String to, dynamic signalData, String mediaType, bool mediaStatus) {
+  void answerCall(String to, dynamic data) {
     _socket.emit('answerCall', {
       'to': to,
-      'signalData': signalData,
-      'mediaType': mediaType,
-      'mediaStatus': mediaStatus,
+      'mediaType': data['mediaType'],
+      'mediaStatus': data['mediaStatus'],
     });
   }
 
-  void terminateCall(String targetId) {
-    _socket.emit('terminateCall', {'targetId': targetId});
+  void terminateCall(String targetEmail) {
+    _socket.emit('terminateCall', {'targetId': targetEmail});
   }
 
-  void changeMediaStatus(String mediaType, bool isActive) {
-    _socket.emit(
-        'changeMediaStatus', {'mediaType': mediaType, 'isActive': isActive});
+  void initiateCall(String targetEmail, dynamic signalData, String senderEmail,
+      String senderName) {
+    _socket.emit('initiateCall', {
+      'targetId': targetEmail,
+      'signalData': signalData,
+      'senderId': senderEmail,
+      'senderName': senderName,
+    });
   }
 
-  Future<void> retrySendingMessages() async {
+  void answerCall(String to, dynamic data) {
+    _socket.emit('answerCall', {
+      'to': to,
+      'mediaType': data['mediaType'],
+      'mediaStatus': data['mediaStatus'],
+    });
+  }
+
+  void terminateCall(String targetEmail) {
+    _socket.emit('terminateCall', {'targetId': targetEmail});
+  }
+
+  void retrySendingMessages() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> pendingMessages = prefs.getStringList('pendingMessages') ?? [];
 
     for (String message in pendingMessages) {
-      List<String> parts = message.split('|');
-      if (parts.length == 4) {
-        sendMessage(parts[0], parts[1], parts[2], parts[3]);
-      }
+      sendMessage('targetEmail', message, 'senderEmail', 'senderName');
     }
 
     pendingMessages.clear();
