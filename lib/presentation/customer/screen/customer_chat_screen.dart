@@ -18,7 +18,7 @@ class CustomerChatScreen extends StatefulWidget {
     super.key,
     this.customerName = "Varun",
     this.customerImage = ImageConstants.userImage,
-    this.agentName = "Shoaib",
+    this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
     this.customerEmail = "prabhujivats@gmail.com",
     this.agentEmail = "mohdshoaibrayeen3@gmail.com",
@@ -58,10 +58,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     });
 
     _socketService.sendMessage(
-      widget.customerEmail!,
-      messageText,
       widget.agentEmail!,
-      widget.agentName!,
+      messageText,
+      widget.customerEmail!,
+      widget.customerName!,
     );
 
     _chatController.clear();
@@ -70,6 +70,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   @override
   void dispose() {
     _chatController.dispose();
+
     super.dispose();
   }
 
