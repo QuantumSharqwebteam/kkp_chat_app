@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,12 +8,15 @@ class SocketService {
   factory SocketService() => _instance;
 
   late io.Socket _socket;
-  final String serverUrl = "https://video-call-server-gm7i.onrender.com";
+  final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
   int retryCount = 0;
   static const int maxRetries = 5;
-  String? socketId;
 
   Function(dynamic data)? onReceiveMessage;
+  Function(dynamic data)? onIncomingCall;
+  Function(dynamic data)? onMediaStatusChanged;
+  Function(dynamic data)? onCallAnswered;
+  Function()? onCallTerminated;
 
   SocketService._internal();
 
@@ -20,15 +24,14 @@ class SocketService {
     _socket = io.io(serverUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
-      'reconnection': true, // Auto-reconnect enabled
+      'reconnection': true,
       'reconnectionAttempts': maxRetries,
-      'reconnectionDelay': 2000, // Delay between retries
+      'reconnectionDelay': 2000,
     });
 
     _socket.onConnect((_) {
       debugPrint('Connected to server');
       retryCount = 0;
-      socketId = _socket.id;
       retrySendingMessages();
     });
 
@@ -42,23 +45,40 @@ class SocketService {
       handleReconnect();
     });
 
-    _socket.on('socketId', (data) {
-      debugPrint('Socket ID: $data');
-      socketId = data;
-    });
-
     _socket.on('receiveMessage', (data) {
       debugPrint('Received message: $data');
       if (onReceiveMessage != null) {
         onReceiveMessage!(data);
-        //local save of chat will also be handled.
       }
     });
 
-//     _socket.on('chatAssigned', (data) {
-//   debugPrint('Chat assigned: $data');
-//   // Update UI to reflect assigned agent
-// });
+    _socket.on('incomingCall', (data) {
+      debugPrint('Incoming call: $data');
+      if (onIncomingCall != null) {
+        onIncomingCall!(data);
+      }
+    });
+
+    _socket.on('mediaStatusChanged', (data) {
+      debugPrint('Media status changed: $data');
+      if (onMediaStatusChanged != null) {
+        onMediaStatusChanged!(data);
+      }
+    });
+
+    _socket.on('callAnswered', (data) {
+      debugPrint('Call answered: $data');
+      if (onCallAnswered != null) {
+        onCallAnswered!(data);
+      }
+    });
+
+    _socket.on('callTerminated', (data) {
+      debugPrint('Call terminated');
+      if (onCallTerminated != null) {
+        onCallTerminated!();
+      }
+    });
 
     connect();
   }
@@ -71,18 +91,44 @@ class SocketService {
     _socket.disconnect();
   }
 
-  void sendMessage(
-      String targetId, String message, String senderName, String? timestamp) {
-    if (_socket.connected && targetId.isNotEmpty) {
+  void joinRoom(String user, String userId) {
+    _socket.emit('join', {'user': user, 'userId': userId});
+  }
+
+  void sendMessage(String targetEmail, String message, String senderEmail,
+      String senderName) {
+    if (_socket.connected && targetEmail.isNotEmpty) {
       _socket.emit('sendMessage', {
-        'targetId': targetId,
+        'targetId': targetEmail,
         'message': message,
+        'senderId': senderEmail,
         'senderName': senderName,
-        'timestamp': timestamp, // Include timestamp in message payload
       });
     } else {
       saveMessage(message);
     }
+  }
+
+  void initiateCall(String targetEmail, dynamic signalData, String senderEmail,
+      String senderName) {
+    _socket.emit('initiateCall', {
+      'targetId': targetEmail,
+      'signalData': signalData,
+      'senderId': senderEmail,
+      'senderName': senderName,
+    });
+  }
+
+  void answerCall(String to, dynamic data) {
+    _socket.emit('answerCall', {
+      'to': to,
+      'mediaType': data['mediaType'],
+      'mediaStatus': data['mediaStatus'],
+    });
+  }
+
+  void terminateCall(String targetEmail) {
+    _socket.emit('terminateCall', {'targetId': targetEmail});
   }
 
   void retrySendingMessages() async {
@@ -90,7 +136,7 @@ class SocketService {
     List<String> pendingMessages = prefs.getStringList('pendingMessages') ?? [];
 
     for (String message in pendingMessages) {
-      sendMessage('targetId', message, 'senderName', "timeStamp");
+      sendMessage('targetEmail', message, 'senderEmail', 'senderName');
     }
 
     pendingMessages.clear();
