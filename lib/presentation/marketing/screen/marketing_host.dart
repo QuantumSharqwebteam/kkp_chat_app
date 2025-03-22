@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_profile_page.dart';
@@ -23,15 +25,26 @@ class _MarketingHostState extends State<MarketingHost> {
   String? agentName;
   List<Widget> _screens = [];
   final SocketService _socketService = SocketService();
+  AuthApi auth = AuthApi();
 
   @override
   void initState() {
     super.initState();
     _loadRole();
-
-    _socketService.initSocket("Shoaib",
-        "mohdshoaibrayeen3@gmail.com"); // Establish socket connection globally
+    _loadCurrentUserData().then((data) {
+      _socketService.initSocket(data[0], data[1]);
+    });
+    // _socketService.initSocket("Shoaib",
+    //     "mohdshoaibrayeen3@gmail.com"); // Establish socket connection globally
     // _socketService.joinRoom("Shoaib", "mohdshoaibrayeen3@gmail.com");
+  }
+
+  Future<List<String>> _loadCurrentUserData() async {
+    String name = await auth.getUserInfo().then((info) {
+      Profile profile = info;
+      return profile.name!;
+    });
+    return [await SharedPreferenceHelper.getEmail() ?? "", name];
   }
 
   @override

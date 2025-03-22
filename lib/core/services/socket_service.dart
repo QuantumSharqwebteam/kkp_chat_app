@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
@@ -31,18 +31,18 @@ class SocketService {
     _socket.onConnect((_) {
       _isConnected = true;
       _reconnectAttempts = 0; // Reset reconnect attempts on success
-      print('✅ Connected to socket server');
+      debugPrint('✅ Connected to socket server');
 
       // Emit join event
       _socket.emit('join', {'user': userName, 'userId': userEmail});
     });
 
     _socket.on('socketId', (socketId) {
-      print('📌 Assigned Socket ID: $socketId');
+      debugPrint('📌 Assigned Socket ID: $socketId');
     });
 
     _socket.on('roomMembers', (roomMembers) {
-      print('👥 Current Room Members: $roomMembers');
+      debugPrint('👥 Current Room Members: $roomMembers');
     });
 
     // ✅ Handle received messages and call the callback if set
@@ -50,18 +50,18 @@ class SocketService {
       if (_onMessageReceived != null) {
         _onMessageReceived!(data);
       } else {
-        print('📩 New message received but no listener attached: $data');
+        debugPrint('📩 New message received but no listener attached: $data');
       }
     });
 
     _socket.onDisconnect((_) {
       _isConnected = false;
-      print('⚠️ Disconnected from socket server');
+      debugPrint('⚠️ Disconnected from socket server');
       _attemptReconnect(userName, userEmail);
     });
 
     _socket.onError((error) {
-      print('❌ Socket Error: $error');
+      debugPrint('❌ Socket Error: $error');
       _attemptReconnect(userName, userEmail);
     });
 
@@ -77,7 +77,7 @@ class SocketService {
   void _attemptReconnect(String userName, String userEmail) {
     if (_reconnectAttempts < _maxReconnectAttempts) {
       _reconnectAttempts++;
-      print(
+      debugPrint(
           '🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
 
       Future.delayed(_reconnectInterval, () {
@@ -86,7 +86,7 @@ class SocketService {
         }
       });
     } else {
-      print('🚫 Max reconnection attempts reached.');
+      debugPrint('🚫 Max reconnection attempts reached.');
     }
   }
 
