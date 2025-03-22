@@ -17,10 +17,10 @@ class AgentChatScreen extends StatefulWidget {
     super.key,
     this.customerName = "User",
     this.customerImage = ImageConstants.userImage,
-    this.agentName = "Agent",
+    this.agentName = "Shoaib",
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail,
-    this.agentEmail,
+    this.customerEmail = "prabhujivats@gmail.com",
+    this.agentEmail = "mohdshoaibrayeen3@gmail.com",
   });
 
   @override
@@ -36,52 +36,40 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
   @override
   void initState() {
     super.initState();
+    _socketService.onReceiveMessage(_handleIncomingMessage);
+  }
 
-    // Initialize the socket service
-    _socketService.initSocket();
-
-    // Join the room with the agent's email and name
-    _socketService.joinRoom(widget.agentName!, widget.agentEmail!);
-
-    // Listen for new messages
-    _socketService.onReceiveMessage = (data) {
-      setState(() {
-        messages.add({
-          "text": data['message'],
-          "isMe": data['senderId'] == widget.agentEmail,
-          "timestamp":
-              data['timestamp'] ?? DateTime.now().toUtc().toIso8601String(),
-        });
+  void _handleIncomingMessage(Map<String, dynamic> data) {
+    setState(() {
+      messages.add({
+        "text": data["message"],
+        "isMe": data["senderId"] == widget.agentEmail,
       });
-    };
+    });
+  }
+
+  void _sendMessage() {
+    if (_chatController.text.trim().isEmpty) return;
+
+    final messageText = _chatController.text.trim();
+    setState(() {
+      messages.add({"text": messageText, "isMe": true});
+    });
+
+    _socketService.sendMessage(
+      widget.customerEmail!,
+      messageText,
+      widget.agentEmail!,
+      widget.agentName!,
+    );
+
+    _chatController.clear();
   }
 
   @override
   void dispose() {
     _chatController.dispose();
     super.dispose();
-  }
-
-  void sendMessage() {
-    if (_chatController.text.isNotEmpty) {
-      final messageText = _chatController.text.trim();
-      final timestamp = DateTime.now().toUtc().toIso8601String();
-      setState(() {
-        messages.add({
-          "text": messageText,
-          "isMe": true,
-          "timestamp": timestamp, // Store locally
-        });
-      });
-
-      _socketService.sendMessage(
-        widget.customerEmail!,
-        messageText,
-        widget.agentEmail!,
-        widget.agentName!,
-      );
-      _chatController.clear();
-    }
   }
 
   String formatTimestamp(String timestamp) {
@@ -108,24 +96,12 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
           IconButton(
             onPressed: () {
               // Initiate a video call
-              _socketService.initiateCall(
-                widget.customerEmail!,
-                {}, // Replace with actual signal data
-                widget.agentEmail!,
-                widget.agentName!,
-              );
             },
             icon: const Icon(Icons.videocam_outlined, color: Colors.black),
           ),
           IconButton(
             onPressed: () {
               // Initiate an audio call
-              _socketService.initiateCall(
-                widget.customerEmail!,
-                {}, // Replace with actual signal data
-                widget.agentEmail!,
-                widget.agentName!,
-              );
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
@@ -144,14 +120,14 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                   isMe: msg['isMe'],
                   image:
                       msg['isMe'] ? widget.agentImage! : widget.customerImage!,
-                  timestamp: formatTimestamp(msg['timestamp']),
+                  //timestamp: formatTimestamp(msg['timestamp']),
                 );
               },
             ),
           ),
           ChatInputField(
             controller: _chatController,
-            onSend: sendMessage,
+            onSend: _sendMessage,
           ),
         ],
       ),

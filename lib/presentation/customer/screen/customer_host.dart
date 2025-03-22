@@ -20,7 +20,8 @@ class _CustomerHostState extends State<CustomerHost> {
   @override
   void initState() {
     super.initState();
-    _socketService.initSocket(); // Establish socket connection globally
+    _socketService.initSocket("varun",
+        "prabhujivats@gmail.com"); // Establish socket connection globally
   }
 
   @override

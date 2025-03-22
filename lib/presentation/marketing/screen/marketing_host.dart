@@ -19,6 +19,8 @@ class MarketingHost extends StatefulWidget {
 class _MarketingHostState extends State<MarketingHost> {
   int _selectedIndex = 0;
   String? role;
+  String? agentEmail;
+  String? agentName;
   List<Widget> _screens = [];
   final SocketService _socketService = SocketService();
 
@@ -26,7 +28,10 @@ class _MarketingHostState extends State<MarketingHost> {
   void initState() {
     super.initState();
     _loadRole();
-    _socketService.initSocket(); // Establish socket connection globally
+
+    _socketService.initSocket("Shoaib",
+        "mohdshoaibrayeen3@gmail.com"); // Establish socket connection globally
+    // _socketService.joinRoom("Shoaib", "mohdshoaibrayeen3@gmail.com");
   }
 
   @override
@@ -37,6 +42,9 @@ class _MarketingHostState extends State<MarketingHost> {
 
   Future<void> _loadRole() async {
     role = await SharedPreferenceHelper.getUserType();
+    agentEmail = await SharedPreferenceHelper.getEmail();
+    agentName = await SharedPreferenceHelper.getName();
+    //  debugPrint(" Agent : $agentName, $agentEmail");
     _updateScreens();
   }
 

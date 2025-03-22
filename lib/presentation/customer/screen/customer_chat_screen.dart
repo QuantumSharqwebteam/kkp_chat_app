@@ -16,12 +16,12 @@ class CustomerChatScreen extends StatefulWidget {
 
   const CustomerChatScreen({
     super.key,
-    this.customerName = "User",
+    this.customerName = "Varun",
     this.customerImage = ImageConstants.userImage,
-    this.agentName = "Agent",
+    this.agentName = "Shoaib",
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail,
-    this.agentEmail,
+    this.customerEmail = "prabhujivats@gmail.com",
+    this.agentEmail = "mohdshoaibrayeen3@gmail.com",
   });
 
   @override
@@ -37,52 +37,40 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   @override
   void initState() {
     super.initState();
+    _socketService.onReceiveMessage(_handleIncomingMessage);
+  }
 
-    // Initialize the socket service
-    _socketService.initSocket();
-
-    // Join the room with the customer's email and name
-    _socketService.joinRoom(widget.customerName!, widget.customerEmail!);
-
-    // Listen for new messages
-    _socketService.onReceiveMessage = (data) {
-      setState(() {
-        messages.add({
-          "text": data['message'],
-          "isMe": data['senderId'] == widget.customerEmail,
-          "timestamp":
-              data['timestamp'] ?? DateTime.now().toUtc().toIso8601String(),
-        });
+  void _handleIncomingMessage(Map<String, dynamic> data) {
+    setState(() {
+      messages.add({
+        "text": data["message"],
+        "isMe": data["senderId"] == widget.agentEmail,
       });
-    };
+    });
+  }
+
+  void _sendMessage() {
+    if (_chatController.text.trim().isEmpty) return;
+
+    final messageText = _chatController.text.trim();
+    setState(() {
+      messages.add({"text": messageText, "isMe": true});
+    });
+
+    _socketService.sendMessage(
+      widget.customerEmail!,
+      messageText,
+      widget.agentEmail!,
+      widget.agentName!,
+    );
+
+    _chatController.clear();
   }
 
   @override
   void dispose() {
     _chatController.dispose();
     super.dispose();
-  }
-
-  void sendMessage() {
-    if (_chatController.text.isNotEmpty) {
-      final messageText = _chatController.text.trim();
-      final timestamp = DateTime.now().toUtc().toIso8601String();
-      setState(() {
-        messages.add({
-          "text": messageText,
-          "isMe": true,
-          "timestamp": timestamp, // Store locally
-        });
-      });
-
-      _socketService.sendMessage(
-        widget.agentEmail!,
-        messageText,
-        widget.customerEmail!,
-        widget.customerName!,
-      );
-      _chatController.clear();
-    }
   }
 
   String formatTimestamp(String timestamp) {
@@ -152,7 +140,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
           ),
           ChatInputField(
             controller: _chatController,
-            onSend: sendMessage,
+            onSend: _sendMessage,
           ),
         ],
       ),
