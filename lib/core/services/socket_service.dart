@@ -3,8 +3,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter/material.dart';
-
 class SocketService {
   static final SocketService _instance = SocketService._internal();
   factory SocketService() => _instance;
@@ -107,30 +105,8 @@ class SocketService {
         'senderName': senderName,
       });
     } else {
-      saveMessage(targetUserId, message, senderId, senderName);
+      saveMessage(message);
     }
-  }
-
-  void initiateCall(String targetEmail, dynamic signalData, String senderEmail,
-      String senderName) {
-    _socket.emit('initiateCall', {
-      'targetId': targetEmail,
-      'signalData': signalData,
-      'senderId': senderEmail,
-      'senderName': senderName,
-    });
-  }
-
-  void answerCall(String to, dynamic data) {
-    _socket.emit('answerCall', {
-      'to': to,
-      'mediaType': data['mediaType'],
-      'mediaStatus': data['mediaStatus'],
-    });
-  }
-
-  void terminateCall(String targetEmail) {
-    _socket.emit('terminateCall', {'targetId': targetEmail});
   }
 
   void initiateCall(String targetEmail, dynamic signalData, String senderEmail,
@@ -167,11 +143,10 @@ class SocketService {
     await prefs.setStringList('pendingMessages', []);
   }
 
-  Future<void> saveMessage(String targetId, String message, String senderId,
-      String senderName) async {
+  void saveMessage(String message) async {
     final prefs = await SharedPreferences.getInstance();
     List<String> pendingMessages = prefs.getStringList('pendingMessages') ?? [];
-    pendingMessages.add("$targetId|$message|$senderId|$senderName");
+    pendingMessages.add(message);
     await prefs.setStringList('pendingMessages', pendingMessages);
   }
 

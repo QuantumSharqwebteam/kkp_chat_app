@@ -20,8 +20,8 @@ class CustomerChatScreen extends StatefulWidget {
     this.customerImage = ImageConstants.userImage,
     this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
-    required this.customerEmail,
-    required this.agentEmail,
+    this.customerEmail,
+    this.agentEmail,
   });
 
   @override
