@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/customer_list_screen.dart';
 import 'package:shimmer/shimmer.dart';
 // Import reusable shimmer list
 
@@ -154,36 +157,50 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
       itemCount: _agentsList.length,
       itemBuilder: (context, index) {
         final agent = _agentsList[index];
-        return Card(
-          surfaceTintColor: Colors.white,
-          color: Colors.white,
-          elevation: 5,
-          child: ListTile(
-            leading: const CircleAvatar(
-              backgroundImage: AssetImage("assets/images/user3.png"),
-            ),
-            title: Text(agent.name, style: AppTextStyles.black16_600),
-            subtitle: Text(
-              agent.role,
-              style: AppTextStyles.black14_400.copyWith(
-                color: AppColors.black60opac,
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CustomersListScreen(
+                  agentName: agent.name,
+                  agentImage: ImageConstants.userImage,
+                  agentEmail: agent.email, // Pass the agent's email
+                ),
               ),
-            ),
-            trailing: PopupMenuButton<String>(
-              splashRadius: 20,
-              borderRadius: BorderRadius.circular(20),
-              color: Colors.white,
-              surfaceTintColor: Colors.white,
-              elevation: 10,
-              onSelected: (value) {
-                // Handle actions here
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                    value: "restrict", child: Text("Restrict Access")),
-                const PopupMenuItem(
-                    value: "delete", child: Text("Delete Profile")),
-              ],
+            );
+          },
+          child: Card(
+            surfaceTintColor: Colors.white,
+            color: Colors.white,
+            elevation: 5,
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundImage: AssetImage("assets/images/user3.png"),
+              ),
+              title: Text(agent.name, style: AppTextStyles.black16_600),
+              subtitle: Text(
+                agent.role,
+                style: AppTextStyles.black14_400.copyWith(
+                  color: AppColors.black60opac,
+                ),
+              ),
+              trailing: PopupMenuButton<String>(
+                splashRadius: 20,
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                surfaceTintColor: Colors.white,
+                elevation: 10,
+                onSelected: (value) {
+                  // Handle actions here
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                      value: "restrict", child: Text("Restrict Access")),
+                  const PopupMenuItem(
+                      value: "delete", child: Text("Delete Profile")),
+                ],
+              ),
             ),
           ),
         );
