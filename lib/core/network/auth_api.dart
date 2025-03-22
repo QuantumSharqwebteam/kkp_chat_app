@@ -11,7 +11,7 @@ class AuthApi {
   final http.Client client;
 
   AuthApi({http.Client? client}) : client = client ?? http.Client();
-
+  // login
   Future<Map<String, dynamic>> login(
       {required String email, required String password}) async {
     const endPoint = 'user/login';
@@ -38,6 +38,7 @@ class AuthApi {
     }
   }
 
+  //signup
   Future<Map<String, dynamic>> signup(
       {required String email, required String password}) async {
     const endPoint = 'user/signup';
@@ -68,6 +69,7 @@ class AuthApi {
     }
   }
 
+  //update user details
   Future<Map<String, dynamic>> updateDetails({
     String? name,
     String? number,
@@ -208,6 +210,7 @@ class AuthApi {
     }
   }
 
+  //sendotp api
   Future<Map<String, dynamic>> sendOtp({required String email}) async {
     const endPoint = "user/getOTP/";
     final url = Uri.parse('$baseUrl$endPoint$email');
@@ -227,6 +230,7 @@ class AuthApi {
     }
   }
 
+  // get particular user profile detaiils api admin , agent , customer
   Future<Profile> getUserInfo() async {
     const endPoint = "user/getInfo";
     final url = Uri.parse('$baseUrl$endPoint');
@@ -294,6 +298,32 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception('Error fetching agent details: $e');
+    }
+  }
+
+  // create new  Agent / add new agent
+  Future<Map<String, dynamic>> addAgent(
+      {required Map<String, dynamic> body}) async {
+    const endPoint = 'user/signup';
+    final url = Uri.parse("$baseUrl$endPoint");
+    try {
+      final response = await client.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 400) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to signup new agent: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error during signup new agent : $e');
     }
   }
 }

@@ -112,15 +112,15 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => AgentChatScreen(
-                          customerName: customer['name'],
-                          customerImage: customer['image'],
-                          agentName: widget.agentName,
-                          agentImage: widget.agentImage,
-                          customerEmail:
-                              customer['email'], // Pass the customer's email
-                          agentEmail:
-                              widget.agentEmail, // Pass the agent's email
-                        ),
+                            // customerName: customer['name'],
+                            // customerImage: customer['image'],
+                            // agentName: widget.agentName,
+                            // agentImage: widget.agentImage,
+                            // customerEmail:
+                            //     customer['email'], // Pass the customer's email
+                            // agentEmail:
+                            //     widget.agentEmail, // Pass the agent's email
+                            ),
                       ),
                     );
                   },

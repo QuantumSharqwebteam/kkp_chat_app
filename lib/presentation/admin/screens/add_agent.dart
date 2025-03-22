@@ -4,6 +4,8 @@ import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
+import '../../../core/network/auth_api.dart';
+
 class AddAgent extends StatefulWidget {
   const AddAgent({super.key});
 
@@ -12,19 +14,61 @@ class AddAgent extends StatefulWidget {
 }
 
 class _AddAgentState extends State<AddAgent> {
+  final _auth = AuthApi();
   final TextEditingController fullNameController = TextEditingController();
 
   final TextEditingController emailController = TextEditingController();
 
   final TextEditingController phoneController = TextEditingController();
 
-  final TextEditingController agentIdController = TextEditingController();
-
   final TextEditingController passwordController = TextEditingController();
 
-  final List<String> roles = ["Select role", 'Admin', 'Agent'];
+  final List<String> roles = ['AgentHead', 'Agent'];
 
-  String selectedRole = 'Select role';
+  String selectedRole = 'Agent';
+
+  Future<void> signUpNewAgent() async {
+    if (fullNameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        phoneController.text.isEmpty ||
+        passwordController.text.isEmpty) {
+      Utils().showSuccessDialog(context, "Add all the details");
+      return;
+    }
+    final body = {
+      "name": fullNameController.text,
+      "email": emailController.text,
+      "mobile": int.parse(phoneController.text),
+      "role": selectedRole,
+      "password": passwordController.text
+    };
+    try {
+      final response = await _auth.addAgent(body: body);
+      if (response['message'] == "User signed up successfully") {
+        if (mounted) {
+          Utils().showSuccessDialog(context, "Agent Profile created");
+        }
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else if (response["status"] == 400 || response["status"] == 401) {
+        if (mounted) {
+          Utils().showSuccessDialog(context, "${response["message"]}");
+        }
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        if (mounted) {
+          Utils().showSuccessDialog(context, "Failed to add Agent!");
+        }
+      }
+    } catch (e) {
+      debugPrint("Failed to add new agent : ${e.toString()}");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,12 +139,7 @@ class _AddAgentState extends State<AddAgent> {
                     keyboardType: TextInputType.phone,
                     prefixIcon: const Icon(Icons.phone),
                   ),
-                  Text("Agent Id"),
-                  CustomTextField(
-                    controller: agentIdController,
-                    hintText: 'Create Agent ID',
-                    prefixIcon: const Icon(Icons.badge),
-                  ),
+
                   Text("Password"),
                   CustomTextField(
                     controller: passwordController,
@@ -135,9 +174,7 @@ class _AddAgentState extends State<AddAgent> {
                   const SizedBox(height: 10),
                   // Add Agent Button
                   CustomButton(
-                    onPressed: () {
-                      Utils().showSuccessDialog(context, "Added Sucessfully");
-                    },
+                    onPressed: signUpNewAgent,
                     fontSize: 18,
                     backgroundColor: AppColors.blue00ABE9,
                     text: "Add Agent",

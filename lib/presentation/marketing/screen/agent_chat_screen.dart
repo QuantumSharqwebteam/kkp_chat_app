@@ -15,7 +15,7 @@ class AgentChatScreen extends StatefulWidget {
 
   const AgentChatScreen({
     super.key,
-    this.customerName = "User",
+    this.customerName = "Varun",
     this.customerImage = ImageConstants.userImage,
     this.agentName = "Shoaib",
     this.agentImage = "assets/images/user4.png",
