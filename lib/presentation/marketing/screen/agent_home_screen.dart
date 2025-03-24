@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/direct_messages_list_item.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
@@ -15,6 +18,9 @@ class AgentHomeScreen extends StatefulWidget {
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
   final _searchController = TextEditingController();
+  Profile? profileData;
+  String? name;
+  AuthRepository auth = AuthRepository();
   List<Map<String, dynamic>> users = [
     {
       "name": "Rumi",
@@ -97,6 +103,30 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       "isActive": true // Active user
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      profileData = await auth.getUserInfo();
+      if (mounted) {
+        setState(() {
+          name = profileData?.name;
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        if (mounted) {
+          print(e.toString());
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,7 +182,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
         radius: 26,
         backgroundImage: AssetImage("assets/images/profile.png"),
       ),
-      title: Text("John", style: AppTextStyles.black16_500),
+      title: Text(name ?? "User", style: AppTextStyles.black16_500),
       subtitle:
           Text("Let's find latest messages", style: AppTextStyles.black12_400),
       trailing: IconButton(

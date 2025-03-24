@@ -5,6 +5,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
@@ -17,6 +18,14 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final SocketService _socketService = SocketService();
+  late Map<dynamic, dynamic> profile;
+
+  @override
+  void initState() {
+    super.initState();
+    profile = LocalDbHelper.getProfile();
+  }
+
   void logout() async {
     await LocalDbHelper.removeToken();
     await LocalDbHelper.removeName();
@@ -68,11 +77,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            "Ruchita Mehra",
+            profile['name'] ?? "",
             style: AppTextStyles.black14_600.copyWith(fontSize: 28),
           ),
-          const Text(
-            "Marketing Agent",
+          Text(
+            profile['role'] ?? "",
             style: AppTextStyles.grey5C5C5C_16_600,
           ),
           const SizedBox(height: 10),

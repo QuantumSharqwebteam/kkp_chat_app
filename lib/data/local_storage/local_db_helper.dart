@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 
 class LocalDbHelper {
   static const String _keyToken = 'token';
@@ -57,11 +58,11 @@ class LocalDbHelper {
     await _box.delete(_name);
   }
 
-  static Future<void> saveProfile(dynamic profile) async {
-    await _box.put(_profile, profile);
+  static Future<void> saveProfile(Profile profile) async {
+    await _box.put(_profile, profile.toMap());
   }
 
-  static String? getProfile() {
+  static Map<dynamic, dynamic> getProfile() {
     return _box.get(_profile);
   }
 

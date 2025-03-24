@@ -73,4 +73,47 @@ class Profile {
       'wrongPasswordCount': wrongPasswordCount,
     };
   }
+
+  // Method to convert the Profile object to a Map
+  Map<String, dynamic> toMap() {
+    return {
+      'lockedTemp': lockedTemp,
+      'panNo': panNo,
+      'otp': otp,
+      'address': address?.map((x) => x.toMap()).toList(),
+      'gstNo': gstNo,
+      'email': email,
+      'name': name,
+      'expireTime': expireTime,
+      'password': password,
+      'mobile': mobile,
+      'customerType': customerType,
+      'role': role,
+      'createdOn': createdOn?.toIso8601String(),
+      'wrongPasswordCount': wrongPasswordCount,
+    };
+  }
+
+  // Named constructor to create a Profile instance from a Map
+  factory Profile.fromMap(Map<String, dynamic> map) {
+    return Profile(
+      lockedTemp: map['lockedTemp'],
+      panNo: map['panNo'],
+      otp: map['otp'],
+      address: map['address'] != null
+          ? List<Address>.from(map['address'].map((x) => Address.fromMap(x)))
+          : null,
+      gstNo: map['gstNo'],
+      email: map['email'],
+      name: map['name'],
+      expireTime: map['expireTime'],
+      password: map['password'],
+      mobile: map['mobile'],
+      customerType: map['customerType'],
+      role: map['role'],
+      createdOn:
+          map['createdOn'] != null ? DateTime.parse(map['createdOn']) : null,
+      wrongPasswordCount: map['wrongPasswordCount'],
+    );
+  }
 }

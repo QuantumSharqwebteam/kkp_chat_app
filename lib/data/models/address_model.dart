@@ -11,7 +11,6 @@ class Address {
     this.pincode,
   });
 
-  // Named constructor to create an Address instance from a JSON map
   factory Address.fromJson(Map<String, dynamic> json) {
     return Address(
       houseNo: json['houseNo'],
@@ -21,7 +20,6 @@ class Address {
     );
   }
 
-  // Method to convert an Address instance to a JSON map
   Map<String, dynamic> toJson() {
     return {
       'houseNo': houseNo,
@@ -29,5 +27,25 @@ class Address {
       'city': city,
       'pincode': pincode,
     };
+  }
+
+  // Method to convert an Address instance to a Map
+  Map<String, dynamic> toMap() {
+    return {
+      'houseNo': houseNo,
+      'streetName': streetName,
+      'city': city,
+      'pincode': pincode,
+    };
+  }
+
+  // Named constructor to create an Address instance from a Map
+  factory Address.fromMap(Map<String, dynamic> map) {
+    return Address(
+      houseNo: map['houseNo'],
+      streetName: map['streetName'],
+      city: map['city'],
+      pincode: map['pincode'],
+    );
   }
 }

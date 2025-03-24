@@ -46,8 +46,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       if (kDebugMode) {
         if (mounted) {
           print(e.toString());
-          // ScaffoldMessenger.of(context)
-          //     .showSnackBar(SnackBar(content: Text(e.toString())));
         }
       }
     }

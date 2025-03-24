@@ -20,37 +20,29 @@ class _CustomerHostState extends State<CustomerHost> {
   int _selectedIndex = 0;
   final SocketService _socketService = SocketService();
   AuthApi auth = AuthApi();
+  String? customerEmail;
+  String? customerName;
 
   @override
   void initState() {
     super.initState();
 
     _loadCurrentUserData().then((data) {
-      if (data.isNotEmpty && data[0].isNotEmpty && data[1].isNotEmpty) {
-        _socketService.initSocket(data[1], data[0]);
-      } else {
-        // Handle the case where data is not retrieved correctly
-        debugPrint('Failed to retrieve user data.');
-      }
-    }).catchError((error) {
-      // Handle any errors that occur during the async operation
-      debugPrint('Error loading user data: $error');
+      _socketService.initSocket(customerName!, customerEmail!);
     });
   }
 
-  Future<List<String>> _loadCurrentUserData() async {
+  Future<void> _loadCurrentUserData() async {
     try {
-      String name = await auth.getUserInfo().then((info) async {
-        Profile profile = info;
-        await LocalDbHelper.saveProfile(profile);
-        return profile.name ?? "";
+      Profile profile = await auth.getUserInfo();
+      LocalDbHelper.saveProfile(profile);
+      setState(() {
+        customerName = profile.name;
+        customerEmail = LocalDbHelper.getEmail();
       });
-      String email = LocalDbHelper.getEmail() ?? "";
-      return [email, name];
     } catch (error) {
       // Handle any errors that occur during the async operation
       debugPrint('Error in _loadCurrentUserData: $error');
-      return ["", ""];
     }
   }
 

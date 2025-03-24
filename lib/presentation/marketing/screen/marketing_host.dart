@@ -31,22 +31,26 @@ class _MarketingHostState extends State<MarketingHost> {
   @override
   void initState() {
     super.initState();
-    _loadRole();
+    _loadcredentials();
     _loadCurrentUserData().then((data) {
-      _socketService.initSocket(data[1], data[0]);
+      _socketService.initSocket(agentName!, agentEmail!);
     });
     // _socketService.initSocket("Shoaib",
     //     "mohdshoaibrayeen3@gmail.com"); // Establish socket connection globally
     // _socketService.joinRoom("Shoaib", "mohdshoaibrayeen3@gmail.com");
   }
 
-  Future<List<String>> _loadCurrentUserData() async {
-    String name = await auth.getUserInfo().then((info) async {
-      Profile profile = info;
-      await LocalDbHelper.saveProfile(profile);
-      return profile.name!;
-    });
-    return [LocalDbHelper.getEmail() ?? "", name];
+  Future<void> _loadCurrentUserData() async {
+    try {
+      Profile profile = await auth.getUserInfo();
+      LocalDbHelper.saveProfile(profile);
+      setState(() {
+        agentName = profile.name;
+      });
+    } catch (error) {
+      // Handle any errors that occur during the async operation
+      debugPrint('Error in _loadCurrentUserData: $error');
+    }
   }
 
   @override
@@ -55,11 +59,9 @@ class _MarketingHostState extends State<MarketingHost> {
     super.dispose();
   }
 
-  Future<void> _loadRole() async {
+  Future<void> _loadcredentials() async {
     role = LocalDbHelper.getUserType();
     agentEmail = LocalDbHelper.getEmail();
-    agentName = LocalDbHelper.getName();
-    //  debugPrint(" Agent : $agentName, $agentEmail");
     _updateScreens();
   }
 
