@@ -65,7 +65,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
-        "timeStamp": data["timestamp"],
         "isMe": data["senderId"] == widget.customerEmail,
       });
     });
@@ -76,7 +75,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     final messageText = _chatController.text.trim();
     setState(() {
-      messages.add({"text": messageText, "isMe": true});
+      messages.add({
+        "text": messageText,
+        "isMe": true,
+      });
     });
 
     _socketService.sendMessage(
@@ -145,7 +147,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 return MessageBubble(
                   text: msg['text'],
                   isMe: msg['isMe'],
-                  timestamp: formatTimestamp(msg['timestamp']),
                   image:
                       msg['isMe'] ? widget.customerImage! : widget.agentImage!,
                 );
