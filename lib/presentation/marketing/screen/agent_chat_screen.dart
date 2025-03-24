@@ -74,8 +74,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (_chatController.text.trim().isEmpty) return;
 
     final messageText = _chatController.text.trim();
+    final currentTime = DateTime.now().toIso8601String();
     setState(() {
-      messages.add({"text": messageText, "isMe": true});
+      messages.add({
+        "text": messageText,
+        "timestamp": currentTime,
+        "isMe": true,
+      });
     });
 
     _socketService.sendMessage(

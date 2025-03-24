@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 
 class MessageBubble extends StatelessWidget {
   final String text;
@@ -29,12 +30,12 @@ class MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.7),
               decoration: BoxDecoration(
-                color: isMe ? AppColors.blue00ABE9 : Colors.white,
+                color: isMe ? AppColors.blue00ABE9 : Color(0xffF2F2F2),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(3),
-                  topRight: Radius.circular(35),
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(26),
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(0),
                 ),
               ),
               child: Text(
@@ -58,11 +59,8 @@ class MessageBubble extends StatelessWidget {
               bottom: -4.3,
               right: 10,
               child: Text(
-                timestamp!,
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold),
+                timestamp ?? "",
+                style: AppTextStyles.grey12_600,
               ),
             ),
           ],
