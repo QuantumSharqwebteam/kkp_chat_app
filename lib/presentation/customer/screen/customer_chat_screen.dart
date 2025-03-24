@@ -65,6 +65,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
+        "timeStamp": data["timestamp"],
         "isMe": data["senderId"] == widget.customerEmail,
       });
     });
@@ -144,6 +145,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 return MessageBubble(
                   text: msg['text'],
                   isMe: msg['isMe'],
+                  timestamp: formatTimestamp(msg['timestamp']),
                   image:
                       msg['isMe'] ? widget.customerImage! : widget.agentImage!,
                 );
