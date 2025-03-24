@@ -15,12 +15,12 @@ class AgentChatScreen extends StatefulWidget {
 
   const AgentChatScreen({
     super.key,
-    this.customerName = "Varun",
+    this.customerName = "Customer 2",
     this.customerImage = ImageConstants.userImage,
-    this.agentName = "Shoaib",
+    this.agentName = "Agent N/A",
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "mohdshoaibrayeen3@gmail.com",
+    this.customerEmail = "xyz@gmail.com",
+    this.agentEmail = "qwerty@gmail.com",
   });
 
   @override
@@ -95,9 +95,10 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              // Initiate a video call
+              // transfer chat
             },
-            icon: const Icon(Icons.videocam_outlined, color: Colors.black),
+            icon: const Icon(Icons.swap_horizontal_circle_outlined,
+                color: Colors.black),
           ),
           IconButton(
             onPressed: () {

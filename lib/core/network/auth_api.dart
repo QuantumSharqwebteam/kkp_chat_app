@@ -326,4 +326,30 @@ class AuthApi {
       throw Exception('Error during signup new agent : $e');
     }
   }
+
+  // to fetch list of users, admin , agent
+  Future<List<dynamic>> getUsersByRole(String role) async {
+    const endPoint = 'user/getByRole';
+    final url = Uri.parse("$baseUrl$endPoint");
+    final body = {"role": role};
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        return responseData['message'] ?? [];
+      } else {
+        throw Exception('Failed to fetch users by role: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching users by role: $e');
+    }
+  }
 }
