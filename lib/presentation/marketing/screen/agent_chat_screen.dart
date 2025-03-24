@@ -93,9 +93,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _chatController.clear();
   }
 
-  String formatTimestamp(String timestamp) {
-    final dateTime = DateTime.parse(timestamp).toLocal();
-    return DateFormat('hh:mm a').format(dateTime);
+  String formatTimestamp(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) return "";
+    try {
+      final dateTime = DateTime.parse(timestamp).toLocal();
+      return DateFormat('hh:mm a').format(dateTime);
+    } catch (e) {
+      return "";
+    }
   }
 
   @override
