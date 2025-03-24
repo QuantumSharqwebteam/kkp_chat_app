@@ -20,11 +20,14 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        if (!isMe) CircleAvatar(backgroundImage: AssetImage(image)),
         Stack(
           children: [
             Container(
-              margin: const EdgeInsets.all(10.0),
+              margin: const EdgeInsets.only(
+                  top: 20, bottom: 15, left: 10, right: 10),
               padding: const EdgeInsets.only(
                   left: 20, right: 10, top: 10, bottom: 10),
               constraints: BoxConstraints(
@@ -34,38 +37,39 @@ class MessageBubble extends StatelessWidget {
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(0),
+                  bottomLeft: isMe ? Radius.circular(16) : Radius.circular(0),
+                  bottomRight: isMe ? Radius.circular(0) : Radius.circular(16),
                 ),
               ),
               child: Text(
                 text,
                 style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black,
+                  color:
+                      isMe ? Colors.white : Colors.black.withValues(alpha: .6),
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
+                textAlign: TextAlign.start,
               ),
             ),
+            // Positioned(
+            //   top: 0,
+            //   left: 0,
+            //   child: CircleAvatar(
+            //     backgroundImage: AssetImage(image),
+            //     radius: 12,
+            //   ),
+            // ),
             Positioned(
-              top: 0,
-              left: 0,
-              child: CircleAvatar(
-                backgroundImage: AssetImage(image),
-                radius: 12,
-              ),
-            ),
-            Positioned(
-              bottom: -4.3,
+              bottom: -1,
               right: 10,
               child: Text(
                 timestamp ?? "",
-                style: AppTextStyles.grey12_600,
+                style: AppTextStyles.greyAAAAAA_10_400,
               ),
             ),
           ],
         ),
-        //if (isMe) CircleAvatar(backgroundImage: AssetImage(image)),
       ],
     );
   }

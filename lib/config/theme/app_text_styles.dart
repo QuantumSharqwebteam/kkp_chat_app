@@ -108,4 +108,9 @@ class AppTextStyles {
     color: Colors.white,
     fontWeight: FontWeight.w600,
   );
+  static const greyAAAAAA_10_400 = TextStyle(
+    fontSize: 10,
+    color: AppColors.greyAAAAAA,
+    fontWeight: FontWeight.w400,
+  );
 }
