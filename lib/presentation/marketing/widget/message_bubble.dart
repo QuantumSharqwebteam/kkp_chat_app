@@ -58,7 +58,7 @@ class MessageBubble extends StatelessWidget {
               bottom: -4.3,
               right: 10,
               child: Text(
-                timestamp!,
+                timestamp ?? "",
                 style: const TextStyle(
                     fontSize: 12,
                     color: Colors.black,
