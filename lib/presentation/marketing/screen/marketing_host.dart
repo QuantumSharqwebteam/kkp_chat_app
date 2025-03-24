@@ -11,6 +11,8 @@ import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_scr
 import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/marketing_nav_bar.dart';
 
+import '../../admin/screens/agent_profile_list.dart';
+
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key});
 
@@ -65,7 +67,7 @@ class _MarketingHostState extends State<MarketingHost> {
     setState(() {
       _screens = [
         if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),
-        FeedsScreen(),
+        AgentProfilesPage(),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
       ];

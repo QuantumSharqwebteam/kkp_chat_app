@@ -5,14 +5,14 @@ class MessageBubble extends StatelessWidget {
   final String text;
   final bool isMe;
   final String image;
-  final String? timestamp;
+  //final String? timestamp;
 
   const MessageBubble({
     super.key,
     required this.text,
     required this.isMe,
     required this.image,
-    this.timestamp,
+    //this.timestamp,
   });
 
   @override
@@ -54,17 +54,17 @@ class MessageBubble extends StatelessWidget {
                 radius: 12,
               ),
             ),
-            Positioned(
-              bottom: -4.3,
-              right: 10,
-              child: Text(
-                timestamp ?? "",
-                style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
+            // Positioned(
+            //   bottom: -4.3,
+            //   right: 10,
+            //   child: Text(
+            //     timestamp!,
+            //     style: const TextStyle(
+            //         fontSize: 12,
+            //         color: Colors.black,
+            //         fontWeight: FontWeight.bold),
+            //   ),
+            // ),
           ],
         ),
         //if (isMe) CircleAvatar(backgroundImage: AssetImage(image)),
