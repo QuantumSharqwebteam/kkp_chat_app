@@ -32,7 +32,7 @@ class _MarketingHostState extends State<MarketingHost> {
     super.initState();
     _loadRole();
     _loadCurrentUserData().then((data) {
-      _socketService.initSocket(data[0], data[1]);
+      _socketService.initSocket(data[1], data[0]);
     });
     // _socketService.initSocket("Shoaib",
     //     "mohdshoaibrayeen3@gmail.com"); // Establish socket connection globally
