@@ -65,6 +65,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
+        "timeStamp": data["timestamp"], //added time Stamp code
         "isMe": data["senderId"] == widget.customerEmail,
       });
     });
