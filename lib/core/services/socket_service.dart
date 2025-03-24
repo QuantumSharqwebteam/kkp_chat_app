@@ -45,14 +45,10 @@ class SocketService {
     });
 
     _socket.on('receiveMessage', (data) {
-      if (!isChatPageOpen) {
-        _showPushNotification(data);
-      }
-
-      if (_onMessageReceived != null) {
+      if (isChatPageOpen && _onMessageReceived != null) {
         _onMessageReceived!(data);
       } else {
-        debugPrint('📩 New message received but no listener attached: $data');
+        _showPushNotification(data);
       }
     });
 
@@ -100,16 +96,6 @@ class SocketService {
         'senderName': senderName,
       });
     }
-  }
-
-  void listenForMessages(Function(dynamic) onMessageReceived) {
-    _socket.on('receiveMessage', (data) {
-      if (isChatPageOpen) {
-        onMessageReceived(data);
-      } else {
-        _showPushNotification(data);
-      }
-    });
   }
 
   void getOnlineUsers() {
