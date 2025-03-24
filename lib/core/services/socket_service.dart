@@ -45,15 +45,14 @@ class SocketService {
     });
 
     _socket.on('receiveMessage', (data) {
+      if (!isChatPageOpen) {
+        _showPushNotification(data);
+      }
+
       if (_onMessageReceived != null) {
         _onMessageReceived!(data);
       } else {
         debugPrint('📩 New message received but no listener attached: $data');
-      }
-
-      // Check if chat page is open, if not, show a push notification
-      if (!isChatPageOpen) {
-        _showPushNotification(data);
       }
     });
 
@@ -105,7 +104,11 @@ class SocketService {
 
   void listenForMessages(Function(dynamic) onMessageReceived) {
     _socket.on('receiveMessage', (data) {
-      onMessageReceived(data);
+      if (isChatPageOpen) {
+        onMessageReceived(data);
+      } else {
+        _showPushNotification(data);
+      }
     });
   }
 
