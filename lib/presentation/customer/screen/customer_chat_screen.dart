@@ -145,7 +145,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 return MessageBubble(
                   text: msg['text'],
                   isMe: msg['isMe'],
-                  timestamp: formatTimestamp(msg['timestamp']),
+                  // timestamp: formatTimestamp(msg['timestamp']),
                   image:
                       msg['isMe'] ? widget.customerImage! : widget.agentImage!,
                 );
