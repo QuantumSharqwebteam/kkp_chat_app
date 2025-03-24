@@ -27,7 +27,8 @@ class AgentChatScreen extends StatefulWidget {
   State<AgentChatScreen> createState() => _AgentChatScreenState();
 }
 
-class _AgentChatScreenState extends State<AgentChatScreen> {
+class _AgentChatScreenState extends State<AgentChatScreen>
+    with WidgetsBindingObserver {
   final _chatController = TextEditingController();
   final SocketService _socketService = SocketService();
 
@@ -36,7 +37,27 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _chatController.dispose();
+    _socketService.toggleChatPageOpen(false);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _socketService.toggleChatPageOpen(false);
+    } else if (state == AppLifecycleState.resumed) {
+      _socketService.toggleChatPageOpen(true);
+    }
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
@@ -64,12 +85,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
     );
 
     _chatController.clear();
-  }
-
-  @override
-  void dispose() {
-    _chatController.dispose();
-    super.dispose();
   }
 
   String formatTimestamp(String timestamp) {
@@ -121,7 +136,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> {
                   isMe: msg['isMe'],
                   image:
                       msg['isMe'] ? widget.agentImage! : widget.customerImage!,
-                  //timestamp: formatTimestamp(msg['timestamp']),
                 );
               },
             ),

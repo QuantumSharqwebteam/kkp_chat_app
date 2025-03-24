@@ -3,7 +3,7 @@ import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
@@ -14,7 +14,7 @@ class CustomerSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final searchController = TextEditingController();
-    final SocketService _socketService = SocketService();
+    final SocketService socketService = SocketService();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -120,11 +120,11 @@ class CustomerSettingsPage extends StatelessWidget {
             SettingsTile(
               onTaps: [
                 () async {
-                  await SharedPreferenceHelper.removeToken();
-                  await SharedPreferenceHelper.removeUserType();
-                  await SharedPreferenceHelper.removeUserType();
-                  await SharedPreferenceHelper.removeName();
-                  _socketService.disconnect();
+                  await LocalDbHelper.removeToken();
+                  await LocalDbHelper.removeUserType();
+                  await LocalDbHelper.removeUserType();
+                  await LocalDbHelper.removeName();
+                  socketService.disconnect();
 
                   if (context.mounted) {
                     Navigator.pushAndRemoveUntil(

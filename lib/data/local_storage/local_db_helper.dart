@@ -1,0 +1,71 @@
+import 'package:hive/hive.dart';
+
+class LocalDbHelper {
+  static const String _keyToken = 'token';
+  static const String _userType = 'userType';
+  static const String _name = 'name';
+  static const String _email = 'email';
+  static const String _profile = 'profile';
+
+  static Box<dynamic> get _box => Hive.box('CREDENTIALS');
+
+  static Future<void> saveToken(String token) async {
+    await _box.put(_keyToken, token);
+  }
+
+  static String? getToken() {
+    return _box.get(_keyToken);
+  }
+
+  static Future<void> removeToken() async {
+    await _box.delete(_keyToken);
+  }
+
+  static Future<void> saveEmail(String email) async {
+    await _box.put(_email, email);
+  }
+
+  static String? getEmail() {
+    return _box.get(_email);
+  }
+
+  static Future<void> removeEmail() async {
+    await _box.delete(_email);
+  }
+
+  static Future<void> saveUserType(String userType) async {
+    await _box.put(_userType, userType);
+  }
+
+  static String? getUserType() {
+    return _box.get(_userType);
+  }
+
+  static Future<void> removeUserType() async {
+    await _box.delete(_userType);
+  }
+
+  static Future<void> saveName(String name) async {
+    await _box.put(_name, name);
+  }
+
+  static String? getName() {
+    return _box.get(_name);
+  }
+
+  static Future<void> removeName() async {
+    await _box.delete(_name);
+  }
+
+  static Future<void> saveProfile(dynamic profile) async {
+    await _box.put(_profile, profile);
+  }
+
+  static String? getProfile() {
+    return _box.get(_profile);
+  }
+
+  static Future<void> removeProfile() async {
+    await _box.delete(_profile);
+  }
+}

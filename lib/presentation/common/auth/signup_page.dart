@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
@@ -98,7 +98,7 @@ class _SignupPageState extends State<SignupPage> {
 
       if (response['message'] == "User signed up successfully") {
         try {
-          await SharedPreferenceHelper.saveToken(response['token'].toString());
+          await LocalDbHelper.saveToken(response['token'].toString());
 
           await _saveUser(context, _name.text);
 
@@ -161,8 +161,7 @@ class _SignupPageState extends State<SignupPage> {
           panNo: null);
 
       if (response['message'] == "Item updated successfully") {
-        await SharedPreferenceHelper.saveName(
-            response['data']['name'].toString());
+        await LocalDbHelper.saveName(response['data']['name'].toString());
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(response['message'])));
       } else {

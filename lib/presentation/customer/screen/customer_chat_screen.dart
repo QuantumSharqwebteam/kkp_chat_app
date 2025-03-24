@@ -28,7 +28,8 @@ class CustomerChatScreen extends StatefulWidget {
   State<CustomerChatScreen> createState() => _CustomerChatScreenState();
 }
 
-class _CustomerChatScreenState extends State<CustomerChatScreen> {
+class _CustomerChatScreenState extends State<CustomerChatScreen>
+    with WidgetsBindingObserver {
   final _chatController = TextEditingController();
   final SocketService _socketService = SocketService();
 
@@ -37,7 +38,27 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _chatController.dispose();
+    _socketService.toggleChatPageOpen(false);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _socketService.toggleChatPageOpen(false);
+    } else if (state == AppLifecycleState.resumed) {
+      _socketService.toggleChatPageOpen(true);
+    }
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
@@ -67,13 +88,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
     _chatController.clear();
   }
 
-  @override
-  void dispose() {
-    _chatController.dispose();
-
-    super.dispose();
-  }
-
   String formatTimestamp(String timestamp) {
     final dateTime = DateTime.parse(timestamp).toLocal();
     return DateFormat('hh:mm a').format(dateTime);
@@ -97,10 +111,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              // Initiate a video call
               _socketService.initiateCall(
                 widget.agentEmail!,
-                {}, // Replace with actual signal data
+                {},
                 widget.customerEmail!,
                 widget.customerName!,
               );
@@ -109,10 +122,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
           ),
           IconButton(
             onPressed: () {
-              // Initiate an audio call
               _socketService.initiateCall(
                 widget.agentEmail!,
-                {}, // Replace with actual signal data
+                {},
                 widget.customerEmail!,
                 widget.customerName!,
               );
@@ -134,7 +146,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> {
                   isMe: msg['isMe'],
                   image:
                       msg['isMe'] ? widget.customerImage! : widget.agentImage!,
-                  //timestamp: formatTimestamp(msg['timestamp']),
                 );
               },
             ),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
 
 class Splash extends StatefulWidget {
@@ -17,8 +17,8 @@ class Splash extends StatefulWidget {
 class _SplashState extends State<Splash> {
   Future<void> _checkLogin(context) async {
     await Future.delayed(const Duration(seconds: 1));
-    String? token = await SharedPreferenceHelper.getToken();
-    String? userType = await SharedPreferenceHelper.getUserType();
+    String? token = LocalDbHelper.getToken();
+    String? userType = LocalDbHelper.getUserType();
 
     if (token != null && userType != null) {
       if (userType == '0') {

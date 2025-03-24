@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_home_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_products_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_page.dart';
@@ -40,11 +40,12 @@ class _CustomerHostState extends State<CustomerHost> {
 
   Future<List<String>> _loadCurrentUserData() async {
     try {
-      String name = await auth.getUserInfo().then((info) {
+      String name = await auth.getUserInfo().then((info) async {
         Profile profile = info;
+        await LocalDbHelper.saveProfile(profile);
         return profile.name ?? "";
       });
-      String email = await SharedPreferenceHelper.getEmail() ?? "";
+      String email = LocalDbHelper.getEmail() ?? "";
       return [email, name];
     } catch (error) {
       // Handle any errors that occur during the async operation

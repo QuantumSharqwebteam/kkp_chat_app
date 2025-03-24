@@ -4,7 +4,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
@@ -18,10 +18,10 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final SocketService _socketService = SocketService();
   void logout() async {
-    await SharedPreferenceHelper.removeToken();
-    await SharedPreferenceHelper.removeName();
-    await SharedPreferenceHelper.removeEmail();
-    await SharedPreferenceHelper.removeUserType();
+    await LocalDbHelper.removeToken();
+    await LocalDbHelper.removeName();
+    await LocalDbHelper.removeEmail();
+    await LocalDbHelper.removeUserType();
     _socketService.disconnect();
     if (mounted) {
       Navigator.pushAndRemoveUntil(

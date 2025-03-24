@@ -5,7 +5,7 @@ import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common/auth/signup_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
@@ -76,9 +76,9 @@ class _LoginPageState extends State<LoginPage> {
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text(_email.text)));
           }
-          await SharedPreferenceHelper.saveToken(value['token'].toString());
-          await SharedPreferenceHelper.saveEmail(_email.text);
-          await SharedPreferenceHelper.saveUserType(value['role'].toString());
+          await LocalDbHelper.saveToken(value['token'].toString());
+          await LocalDbHelper.saveEmail(_email.text);
+          await LocalDbHelper.saveUserType(value['role'].toString());
           if (value['role'].toString() == "0") {
             //customer
             Navigator.pushReplacementNamed(

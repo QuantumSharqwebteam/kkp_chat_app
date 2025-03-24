@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/models/address_model.dart';
 import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/sharedpreferences/shared_preference_helper.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 
 class AuthApi {
   static const baseUrl =
@@ -81,7 +81,7 @@ class AuthApi {
     const endPoint = 'user/updateUserDetails';
     final url = Uri.parse("$baseUrl$endPoint");
 
-    final token = await SharedPreferenceHelper.getToken();
+    final token = LocalDbHelper.getToken();
 
     if (token == null) {
       throw Exception('Token not found. Please log in again.');
@@ -179,7 +179,7 @@ class AuthApi {
     try {
       // Retrieve token from SharedPreferences
 
-      final token = await SharedPreferenceHelper.getToken();
+      final token = LocalDbHelper.getToken();
 
       if (token == null) {
         throw Exception('Token not found. Please log in again.');
@@ -234,7 +234,7 @@ class AuthApi {
   Future<Profile> getUserInfo() async {
     const endPoint = "user/getInfo";
     final url = Uri.parse('$baseUrl$endPoint');
-    final token = await SharedPreferenceHelper.getToken();
+    final token = LocalDbHelper.getToken();
 
     try {
       final response = await http.get(url, headers: {
