@@ -21,7 +21,7 @@ class CustomerChatScreen extends StatefulWidget {
     this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
     this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "mohdshoaibrayeen3@gmail.com",
+    this.agentEmail = "rayeenshoaib20786@gmail.com",
   });
 
   @override
@@ -65,7 +65,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
-        "timeStamp": data["timestamp"], //added time Stamp code
+        "timestamp": data["timestamp"], //added time Stamp code
         "isMe": data["senderId"] == widget.customerEmail,
       });
     });
@@ -75,8 +75,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     if (_chatController.text.trim().isEmpty) return;
 
     final messageText = _chatController.text.trim();
+    final currentTime = DateTime.now().toIso8601String();
     setState(() {
-      messages.add({"text": messageText, "isMe": true});
+      messages.add({
+        "text": messageText,
+        "timestamp": currentTime, // Store local timestamp
+        "isMe": true,
+      });
     });
 
     _socketService.sendMessage(
@@ -89,9 +94,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _chatController.clear();
   }
 
-  String formatTimestamp(String timestamp) {
-    final dateTime = DateTime.parse(timestamp).toLocal();
-    return DateFormat('hh:mm a').format(dateTime);
+  String formatTimestamp(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) return "";
+    try {
+      final dateTime = DateTime.parse(timestamp).toLocal();
+      return DateFormat('hh:mm a').format(dateTime);
+    } catch (e) {
+      return "";
+    }
   }
 
   @override
@@ -145,7 +155,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 return MessageBubble(
                   text: msg['text'],
                   isMe: msg['isMe'],
-                  // timestamp: formatTimestamp(msg['timestamp']),
+                  timestamp: formatTimestamp(msg["timestamp"]),
                   image:
                       msg['isMe'] ? widget.customerImage! : widget.agentImage!,
                 );

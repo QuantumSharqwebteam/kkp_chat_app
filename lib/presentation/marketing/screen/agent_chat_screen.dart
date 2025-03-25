@@ -74,8 +74,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (_chatController.text.trim().isEmpty) return;
 
     final messageText = _chatController.text.trim();
+    final currentTime = DateTime.now().toIso8601String();
     setState(() {
-      messages.add({"text": messageText, "isMe": true});
+      messages.add({
+        "text": messageText,
+        "timestamp": currentTime,
+        "isMe": true,
+      });
     });
 
     _socketService.sendMessage(
@@ -88,9 +93,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _chatController.clear();
   }
 
-  String formatTimestamp(String timestamp) {
-    final dateTime = DateTime.parse(timestamp).toLocal();
-    return DateFormat('hh:mm a').format(dateTime);
+  String formatTimestamp(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) return "";
+    try {
+      final dateTime = DateTime.parse(timestamp).toLocal();
+      return DateFormat('hh:mm a').format(dateTime);
+    } catch (e) {
+      return "";
+    }
   }
 
   @override
