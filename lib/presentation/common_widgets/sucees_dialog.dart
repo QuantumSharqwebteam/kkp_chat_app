@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/config/theme/image_constants.dart';
 
-class SuccessDialog extends StatelessWidget {
+class SuccessErrorDialog extends StatelessWidget {
   final String message;
-
-  const SuccessDialog({super.key, required this.message});
+  final bool success;
+  const SuccessErrorDialog(
+      {super.key, required this.message, required this.success});
 
   @override
   Widget build(BuildContext context) {
@@ -17,11 +20,18 @@ class SuccessDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              "assets/icons/check_circle.png",
-              height: 76,
-              width: 76,
-            ),
+            if (success)
+              Image.asset(
+                ImageConstants.checkCircle,
+                height: 76,
+                width: 76,
+              ),
+            if (!success)
+              Icon(
+                Icons.error_outline_outlined,
+                size: 50,
+                color: AppColors.blue,
+              ),
             const SizedBox(height: 10),
             Text(
               message,

@@ -160,7 +160,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     await LocalDbHelper.removeUserType();
                     await LocalDbHelper.removeName();
                     await LocalDbHelper.removeEmail();
-                    _socketService.disconnect();
+                    _socketService.dispose();
                     if (context.mounted) {
                       Navigator.pushAndRemoveUntil(
                           context,

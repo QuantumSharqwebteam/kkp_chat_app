@@ -100,7 +100,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
                       icon: const Icon(Icons.more_vert),
                       onSelected: (value) {
                         if (value == 1) {
-                          Utils().showSuccessDialog(context, "Block");
+                          Utils().showSuccessDialog(context, "Blocked", true);
                         } else if (value == 2) {}
                       },
                       itemBuilder: (context) => [

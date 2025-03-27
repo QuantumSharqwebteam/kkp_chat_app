@@ -71,7 +71,7 @@ class SocketService {
   }
 
   void _attemptReconnect(String userName, String userEmail) {
-    if (_reconnectAttempts < _maxReconnectAttempts) {
+    if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
       _reconnectAttempts++;
       debugPrint(
           '🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
@@ -82,7 +82,7 @@ class SocketService {
         }
       });
     } else {
-      debugPrint('🚫 Max reconnection attempts reached.');
+      debugPrint('🚫 Max reconnection attempts reached or user logged out.');
     }
   }
 
@@ -141,6 +141,18 @@ class SocketService {
     if (_isConnected) {
       _socket.disconnect();
     }
+  }
+
+  void dispose() {
+    if (_isConnected) {
+      _socket.disconnect();
+    }
+    _socket
+        .clearListeners(); // Remove all listeners to avoid automatic reconnection
+    _isConnected = false;
+    _reconnectAttempts =
+        _maxReconnectAttempts; // Prevent further reconnection attempts
+    debugPrint('🛑 Socket service disposed');
   }
 
   // Function to show push notification

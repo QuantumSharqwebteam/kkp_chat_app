@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
@@ -108,7 +107,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
   Widget _buildStatsSection() {
     int totalAgents = _agentsList.length;
     int newAgents = _agentsList
-        .where((agent) => DateTime.parse(agent.createdOn)
+        .where((agent) => DateTime.parse(agent.createdAt)
             .isAfter(DateTime.now().subtract(const Duration(days: 30))))
         .length;
 

@@ -4,7 +4,7 @@ class Product {
   final int stock;
   final List<String> sizes;
   final double price;
-  final String productId;
+  final String? productId;
   final String productName;
   final String? description;
 
@@ -14,7 +14,7 @@ class Product {
     required this.stock,
     required this.sizes,
     required this.price,
-    required this.productId,
+    this.productId,
     required this.productName,
     this.description,
   });

@@ -21,6 +21,10 @@ class CustomerProfileSetupPage extends StatefulWidget {
     this.address,
     this.isExportSelected = false,
     this.isDomesticSelected = false,
+    this.houseNo,
+    this.streetName,
+    this.city,
+    this.pincode,
   });
 
   final bool forUpdate;
@@ -30,6 +34,10 @@ class CustomerProfileSetupPage extends StatefulWidget {
   final String? gstNo;
   final String? panNo;
   final String? address;
+  final String? houseNo;
+  final String? streetName;
+  final String? city;
+  final String? pincode;
   final bool isExportSelected;
   final bool isDomesticSelected;
 
@@ -70,8 +78,10 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       _phoneNumber.text = widget.number ?? '';
       _gstNumber.text = widget.gstNo ?? '';
       _panNumber.text = widget.panNo ?? '';
-      _houseFlatNumber.text =
-          widget.address ?? ''; // Assuming address contains house/flat number
+      _houseFlatNumber.text = widget.houseNo ?? '';
+      _streetNumber.text = widget.streetName ?? "";
+      _cityName.text = widget.city ?? "";
+      _pinCode.text = widget.pincode ?? "";
       _isExportSelected = widget.isExportSelected;
       _isDomesticSelected = widget.isDomesticSelected;
       _customerType = _isExportSelected ? 'Export' : 'Domestic';

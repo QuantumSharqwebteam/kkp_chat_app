@@ -8,13 +8,33 @@ import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
 
-class CustomerSettingsPage extends StatelessWidget {
+class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
 
+  @override
+  State<CustomerSettingsPage> createState() => _CustomerSettingsPageState();
+}
+
+class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final searchController = TextEditingController();
     final SocketService socketService = SocketService();
+    void logOut() async {
+      await LocalDbHelper.removeToken();
+      await LocalDbHelper.removeUserType();
+      await LocalDbHelper.removeEmail();
+      await LocalDbHelper.removeName();
+      await LocalDbHelper.removeProfile();
+      socketService.dispose();
+      if (context.mounted) {
+        Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => LoginPage()),
+            (route) => false);
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -119,19 +139,15 @@ class CustomerSettingsPage extends StatelessWidget {
             ),
             SettingsTile(
               onTaps: [
-                () async {
-                  await LocalDbHelper.removeToken();
-                  await LocalDbHelper.removeUserType();
-                  await LocalDbHelper.removeUserType();
-                  await LocalDbHelper.removeName();
-                  socketService.disconnect();
-
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (context) => LoginPage()),
-                        (route) => false);
-                  }
+                () {
+                  Utils().showDialogWithActions(
+                    context,
+                    "Log out",
+                    icon: Icons.logout_outlined,
+                    "Are you sure you want to logOut",
+                    "LogOut",
+                    logOut,
+                  );
                 }
               ],
               numberOfTiles: 1,

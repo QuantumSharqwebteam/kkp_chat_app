@@ -23,12 +23,13 @@ class _ChangePasswordState extends State<ChangePassword> {
 
   void _changePassword(context) async {
     if (_newPass.text != _newRepass.text) {
-      Utils().showSuccessDialog(context, "New passwords do not match!");
+      Utils().showSuccessDialog(context, "New passwords do not match!", false);
       return;
     }
 
     if (_currentPass.text == _newPass.text) {
-      Utils().showSuccessDialog(context, "New password must be different!");
+      Utils()
+          .showSuccessDialog(context, "New password must be different!", false);
       return;
     }
 
@@ -45,17 +46,18 @@ class _ChangePasswordState extends State<ChangePassword> {
           email: email!);
 
       if (response['success'] == true) {
-        Utils().showSuccessDialog(context, "Password changed successfully!");
+        Utils()
+            .showSuccessDialog(context, "Password changed successfully!", true);
 
         Future.delayed(Duration(seconds: 2), () {
           Navigator.pop(context);
         });
       } else {
         Utils().showSuccessDialog(
-            context, response['message'] ?? "Failed to update password");
+            context, response['message'] ?? "Failed to update password", false);
       }
     } catch (e) {
-      Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+      Utils().showSuccessDialog(context, "Error: ${e.toString()}", false);
     } finally {
       setState(() {
         _isLoading = false;

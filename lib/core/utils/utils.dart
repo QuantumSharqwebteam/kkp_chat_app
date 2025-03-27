@@ -17,11 +17,14 @@ class Utils {
     return MediaQuery.of(context).orientation;
   }
 
-  void showSuccessDialog(BuildContext context, String message) {
+  void showSuccessDialog(BuildContext context, String message, bool success) {
     showDialog(
       context: context,
       barrierDismissible: true, // Prevent manual dismissal
-      builder: (context) => SuccessDialog(message: message),
+      builder: (context) => SuccessErrorDialog(
+        message: message,
+        success: success,
+      ),
     );
   }
 

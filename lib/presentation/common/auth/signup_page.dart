@@ -141,7 +141,7 @@ class _SignupPageState extends State<SignupPage> {
       }
     } catch (e) {
       if (mounted) {
-        Utils().showSuccessDialog(context, "Error: ${e.toString()}");
+        Utils().showSuccessDialog(context, "Error: ${e.toString()}", false);
       }
     } finally {
       setState(() {

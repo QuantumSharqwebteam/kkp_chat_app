@@ -21,7 +21,7 @@ class CustomerChatScreen extends StatefulWidget {
     this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
     this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "rayeenshoaib20786@gmail.com",
+    this.agentEmail = "mohdshoaibrayeen3@gmail.com",
   });
 
   @override

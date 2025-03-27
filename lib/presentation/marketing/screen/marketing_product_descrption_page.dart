@@ -31,11 +31,12 @@ class _MarketingProductDescrptionPageState
 
         final ProductRepository productRepository = ProductRepository();
         bool success =
-            await productRepository.deleteProduct(widget.product.productId);
+            await productRepository.deleteProduct(widget.product.productId!);
 
         if (success) {
           if (mounted) {
-            Utils().showSuccessDialog(context, "Product deleted successfully");
+            Utils().showSuccessDialog(
+                context, "Product deleted successfully", true);
           }
           Future.delayed(Duration(seconds: 2), () {
             if (mounted) {

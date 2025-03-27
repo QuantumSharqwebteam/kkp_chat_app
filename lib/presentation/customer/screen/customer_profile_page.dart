@@ -35,8 +35,31 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   void initState() {
     super.initState();
     profileData = _loadUserInfo();
+
+    // loadUserData();
   }
 
+  // void loadUserData() {
+  //   profileData = LocalDbHelper.getProfile();
+  //   setState(() {
+  //     _name.text = profileData['name'];
+  //     _email.text = profileData['email'];
+  //     _number.text = profileData['mobile'].toString();
+  //     _gstNo.text = profileData['gstNo'];
+  //     _panNo.text = profileData['panNo'];
+  //     if (profileData['address'] != null && profileData['address'].isNotEmpty) {
+  //       final address = profileData['address'][0];
+  //       _houseNo.text = address['houseNo'] ?? "Na";
+  //       _streetName.text = address['streetname'] ?? "Na";
+  //       _city.text = address["city"] ?? "Na";
+  //       _pincode.text = address['pincode'] ?? "NA";
+  //     }
+  //     // Ensure both checkboxes can be false
+  //     String? customerType = profileData['customerType'];
+  //     _isExportSelected = customerType == "Export";
+  //     _isDomesticSelected = customerType == "Domestic";
+  //   });
+  // }
   Future<Profile> _loadUserInfo() async {
     try {
       final profile = await auth.getUserInfo();

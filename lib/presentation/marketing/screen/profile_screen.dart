@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/profile_details_field.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,12 +17,13 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final SocketService _socketService = SocketService();
-  late Map<dynamic, dynamic> profile;
+  late Map<String, dynamic> profile;
 
   @override
   void initState() {
     super.initState();
-    profile = LocalDbHelper.getProfile();
+    Future.delayed(Duration(milliseconds: 300));
+    profile = LocalDbHelper.getProfile() ?? {};
   }
 
   void logout() async {
@@ -31,12 +31,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await LocalDbHelper.removeName();
     await LocalDbHelper.removeEmail();
     await LocalDbHelper.removeUserType();
-    _socketService.disconnect();
+    await LocalDbHelper.removeProfile();
+    _socketService.dispose();
+
     if (mounted) {
       Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => LoginPage()),
-          (route) => false);
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+        (route) => false,
+      );
     }
   }
 
@@ -53,7 +56,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _buildProfileSection(),
             _buildStatsSection(),
-            _buildSettingsSection(context),
+            // _buildSettingsSection(context),
+            const SizedBox(height: 10),
+            _buildDetailsCard(),
+            const SizedBox(height: 10),
             _buildLogoutButton(),
           ],
         ),
@@ -92,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildStatsSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [
         BoxShadow(
           blurRadius: 4,
@@ -105,9 +111,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _buildStatCard("128", "Total chats"),
-          Container(height: 80, width: 1, color: AppColors.dividerD9D9D9),
+          Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
           _buildStatCard("45", "Active Inquiries"),
-          Container(height: 80, width: 1, color: AppColors.dividerD9D9D9),
+          Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
           _buildStatCard("83", "Resolved"),
         ],
       ),
@@ -124,65 +130,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
+  Widget _buildDetailsCard() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      margin: EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [
         BoxShadow(
-          blurRadius: 4,
-          spreadRadius: 0,
-          color: AppColors.shadowColor,
-          offset: const Offset(0, 4),
-        )
+            spreadRadius: 0,
+            blurRadius: 4,
+            offset: const Offset(0, 4),
+            color: AppColors.shadowColor)
       ]),
+      padding: const EdgeInsets.all(10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Settings",
-            style: AppTextStyles.black15_500.copyWith(fontSize: 18),
+          ProfileDetailsField(
+            icon: Icons.person,
+            label: 'Name',
+            value: profile["name"] ?? "NA",
           ),
-          _buildSettingsTile(
-            context,
-            Icons.notifications_none_rounded,
-            "Notification",
-            MarketingRoutes.marketingNotifications,
+          ProfileDetailsField(
+            icon: Icons.email,
+            label: 'Email',
+            value: profile["email"] ?? "NA",
           ),
-          _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
-              MarketingRoutes.privacy),
-          _buildSettingsTile(context, Icons.settings_rounded, "Settings",
-              MarketingRoutes.marketingSettings),
+          ProfileDetailsField(
+            icon: Icons.phone,
+            label: ' Mobile No.',
+            value: profile["mobile"].toString(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSettingsTile(
-      BuildContext context, IconData icon, String title, String routeName) {
-    return Container(
-      width: double.maxFinite,
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(width: 2, color: AppColors.dividerD9D9D9),
-        ),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.black),
-        title: Text(
-          title,
-          style: AppTextStyles.black16_500,
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 20,
-        ),
-        onTap: () {
-          Navigator.pushNamed(context, routeName);
-        },
-      ),
-    );
-  }
+  // Widget _buildSettingsSection(BuildContext context) {
+  //   return Container(
+  //     padding: EdgeInsets.symmetric(horizontal: 16),
+  //     margin: EdgeInsets.symmetric(vertical: 10),
+  //     decoration: BoxDecoration(color: Colors.white, boxShadow: [
+  //       BoxShadow(
+  //         blurRadius: 4,
+  //         spreadRadius: 0,
+  //         color: AppColors.shadowColor,
+  //         offset: const Offset(0, 4),
+  //       )
+  //     ]),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           "Settings",
+  //           style: AppTextStyles.black15_500.copyWith(fontSize: 18),
+  //         ),
+  //         _buildSettingsTile(
+  //           context,
+  //           Icons.notifications_none_rounded,
+  //           "Notification",
+  //           MarketingRoutes.marketingNotifications,
+  //         ),
+  //         _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
+  //             MarketingRoutes.privacy),
+  //         _buildSettingsTile(context, Icons.settings_rounded, "Settings",
+  //             MarketingRoutes.marketingSettings),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildSettingsTile(
+  //     BuildContext context, IconData icon, String title, String routeName) {
+  //   return Container(
+  //     width: double.maxFinite,
+  //     decoration: BoxDecoration(
+  //       border: Border(
+  //         bottom: BorderSide(width: 2, color: AppColors.dividerD9D9D9),
+  //       ),
+  //     ),
+  //     child: ListTile(
+  //       leading: Icon(icon, color: Colors.black),
+  //       title: Text(
+  //         title,
+  //         style: AppTextStyles.black16_500,
+  //       ),
+  //       trailing: const Icon(
+  //         Icons.arrow_forward_ios,
+  //         size: 20,
+  //       ),
+  //       onTap: () {
+  //         Navigator.pushNamed(context, routeName);
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _buildLogoutButton() {
     return Padding(
