@@ -47,7 +47,7 @@ class _MarketingHostState extends State<MarketingHost> {
   Future<void> _loadCurrentUserData() async {
     try {
       Profile profile = await auth.getUserInfo();
-      await LocalDbHelper.saveProfile(profile);
+      LocalDbHelper.saveProfile(profile);
       setState(() {
         agentName = profile.name;
       });
@@ -63,9 +63,10 @@ class _MarketingHostState extends State<MarketingHost> {
     super.dispose();
   }
 
-  void _loadcredentials() {
+  void _loadcredentials() async {
     role = LocalDbHelper.getUserType();
     agentEmail = LocalDbHelper.getEmail();
+
     _updateScreens();
   }
 
@@ -73,8 +74,8 @@ class _MarketingHostState extends State<MarketingHost> {
     setState(() {
       _screens = [
         if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),
-        AgentProfilesPage(),
-        //FeedsScreen(),
+        //AgentProfilesPage(),
+        FeedsScreen(),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
       ];
