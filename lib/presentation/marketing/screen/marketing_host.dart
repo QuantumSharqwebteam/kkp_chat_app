@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import
+
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
@@ -6,6 +8,7 @@ import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/marketing_nav_bar.dart';
@@ -32,18 +35,19 @@ class _MarketingHostState extends State<MarketingHost> {
   void initState() {
     super.initState();
     _loadcredentials();
-    _loadCurrentUserData().then((data) {
-      _socketService.initSocket(agentName!, agentEmail!);
+    _loadCurrentUserData().then((_) {
+      if (agentName != null && agentEmail != null) {
+        _socketService.initSocket(agentName!, agentEmail!);
+      } else {
+        debugPrint("Skipping socket init: agentName or agentEmail is null");
+      }
     });
-    // _socketService.initSocket("Shoaib",
-    //     "mohdshoaibrayeen3@gmail.com"); // Establish socket connection globally
-    // _socketService.joinRoom("Shoaib", "mohdshoaibrayeen3@gmail.com");
   }
 
   Future<void> _loadCurrentUserData() async {
     try {
       Profile profile = await auth.getUserInfo();
-      LocalDbHelper.saveProfile(profile);
+      await LocalDbHelper.saveProfile(profile);
       setState(() {
         agentName = profile.name;
       });
@@ -59,7 +63,7 @@ class _MarketingHostState extends State<MarketingHost> {
     super.dispose();
   }
 
-  Future<void> _loadcredentials() async {
+  void _loadcredentials() {
     role = LocalDbHelper.getUserType();
     agentEmail = LocalDbHelper.getEmail();
     _updateScreens();
@@ -70,6 +74,7 @@ class _MarketingHostState extends State<MarketingHost> {
       _screens = [
         if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),
         AgentProfilesPage(),
+        //FeedsScreen(),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
       ];

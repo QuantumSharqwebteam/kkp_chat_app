@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:kkp_chat_app/data/models/address_model.dart';
 
 class Agent {
+  final String id;
   final bool lockedTemp;
   final int otp;
   final List<Address> address;
@@ -13,10 +14,12 @@ class Agent {
   final int mobile;
   final String customerType;
   final String role;
-  final String createdOn;
+  final String createdAt;
+  final String updatedAt;
   final int wrongPasswordCount;
 
   Agent({
+    required this.id,
     required this.lockedTemp,
     required this.otp,
     required this.address,
@@ -28,12 +31,14 @@ class Agent {
     required this.mobile,
     required this.customerType,
     required this.role,
-    required this.createdOn,
+    required this.createdAt,
+    required this.updatedAt,
     required this.wrongPasswordCount,
   });
 
   factory Agent.fromJson(Map<String, dynamic> json) {
     return Agent(
+      id: json['id'] ?? "",
       lockedTemp: json['lockedTemp'] ?? false,
       otp: json['otp'] ?? 0,
       address: (json['address'] as List<dynamic>?)
@@ -42,19 +47,21 @@ class Agent {
           [],
       gstNo: json['GSTno'] ?? '',
       email: json['email'] ?? '',
-      name: json['name'] ?? '',
+      name: json['name'] ?? 'Name NA',
       expireTime: json['expireTime'] ?? 0,
       password: json['password'] ?? '',
       mobile: json['mobile'] ?? 0,
       customerType: json['customerType'] ?? '',
       role: json['role'] ?? '',
-      createdOn: json['createdOn'] ?? '',
+      createdAt: json['createdAt'] ?? '',
+      updatedAt: json['updatedAt'] ?? '',
       wrongPasswordCount: json['wrongPasswordCount'] ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      "id": id,
       'lockedTemp': lockedTemp,
       'otp': otp,
       'address': address.map((e) => e.toJson()).toList(),
@@ -66,7 +73,8 @@ class Agent {
       'mobile': mobile,
       'customerType': customerType,
       'role': role,
-      'createdOn': createdOn,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
       'wrongPasswordCount': wrongPasswordCount,
     };
   }

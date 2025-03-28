@@ -82,7 +82,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
           isLoading = false;
         });
         if (mounted) {
-          Utils().showSuccessDialog(context, "Image upload failed. Try again.");
+          Utils().showSuccessDialog(
+              context, "Image upload failed. Try again.", false);
         }
         return;
       }
@@ -112,7 +113,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
     // Call update API
     bool success = await productService.updateProduct(
-        widget.product.productId, updatedData);
+        widget.product.productId!, updatedData);
 
     setState(() {
       isLoading = false;
@@ -120,7 +121,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
     if (success) {
       if (mounted) {
-        Utils().showSuccessDialog(context, "Product updated successfully!");
+        Utils()
+            .showSuccessDialog(context, "Product updated successfully!", true);
       }
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
@@ -132,7 +134,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     } else {
       if (mounted) {
         Utils().showSuccessDialog(
-            context, "Failed to update product. Try again later!");
+            context, "Failed to update product. Try again later!", false);
       }
     }
   }

@@ -23,4 +23,5 @@ class ImageConstants {
   static const String orderDecline = "$iconBase/orderDecline.png";
   static const String orderConfimm = "$iconBase/orderConfirm.png";
   static const String camera = "$iconBase/camera.png";
+  static const String checkCircle = "$iconBase/check_circle.png";
 }

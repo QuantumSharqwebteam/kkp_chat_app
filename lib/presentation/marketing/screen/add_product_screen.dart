@@ -100,7 +100,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         selectedSizes.isEmpty ||
         selectedColors.isEmpty ||
         selectedImage == null) {
-      Utils().showSuccessDialog(context, "Please fill all fields!");
+      Utils().showSuccessDialog(context, "Please fill all fields!", false);
       return;
     }
     setState(() {
@@ -120,8 +120,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
     if (imageUrl == null) {
       if (mounted) {
-        Utils().showSuccessDialog(
-            context, "Image upload failed. Try uploading different image.");
+        Utils().showSuccessDialog(context,
+            "Image upload failed. Try uploading different image.", false);
       }
       return;
     }
@@ -144,7 +144,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       sizes: selectedSizes.toList(),
       stock: int.parse(stockController.text),
       price: double.parse(priceController.text),
-      productId: "",
+      // productId: "",
       description: descriptionController.text,
     );
 
@@ -152,7 +152,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     if (success) {
       if (mounted) {
-        Utils().showSuccessDialog(context, "Product added successfully!");
+        Utils().showSuccessDialog(context, "Product added successfully!", true);
       }
       // Auto-close the dialog after 2 seconds and navigate back
       Future.delayed(Duration(seconds: 2), () {
@@ -164,7 +164,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     } else {
       if (mounted) {
         Utils().showSuccessDialog(
-            context, "Failed to add product.Try Again later!");
+            context, "Failed to add product.Try Again later!", false);
       }
     }
   }

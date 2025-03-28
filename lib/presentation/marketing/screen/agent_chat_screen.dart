@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat_input_field.dart';
@@ -108,6 +109,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        elevation: 10,
+        shadowColor: AppColors.shadowColor,
+        surfaceTintColor: Colors.white10,
+        //s backgroundColor: Colors.white,
         title: Row(
           children: [
             CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
@@ -133,6 +138,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(20.0),
+            bottomRight: Radius.circular(20.0),
+          ),
+        ),
       ),
       body: Column(
         children: [

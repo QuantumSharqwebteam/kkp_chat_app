@@ -62,8 +62,12 @@ class LocalDbHelper {
     await _box.put(_profile, profile.toMap());
   }
 
-  static Map<dynamic, dynamic> getProfile() {
-    return _box.get(_profile);
+  static Map<String, dynamic>? getProfile() {
+    var profileData = _box.get(_profile);
+    if (profileData != null && profileData is Map) {
+      return Map<String, dynamic>.from(profileData);
+    }
+    return null; // ✅ Return null if no profile is found
   }
 
   static Future<void> removeProfile() async {

@@ -6,8 +6,7 @@ import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 
 class AuthApi {
-  static const baseUrl =
-      'https://ps4smsnf44.execute-api.us-east-1.amazonaws.com/';
+  static const baseUrl = 'https://kkp-chat.onrender.com/';
   final http.Client client;
 
   AuthApi({http.Client? client}) : client = client ?? http.Client();
@@ -241,7 +240,6 @@ class AuthApi {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token"
       });
-
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Parse the JSON response into a Profile object
         final jsonResponse = jsonDecode(response.body);

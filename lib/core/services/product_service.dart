@@ -3,8 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/models/product_model.dart';
 
 class ProductService {
-  final String _baseUrl =
-      "https://ps4smsnf44.execute-api.us-east-1.amazonaws.com/product";
+  final String _baseUrl = "https://kkp-chat.onrender.com/product";
 
   final http.Client client;
 

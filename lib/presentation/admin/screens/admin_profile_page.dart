@@ -3,11 +3,9 @@ import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:shimmer/shimmer.dart';
 
 class AdminProfilePage extends StatefulWidget {
   const AdminProfilePage({super.key});
@@ -17,36 +15,12 @@ class AdminProfilePage extends StatefulWidget {
 }
 
 class _AdminProfilePageState extends State<AdminProfilePage> {
-  Profile? adminProfile;
-  final _authApi = AuthApi();
-  bool _isLoading = false;
+  late Map<String, dynamic> profile;
 
   @override
   void initState() {
     super.initState();
-    _fetchProfileDetails();
-  }
-
-  void _fetchProfileDetails() async {
-    setState(() {
-      _isLoading = true;
-    });
-    try {
-      final profile = await _authApi.getUserInfo();
-      setState(() {
-        adminProfile = profile;
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("Failed to get user details : ${e.toString()} ");
-      setState(() {
-        _isLoading = false;
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    profile = LocalDbHelper.getProfile()!;
   }
 
   @override
@@ -80,11 +54,11 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _isLoading ? _buildShimmerProfileCard() : _buildProfileCard(),
+            _buildProfileCard(),
             const SizedBox(height: 20),
-            _isLoading ? _buildShimmerInfoFields() : _buildInfoFields(),
+            _buildDetailsCard(),
             const Spacer(),
-            if (!_isLoading) _buildAddAgentButton(),
+            _buildAddAgentButton(),
             const SizedBox(height: 20),
           ],
         ),
@@ -147,11 +121,11 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               ),
               const SizedBox(height: 10),
               Text(
-                adminProfile?.name ?? "NA",
+                profile["name"] ?? "NA",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               Text(
-                adminProfile?.role ?? "NA",
+                profile["role"] ?? "NA",
                 style: AppTextStyles.grey5C5C5C_16_600,
               ),
             ],
@@ -161,7 +135,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     );
   }
 
-  Widget _buildInfoFields() {
+  Widget _buildDetailsCard() {
     return Card(
       color: Colors.white,
       surfaceTintColor: Colors.white,
@@ -171,10 +145,10 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInputField(Icons.person, 'Name', adminProfile?.name ?? "NA"),
-            _buildInputField(Icons.email, 'Email', adminProfile?.email ?? "NA"),
+            _buildInputField(Icons.person, 'Name', profile["name"] ?? "NA"),
+            _buildInputField(Icons.email, 'Email', profile["email"] ?? "NA"),
             _buildInputField(Icons.phone, 'Enter Your Mobile No.',
-                adminProfile?.mobile.toString() ?? "NA"),
+                profile["mobile"].toString()),
           ],
         ),
       ),
@@ -222,72 +196,5 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         fontSize: 18,
         borderColor: AppColors.blue00ABE9,
         text: "Add new agent");
-  }
-
-  /// Shimmer effect for profile card
-  Widget _buildShimmerProfileCard() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Card(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: SizedBox(
-          width: double.maxFinite,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                CircleAvatar(radius: 40, backgroundColor: Colors.grey[300]),
-                const SizedBox(height: 10),
-                Container(
-                  width: 100,
-                  height: 20,
-                  color: Colors.grey[300],
-                ),
-                const SizedBox(height: 5),
-                Container(
-                  width: 80,
-                  height: 16,
-                  color: Colors.grey[300],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShimmerInfoFields() {
-    return Card(
-      color: Colors.white,
-      elevation: 10,
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.generate(3, (index) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 80,
-                  height: 14,
-                  color: Colors.grey[300],
-                ),
-                const SizedBox(height: 5),
-                Container(
-                  width: double.infinity,
-                  height: 20,
-                  color: Colors.grey[300],
-                ),
-                const SizedBox(height: 10),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
   }
 }

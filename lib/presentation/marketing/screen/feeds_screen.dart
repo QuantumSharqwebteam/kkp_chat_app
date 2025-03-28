@@ -61,6 +61,11 @@ class _FeedsScreenState extends State<FeedsScreen> {
   ];
 
   bool showPinned = false;
+  void togglePinnedMessages() {
+    setState(() {
+      showPinned = !showPinned;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -121,20 +126,16 @@ class _FeedsScreenState extends State<FeedsScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           FilterButton(icon: Icons.search_rounded),
+          // FilterButton(
+          //   onTap: () {
+          //     setState(() {
+          //       showPinned = false; // Show all messages
+          //     });
+          //   },
+          //   text: "All Chats",
+          // ),
           FilterButton(
-            onTap: () {
-              setState(() {
-                showPinned = false; // Show all messages
-              });
-            },
-            text: "All Chats",
-          ),
-          FilterButton(
-            onTap: () {
-              setState(() {
-                showPinned = true; // Show pinned messages
-              });
-            },
+            onTap: togglePinnedMessages,
             text: "Pinned Messages",
           ),
         ],
