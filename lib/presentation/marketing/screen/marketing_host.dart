@@ -63,13 +63,14 @@ class _MarketingHostState extends State<MarketingHost> {
     super.dispose();
   }
 
-  void _loadcredentials() {
+  Future<void> _loadcredentials() async {
     role = LocalDbHelper.getUserType();
     agentEmail = LocalDbHelper.getEmail();
+    await Future.delayed(const Duration(milliseconds: 500));
     _updateScreens();
   }
 
-  void _updateScreens() {
+  Future<void> _updateScreens() async {
     setState(() {
       _screens = [
         if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),

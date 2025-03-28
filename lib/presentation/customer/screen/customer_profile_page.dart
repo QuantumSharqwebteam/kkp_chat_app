@@ -60,6 +60,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   //     _isDomesticSelected = customerType == "Domestic";
   //   });
   // }
+
   Future<Profile> _loadUserInfo() async {
     try {
       final profile = await auth.getUserInfo();

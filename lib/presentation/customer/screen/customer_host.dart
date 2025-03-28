@@ -35,7 +35,7 @@ class _CustomerHostState extends State<CustomerHost> {
   Future<void> _loadCurrentUserData() async {
     try {
       Profile profile = await auth.getUserInfo();
-      LocalDbHelper.saveProfile(profile);
+      await LocalDbHelper.saveProfile(profile);
       setState(() {
         customerName = profile.name;
         customerEmail = LocalDbHelper.getEmail();
