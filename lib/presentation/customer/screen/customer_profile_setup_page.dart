@@ -4,7 +4,9 @@ import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/data/models/address_model.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
@@ -108,6 +110,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
 
       if (response['message'] == "Item updated successfully") {
         _isLoading = false;
+        Profile profile = Profile.fromJson(response["data"]);
+
+        await LocalDbHelper.saveProfile(profile);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(response['message'])));
         if (widget.forUpdate) {

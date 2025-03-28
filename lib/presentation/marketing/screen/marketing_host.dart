@@ -42,10 +42,9 @@ class _MarketingHostState extends State<MarketingHost> {
 
   Future<void> _loadCurrentUserData() async {
     try {
-      Profile profile = await auth.getUserInfo();
-      LocalDbHelper.saveProfile(profile);
+      Profile? profile = LocalDbHelper.getProfile();
       setState(() {
-        agentName = profile.name;
+        agentName = profile?.name;
       });
     } catch (error) {
       // Handle any errors that occur during the async operation
@@ -62,7 +61,6 @@ class _MarketingHostState extends State<MarketingHost> {
   void _loadcredentials() async {
     role = LocalDbHelper.getUserType();
     agentEmail = LocalDbHelper.getEmail();
-
     _updateScreens();
   }
 

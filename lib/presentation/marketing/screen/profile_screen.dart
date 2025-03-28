@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_details_field.dart';
@@ -17,13 +19,13 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final SocketService _socketService = SocketService();
-  late Map<String, dynamic> profile;
+  late Profile? profile;
 
   @override
   void initState() {
     super.initState();
     Future.delayed(Duration(milliseconds: 300));
-    profile = LocalDbHelper.getProfile() ?? {};
+    profile = LocalDbHelper.getProfile();
   }
 
   void logout() async {
@@ -60,7 +62,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 10),
             _buildDetailsCard(),
             const SizedBox(height: 10),
+            _buildSettingsSection(context),
+            const SizedBox(height: 10),
             _buildLogoutButton(),
+            const SizedBox(height: 10),
           ],
         ),
       ),
@@ -83,11 +88,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 10),
           Text(
-            profile['name'] ?? "",
+            profile?.name ?? "",
             style: AppTextStyles.black14_600.copyWith(fontSize: 28),
           ),
           Text(
-            profile['role'] ?? "",
+            profile?.role ?? "",
             style: AppTextStyles.grey5C5C5C_16_600,
           ),
           const SizedBox(height: 10),
@@ -146,82 +151,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ProfileDetailsField(
             icon: Icons.person,
             label: 'Name',
-            value: profile["name"] ?? "NA",
+            value: profile?.name ?? "NA",
           ),
           ProfileDetailsField(
             icon: Icons.email,
             label: 'Email',
-            value: profile["email"] ?? "NA",
+            value: profile?.email ?? "NA",
           ),
           ProfileDetailsField(
             icon: Icons.phone,
-            label: ' Mobile No.',
-            value: profile["mobile"].toString(),
+            label: 'Mobile No.',
+            value: profile?.mobile.toString() ?? "0",
           ),
         ],
       ),
     );
   }
 
-  // Widget _buildSettingsSection(BuildContext context) {
-  //   return Container(
-  //     padding: EdgeInsets.symmetric(horizontal: 16),
-  //     margin: EdgeInsets.symmetric(vertical: 10),
-  //     decoration: BoxDecoration(color: Colors.white, boxShadow: [
-  //       BoxShadow(
-  //         blurRadius: 4,
-  //         spreadRadius: 0,
-  //         color: AppColors.shadowColor,
-  //         offset: const Offset(0, 4),
-  //       )
-  //     ]),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Text(
-  //           "Settings",
-  //           style: AppTextStyles.black15_500.copyWith(fontSize: 18),
-  //         ),
-  //         _buildSettingsTile(
-  //           context,
-  //           Icons.notifications_none_rounded,
-  //           "Notification",
-  //           MarketingRoutes.marketingNotifications,
-  //         ),
-  //         _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
-  //             MarketingRoutes.privacy),
-  //         _buildSettingsTile(context, Icons.settings_rounded, "Settings",
-  //             MarketingRoutes.marketingSettings),
-  //       ],
-  //     ),
-  //   );
-  // }
+  Widget _buildSettingsSection(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [
+        BoxShadow(
+          blurRadius: 4,
+          spreadRadius: 0,
+          color: AppColors.shadowColor,
+          offset: const Offset(0, 4),
+        )
+      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Settings",
+            style: AppTextStyles.black15_500.copyWith(fontSize: 18),
+          ),
+          _buildSettingsTile(
+            context,
+            Icons.notifications_none_rounded,
+            "Notification",
+            MarketingRoutes.marketingNotifications,
+          ),
+          _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
+              MarketingRoutes.privacy),
+          _buildSettingsTile(context, Icons.settings_rounded, "Settings",
+              MarketingRoutes.marketingSettings),
+        ],
+      ),
+    );
+  }
 
-  // Widget _buildSettingsTile(
-  //     BuildContext context, IconData icon, String title, String routeName) {
-  //   return Container(
-  //     width: double.maxFinite,
-  //     decoration: BoxDecoration(
-  //       border: Border(
-  //         bottom: BorderSide(width: 2, color: AppColors.dividerD9D9D9),
-  //       ),
-  //     ),
-  //     child: ListTile(
-  //       leading: Icon(icon, color: Colors.black),
-  //       title: Text(
-  //         title,
-  //         style: AppTextStyles.black16_500,
-  //       ),
-  //       trailing: const Icon(
-  //         Icons.arrow_forward_ios,
-  //         size: 20,
-  //       ),
-  //       onTap: () {
-  //         Navigator.pushNamed(context, routeName);
-  //       },
-  //     ),
-  //   );
-  // }
+  Widget _buildSettingsTile(
+      BuildContext context, IconData icon, String title, String routeName) {
+    return Container(
+      width: double.maxFinite,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(width: 2, color: AppColors.dividerD9D9D9),
+        ),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.black),
+        title: Text(
+          title,
+          style: AppTextStyles.black16_500,
+        ),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 20,
+        ),
+        onTap: () {
+          Navigator.pushNamed(context, routeName);
+        },
+      ),
+    );
+  }
 
   Widget _buildLogoutButton() {
     return Padding(

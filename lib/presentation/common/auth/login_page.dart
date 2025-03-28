@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
@@ -69,16 +70,20 @@ class _LoginPageState extends State<LoginPage> {
       await auth.login(email: email, password: pass).then((value) async {
         if (value['message'] == 'User logged in successfully') {
           if (kDebugMode) {
-            ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(value['token'].toString())));
-            ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(value['role'].toString())));
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(_email.text)));
+            print("🪙TOKEN ${value['token']}");
+
+            print("🧑‍🦰ROLE ${value['role']}");
+
+            print("✉️EMAIL ${_email.text}");
           }
-          await LocalDbHelper.saveToken(value['token'].toString());
+          await LocalDbHelper.saveToken(value['token'].toString())
+              .then((_) async {
+            Profile profile = await auth.getUserInfo();
+            await LocalDbHelper.saveProfile(profile);
+          });
           await LocalDbHelper.saveEmail(_email.text);
           await LocalDbHelper.saveUserType(value['role'].toString());
+
           if (value['role'].toString() == "0") {
             //customer
             Navigator.pushReplacementNamed(
@@ -97,9 +102,16 @@ class _LoginPageState extends State<LoginPage> {
                 context, MarketingRoutes.marketingHostScreen);
           } else {
             // Invalid user type
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
-              return LoginPage();
-            }));
+            LocalDbHelper.removeEmail();
+            LocalDbHelper.removeName();
+            LocalDbHelper.removeProfile();
+            LocalDbHelper.removeToken();
+            LocalDbHelper.removeUserType();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Invlaid Credentials"),
+              ),
+            );
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
