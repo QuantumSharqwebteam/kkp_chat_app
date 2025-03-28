@@ -65,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildSettingsSection(context),
             const SizedBox(height: 10),
             _buildLogoutButton(),
-            const SizedBox(height: 10),
+            const SizedBox(height: 25),
           ],
         ),
       ),
