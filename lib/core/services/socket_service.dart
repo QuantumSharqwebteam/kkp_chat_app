@@ -13,7 +13,7 @@ class SocketService {
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
-  Timer? _roomMembersTimer;
+  //Timer? _roomMembersTimer;
   Function(Map<String, dynamic>)? _onMessageReceived;
 
   // Default value for chat page open state
@@ -95,17 +95,17 @@ class SocketService {
     _statusController.add(List.from(_roomMembers));
   }
 
-  //room members list every few seconds.
-  void startRoomMembersUpdates() {
-    _roomMembersTimer?.cancel(); // Cancel any existing timer
-    _roomMembersTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      getRoomMembers(); // Fetch latest room members every 5 seconds
-    });
-  }
+  // //room members list every few seconds.
+  // void startRoomMembersUpdates() {
+  //   _roomMembersTimer?.cancel(); // Cancel any existing timer
+  //   _roomMembersTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+  //     getRoomMembers(); // Fetch latest room members every 5 seconds
+  //   });
+  // }
 
-  void stopRoomMembersUpdates() {
-    _roomMembersTimer?.cancel(); // Stop the timer when not needed
-  }
+  // void stopRoomMembersUpdates() {
+  //   _roomMembersTimer?.cancel(); // Stop the timer when not needed
+  // }
 
   // Request the latest room members list from the server
   void getRoomMembers() {

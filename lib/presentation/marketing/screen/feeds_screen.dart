@@ -35,13 +35,13 @@ class _FeedsScreenState extends State<FeedsScreen> {
         setState(() {}); // Forces a rebuild to reflect the new online status
       }
     });
-    _socketService.startRoomMembersUpdates();
+    // _socketService.startRoomMembersUpdates();
   }
 
   @override
   void dispose() {
     _statusSubscription?.cancel();
-    _socketService.stopRoomMembersUpdates();
+    //_socketService.stopRoomMembersUpdates();
     super.dispose();
   }
 
