@@ -1,5 +1,3 @@
-// ignore_for_file: unused_import
-
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
@@ -12,8 +10,6 @@ import 'package:kkp_chat_app/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/marketing_nav_bar.dart';
-
-import '../../admin/screens/agent_profile_list.dart';
 
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key});
@@ -47,7 +43,7 @@ class _MarketingHostState extends State<MarketingHost> {
   Future<void> _loadCurrentUserData() async {
     try {
       Profile profile = await auth.getUserInfo();
-      await LocalDbHelper.saveProfile(profile);
+      LocalDbHelper.saveProfile(profile);
       setState(() {
         agentName = profile.name;
       });
@@ -63,10 +59,10 @@ class _MarketingHostState extends State<MarketingHost> {
     super.dispose();
   }
 
-  Future<void> _loadcredentials() async {
+  void _loadcredentials() async {
     role = LocalDbHelper.getUserType();
     agentEmail = LocalDbHelper.getEmail();
-    await Future.delayed(const Duration(milliseconds: 500));
+
     _updateScreens();
   }
 
@@ -74,8 +70,8 @@ class _MarketingHostState extends State<MarketingHost> {
     setState(() {
       _screens = [
         if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),
-        AgentProfilesPage(),
-        //FeedsScreen(),
+        //AgentProfilesPage(),
+        FeedsScreen(),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
       ];

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
+import 'package:kkp_chat_app/data/models/agent.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/customer_list_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/filter_button.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
@@ -12,58 +16,46 @@ class FeedsScreen extends StatefulWidget {
 }
 
 class _FeedsScreenState extends State<FeedsScreen> {
-  List<Map<String, dynamic>> messages = [
-    {
-      "name": "Marketing Agent 1",
-      "message": "Hi any update....",
-      "time": "2m",
-      "image": "assets/images/user1.png",
-      "isActive": false,
-      "isPinned": true,
-      "email": "agent1@example.com" // Add email for identification
-    },
-    {
-      "name": "Marketing Agent 2",
-      "message": "Hi any update....",
-      "time": "3m",
-      "image": "assets/images/user4.png",
-      "isActive": true,
-      "isPinned": true,
-      "email": "agent2@example.com"
-    },
-    {
-      "name": "Marketing Agent 3",
-      "message": "Hi any update....",
-      "time": "2hr",
-      "image": "assets/images/user1.png",
-      "isActive": false,
-      "isPinned": false,
-      "email": "agent3@example.com"
-    },
-    {
-      "name": "Marketing Agent 4",
-      "message": "Hi any update....",
-      "time": "3hr",
-      "image": "assets/images/user3.png",
-      "isActive": false,
-      "isPinned": true,
-      "email": "agent4@example.com"
-    },
-    {
-      "name": "Marketing Agent 5",
-      "message": "Hi any update....",
-      "time": "4m",
-      "image": "assets/images/user4.png",
-      "isActive": true,
-      "isPinned": false,
-      "email": "agent5@example.com"
-    },
-  ];
+  final AuthApi _auth = AuthApi();
+  List<Agent> _agentsList = [];
+  Set<String> pinnedAgentsSet = {}; // Set to store pinned agent emails
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAgents();
+  }
+
+  Future<void> _fetchAgents() async {
+    try {
+      List<Agent> agents = await _auth.getAgent();
+      setState(() {
+        _agentsList = agents;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Error fetching agents: $e");
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   bool showPinned = false;
   void togglePinnedMessages() {
     setState(() {
       showPinned = !showPinned;
+    });
+  }
+
+  void togglePinAgent(String agentEmail) {
+    setState(() {
+      if (pinnedAgentsSet.contains(agentEmail)) {
+        pinnedAgentsSet.remove(agentEmail);
+      } else {
+        pinnedAgentsSet.add(agentEmail);
+      }
     });
   }
 
@@ -80,7 +72,9 @@ class _FeedsScreenState extends State<FeedsScreen> {
               child: Column(
                 children: [
                   _buildFilterButtons(),
-                  Expanded(child: _buildRecentMessages()),
+                  Expanded(
+                    child: _isLoading ? ShimmerList() : _buildAgentList(),
+                  ),
                 ],
               ),
             ),
@@ -143,37 +137,43 @@ class _FeedsScreenState extends State<FeedsScreen> {
     );
   }
 
-  // Recent Messages List with Dividers
-  Widget _buildRecentMessages() {
-    List<Map<String, dynamic>> filteredMessages = showPinned
-        ? messages.where((msg) => msg['isPinned'] == true).toList()
-        : messages;
+  Widget _buildAgentList() {
+    List<Agent> displayList = showPinned
+        ? _agentsList
+            .where((agent) => pinnedAgentsSet.contains(agent.email))
+            .toList()
+        : _agentsList;
+
+    if (displayList.isEmpty) {
+      return const Center(child: Text("No agents found"));
+    }
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      itemCount: filteredMessages.length,
+      itemCount: displayList.length,
       physics: const AlwaysScrollableScrollPhysics(),
       separatorBuilder: (context, index) => Divider(
         thickness: 1,
         color: AppColors.dividerColor,
       ),
       itemBuilder: (context, index) {
-        final message = filteredMessages[index];
+        final agent = displayList[index];
         return RecentMessagesListCard(
-          name: message['name'],
-          message: message['message'],
-          time: message['time'],
-          image: message['image'],
-          isActive: message['isActive'],
-          isPinned: message['isPinned']!,
+          name: agent.name,
+          message: "Hi any update....",
+          time: "Just now",
+          image: "assets/images/user1.png",
+          isActive: true,
+          isPinned: pinnedAgentsSet.contains(agent.email), // Check if pinned
+          onPinTap: () => togglePinAgent(agent.email), // Toggle pin
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => CustomersListScreen(
-                  agentName: message['name'],
-                  agentImage: message['image'],
-                  agentEmail: message['email'], // Pass the agent's email
+                  agentName: agent.name,
+                  agentImage: ImageConstants.userImage,
+                  agentEmail: agent.email,
                 ),
               ),
             );

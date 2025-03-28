@@ -3,6 +3,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
+import 'package:kkp_chat_app/core/services/admin_chat_service.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
@@ -25,7 +26,7 @@ class CustomersListScreen extends StatefulWidget {
 
 class _CustomersListScreenState extends State<CustomersListScreen> {
   final _authApi = AuthApi();
-
+  final AdminChatService _chatService = AdminChatService();
   List<dynamic> customers = [];
   bool isLoading = false;
 
@@ -36,18 +37,29 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
   }
 
   Future<void> fetchCustomers() async {
-    final role = "User"; //customer having role as user
     setState(() {
       isLoading = true;
     });
+
     try {
-      final fetchedCustomerList = await _authApi.getUsersByRole(role);
-      setState(() {
-        customers = fetchedCustomerList;
-        isLoading = false;
-      });
+      final fetchedCustomerList =
+          await _chatService.getAgentUserList(widget.agentEmail);
+
+      if (fetchedCustomerList.isNotEmpty) {
+        //  If agent has assigned users, display them
+        setState(() {
+          customers = fetchedCustomerList;
+        });
+      } else {
+        // If no agent-specific customers, fetch ALL customers
+        debugPrint("No agent-specific users found. Fetching all customers...");
+        final allCustomers = await _authApi.getUsersByRole("User");
+        setState(() {
+          customers = allCustomers;
+        });
+      }
     } catch (e) {
-      debugPrint("Error loading customer Lists: ${e.toString()}");
+      debugPrint("Error loading customer list: ${e.toString()}");
     } finally {
       setState(() {
         isLoading = false;
@@ -94,7 +106,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
             child: isLoading
                 ? const ShimmerList(itemCount: 8)
                 : customers.isEmpty
-                    ? Center(child: Text("No Customers Assigned Yet!"))
+                    ? Center(child: Text("No Customers Available"))
                     : ListView.separated(
                         itemCount: customers.length,
                         separatorBuilder: (context, index) =>

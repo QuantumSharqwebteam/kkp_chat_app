@@ -10,7 +10,8 @@ class RecentMessagesListCard extends StatelessWidget {
   final String image;
   final bool isActive;
   final bool isPinned;
-  final void Function() onTap;
+  final VoidCallback onTap;
+  final VoidCallback? onPinTap;
 
   const RecentMessagesListCard({
     super.key,
@@ -21,35 +22,63 @@ class RecentMessagesListCard extends StatelessWidget {
     required this.isActive,
     this.isPinned = false,
     required this.onTap,
+    this.onPinTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
+    return GestureDetector(
       onTap: onTap,
-      leading: ProfileAvatar(
-        image: image,
-        isActive: isActive,
+      onLongPressStart: (LongPressStartDetails details) {
+        _showPinMenu(context, details.globalPosition);
+      }, // Show menu on long press
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: ProfileAvatar(
+          image: image,
+          isActive: isActive,
+        ),
+        title: Text(
+          name,
+          style: AppTextStyles.black14_600,
+        ),
+        subtitle: Text(message, style: AppTextStyles.grey12_600),
+        trailing: isPinned
+            ? const Icon(Icons.push_pin, color: AppColors.redF11515, size: 16)
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(time, style: AppTextStyles.black10_600),
+                  CircleAvatar(
+                    radius: 3,
+                    backgroundColor: AppColors.inActiveRed,
+                  ),
+                ],
+              ),
       ),
-      title: Text(
-        name,
-        style: AppTextStyles.black14_600,
+    );
+  }
+
+  void _showPinMenu(BuildContext context, Offset position) {
+    showMenu(
+      context: context,
+      color: Colors.white,
+      elevation: 10,
+      surfaceTintColor: Colors.white,
+      position: RelativeRect.fromLTRB(
+        position.dx, // X position of tap
+        position.dy, // Y position of tap
+        position.dx + 40, // Avoids overflow
+        position.dy + 40,
       ),
-      subtitle: Text(message, style: AppTextStyles.grey12_600),
-      trailing: isPinned
-          ? const Icon(Icons.push_pin,
-              color: AppColors.redF11515, size: 16) // Pinned icon
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(time, style: AppTextStyles.black10_600),
-                CircleAvatar(
-                  radius: 3,
-                  backgroundColor: AppColors.inActiveRed,
-                ),
-              ],
-            ),
+      items: [
+        PopupMenuItem(
+          child: Text(isPinned ? "Unpin Agent" : "Pin Agent"),
+          onTap: () {
+            Future.delayed(const Duration(milliseconds: 200), onPinTap);
+          },
+        ),
+      ],
     );
   }
 }
