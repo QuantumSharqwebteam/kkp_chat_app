@@ -76,7 +76,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         "timestamp": data["timestamp"],
         "isMe": data["senderId"] == widget.customerEmail,
         "type": data["type"] ?? "text", // Default to 'text' if not specified
-        "imageUrl": data["imageUrl"],
+        "mediaUrl": data["mediaUrl"],
         "form": data["form"],
       });
       _scrollToBottom();
@@ -135,7 +135,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: imageUrl, type: 'image', mediaUrl: imageUrl);
+        _sendMessage(messageText: imageUrl, type: 'media', mediaUrl: imageUrl);
       }
     }
   }
