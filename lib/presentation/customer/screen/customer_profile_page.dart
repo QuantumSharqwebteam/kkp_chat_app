@@ -18,6 +18,7 @@ class CustomerProfilePage extends StatefulWidget {
 
 class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final AuthRepository auth = AuthRepository();
+  Profile? profile;
   bool _isExportSelected = false;
   bool _isDomesticSelected = false;
   final TextEditingController _name = TextEditingController();
@@ -37,23 +38,30 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   }
 
   Future<void> _loadUserInfo() async {
-    Profile? profile = await auth.getUserInfo();
-    LocalDbHelper.saveProfile(profile);
-    _name.text = profile.name ?? '';
-    _email.text = profile.email ?? '';
-    _number.text = profile.mobile.toString();
-    _gstNo.text = profile.gstNo ?? '';
-    _panNo.text = profile.panNo ?? '';
-    if (profile.address?.isNotEmpty == true) {
-      final address = profile.address![0];
-      _houseNo.text = address.houseNo ?? '';
-      _streetName.text = address.streetName ?? '';
-      _city.text = address.city ?? '';
-      _pincode.text = address.pincode ?? '';
+    profile = await auth.getUserInfo();
+    if (profile != null) {
+      LocalDbHelper.saveProfile(profile!);
+      _updateProfileFields(profile!);
     }
-    _isExportSelected = profile.customerType == 'Export';
-    _isDomesticSelected = profile.customerType == 'Domestic';
-    setState(() {});
+  }
+
+  void _updateProfileFields(Profile profile) {
+    setState(() {
+      _name.text = profile.name ?? '';
+      _email.text = profile.email ?? '';
+      _number.text = profile.mobile.toString();
+      _gstNo.text = profile.gstNo ?? '';
+      _panNo.text = profile.panNo ?? '';
+      if (profile.address?.isNotEmpty == true) {
+        final address = profile.address![0];
+        _houseNo.text = address.houseNo ?? '';
+        _streetName.text = address.streetName ?? '';
+        _city.text = address.city ?? '';
+        _pincode.text = address.pincode ?? '';
+      }
+      _isExportSelected = profile.customerType == 'Export';
+      _isDomesticSelected = profile.customerType == 'Domestic';
+    });
   }
 
   @override
@@ -99,8 +107,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                       Center(
                         child: CustomButton(
                           text: 'Edit',
-                          onPressed: () {
-                            Navigator.pushNamed(
+                          onPressed: () async {
+                            final updatedProfile = await Navigator.pushNamed(
                               context,
                               CustomerRoutes.customerProfileSetup,
                               arguments: {
@@ -117,7 +125,11 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                                 "isExportSelected": _isExportSelected,
                                 "isDomesticSelected": _isDomesticSelected,
                               },
-                            );
+                            ) as Profile?;
+
+                            if (updatedProfile != null) {
+                              _updateProfileFields(updatedProfile);
+                            }
                           },
                           height: 45,
                           elevation: 5,
@@ -144,38 +156,27 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-          child: Text('Customer Type',
-              style: AppTextStyles.black16_600.copyWith(color: Colors.black45)),
+          child: Text('Customer Type', style: AppTextStyles.black16_600),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildCheckbox('Export', _isExportSelected, (value) {
-              setState(() {
-                _isExportSelected = value!;
-                if (_isExportSelected) _isDomesticSelected = false;
-              });
-            }),
-            _buildCheckbox('Domestic', _isDomesticSelected, (value) {
-              setState(() {
-                _isDomesticSelected = value!;
-                if (_isDomesticSelected) _isExportSelected = false;
-              });
-            }),
+            _buildCheckbox('Export', _isExportSelected),
+            _buildCheckbox('Domestic', _isDomesticSelected),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildCheckbox(String label, bool value, Function(bool?) onChanged) {
+  Widget _buildCheckbox(String label, bool value) {
     return Row(
       children: [
         Checkbox(
           visualDensity: VisualDensity.compact,
           value: value,
           activeColor: AppColors.blue,
-          onChanged: onChanged,
+          onChanged: null, // Disable manual changes
         ),
         Text(label, style: AppTextStyles.black14_600),
       ],

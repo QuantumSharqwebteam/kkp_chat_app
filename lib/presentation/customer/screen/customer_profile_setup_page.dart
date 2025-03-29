@@ -75,15 +75,15 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   @override
   void initState() {
     super.initState();
-    // Initialize fields with passed arguments
+    // Initialize fields with passed arguments if updating
     if (widget.forUpdate) {
       _phoneNumber.text = widget.number ?? '';
       _gstNumber.text = widget.gstNo ?? '';
       _panNumber.text = widget.panNo ?? '';
       _houseFlatNumber.text = widget.houseNo ?? '';
-      _streetNumber.text = widget.streetName ?? "";
-      _cityName.text = widget.city ?? "";
-      _pinCode.text = widget.pincode ?? "";
+      _streetNumber.text = widget.streetName ?? '';
+      _cityName.text = widget.city ?? '';
+      _pinCode.text = widget.pincode ?? '';
       _isExportSelected = widget.isExportSelected;
       _isDomesticSelected = widget.isDomesticSelected;
       _customerType = _isExportSelected ? 'Export' : 'Domestic';
@@ -92,31 +92,43 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
 
   Future<void> _saveUserProfile(context) async {
     _isLoading = true;
-    Address addressDetails = Address(
-      city: _cityName.text,
-      houseNo: _houseFlatNumber.text,
-      pincode: _pinCode.text,
-      streetName: _streetNumber.text,
-    );
+
+    // Construct the address object with only changed values
+    Address? addressDetails;
+    if (_houseFlatNumber.text.isNotEmpty ||
+        _streetNumber.text.isNotEmpty ||
+        _cityName.text.isNotEmpty ||
+        _pinCode.text.isNotEmpty) {
+      addressDetails = Address(
+        houseNo:
+            _houseFlatNumber.text.isNotEmpty ? _houseFlatNumber.text : null,
+        streetName: _streetNumber.text.isNotEmpty ? _streetNumber.text : null,
+        city: _cityName.text.isNotEmpty ? _cityName.text : null,
+        pincode: _pinCode.text.isNotEmpty ? _pinCode.text : null,
+      );
+    }
+
     try {
       final response = await auth.updateUserDetails(
         name: null,
-        number: _phoneNumber.text,
+        number: _phoneNumber.text.isNotEmpty ? _phoneNumber.text : null,
         customerType: _customerType,
-        gstNo: _gstNumber.text,
-        panNo: _panNumber.text,
+        gstNo: _gstNumber.text.isNotEmpty ? _gstNumber.text : null,
+        panNo: _panNumber.text.isNotEmpty ? _panNumber.text : null,
         address: addressDetails,
       );
 
       if (response['message'] == "Item updated successfully") {
         _isLoading = false;
-        Profile profile = Profile.fromJson(response["data"]);
+        Profile updatedProfile = Profile.fromJson(response["data"]);
 
-        await LocalDbHelper.saveProfile(profile);
+        await LocalDbHelper.saveProfile(updatedProfile);
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(response['message'])));
+
+        // Return the updated profile to the previous screen
         if (widget.forUpdate) {
-          Navigator.pop(context);
+          Navigator.pop(context, updatedProfile);
         } else {
           Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
         }
@@ -543,7 +555,10 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     return _phoneNumber.text != widget.number ||
         _gstNumber.text != widget.gstNo ||
         _panNumber.text != widget.panNo ||
-        _houseFlatNumber.text != widget.address ||
+        _houseFlatNumber.text != widget.houseNo ||
+        _streetNumber.text != widget.streetName ||
+        _cityName.text != widget.city ||
+        _pinCode.text != widget.pincode ||
         _isExportSelected != widget.isExportSelected ||
         _isDomesticSelected != widget.isDomesticSelected;
   }
