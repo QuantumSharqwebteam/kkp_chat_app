@@ -76,7 +76,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         "timeStamp": data["timestamp"],
         "isMe": data["senderId"] == widget.agentEmail,
         "type": data["type"] ?? "text", // Default to 'text' if not specified
-        "imageUrl": data["imageUrl"],
+        "mediaUrl": data["mediaUrl"],
         "form": data["form"],
       });
       _scrollToBottom();
@@ -138,7 +138,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: imageUrl, type: 'image', mediaUrl: imageUrl);
+        _sendMessage(messageText: imageUrl, type: 'media', mediaUrl: imageUrl);
       }
     }
   }
@@ -209,7 +209,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final msg = messages[index];
-                if (msg['type'] == 'image') {
+                if (msg['type'] == 'media') {
                   return ImageMessageBubble(
                     imageUrl: msg['mediaUrl'],
                     isMe: msg['isMe'],
