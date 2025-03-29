@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
@@ -8,11 +7,15 @@ import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
 class ChatInputField extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
+  final VoidCallback onSendImage;
+  final VoidCallback onSendForm;
 
   const ChatInputField({
     super.key,
     required this.controller,
     required this.onSend,
+    required this.onSendImage,
+    required this.onSendForm,
   });
 
   @override
@@ -31,8 +34,10 @@ class _ChatInputFieldState extends State<ChatInputField> {
             icon: const Icon(Icons.attachment),
             onPressed: () {
               showAttachmentMenu(context, (selectedItem) {
-                if (kDebugMode) {
-                  print("Selected: $selectedItem");
+                if (selectedItem == "Photos") {
+                  widget.onSendImage();
+                } else if (selectedItem == "Inquiry Form") {
+                  widget.onSendForm();
                 }
               });
             },
@@ -60,7 +65,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.camera_alt),
-                    onPressed: () {},
+                    onPressed: widget.onSendImage,
                   ),
                   IconButton(
                     icon: const Icon(Icons.mic),

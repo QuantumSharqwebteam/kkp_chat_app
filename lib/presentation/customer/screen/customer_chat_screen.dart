@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/message_bubble.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat_input_field.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
+import 'package:image_picker/image_picker.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
@@ -21,7 +25,7 @@ class CustomerChatScreen extends StatefulWidget {
     this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
     this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "mohdshoaibrayeen3@gmail.com",
+    this.agentEmail = "rayeenshoaib20786@gmail.com",
   });
 
   @override
@@ -32,6 +36,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     with WidgetsBindingObserver {
   final _chatController = TextEditingController();
   final SocketService _socketService = SocketService();
+  final S3UploadService s3UploadService = S3UploadService();
+  final S3UploadService _s3uploadService = S3UploadService();
+  final ScrollController _scrollController = ScrollController();
 
   List<Map<String, dynamic>> messages = [];
 
@@ -47,6 +54,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
+    _scrollController.dispose();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -65,33 +73,78 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
-        "timestamp": data["timestamp"], //added time Stamp code
+        "timestamp": data["timestamp"],
         "isMe": data["senderId"] == widget.customerEmail,
+        "type": data["type"] ?? "text", // Default to 'text' if not specified
+        "imageUrl": data["imageUrl"],
+        "form": data["form"],
       });
+      _scrollToBottom();
     });
   }
 
-  void _sendMessage() {
-    if (_chatController.text.trim().isEmpty) return;
+  void _sendMessage({
+    required String messageText,
+    String type = 'text',
+    String? imageUrl,
+    String? form,
+  }) {
+    if (messageText.trim().isEmpty && imageUrl == null && form == null) return;
 
-    final messageText = _chatController.text.trim();
     final currentTime = DateTime.now().toIso8601String();
     setState(() {
       messages.add({
         "text": messageText,
-        "timestamp": currentTime, // Store local timestamp
+        "timestamp": currentTime,
         "isMe": true,
+        "type": type,
+        "imageUrl": imageUrl,
+        "form": form,
       });
+      _scrollToBottom();
     });
 
     _socketService.sendMessage(
-      widget.agentEmail!,
-      messageText,
-      widget.customerEmail!,
-      widget.customerName!,
+      targetEmail: widget.agentEmail!,
+      message: messageText,
+      senderEmail: widget.customerEmail!,
+      senderName: widget.customerName!,
+      type: type,
+      imageUrl: imageUrl,
+      form: form,
     );
 
     _chatController.clear();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
+  }
+
+  Future<void> _pickAndSendImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      // Upload the image to AWS S3 and get the image URL
+      final File imageFile = File(pickedFile.path);
+      final imageUrl = await _s3uploadService.uploadFile(imageFile);
+      if (imageUrl != null) {
+        _sendMessage(messageText: "", type: 'image', imageUrl: imageUrl);
+      }
+    }
+  }
+
+  Future<void> _sendForm() async {
+    // Implement form sending logic here
+    // For example, collect form data and send it
+    // final formData = collectFormData();
+    // _sendMessage(messageText: "", type: 'form', form: formData);
   }
 
   String formatTimestamp(String? timestamp) {
@@ -148,14 +201,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(10),
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final msg = messages[index];
+                if (msg['type'] == 'image') {
+                  return ImageMessageBubble(
+                    imageUrl: msg['imageUrl'],
+                    isMe: msg['isMe'],
+                    timestamp: formatTimestamp(msg['timestamp']),
+                  );
+                }
                 return MessageBubble(
                   text: msg['text'],
                   isMe: msg['isMe'],
-                  timestamp: formatTimestamp(msg["timestamp"]),
+                  timestamp: formatTimestamp(msg['timestamp']),
                   image:
                       msg['isMe'] ? widget.customerImage! : widget.agentImage!,
                 );
@@ -164,7 +225,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           ),
           ChatInputField(
             controller: _chatController,
-            onSend: _sendMessage,
+            onSend: () => _sendMessage(messageText: _chatController.text),
+            onSendImage: _pickAndSendImage,
+            onSendForm: _sendForm,
           ),
         ],
       ),

@@ -12,7 +12,7 @@ class SocketService {
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
-  final Duration _reconnectInterval = const Duration(seconds: 3);
+  final Duration _reconnectInterval = const Duration(seconds: 5);
   //Timer? _roomMembersTimer;
   Function(Map<String, dynamic>)? _onMessageReceived;
 
@@ -169,15 +169,35 @@ class SocketService {
     }
   }
 
-  void sendMessage(String targetEmail, String message, String senderEmail,
-      String senderName) {
+  void sendMessage({
+    required String targetEmail,
+    required String message,
+    required String senderEmail,
+    required String senderName,
+    String type = 'text',
+    String? form,
+    String? imageUrl,
+  }) {
     if (_isConnected) {
-      _socket.emit('sendMessage', {
+      Map<String, dynamic> messageData = {
         'targetId': targetEmail,
         'message': message,
         'senderId': senderEmail,
         'senderName': senderName,
-      });
+        'type': type,
+      };
+
+      if (form != null) {
+        messageData['form'] = form;
+      }
+
+      if (imageUrl != null) {
+        messageData['imageUrl'] = imageUrl;
+      }
+
+      _socket.emit('sendMessage', messageData);
+    } else {
+      debugPrint('Socket is not connected. Cannot send message.');
     }
   }
 
@@ -210,10 +230,8 @@ class SocketService {
   }
 
   void disconnect() {
-    _isLoggingOut = true;
     if (_isConnected) {
       _socket.disconnect();
-      _isConnected = false;
       debugPrint('🛑 Socket disconnected');
     }
   }
