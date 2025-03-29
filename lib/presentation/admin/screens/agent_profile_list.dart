@@ -47,10 +47,10 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Agent Profiles List"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back),
+        //   onPressed: () => Navigator.pop(context),
+        // ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

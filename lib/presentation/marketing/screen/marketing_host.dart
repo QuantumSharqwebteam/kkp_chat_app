@@ -1,5 +1,3 @@
-// ignore_for_file: unused_import
-
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
@@ -12,8 +10,6 @@ import 'package:kkp_chat_app/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/marketing_nav_bar.dart';
-
-import '../../admin/screens/agent_profile_list.dart';
 
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key});
@@ -47,10 +43,9 @@ class _MarketingHostState extends State<MarketingHost> {
 
   Future<void> _loadCurrentUserData() async {
     try {
-      Profile profile = await auth.getUserInfo();
-      LocalDbHelper.saveProfile(profile);
+      Profile? profile = LocalDbHelper.getProfile();
       setState(() {
-        agentName = profile.name;
+        agentName = profile?.name;
       });
     } catch (error) {
       // Handle any errors that occur during the async operation
@@ -68,11 +63,10 @@ class _MarketingHostState extends State<MarketingHost> {
   void _loadcredentials() async {
     role = LocalDbHelper.getUserType();
     agentEmail = LocalDbHelper.getEmail();
-
     _updateScreens();
   }
 
-  void _updateScreens() {
+  Future<void> _updateScreens() async {
     setState(() {
       _screens = [
         if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),

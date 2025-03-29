@@ -5,6 +5,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
 class AdminProfilePage extends StatefulWidget {
@@ -15,7 +16,7 @@ class AdminProfilePage extends StatefulWidget {
 }
 
 class _AdminProfilePageState extends State<AdminProfilePage> {
-  late Map<String, dynamic> profile;
+  late Profile? profile;
 
   @override
   void initState() {
@@ -121,11 +122,11 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
               ),
               const SizedBox(height: 10),
               Text(
-                profile["name"] ?? "NA",
+                profile?.name ?? "NA",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               Text(
-                profile["role"] ?? "NA",
+                profile?.role ?? "NA",
                 style: AppTextStyles.grey5C5C5C_16_600,
               ),
             ],
@@ -145,10 +146,10 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInputField(Icons.person, 'Name', profile["name"] ?? "NA"),
-            _buildInputField(Icons.email, 'Email', profile["email"] ?? "NA"),
+            _buildInputField(Icons.person, 'Name', profile?.name ?? "NA"),
+            _buildInputField(Icons.email, 'Email', profile?.email ?? "NA"),
             _buildInputField(Icons.phone, 'Enter Your Mobile No.',
-                profile["mobile"].toString()),
+                profile?.mobile.toString() ?? "0"),
           ],
         ),
       ),

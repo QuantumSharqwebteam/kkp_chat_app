@@ -20,8 +20,8 @@ class AgentChatScreen extends StatefulWidget {
     this.customerImage = ImageConstants.userImage,
     this.agentName = "Agent N/A",
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail = "xyz@gmail.com",
-    this.agentEmail = "qwerty@gmail.com",
+    this.customerEmail = "prabhujivats@gmail.com",
+    this.agentEmail = "rayeenshoaib20786@gmail.com",
   });
 
   @override
@@ -156,7 +156,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 return MessageBubble(
                   text: msg['text'],
                   isMe: msg['isMe'],
-                  timestamp: formatTimestamp(msg['timestamp']),
+                  // timestamp: formatTimestamp(msg['timestamp'] ?? ""),
                   image:
                       msg['isMe'] ? widget.agentImage! : widget.customerImage!,
                 );
