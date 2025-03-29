@@ -22,8 +22,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
   final AuthApi _auth = AuthApi();
   final SocketService _socketService = SocketService();
   List<Agent> _agentsList = [];
-  Set<String> pinnedAgentsSet = {};
   bool _isLoading = true;
+  Set<String> pinnedAgentsSet = {};
   StreamSubscription<List<String>>? _statusSubscription;
 
   @override
