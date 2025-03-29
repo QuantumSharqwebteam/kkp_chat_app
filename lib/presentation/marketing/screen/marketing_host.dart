@@ -35,13 +35,13 @@ class _MarketingHostState extends State<MarketingHost> {
   }
 
   Future<void> _loadUserDataAndInitializeSocket() async {
-    await _loadUserData();
-
-    if (agentName != null && agentEmail != null && rolename != null) {
-      _socketService.initSocket(agentName!, agentEmail!, rolename!);
-    } else {
-      debugPrint("Skipping socket init: agentName or agentEmail is null");
-    }
+    await _loadUserData().whenComplete(() {
+      if (agentName != null && agentEmail != null && rolename != null) {
+        _socketService.initSocket(agentName!, agentEmail!, rolename!);
+      } else {
+        debugPrint("Skipping socket init: agentName or agentEmail is null");
+      }
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -62,18 +62,20 @@ class _MarketingHostState extends State<MarketingHost> {
       }
 
       // Load user profile
-      Profile? profile = LocalDbHelper.getProfile();
-      debugPrint(
-          'Loaded profile: $profile'); // Debug print to check loaded profile
+      Profile? profile = await auth.getUserInfo();
+      await LocalDbHelper.saveProfile(profile).whenComplete(() {
+        debugPrint(
+            'Loaded profile: $profile'); // Debug print to check loaded profile
+      });
 
       setState(() {
-        agentName = profile?.name;
-        agentEmail = profile?.email ?? agentEmail; // Ensure email is also set
+        agentName = profile.name ?? "";
+        agentEmail = profile.email ?? ""; // Ensure email is also set
         debugPrint(
             'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
       });
 
-      _updateScreens();
+      await _updateScreens();
     } catch (error) {
       debugPrint('Error in _loadUserData: $error');
     }

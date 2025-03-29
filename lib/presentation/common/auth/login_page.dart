@@ -4,7 +4,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common/auth/forgot_pass_page.dart';
@@ -21,7 +20,6 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   AuthRepository auth = AuthRepository();
-
   final _email = TextEditingController();
   final _pass = TextEditingController();
   String emailError = '';
@@ -76,11 +74,7 @@ class _LoginPageState extends State<LoginPage> {
 
             print("✉️EMAIL ${_email.text}");
           }
-          await LocalDbHelper.saveToken(value['token'].toString())
-              .then((_) async {
-            Profile profile = await auth.getUserInfo();
-            await LocalDbHelper.saveProfile(profile);
-          });
+          await LocalDbHelper.saveToken(value['token'].toString());
           await LocalDbHelper.saveEmail(_email.text);
           await LocalDbHelper.saveUserType(value['role'].toString());
 

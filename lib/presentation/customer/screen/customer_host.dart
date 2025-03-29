@@ -20,25 +20,25 @@ class _CustomerHostState extends State<CustomerHost> {
   int _selectedIndex = 0;
   final SocketService _socketService = SocketService();
   AuthApi auth = AuthApi();
-  String? customerEmail;
-  String? customerName;
+  Profile? profile;
 
   @override
   void initState() {
     super.initState();
 
-    _loadCurrentUserData().then((data) {
-      _socketService.initSocket(customerName!, customerEmail!, "User");
+    _loadCurrentUserData().whenComplete(() {
+      _socketService.initSocket(profile!.name!, profile!.email!, "User");
     });
   }
 
   Future<void> _loadCurrentUserData() async {
     try {
-      Profile? profile = LocalDbHelper.getProfile();
-      setState(() {
-        customerName = profile?.name;
-        customerEmail = profile?.email;
-      });
+      profile = await auth.getUserInfo();
+      if (profile != null) {
+        await LocalDbHelper.saveProfile(profile!);
+      } else {
+        debugPrint("SAVE PROFILE FAILED DUE TO NULL");
+      }
     } catch (error) {
       // Handle any errors that occur during the async operation
       debugPrint('Error in _loadCurrentUserData: $error');

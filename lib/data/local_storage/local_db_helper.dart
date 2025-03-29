@@ -63,11 +63,7 @@ class LocalDbHelper {
   }
 
   static Profile? getProfile() {
-    var profileData = _box.get(_profile);
-    if (profileData != null && profileData is Map<String, dynamic>) {
-      return Profile.fromMap(profileData);
-    }
-    return null;
+    return Profile.fromMap(_box.get(_profile));
   }
 
   static Future<void> removeProfile() async {
