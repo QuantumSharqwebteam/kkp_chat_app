@@ -21,6 +21,7 @@ class MarketingHost extends StatefulWidget {
 class _MarketingHostState extends State<MarketingHost> {
   int _selectedIndex = 0;
   String? role;
+  String? rolename;
   String? agentEmail;
   String? agentName;
   List<Widget> _screens = [];
@@ -30,47 +31,64 @@ class _MarketingHostState extends State<MarketingHost> {
   @override
   void initState() {
     super.initState();
-    _loadcredentials();
-    _loadCurrentUserData().then((_) {
-      if (agentName != null && agentEmail != null) {
-        _socketService.initSocket(agentName!, agentEmail!);
-        //   _socketService.startRoomMembersUpdates();
-      } else {
-        debugPrint("Skipping socket init: agentName or agentEmail is null");
-      }
-    });
+    _loadUserDataAndInitializeSocket();
   }
 
-  Future<void> _loadCurrentUserData() async {
+  Future<void> _loadUserDataAndInitializeSocket() async {
+    await _loadUserData();
+
+    if (agentName != null && agentEmail != null && rolename != null) {
+      _socketService.initSocket(agentName!, agentEmail!, rolename!);
+    } else {
+      debugPrint("Skipping socket init: agentName or agentEmail is null");
+    }
+  }
+
+  Future<void> _loadUserData() async {
     try {
+      // Load role and email
+      role = LocalDbHelper.getUserType();
+      agentEmail = LocalDbHelper.getEmail();
+      debugPrint(
+          'Loaded role: $role, Loaded email: $agentEmail'); // Debug print
+
+      // Determine role name
+      if (role == "1") {
+        rolename = "admin";
+      } else if (role == "2") {
+        rolename = "agent";
+      } else if (role == "3") {
+        rolename = "agent Head";
+      }
+
+      // Load user profile
       Profile? profile = LocalDbHelper.getProfile();
+      debugPrint(
+          'Loaded profile: $profile'); // Debug print to check loaded profile
+
       setState(() {
         agentName = profile?.name;
+        agentEmail = profile?.email ?? agentEmail; // Ensure email is also set
+        debugPrint(
+            'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
       });
+
+      _updateScreens();
     } catch (error) {
-      // Handle any errors that occur during the async operation
-      debugPrint('Error in _loadCurrentUserData: $error');
+      debugPrint('Error in _loadUserData: $error');
     }
   }
 
   @override
   void dispose() {
     _socketService.disconnect(); // Disconnect when leaving the host screen
-    //   _socketService.stopRoomMembersUpdates();
     super.dispose();
-  }
-
-  void _loadcredentials() async {
-    role = LocalDbHelper.getUserType();
-    agentEmail = LocalDbHelper.getEmail();
-    _updateScreens();
   }
 
   Future<void> _updateScreens() async {
     setState(() {
       _screens = [
         if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),
-        //AgentProfilesPage(),
         FeedsScreen(),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
