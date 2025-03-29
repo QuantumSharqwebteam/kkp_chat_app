@@ -91,7 +91,7 @@ class SocketService {
 
     _roomMembers = newRoomMembers;
 
-    // ✅ Force UI to refresh by emitting a new list instance
+    // Force UI to refresh by emitting a new list instance
     _statusController.add(List.from(_roomMembers));
   }
 
