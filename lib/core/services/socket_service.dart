@@ -19,6 +19,8 @@ class SocketService {
   // Default value for chat page open state
   bool isChatPageOpen = false;
 
+  bool _isLoggingOut = false;
+
   // Store room members (Now used for online users as well)
   List<String> _roomMembers = [];
 
@@ -34,7 +36,7 @@ class SocketService {
   Stream<List<String>> get statusStream => _statusController.stream;
   SocketService._internal();
 
-  void initSocket(String userName, String userEmail) {
+  void initSocket(String userName, String userEmail, String role) {
     _socket = io.io(serverUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
@@ -45,7 +47,8 @@ class SocketService {
       _isConnected = true;
       _reconnectAttempts = 0;
       debugPrint('✅ Connected to socket server');
-      _socket.emit('join', {'user': userName, 'userId': userEmail});
+      _socket
+          .emit('join', {'user': userName, 'userId': userEmail, "role": role});
     });
 
     _socket.on('socketId', (socketId) {
@@ -68,12 +71,16 @@ class SocketService {
     _socket.onDisconnect((_) {
       _isConnected = false;
       debugPrint('⚠️ Disconnected from socket server');
-      _attemptReconnect(userName, userEmail);
+      if (!_isLoggingOut) {
+        _attemptReconnect(userName, userEmail);
+      }
     });
 
     _socket.onError((error) {
       debugPrint('❌ Socket Error: $error');
-      _attemptReconnect(userName, userEmail);
+      if (!_isLoggingOut) {
+        _attemptReconnect(userName, userEmail);
+      }
     });
 
     _socket.connect();
@@ -203,20 +210,27 @@ class SocketService {
   }
 
   void disconnect() {
+    _isLoggingOut = true;
     if (_isConnected) {
       _socket.disconnect();
+      _isConnected = false;
+      debugPrint('🛑 Socket disconnected');
     }
   }
 
   void dispose() {
+    _isLoggingOut = true;
     if (_isConnected) {
       _socket.disconnect();
+      _isConnected = false;
+      debugPrint('🛑 Socket disconnected');
     }
+
     _socket.clearListeners();
-    _isConnected = false;
     _statusController.close();
-    _reconnectAttempts = _maxReconnectAttempts;
-    debugPrint('🛑 Socket service disposed');
+    _reconnectAttempts = 0;
+
+    debugPrint('🛑🛑 Socket service disposed completely');
   }
 
   void _showPushNotification(Map<String, dynamic> data) {
