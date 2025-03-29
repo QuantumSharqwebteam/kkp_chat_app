@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
@@ -20,7 +23,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   final _searchController = TextEditingController();
   Profile? profileData;
   String? name;
-  AuthRepository auth = AuthRepository();
+  List<Agent> _agentsList = [];
+  bool _isLoading = true;
+  AuthRepository authRepo = AuthRepository();
+  final AuthApi _auth = AuthApi();
+  final SocketService _socketService = SocketService();
+
   List<Map<String, dynamic>> users = [
     {
       "name": "Rumi",
@@ -59,60 +67,80 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     },
   ];
 
-  List<Map<String, dynamic>> messages = [
-    {
-      "name": "Ramesh Jain",
-      "message": "Can you describe....",
-      "time": "2m",
-      "image": "assets/images/user1.png",
-      "isActive": false // Inactive user
-    },
-    {
-      "name": "Rumika Mehra",
-      "message": "How much does.......",
-      "time": "3m",
-      "image": "assets/images/user4.png",
-      "isActive": true // Active user
-    },
-    {
-      "name": "Rumi",
-      "message": "I'm interested in.......",
-      "time": "3m",
-      "image": "assets/images/user1.png",
-      "isActive": false
-    },
-    {
-      "name": "Riya",
-      "message": "I'm interested in.......",
-      "time": "3m",
-      "image": "assets/images/user2.png",
-      "isActive": true // Active user
-    },
-    {
-      "name": "Radhika",
-      "message": "Typing...",
-      "time": "3m",
-      "image": "assets/images/user3.png",
-      "isActive": false
-    },
-    {
-      "name": "Amit Kumar",
-      "message": "Let's connect soon!",
-      "time": "4m",
-      "image": "assets/images/user4.png",
-      "isActive": true // Active user
-    },
-  ];
+  Future<void> _fetchAgents() async {
+    try {
+      List<Agent> agents = await _auth.getAgent();
+      if (mounted) {
+        setState(() {
+          _agentsList = agents;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching agents: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // List<Map<String, dynamic>> recentChats = [
+  //   {
+  //     "name": "Ramesh Jain",
+  //     "message": "Can you describe....",
+  //     "time": "2m",
+  //     "image": "assets/images/user1.png",
+  //     "isActive": false // Inactive user
+  //   },
+  //   {
+  //     "name": "Rumika Mehra",
+  //     "message": "How much does.......",
+  //     "time": "3m",
+  //     "image": "assets/images/user4.png",
+  //     "isActive": true // Active user
+  //   },
+  //   {
+  //     "name": "Rumi",
+  //     "message": "I'm interested in.......",
+  //     "time": "3m",
+  //     "image": "assets/images/user1.png",
+  //     "isActive": false
+  //   },
+  //   {
+  //     "name": "Riya",
+  //     "message": "I'm interested in.......",
+  //     "time": "3m",
+  //     "image": "assets/images/user2.png",
+  //     "isActive": true // Active user
+  //   },
+  //   {
+  //     "name": "Radhika",
+  //     "message": "Typing...",
+  //     "time": "3m",
+  //     "image": "assets/images/user3.png",
+  //     "isActive": false
+  //   },
+  //   {
+  //     "name": "Amit Kumar",
+  //     "message": "Let's connect soon!",
+  //     "time": "4m",
+  //     "image": "assets/images/user4.png",
+  //     "isActive": true // Active user
+  //   },
+  // ];
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _fetchAgents();
   }
 
   Future<void> _loadUserInfo() async {
     try {
-      profileData = await auth.getUserInfo();
+      profileData = await authRepo.getUserInfo();
       if (mounted) {
         setState(() {
           name = profileData?.name;
@@ -146,26 +174,28 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     topRight: Radius.circular(15),
                   ),
                 ),
-                child: NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSearchBar(),
-                            const SizedBox(height: 20),
-                            _buildDirectMessages(),
-                            const SizedBox(height: 20),
-                            Text("Recent Messages",
-                                style: AppTextStyles.black16_500)
-                          ],
-                        ),
+                child: _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : NestedScrollView(
+                        headerSliverBuilder: (context, innerBoxIsScrolled) {
+                          return [
+                            SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSearchBar(),
+                                  const SizedBox(height: 20),
+                                  _buildDirectMessages(),
+                                  const SizedBox(height: 20),
+                                  Text("Recent Messages",
+                                      style: AppTextStyles.black16_500)
+                                ],
+                              ),
+                            ),
+                          ];
+                        },
+                        body: _buildRecentMessages(),
                       ),
-                    ];
-                  },
-                  body: _buildRecentMessages(),
-                ),
               ),
             ),
           ],
@@ -244,18 +274,19 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   // Recent Messages List
   Widget _buildRecentMessages() {
     return ListView.builder(
-      itemCount: messages.length,
+      itemCount: _agentsList.length,
       physics: AlwaysScrollableScrollPhysics(),
       itemBuilder: (context, index) {
-        final message = messages[index];
+        final message = _agentsList[index];
+        final isOnline = _socketService.isUserOnline(message.email);
+        final String lastSeen = _socketService.getLastSeenTime(message.email);
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: RecentMessagesListCard(
-            name: message['name'],
-            message: message['message'],
-            time: message['time'],
-            image: message['image'],
-            isActive: message['isActive'],
+            name: message.name,
+            image: "assets/images/user5.png",
+            isActive: isOnline,
+            time: isOnline ? "Online" : lastSeen,
             onTap: () {},
           ),
         );
