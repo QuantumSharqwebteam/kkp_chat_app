@@ -70,10 +70,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
+    final currentTime = DateTime.now().toIso8601String();
     setState(() {
       messages.add({
         "text": data["message"],
-        "timeStamp": data["timestamp"],
+        "timeStamp": currentTime,
         "isMe": data["senderId"] == widget.agentEmail,
         "type": data["type"] ?? "text", // Default to 'text' if not specified
         "mediaUrl": data["mediaUrl"],

@@ -70,10 +70,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
+    final currentTime = DateTime.now().toIso8601String();
     setState(() {
       messages.add({
         "text": data["message"],
-        "timestamp": data["timestamp"],
+        "timestamp": currentTime,
         "isMe": data["senderId"] == widget.customerEmail,
         "type": data["type"] ?? "text", // Default to 'text' if not specified
         "mediaUrl": data["mediaUrl"],
