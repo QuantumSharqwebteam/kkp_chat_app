@@ -86,10 +86,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   void _sendMessage({
     required String messageText,
     String type = 'text',
-    String? imageUrl,
+    String? mediaUrl,
     String? form,
   }) {
-    if (messageText.trim().isEmpty && imageUrl == null && form == null) return;
+    if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
     final currentTime = DateTime.now().toIso8601String();
     setState(() {
@@ -98,7 +98,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         "timestamp": currentTime,
         "isMe": true,
         "type": type,
-        "imageUrl": imageUrl,
+        "mediaUrl": mediaUrl,
         "form": form,
       });
       _scrollToBottom();
@@ -110,7 +110,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       senderEmail: widget.customerEmail!,
       senderName: widget.customerName!,
       type: type,
-      imageUrl: imageUrl,
+      mediaUrl: mediaUrl,
       form: form,
     );
 
@@ -135,7 +135,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: "", type: 'image', imageUrl: imageUrl);
+        _sendMessage(messageText: imageUrl, type: 'image', mediaUrl: imageUrl);
       }
     }
   }
@@ -206,9 +206,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final msg = messages[index];
-                if (msg['type'] == 'image') {
+                if (msg['type'] == 'media') {
                   return ImageMessageBubble(
-                    imageUrl: msg['imageUrl'],
+                    imageUrl: msg['mediaUrl'],
                     isMe: msg['isMe'],
                     timestamp: formatTimestamp(msg['timestamp']),
                   );

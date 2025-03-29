@@ -86,19 +86,21 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void _sendMessage({
     required String messageText,
     String type = 'text',
-    String? imageUrl,
+    String? mediaUrl,
     String? form,
   }) {
-    if (messageText.trim().isEmpty && imageUrl == null && form == null) return;
+    if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
     final currentTime = DateTime.now().toIso8601String();
+
     setState(() {
       messages.add({
-        "text": messageText,
+        "text": mediaUrl ??
+            messageText, // Set message as mediaUrl if it's a media type
         "timestamp": currentTime,
         "isMe": true,
         "type": type,
-        "imageUrl": imageUrl,
+        "mediaUrl": mediaUrl,
         "form": form,
       });
       _scrollToBottom();
@@ -106,11 +108,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     _socketService.sendMessage(
       targetEmail: widget.customerEmail!,
-      message: messageText,
+      message: mediaUrl ??
+          messageText, // Send media URL as message if type is 'media'
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
       type: type,
-      imageUrl: imageUrl,
+      mediaUrl: mediaUrl,
       form: form,
     );
 
@@ -135,7 +138,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: "", type: 'image', imageUrl: imageUrl);
+        _sendMessage(messageText: imageUrl, type: 'image', mediaUrl: imageUrl);
       }
     }
   }
@@ -208,7 +211,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 final msg = messages[index];
                 if (msg['type'] == 'image') {
                   return ImageMessageBubble(
-                    imageUrl: msg['imageUrl'],
+                    imageUrl: msg['mediaUrl'],
                     isMe: msg['isMe'],
                     timestamp: formatTimestamp(msg['timestamp']),
                   );

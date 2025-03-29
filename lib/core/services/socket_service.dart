@@ -12,28 +12,18 @@ class SocketService {
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
-  final Duration _reconnectInterval = const Duration(seconds: 5);
-  //Timer? _roomMembersTimer;
+  final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
 
-  // Default value for chat page open state
   bool isChatPageOpen = false;
-
-  bool _isLoggingOut = false;
-
-  // Store room members (Now used for online users as well)
   List<String> _roomMembers = [];
-
-  // Getter for room members (Online Users)
-  List<String> get roomMembers => _roomMembers;
-
-  // Store last seen timestamps
   Map<String, DateTime> lastSeenTimes = {};
 
   final StreamController<List<String>> _statusController =
       StreamController.broadcast();
 
   Stream<List<String>> get statusStream => _statusController.stream;
+
   SocketService._internal();
 
   void initSocket(String userName, String userEmail, String role) {
@@ -71,62 +61,44 @@ class SocketService {
     _socket.onDisconnect((_) {
       _isConnected = false;
       debugPrint('⚠️ Disconnected from socket server');
-      if (!_isLoggingOut) {
-        _attemptReconnect(userName, userEmail);
-      }
+      _attemptReconnect(userName, userEmail, role);
     });
 
     _socket.onError((error) {
       debugPrint('❌ Socket Error: $error');
-      if (!_isLoggingOut) {
-        _attemptReconnect(userName, userEmail);
-      }
+      _attemptReconnect(userName, userEmail, role);
     });
 
     _socket.connect();
   }
 
-  // Update room members (Now also used for online users)
   void _updateRoomMembers(List<String> newRoomMembers) {
+    if (_statusController.isClosed) {
+      debugPrint("StatusController is closed. Cannot update room members.");
+      return;
+    }
+
     Set<String> previousUsers = Set.from(_roomMembers);
     Set<String> currentUsers = Set.from(newRoomMembers);
 
-    // Store last seen timestamps for offline users
     for (String email in previousUsers.difference(currentUsers)) {
       lastSeenTimes[email] = DateTime.now();
     }
 
     _roomMembers = newRoomMembers;
-
-    // Force UI to refresh by emitting a new list instance
     _statusController.add(List.from(_roomMembers));
   }
 
-  // //room members list every few seconds.
-  // void startRoomMembersUpdates() {
-  //   _roomMembersTimer?.cancel(); // Cancel any existing timer
-  //   _roomMembersTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-  //     getRoomMembers(); // Fetch latest room members every 5 seconds
-  //   });
-  // }
-
-  // void stopRoomMembersUpdates() {
-  //   _roomMembersTimer?.cancel(); // Stop the timer when not needed
-  // }
-
-  // Request the latest room members list from the server
   void getRoomMembers() {
     _socket.emit('roomMembers');
   }
 
-  // Check if a user is online from the room members list
   bool isUserOnline(String email) {
     bool isOnline = _roomMembers.contains(email);
     debugPrint("User $email online status: $isOnline");
     return isOnline;
   }
 
-  // Get last seen time or online status
   String getLastSeenTime(String email) {
     if (_roomMembers.contains(email)) {
       return "Online";
@@ -153,7 +125,7 @@ class SocketService {
     _onMessageReceived = callback;
   }
 
-  void _attemptReconnect(String userName, String userEmail) {
+  void _attemptReconnect(String userName, String userEmail, String role) {
     if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
       _reconnectAttempts++;
       debugPrint(
@@ -162,6 +134,8 @@ class SocketService {
       Future.delayed(_reconnectInterval, () {
         if (!_isConnected) {
           _socket.connect();
+          _socket.emit(
+              'join', {'user': userName, 'userId': userEmail, "role": role});
         }
       });
     } else {
@@ -176,7 +150,7 @@ class SocketService {
     required String senderName,
     String type = 'text',
     String? form,
-    String? imageUrl,
+    String? mediaUrl,
   }) {
     if (_isConnected) {
       Map<String, dynamic> messageData = {
@@ -191,8 +165,8 @@ class SocketService {
         messageData['form'] = form;
       }
 
-      if (imageUrl != null) {
-        messageData['imageUrl'] = imageUrl;
+      if (mediaUrl != null) {
+        messageData['mediaUrl'] = mediaUrl;
       }
 
       _socket.emit('sendMessage', messageData);
@@ -232,23 +206,23 @@ class SocketService {
   void disconnect() {
     if (_isConnected) {
       _socket.disconnect();
+      _isConnected = false;
       debugPrint('🛑 Socket disconnected');
     }
   }
 
   void dispose() {
-    _isLoggingOut = true;
     if (_isConnected) {
+      _socket.clearListeners();
+      _statusController.close();
       _socket.disconnect();
       _isConnected = false;
-      debugPrint('🛑 Socket disconnected');
+      debugPrint('🛑🛑 Socket service disposed completely');
+    } else {
+      _socket.clearListeners();
+      _reconnectAttempts = _maxReconnectAttempts;
+      debugPrint('🛑 🛑 Socket disposed finally ');
     }
-
-    _socket.clearListeners();
-    _statusController.close();
-    _reconnectAttempts = 0;
-
-    debugPrint('🛑🛑 Socket service disposed completely');
   }
 
   void _showPushNotification(Map<String, dynamic> data) {
