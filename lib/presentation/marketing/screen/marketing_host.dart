@@ -34,6 +34,7 @@ class _MarketingHostState extends State<MarketingHost> {
     _loadCurrentUserData().then((_) {
       if (agentName != null && agentEmail != null) {
         _socketService.initSocket(agentName!, agentEmail!);
+        //   _socketService.startRoomMembersUpdates();
       } else {
         debugPrint("Skipping socket init: agentName or agentEmail is null");
       }
@@ -55,6 +56,7 @@ class _MarketingHostState extends State<MarketingHost> {
   @override
   void dispose() {
     _socketService.disconnect(); // Disconnect when leaving the host screen
+    //   _socketService.stopRoomMembersUpdates();
     super.dispose();
   }
 

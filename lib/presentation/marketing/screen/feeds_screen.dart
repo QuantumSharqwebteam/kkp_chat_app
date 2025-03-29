@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/customer_list_screen.dart';
@@ -17,28 +20,47 @@ class FeedsScreen extends StatefulWidget {
 
 class _FeedsScreenState extends State<FeedsScreen> {
   final AuthApi _auth = AuthApi();
+  final SocketService _socketService = SocketService();
   List<Agent> _agentsList = [];
-  Set<String> pinnedAgentsSet = {}; // Set to store pinned agent emails
+  Set<String> pinnedAgentsSet = {};
   bool _isLoading = true;
+  StreamSubscription<List<String>>? _statusSubscription;
 
   @override
   void initState() {
     super.initState();
     _fetchAgents();
+    _statusSubscription = _socketService.statusStream.listen((_) {
+      if (mounted) {
+        setState(() {}); // Forces a rebuild to reflect the new online status
+      }
+    });
+    // _socketService.startRoomMembersUpdates();
+  }
+
+  @override
+  void dispose() {
+    _statusSubscription?.cancel();
+    //_socketService.stopRoomMembersUpdates();
+    super.dispose();
   }
 
   Future<void> _fetchAgents() async {
     try {
       List<Agent> agents = await _auth.getAgent();
-      setState(() {
-        _agentsList = agents;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _agentsList = agents;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint("Error fetching agents: $e");
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -73,7 +95,13 @@ class _FeedsScreenState extends State<FeedsScreen> {
                 children: [
                   _buildFilterButtons(),
                   Expanded(
-                    child: _isLoading ? ShimmerList() : _buildAgentList(),
+                    child: StreamBuilder<List<String>>(
+                      stream: _socketService.statusStream,
+                      builder: (context, snapshot) {
+                        // Force rebuild when the status updates
+                        return _isLoading ? ShimmerList() : _buildAgentList();
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -112,7 +140,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
     );
   }
 
-  // Filter buttons section
   Widget _buildFilterButtons() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -120,14 +147,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           FilterButton(icon: Icons.search_rounded),
-          // FilterButton(
-          //   onTap: () {
-          //     setState(() {
-          //       showPinned = false; // Show all messages
-          //     });
-          //   },
-          //   text: "All Chats",
-          // ),
           FilterButton(
             onTap: togglePinnedMessages,
             text: "Pinned Messages",
@@ -158,14 +177,17 @@ class _FeedsScreenState extends State<FeedsScreen> {
       ),
       itemBuilder: (context, index) {
         final agent = displayList[index];
+        final isOnline = _socketService.isUserOnline(agent.email);
+        final String lastSeen = _socketService.getLastSeenTime(agent.email);
+
         return RecentMessagesListCard(
           name: agent.name,
           message: "Hi any update....",
-          time: "Just now",
+          time: isOnline ? "Online" : lastSeen,
           image: "assets/images/user1.png",
-          isActive: true,
-          isPinned: pinnedAgentsSet.contains(agent.email), // Check if pinned
-          onPinTap: () => togglePinAgent(agent.email), // Toggle pin
+          isActive: isOnline,
+          isPinned: pinnedAgentsSet.contains(agent.email),
+          onPinTap: () => togglePinAgent(agent.email),
           onTap: () {
             Navigator.push(
               context,
