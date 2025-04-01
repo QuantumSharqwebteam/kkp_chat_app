@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/core/services/chat_service.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
@@ -27,7 +25,6 @@ class AgentCustomersListScreen extends StatefulWidget {
 }
 
 class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
-  final _authApi = AuthApi();
   final _chatRepo = ChatRepository();
   List<dynamic> customers = [];
   bool isLoading = false;
@@ -46,20 +43,9 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
     try {
       final fetchedCustomerList =
           await _chatRepo.fetchAgentUserList(widget.agentEmail);
-
-      if (fetchedCustomerList.isNotEmpty) {
-        //  If agent has assigned users, display them
-        setState(() {
-          customers = fetchedCustomerList;
-        });
-      } else {
-        // If no agent-specific customers, fetch ALL customers
-        debugPrint("No agent-specific users found. Fetching all customers...");
-        final allCustomers = await _authApi.getUsersByRole("User");
-        setState(() {
-          customers = allCustomers;
-        });
-      }
+      setState(() {
+        customers = fetchedCustomerList;
+      });
     } catch (e) {
       debugPrint("Error loading customer list: ${e.toString()}");
     } finally {
@@ -108,7 +94,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
             child: isLoading
                 ? const ShimmerList(itemCount: 8)
                 : customers.isEmpty
-                    ? Center(child: Text("No Customers Available"))
+                    ? Center(child: Text("No Customers Assigned"))
                     : ListView.separated(
                         itemCount: customers.length,
                         separatorBuilder: (context, index) =>
