@@ -64,7 +64,8 @@ class OnboardingPage extends StatelessWidget {
                 CustomButton(
                   text: 'Get Started',
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) {
+                    Navigator.pushReplacement(context,
+                        MaterialPageRoute(builder: (_) {
                       return LoginPage();
                     }));
                   },
@@ -104,9 +105,11 @@ class OnboardingPage extends StatelessWidget {
                           child: InkWell(
                             onTap: () {
                               Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => PrivacyPage()));
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PrivacyPage(),
+                                ),
+                              );
                             },
                             child: Text(
                               'Privacy Policy',

@@ -52,14 +52,6 @@ class MessageBubble extends StatelessWidget {
                 textAlign: TextAlign.start,
               ),
             ),
-            // Positioned(
-            //   top: 0,
-            //   left: 0,
-            //   child: CircleAvatar(
-            //     backgroundImage: AssetImage(image),
-            //     radius: 12,
-            //   ),
-            // ),
             Positioned(
               bottom: -1,
               right: 10,

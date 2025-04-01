@@ -95,7 +95,7 @@ class SocketService {
 
   bool isUserOnline(String email) {
     bool isOnline = _roomMembers.contains(email);
-    debugPrint("User $email online status: $isOnline");
+    // debugPrint("User $email online status: $isOnline");
     return isOnline;
   }
 
