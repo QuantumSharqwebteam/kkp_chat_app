@@ -149,7 +149,7 @@ class SocketService {
     required String senderEmail,
     required String senderName,
     String type = 'text',
-    String? form,
+    Map<String, dynamic>? form,
     String? mediaUrl,
   }) {
     if (_isConnected) {
