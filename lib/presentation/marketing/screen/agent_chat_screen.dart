@@ -86,7 +86,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   void _sendMessage({
     required String messageText,
-    String? type = "text",
+    String type = "text",
     String? mediaUrl,
     String? form,
   }) {
@@ -96,8 +96,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     setState(() {
       messages.add({
-        "text": mediaUrl ??
-            messageText, // Set message as mediaUrl if it's a media type
+        "text": messageText, // Set message as mediaUrl if it's a media type
         "timestamp": currentTime,
         "isMe": true,
         "type": type,
@@ -109,11 +108,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     _socketService.sendMessage(
       targetEmail: widget.customerEmail!,
-      message: mediaUrl ??
-          messageText, // Send media URL as message if type is 'media'
+      message: messageText, // Send media URL as message if type is 'media'
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
-      type: type!,
+      type: type,
       mediaUrl: mediaUrl,
       form: form,
     );
@@ -143,7 +141,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: "", type: 'media', mediaUrl: imageUrl);
+        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
   }

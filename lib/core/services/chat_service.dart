@@ -3,13 +3,12 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-class AdminChatService {
+class ChatService {
   final String baseUrl = "https://kkp-chat.onrender.com/chat";
 
   final http.Client client;
 
-  AdminChatService({http.Client? httpClient})
-      : client = httpClient ?? http.Client();
+  ChatService({http.Client? httpClient}) : client = httpClient ?? http.Client();
 
   /// ** Get Previous Chat Messages**
   Future<List<Map<String, dynamic>>> getPreviousChats(

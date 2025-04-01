@@ -7,7 +7,7 @@ import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/customer_list_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/filter_button.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
 
@@ -192,7 +192,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => CustomersListScreen(
+                builder: (context) => AgentCustomersListScreen(
                   agentName: agent.name,
                   agentImage: ImageConstants.userImage,
                   agentEmail: agent.email,

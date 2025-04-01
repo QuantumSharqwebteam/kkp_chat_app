@@ -3,17 +3,18 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/core/services/admin_chat_service.dart';
+import 'package:kkp_chat_app/core/services/chat_service.dart';
+import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
 
-class CustomersListScreen extends StatefulWidget {
+class AgentCustomersListScreen extends StatefulWidget {
   final String agentName;
   final String agentImage;
   final String agentEmail;
 
-  const CustomersListScreen({
+  const AgentCustomersListScreen({
     super.key,
     required this.agentName,
     required this.agentImage,
@@ -21,12 +22,13 @@ class CustomersListScreen extends StatefulWidget {
   });
 
   @override
-  State<CustomersListScreen> createState() => _CustomersListScreenState();
+  State<AgentCustomersListScreen> createState() =>
+      _AgentCustomersListScreenState();
 }
 
-class _CustomersListScreenState extends State<CustomersListScreen> {
+class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
   final _authApi = AuthApi();
-  final AdminChatService _chatService = AdminChatService();
+  final _chatRepo = ChatRepository();
   List<dynamic> customers = [];
   bool isLoading = false;
 
@@ -43,7 +45,7 @@ class _CustomersListScreenState extends State<CustomersListScreen> {
 
     try {
       final fetchedCustomerList =
-          await _chatService.getAgentUserList(widget.agentEmail);
+          await _chatRepo.fetchAgentUserList(widget.agentEmail);
 
       if (fetchedCustomerList.isNotEmpty) {
         //  If agent has assigned users, display them
