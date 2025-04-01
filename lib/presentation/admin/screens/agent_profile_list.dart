@@ -5,7 +5,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/customer_list_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:shimmer/shimmer.dart';
 // Import reusable shimmer list
 
@@ -161,7 +161,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => CustomersListScreen(
+                builder: (context) => AgentCustomersListScreen(
                   agentName: agent.name,
                   agentImage: ImageConstants.userImage,
                   agentEmail: agent.email, // Pass the agent's email

@@ -140,7 +140,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: "", type: 'media', mediaUrl: imageUrl);
+        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
   }
