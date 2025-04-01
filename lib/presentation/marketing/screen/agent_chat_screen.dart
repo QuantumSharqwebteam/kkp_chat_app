@@ -86,7 +86,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   void _sendMessage({
     required String messageText,
-    String type = 'text',
+    String? type = "text",
     String? mediaUrl,
     String? form,
   }) {
@@ -113,7 +113,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           messageText, // Send media URL as message if type is 'media'
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
-      type: type,
+      type: type!,
       mediaUrl: mediaUrl,
       form: form,
     );
@@ -124,7 +124,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
   }
@@ -139,7 +143,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: imageUrl, type: 'media', mediaUrl: imageUrl);
+        _sendMessage(messageText: "", type: 'media', mediaUrl: imageUrl);
       }
     }
   }
