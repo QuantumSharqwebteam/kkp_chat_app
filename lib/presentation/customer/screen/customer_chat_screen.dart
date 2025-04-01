@@ -7,6 +7,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
@@ -157,15 +158,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   Future<void> _sendForm() async {
-    //not allowed
-    // final formData = {
-    //   "quality": "Premium",
-    //   "quantity": "100 meters",
-    //   "weave": "Twill",
-    //   "composition": "Cotton 100%",
-    //   "rate": "15 USD/meter"
-    // };
-    // _sendMessage(messageText: "form", type: 'form', form: formData);
+    // not allowed
+    final formData = {
+      "quality": "Premium",
+      "quantity": "100 meters",
+      "weave": "Twill",
+      "composition": "Cotton 100%",
+      "rate": "15 USD/meter"
+    };
+    _sendMessage(messageText: "form", type: 'form', form: formData);
   }
 
   String formatTimestamp(String? timestamp) {
@@ -233,7 +234,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     isMe: msg['isMe'],
                     timestamp: formatTimestamp(msg['timestamp']),
                   );
-                } else if (msg['text'] == 'Fill Form Button') {
+                } else if (msg['type'] == 'form') {
+                  return FormMessageBubble(
+                    formData: msg['form'],
+                    isMe: msg['isMe'],
+                    timestamp: formatTimestamp(msg['timestamp']),
+                  );
+                } else if (msg['text'] == 'Fill details') {
                   return FillFormButton(
                     onSubmit: _showFormOverlay,
                   );
