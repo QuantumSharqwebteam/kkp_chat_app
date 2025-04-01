@@ -1,14 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/message_bubble.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
@@ -39,6 +42,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final S3UploadService s3UploadService = S3UploadService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
+
+  //form controllers
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final qualityController = TextEditingController();
+  final quantityController = TextEditingController();
+  final weaveController = TextEditingController();
+  final compositionController = TextEditingController();
+  final rateController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [];
 
@@ -88,7 +99,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     required String messageText,
     String? type = 'text',
     String? mediaUrl,
-    String? form,
+    Map<String, dynamic>? form,
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
@@ -146,10 +157,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   Future<void> _sendForm() async {
-    // Implement form sending logic here
-    // For example, collect form data and send it
-    // final formData = collectFormData();
-    // _sendMessage(messageText: "", type: 'form', form: formData);
+    //not allowed
+    // final formData = {
+    //   "quality": "Premium",
+    //   "quantity": "100 meters",
+    //   "weave": "Twill",
+    //   "composition": "Cotton 100%",
+    //   "rate": "15 USD/meter"
+    // };
+    // _sendMessage(messageText: "form", type: 'form', form: formData);
   }
 
   String formatTimestamp(String? timestamp) {
@@ -217,6 +233,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     isMe: msg['isMe'],
                     timestamp: formatTimestamp(msg['timestamp']),
                   );
+                } else if (msg['text'] == 'Fill Form Button') {
+                  return FillFormButton(
+                    onSubmit: _showFormOverlay,
+                  );
                 }
                 return MessageBubble(
                   text: msg['text'],
@@ -236,6 +256,97 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           ),
         ],
       ),
+    );
+  }
+
+  void _showFormOverlay() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return Form(
+          key: _formKey,
+          child: Container(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Quality"),
+                  controller: qualityController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter quality';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Quantity"),
+                  controller: quantityController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter quantity';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Weave"),
+                  controller: weaveController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter weave';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Composition"),
+                  controller: compositionController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter composition';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Rate"),
+                  controller: rateController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter rate';
+                    }
+                    return null;
+                  },
+                ),
+                CustomButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Collect form data and send it back
+                      final formData = {
+                        "quality": qualityController.text,
+                        "quantity": quantityController.text,
+                        "weave": weaveController.text,
+                        "composition": compositionController.text,
+                        "rate": rateController.text,
+                      };
+                      _sendMessage(
+                          messageText: "product", type: 'form', form: formData);
+                      Navigator.pop(context);
+                    }
+                  },
+                  textColor: Colors.white,
+                  fontSize: 14,
+                  backgroundColor: AppColors.blue,
+                  text: "Submit",
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
