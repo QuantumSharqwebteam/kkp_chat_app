@@ -1,0 +1,2 @@
+C:/Users/varun/Flutter Projects/kkp_chat_app/android/app/.cxx/Debug/1t2h33u1/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/varun/Flutter Projects/kkp_chat_app/android/app/.cxx/Debug/1t2h33u1/armeabi-v7a/CMakeFiles/rebuild_cache.dir
