@@ -210,7 +210,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       contentPadding: EdgeInsets.symmetric(horizontal: 16),
       leading: CircleAvatar(
         radius: 26,
-        backgroundImage: AssetImage("assets/images/profile.png"),
+        backgroundImage: NetworkImage(profileData!.profileUrl ?? ""),
       ),
       title: Text(name ?? "User", style: AppTextStyles.black16_500),
       subtitle:

@@ -3,8 +3,9 @@ import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 
 class CustomAppBar extends StatefulWidget {
-  const CustomAppBar({super.key, this.name});
+  const CustomAppBar({super.key, this.name, this.url});
   final String? name;
+  final String? url;
   @override
   State<CustomAppBar> createState() => _CustomAppBarState();
 }
@@ -19,7 +20,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
       },
       leading: CircleAvatar(
         radius: 26,
-        backgroundImage: AssetImage("assets/images/profile.png"),
+        backgroundImage: AssetImage('assets/images/profile_avataar.png'),
+        foregroundImage: NetworkImage(widget.url ?? ""),
       ),
       title: Text(widget.name ?? "", style: AppTextStyles.black16_500),
       subtitle:

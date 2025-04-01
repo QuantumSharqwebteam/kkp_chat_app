@@ -1,9 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/data/models/address_model.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
@@ -21,6 +23,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   Profile? profile;
   bool _isExportSelected = false;
   bool _isDomesticSelected = false;
+  String? profileImageUrl = "";
   final TextEditingController _name = TextEditingController();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _number = TextEditingController();
@@ -41,6 +44,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     profile = await auth.getUserInfo();
     if (profile != null) {
       LocalDbHelper.saveProfile(profile!);
+      profileImageUrl = profile?.profileUrl;
       _updateProfileFields(profile!);
     }
   }
@@ -52,6 +56,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       _number.text = profile.mobile.toString();
       _gstNo.text = profile.gstNo ?? '';
       _panNo.text = profile.panNo ?? '';
+      if (profileImageUrl != profile.profileUrl) {
+        profileImageUrl = profile.profileUrl;
+      }
       if (profile.address?.isNotEmpty == true) {
         final address = profile.address![0];
         _houseNo.text = address.houseNo ?? '';
@@ -73,10 +80,25 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             child: Column(
               children: [
                 SizedBox(height: 10),
-                CircleAvatar(
-                  radius: 55,
-                  backgroundImage:
-                      AssetImage('assets/images/profile_avataar.png'),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(70),
+                  child: profileImageUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: profileImageUrl!,
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              CircularProgressIndicator(),
+                          errorWidget: (context, url, error) =>
+                              Icon(Icons.error),
+                        )
+                      : Image.asset(
+                          'assets/images/profile_avataar.png',
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.cover,
+                        ),
                 ),
                 Text(
                   _name.text.isNotEmpty ? _name.text : 'No Name',
@@ -108,22 +130,33 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                         child: CustomButton(
                           text: 'Edit',
                           onPressed: () async {
+                            // Construct the Profile object with current data
+                            final profile = Profile(
+                              profileUrl: profileImageUrl,
+                              name: _name.text,
+                              email: _email.text,
+                              mobile: int.tryParse(_number.text) ?? 0,
+                              gstNo: _gstNo.text,
+                              panNo: _panNo.text,
+                              customerType:
+                                  _isExportSelected ? 'Export' : 'Domestic',
+                              address: [
+                                Address(
+                                  houseNo: _houseNo.text,
+                                  streetName: _streetName.text,
+                                  city: _city.text,
+                                  pincode: _pincode.text,
+                                ),
+                              ],
+                            );
+
+                            // Navigate to the setup page with the Profile object
                             final updatedProfile = await Navigator.pushNamed(
                               context,
                               CustomerRoutes.customerProfileSetup,
                               arguments: {
                                 "forUpdate": true,
-                                "name": _name.text,
-                                "email": _email.text,
-                                "number": _number.text,
-                                "gstNo": _gstNo.text,
-                                "panNo": _panNo.text,
-                                "houseNo": _houseNo.text,
-                                "streetName": _streetName.text,
-                                "city": _city.text,
-                                "pincode": _pincode.text,
-                                "isExportSelected": _isExportSelected,
-                                "isDomesticSelected": _isDomesticSelected,
+                                "profile": profile,
                               },
                             ) as Profile?;
 

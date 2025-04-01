@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_home_page.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_host.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_notification_page.dart';
@@ -66,17 +67,11 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
 
     case CustomerRoutes.customerProfileSetup:
       final args = settings.arguments as Map<String, dynamic>?;
+      final profile = args?['profile'] as Profile?;
       return MaterialPageRoute(
         builder: (_) => CustomerProfileSetupPage(
-          forUpdate: args?['forUpdate'] ?? false,
-          name: args?['name'],
-          email: args?['email'],
-          number: args?['number'],
-          gstNo: args?['gstNo'],
-          panNo: args?['panNo'],
-          address: args?['address'],
-          isExportSelected: args?['isExportSelected'] ?? false,
-          isDomesticSelected: args?['isDomesticSelected'] ?? false,
+          forUpdate: profile != null,
+          profile: profile,
         ),
       );
 

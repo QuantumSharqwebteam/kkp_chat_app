@@ -75,6 +75,7 @@ class AuthApi {
     String? customerType,
     String? gstNo,
     String? panNo,
+    String? profileUrl,
     Address? address,
   }) async {
     const endPoint = 'user/updateUserDetails';
@@ -117,6 +118,10 @@ class AuthApi {
 
     if (panNo != null) {
       body["PANno"] = panNo;
+    }
+
+    if (profileUrl != null) {
+      body["profileUrl"] = profileUrl;
     }
 
     try {

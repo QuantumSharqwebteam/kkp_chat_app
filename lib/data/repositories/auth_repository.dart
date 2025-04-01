@@ -23,6 +23,7 @@ class AuthRepository {
     String? customerType,
     String? gstNo,
     String? panNo,
+    String? profileUrl,
     Address? address,
   }) {
     return _authApi.updateDetails(
@@ -32,6 +33,7 @@ class AuthRepository {
       address: address,
       gstNo: gstNo,
       panNo: panNo,
+      profileUrl: profileUrl,
     );
   }
 

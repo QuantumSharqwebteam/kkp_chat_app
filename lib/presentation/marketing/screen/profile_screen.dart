@@ -56,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildProfileSection(),
+            _buildProfileSection(profile?.profileUrl),
             _buildStatsSection(),
             // _buildSettingsSection(context),
             const SizedBox(height: 10),
@@ -72,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildProfileSection() {
+  Widget _buildProfileSection(String? url) {
     return Container(
       width: double.maxFinite,
       decoration: BoxDecoration(
@@ -84,7 +84,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           CircleAvatar(
             radius: 80,
-            backgroundImage: AssetImage("assets/images/user1.png"),
+            backgroundImage: AssetImage("assets/images/user2.png"),
+            foregroundImage: NetworkImage(url ?? ""),
           ),
           const SizedBox(height: 10),
           Text(
@@ -161,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ProfileDetailsField(
             icon: Icons.phone,
             label: 'Mobile No.',
-            value: profile?.mobile.toString() ?? "0",
+            value: profile?.mobile.toString() ?? "",
           ),
         ],
       ),

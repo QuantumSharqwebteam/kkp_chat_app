@@ -26,6 +26,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   AuthRepository auth = AuthRepository();
   Profile? profileData;
   String? name;
+  String? profileImageUrl;
 
   @override
   void initState() {
@@ -40,6 +41,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       if (mounted) {
         setState(() {
           name = profileData?.name;
+          profileImageUrl = profileData!.profileUrl;
         });
       }
     } catch (e) {
@@ -59,6 +61,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         child: SafeArea(
             child: CustomAppBar(
           name: name,
+          url: profileImageUrl,
         )),
       ),
       body: SafeArea(
