@@ -159,19 +159,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  Future<void> _sendForm() async {
-    // not allowed
-    final formData = {
-      "quality": "Premium",
-      "quantity": "100 meters",
-      "weave": "Twill",
-      "composition": "Cotton 100%",
-      "rate": "15 USD/meter"
-    };
-    _sendMessage(messageText: "form", type: 'form', form: formData);
-    //not allowed
-  }
-
   String formatTimestamp(String? timestamp) {
     if (timestamp == null || timestamp.isEmpty) {
       // Return the current date and time in the desired format
@@ -271,7 +258,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             controller: _chatController,
             onSend: () => _sendMessage(messageText: _chatController.text),
             onSendImage: _pickAndSendImage,
-            onSendForm: _sendForm,
+            onSendForm: () {},
           ),
         ],
       ),
