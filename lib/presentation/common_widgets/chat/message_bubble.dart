@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 
@@ -56,7 +57,10 @@ class MessageBubble extends StatelessWidget {
               bottom: -1,
               right: 10,
               child: Text(
-                timestamp ?? "",
+                timestamp ??
+                    DateFormat('hh:mm a').format(
+                        DateTime.parse(DateTime.now().toIso8601String())
+                            .toLocal()),
                 style: AppTextStyles.greyAAAAAA_10_400,
               ),
             ),

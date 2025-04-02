@@ -5,14 +5,12 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -42,7 +40,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  // final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final qualityController = TextEditingController();
   final quantityController = TextEditingController();
   final weaveController = TextEditingController();
@@ -165,12 +163,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   String formatTimestamp(String? timestamp) {
-    if (timestamp == null || timestamp.isEmpty) return "";
+    if (timestamp == null || timestamp.isEmpty) {
+      // Return the current date and time in the desired format
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
+    }
     try {
       final dateTime = DateTime.parse(timestamp).toLocal();
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
-      return "";
+      // In case of an error, return the current date and time in the desired format
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
     }
   }
 
@@ -237,7 +241,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                   );
                 } else if (msg['text'] == 'Fill details') {
                   return FillFormButton(
-                    onSubmit: _showFormOverlay,
+                    onSubmit: () {
+                      //agent not allowedd to fill the form,
+                    }, //_showFormOverlay,
                   );
                 }
                 return MessageBubble(
@@ -261,105 +267,105 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
   }
 
-  void _showFormOverlay() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      elevation: 10,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-      ),
-      builder: (context) {
-        return Form(
-          key: _formKey,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
-            padding: const EdgeInsets.all(10.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Quality"),
-                  controller: qualityController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter quality';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Quantity"),
-                  controller: quantityController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter quantity';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Weave"),
-                  controller: weaveController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter weave';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Composition"),
-                  controller: compositionController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter composition';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Rate"),
-                  controller: rateController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter rate';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                CustomButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Collect form data and send it back
-                      final formData = {
-                        "quality": qualityController.text,
-                        "quantity": quantityController.text,
-                        "weave": weaveController.text,
-                        "composition": compositionController.text,
-                        "rate": rateController.text,
-                      };
-                      _sendMessage(
-                          messageText: "product", type: 'form', form: formData);
-                      Navigator.pop(context);
-                    }
-                  },
-                  textColor: Colors.white,
-                  fontSize: 14,
-                  backgroundColor: AppColors.blue,
-                  text: "Submit",
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  // void _showFormOverlay() {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Colors.transparent,
+  //     elevation: 10,
+  //     shape: RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+  //     ),
+  //     builder: (context) {
+  //       return Form(
+  //         key: _formKey,
+  //         child: Container(
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             borderRadius: BorderRadius.circular(20.0),
+  //           ),
+  //           margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
+  //           padding: const EdgeInsets.all(10.0),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               TextFormField(
+  //                 decoration: InputDecoration(labelText: "Quality"),
+  //                 controller: qualityController,
+  //                 validator: (value) {
+  //                   if (value == null || value.isEmpty) {
+  //                     return 'Please enter quality';
+  //                   }
+  //                   return null;
+  //                 },
+  //               ),
+  //               TextFormField(
+  //                 decoration: InputDecoration(labelText: "Quantity"),
+  //                 controller: quantityController,
+  //                 validator: (value) {
+  //                   if (value == null || value.isEmpty) {
+  //                     return 'Please enter quantity';
+  //                   }
+  //                   return null;
+  //                 },
+  //               ),
+  //               TextFormField(
+  //                 decoration: InputDecoration(labelText: "Weave"),
+  //                 controller: weaveController,
+  //                 validator: (value) {
+  //                   if (value == null || value.isEmpty) {
+  //                     return 'Please enter weave';
+  //                   }
+  //                   return null;
+  //                 },
+  //               ),
+  //               TextFormField(
+  //                 decoration: InputDecoration(labelText: "Composition"),
+  //                 controller: compositionController,
+  //                 validator: (value) {
+  //                   if (value == null || value.isEmpty) {
+  //                     return 'Please enter composition';
+  //                   }
+  //                   return null;
+  //                 },
+  //               ),
+  //               TextFormField(
+  //                 decoration: InputDecoration(labelText: "Rate"),
+  //                 controller: rateController,
+  //                 validator: (value) {
+  //                   if (value == null || value.isEmpty) {
+  //                     return 'Please enter rate';
+  //                   }
+  //                   return null;
+  //                 },
+  //               ),
+  //               const SizedBox(height: 10),
+  //               CustomButton(
+  //                 onPressed: () {
+  //                   if (_formKey.currentState!.validate()) {
+  //                     // Collect form data and send it back
+  //                     final formData = {
+  //                       "quality": qualityController.text,
+  //                       "quantity": quantityController.text,
+  //                       "weave": weaveController.text,
+  //                       "composition": compositionController.text,
+  //                       "rate": rateController.text,
+  //                     };
+  //                     _sendMessage(
+  //                         messageText: "product", type: 'form', form: formData);
+  //                     Navigator.pop(context);
+  //                   }
+  //                 },
+  //                 textColor: Colors.white,
+  //                 fontSize: 14,
+  //                 backgroundColor: AppColors.blue,
+  //                 text: "Submit",
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 }

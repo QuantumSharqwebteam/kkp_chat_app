@@ -164,23 +164,21 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   Future<void> _sendForm() async {
     //not allowed
-    // final formData = {
-    //   "quality": "Premium",
-    //   "quantity": "100 meters",
-    //   "weave": "Twill",
-    //   "composition": "Cotton 100%",
-    //   "rate": "15 USD/meter"
-    // };
-    // _sendMessage(messageText: "form", type: 'form', form: formData);
   }
 
   String formatTimestamp(String? timestamp) {
-    if (timestamp == null || timestamp.isEmpty) return "";
+    if (timestamp == null || timestamp.isEmpty) {
+      // Return the current date and time in the desired format
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
+    }
     try {
       final dateTime = DateTime.parse(timestamp).toLocal();
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
-      return "";
+      // In case of an error, return the current date and time in the desired format
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
     }
   }
 
