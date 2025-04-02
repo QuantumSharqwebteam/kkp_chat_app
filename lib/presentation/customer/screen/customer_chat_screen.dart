@@ -67,11 +67,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
-    qualityController.dispose();
-    quantityController.dispose();
-    rateController.dispose();
-    compositionController.dispose();
-    weaveController.dispose();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -163,7 +158,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   Future<void> _sendForm() async {
-<<<<<<< HEAD
     // not allowed
     final formData = {
       "quality": "Premium",
@@ -173,9 +167,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       "rate": "15 USD/meter"
     };
     _sendMessage(messageText: "form", type: 'form', form: formData);
-=======
     //not allowed
->>>>>>> 575515ab41758aa1f73cb6245c3f182a831b6ed2
   }
 
   String formatTimestamp(String? timestamp) {
@@ -233,12 +225,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             icon: Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(20.0),
-            bottomRight: Radius.circular(20.0),
-          ),
-        ),
       ),
       body: Column(
         children: [
@@ -291,21 +277,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      elevation: 10,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-      ),
       builder: (context) {
         return Form(
           key: _formKey,
           child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20.0),
-            ),
-            margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
-            padding: const EdgeInsets.all(10.0),
+            padding: EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
