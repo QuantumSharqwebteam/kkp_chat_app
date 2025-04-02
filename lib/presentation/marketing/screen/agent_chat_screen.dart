@@ -5,6 +5,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -99,7 +100,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   void _sendMessage({
     required String messageText,
-    String type = "text",
+    String? type = 'text',
     String? mediaUrl,
     Map<String, dynamic>? form,
   }) {
@@ -124,7 +125,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       message: messageText, // Send media URL as message if type is 'media'
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
-      type: type,
+      type: type!,
       mediaUrl: mediaUrl,
       form: form,
     );
@@ -264,12 +265,21 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
+      elevation: 10,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+      ),
       builder: (context) {
         return Form(
           key: _formKey,
           child: Container(
-            padding: EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
