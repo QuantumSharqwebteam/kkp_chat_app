@@ -7,6 +7,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
@@ -66,6 +67,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
+    qualityController.dispose();
+    quantityController.dispose();
+    rateController.dispose();
+    compositionController.dispose();
+    weaveController.dispose();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -217,6 +223,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             icon: Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(20.0),
+            bottomRight: Radius.circular(20.0),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -233,7 +245,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     isMe: msg['isMe'],
                     timestamp: formatTimestamp(msg['timestamp']),
                   );
-                } else if (msg['text'] == 'Fill Form Button') {
+                } else if (msg['type'] == 'form') {
+                  return FormMessageBubble(
+                    formData: msg['form'],
+                    isMe: msg['isMe'],
+                    timestamp: formatTimestamp(msg['timestamp']),
+                  );
+                } else if (msg['text'] == 'Fill details') {
                   return FillFormButton(
                     onSubmit: _showFormOverlay,
                   );
@@ -263,11 +281,21 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      elevation: 10,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+      ),
       builder: (context) {
         return Form(
           key: _formKey,
           child: Container(
-            padding: EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20.0),
+            ),
+            margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
