@@ -19,8 +19,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
       onTap: () {
         // Navigator.pushNamed(context, CustomerRoutes.customerProfileSetup);
       },
-
-      // TODO: first check for local url
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(70),
         child: widget.url != null

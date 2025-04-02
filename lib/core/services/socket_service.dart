@@ -19,7 +19,7 @@ class SocketService {
   List<String> _roomMembers = [];
   Map<String, DateTime> lastSeenTimes = {};
 
-  final StreamController<List<String>> _statusController =
+  StreamController<List<String>> _statusController =
       StreamController.broadcast();
 
   Stream<List<String>> get statusStream => _statusController.stream;
@@ -27,6 +27,9 @@ class SocketService {
   SocketService._internal();
 
   void initSocket(String userName, String userEmail, String role) {
+    _statusController.close(); // Ensure the old controller is closed
+    _statusController =
+        StreamController<List<String>>.broadcast(); // Re-initialize
     _socket = io.io(serverUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
