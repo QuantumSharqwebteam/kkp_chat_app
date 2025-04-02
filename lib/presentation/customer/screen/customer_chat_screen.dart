@@ -163,6 +163,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   Future<void> _sendForm() async {
+<<<<<<< HEAD
     // not allowed
     final formData = {
       "quality": "Premium",
@@ -172,15 +173,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       "rate": "15 USD/meter"
     };
     _sendMessage(messageText: "form", type: 'form', form: formData);
+=======
+    //not allowed
+>>>>>>> 575515ab41758aa1f73cb6245c3f182a831b6ed2
   }
 
   String formatTimestamp(String? timestamp) {
-    if (timestamp == null || timestamp.isEmpty) return "";
+    if (timestamp == null || timestamp.isEmpty) {
+      // Return the current date and time in the desired format
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
+    }
     try {
       final dateTime = DateTime.parse(timestamp).toLocal();
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
-      return "";
+      // In case of an error, return the current date and time in the desired format
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
     }
   }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/preview_image.dart';
 
 class ImageMessageBubble extends StatelessWidget {
@@ -36,10 +38,11 @@ class ImageMessageBubble extends StatelessWidget {
                 );
               },
               child: Container(
+                margin: EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isMe ? Colors.blue : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                    //  color: isMe ? Colors.blue : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.greyE5E7EB)),
                 padding: const EdgeInsets.all(10),
                 child: CachedNetworkImage(
                   imageUrl: imageUrl,
@@ -59,13 +62,9 @@ class ImageMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 5),
             Text(
               timestamp,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
+              style: AppTextStyles.greyAAAAAA_10_400,
             ),
           ],
         ),
