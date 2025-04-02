@@ -14,6 +14,8 @@ import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.d
 import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
+import '../../common_widgets/chat/no_chat_conversation.dart';
+
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
   final String? customerImage;
@@ -229,38 +231,41 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(10),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                final msg = messages[index];
-                if (msg['type'] == 'media') {
-                  return ImageMessageBubble(
-                    imageUrl: msg['mediaUrl'],
-                    isMe: msg['isMe'],
-                    timestamp: formatTimestamp(msg['timestamp']),
-                  );
-                } else if (msg['type'] == 'form') {
-                  return FormMessageBubble(
-                    formData: msg['form'],
-                    isMe: msg['isMe'],
-                    timestamp: formatTimestamp(msg['timestamp']),
-                  );
-                } else if (msg['text'] == 'Fill details') {
-                  return FillFormButton(
-                    onSubmit: _showFormOverlay,
-                  );
-                }
-                return MessageBubble(
-                  text: msg['text'],
-                  isMe: msg['isMe'],
-                  timestamp: formatTimestamp(msg['timestamp']),
-                  image:
-                      msg['isMe'] ? widget.customerImage! : widget.agentImage!,
-                );
-              },
-            ),
+            child: messages.isEmpty
+                ? NoChatConversation()
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(10),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = messages[index];
+                      if (msg['type'] == 'media') {
+                        return ImageMessageBubble(
+                          imageUrl: msg['mediaUrl'],
+                          isMe: msg['isMe'],
+                          timestamp: formatTimestamp(msg['timestamp']),
+                        );
+                      } else if (msg['type'] == 'form') {
+                        return FormMessageBubble(
+                          formData: msg['form'],
+                          isMe: msg['isMe'],
+                          timestamp: formatTimestamp(msg['timestamp']),
+                        );
+                      } else if (msg['text'] == 'Fill details') {
+                        return FillFormButton(
+                          onSubmit: _showFormOverlay,
+                        );
+                      }
+                      return MessageBubble(
+                        text: msg['text'],
+                        isMe: msg['isMe'],
+                        timestamp: formatTimestamp(msg['timestamp']),
+                        image: msg['isMe']
+                            ? widget.customerImage!
+                            : widget.agentImage!,
+                      );
+                    },
+                  ),
           ),
           ChatInputField(
             controller: _chatController,

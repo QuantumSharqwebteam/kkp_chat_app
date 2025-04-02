@@ -4,6 +4,7 @@ class ImageConstants {
 
   //Image assets
   static const String userImage = "$imageBase/user1.png";
+  static const String noChat = "$imageBase/noChat.png";
 
   //Icons asstes
   static const String shirt = "$iconBase/shirt.png";

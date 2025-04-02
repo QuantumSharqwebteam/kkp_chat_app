@@ -9,6 +9,8 @@ class LocalDbHelper {
   static const String _profile = 'profile';
 
   static Box<dynamic> get _box => Hive.box('CREDENTIALS');
+  // for storing user last seen time or when he/ she came online
+  static Box<dynamic> get _lastSeenBoxInstance => Hive.box("lastSeenTimeBox");
 
   static Future<void> saveToken(String token) async {
     await _box.put(_keyToken, token);
@@ -68,5 +70,15 @@ class LocalDbHelper {
 
   static Future<void> removeProfile() async {
     await _box.delete(_profile);
+  }
+
+  // Methods to handle last seen times
+  static Future<void> updateLastSeenTime(String email) async {
+    await _lastSeenBoxInstance.put(email, DateTime.now().toIso8601String());
+  }
+
+  static DateTime? getLastSeenTime(String email) {
+    String? lastSeen = _lastSeenBoxInstance.get(email);
+    return lastSeen != null ? DateTime.parse(lastSeen) : null;
   }
 }

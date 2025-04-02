@@ -10,6 +10,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await Hive.openBox('CREDENTIALS');
+  await Hive.openBox("lastSeenTimeBox");
   await dotenv.load(fileName: "keys.env");
   runApp(const MyApp());
 }

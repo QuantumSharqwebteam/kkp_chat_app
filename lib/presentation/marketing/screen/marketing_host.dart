@@ -90,7 +90,10 @@ class _MarketingHostState extends State<MarketingHost> {
   Future<void> _updateScreens() async {
     setState(() {
       _screens = [
-        if (role == "1" || role == "3") AdminHome() else AgentHomeScreen(),
+        if (role == "1" || role == "3")
+          AdminHome()
+        else
+          AgentHomeScreen(agentEmail: agentEmail!, agentName: agentName!),
         FeedsScreen(),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
