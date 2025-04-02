@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
@@ -61,8 +60,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // _buildSettingsSection(context),
             const SizedBox(height: 10),
             _buildDetailsCard(),
-            const SizedBox(height: 10),
-            _buildSettingsSection(context),
+            // const SizedBox(height: 10),
+            // _buildSettingsSection(context),
             const SizedBox(height: 10),
             _buildLogoutButton(),
             const SizedBox(height: 25),
@@ -169,65 +168,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      margin: EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [
-        BoxShadow(
-          blurRadius: 4,
-          spreadRadius: 0,
-          color: AppColors.shadowColor,
-          offset: const Offset(0, 4),
-        )
-      ]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Settings",
-            style: AppTextStyles.black15_500.copyWith(fontSize: 18),
-          ),
-          _buildSettingsTile(
-            context,
-            Icons.notifications_none_rounded,
-            "Notification",
-            MarketingRoutes.marketingNotifications,
-          ),
-          _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
-              MarketingRoutes.privacy),
-          _buildSettingsTile(context, Icons.settings_rounded, "Settings",
-              MarketingRoutes.marketingSettings),
-        ],
-      ),
-    );
-  }
+  // Widget _buildSettingsSection(BuildContext context) {
+  //   return Container(
+  //     padding: EdgeInsets.symmetric(horizontal: 16),
+  //     margin: EdgeInsets.symmetric(vertical: 10),
+  //     decoration: BoxDecoration(color: Colors.white, boxShadow: [
+  //       BoxShadow(
+  //         blurRadius: 4,
+  //         spreadRadius: 0,
+  //         color: AppColors.shadowColor,
+  //         offset: const Offset(0, 4),
+  //       )
+  //     ]),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           "Settings",
+  //           style: AppTextStyles.black15_500.copyWith(fontSize: 18),
+  //         ),
+  //         _buildSettingsTile(
+  //           context,
+  //           Icons.notifications_none_rounded,
+  //           "Notification",
+  //           MarketingRoutes.marketingNotifications,
+  //         ),
+  //         _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
+  //             MarketingRoutes.privacy),
+  //         _buildSettingsTile(context, Icons.settings_rounded, "Settings",
+  //             MarketingRoutes.marketingSettings),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildSettingsTile(
-      BuildContext context, IconData icon, String title, String routeName) {
-    return Container(
-      width: double.maxFinite,
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(width: 2, color: AppColors.dividerD9D9D9),
-        ),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.black),
-        title: Text(
-          title,
-          style: AppTextStyles.black16_500,
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 20,
-        ),
-        onTap: () {
-          Navigator.pushNamed(context, routeName);
-        },
-      ),
-    );
-  }
+  // Widget _buildSettingsTile(
+  //     BuildContext context, IconData icon, String title, String routeName) {
+  //   return Container(
+  //     width: double.maxFinite,
+  //     decoration: BoxDecoration(
+  //       border: Border(
+  //         bottom: BorderSide(width: 2, color: AppColors.dividerD9D9D9),
+  //       ),
+  //     ),
+  //     child: ListTile(
+  //       leading: Icon(icon, color: Colors.black),
+  //       title: Text(
+  //         title,
+  //         style: AppTextStyles.black16_500,
+  //       ),
+  //       trailing: const Icon(
+  //         Icons.arrow_forward_ios,
+  //         size: 20,
+  //       ),
+  //       onTap: () {
+  //         Navigator.pushNamed(context, routeName);
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _buildLogoutButton() {
     return Padding(
