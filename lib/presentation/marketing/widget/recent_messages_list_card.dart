@@ -59,8 +59,10 @@ class RecentMessagesListCard extends StatelessWidget {
                   Text(time ?? _getCurrentTime(),
                       style: AppTextStyles.black10_600),
                   CircleAvatar(
-                    radius: 3,
-                    backgroundColor: AppColors.inActiveRed,
+                    radius: 4,
+                    backgroundColor: isActive!
+                        ? AppColors.activeGreen
+                        : AppColors.inActiveRed,
                   ),
                 ],
               ),

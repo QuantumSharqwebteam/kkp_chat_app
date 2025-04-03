@@ -94,7 +94,7 @@ class _MarketingHostState extends State<MarketingHost> {
           AdminHome()
         else
           AgentHomeScreen(agentEmail: agentEmail!, agentName: agentName!),
-        FeedsScreen(),
+        FeedsScreen(loggedAgentEmail: agentEmail!),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
       ];

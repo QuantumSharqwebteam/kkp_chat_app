@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
@@ -22,20 +22,28 @@ class AgentHomeScreen extends StatefulWidget {
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
   final _searchController = TextEditingController();
-  Profile? profileData;
-  String? name;
-  String? email;
-
   bool _isLoading = true;
   final _chatRepo = ChatRepository();
   List<dynamic> _assignedCustomers = [];
   List<dynamic> _filteredCustomers = [];
   final SocketService _socketService = SocketService();
+  StreamSubscription<List<String>>? _statusSubscription;
 
   @override
   void initState() {
     super.initState();
     _fetchAssignedCustomers();
+    _statusSubscription = _socketService.statusStream.listen((_) {
+      if (mounted) {
+        setState(() {}); // Forces a rebuild to reflect the new online status
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchAssignedCustomers() async {
@@ -108,11 +116,16 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                             ),
                           ];
                         },
-                        body: _filteredCustomers.isEmpty
-                            ? Center(
-                                child: Text("No Customers Assigned"),
-                              )
-                            : _buildRecentMessages(),
+                        body: StreamBuilder<List<String>>(
+                          stream: _socketService.statusStream,
+                          builder: (context, snapshot) {
+                            return _filteredCustomers.isEmpty
+                                ? Center(
+                                    child: Text("No Customers Assigned"),
+                                  )
+                                : _buildRecentMessages();
+                          },
+                        ),
                       ),
               ),
             ),

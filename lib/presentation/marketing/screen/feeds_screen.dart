@@ -12,7 +12,8 @@ import 'package:kkp_chat_app/presentation/marketing/widget/filter_button.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
 
 class FeedsScreen extends StatefulWidget {
-  const FeedsScreen({super.key});
+  final String? loggedAgentEmail;
+  const FeedsScreen({super.key, this.loggedAgentEmail});
 
   @override
   State<FeedsScreen> createState() => _FeedsScreenState();
@@ -161,7 +162,11 @@ class _FeedsScreenState extends State<FeedsScreen> {
         ? _agentsList
             .where((agent) => pinnedAgentsSet.contains(agent.email))
             .toList()
-        : _agentsList;
+        : _agentsList
+            .where((agent) =>
+                agent.email !=
+                widget.loggedAgentEmail) // Exclude logged-in agent
+            .toList();
 
     if (displayList.isEmpty) {
       return const Center(child: Text("No agents found"));

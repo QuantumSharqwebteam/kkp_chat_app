@@ -18,7 +18,7 @@ class SocketService {
 
   bool isChatPageOpen = false;
   List<String> _roomMembers = [];
-  Map<String, DateTime> lastSeenTimes = {};
+  // Map<String, DateTime> lastSeenTimes = {};
 
   StreamController<List<String>> _statusController =
       StreamController.broadcast();
@@ -64,6 +64,12 @@ class SocketService {
 
     _socket.onDisconnect((_) {
       _isConnected = false;
+      for (String email in _roomMembers) {
+        LocalDbHelper.updateLastSeenTime(
+            email); // ✅ Save last seen time in Hive
+        debugPrint(
+            "⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
+      }
       debugPrint('⚠️ Disconnected from socket server');
       _attemptReconnect(userName, userEmail, role);
     });
@@ -85,8 +91,11 @@ class SocketService {
     Set<String> previousUsers = Set.from(_roomMembers);
     Set<String> currentUsers = Set.from(newRoomMembers);
 
+    // Mark users who went offline
     for (String email in previousUsers.difference(currentUsers)) {
-      lastSeenTimes[email] = DateTime.now();
+      LocalDbHelper.updateLastSeenTime(email); // ✅ Store in Hive
+      debugPrint(
+          "⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
     }
 
     _roomMembers = newRoomMembers;
@@ -108,19 +117,25 @@ class SocketService {
   }
 
   String getLastSeenTime(String email) {
-    // if (_roomMembers.contains(email)) {
-    //   return "Online";
-    // }
+    if (_roomMembers.contains(email)) {
+      return "Online"; //  If online, show "Online"
+    }
 
     DateTime? lastSeen = LocalDbHelper.getLastSeenTime(email);
     if (lastSeen == null) return "Not Available";
 
     Duration diff = DateTime.now().difference(lastSeen);
-    if (diff.inSeconds < 60) {
-      return "${diff.inSeconds}s ago";
-    } else if (diff.inMinutes < 60) {
-      return "${diff.inMinutes}m ago";
-    } else if (diff.inHours < 24) {
+    if (diff.inSeconds < 30) {
+      return "Just now";
+    } else if (diff.inMinutes < 1) {
+      return "Few seconds ago";
+    } else if (diff.inMinutes == 1) {
+      return "1 min ago";
+    } else if (diff.inHours < 1) {
+      return "${diff.inMinutes} min ago";
+    } else if (diff.inHours == 1) {
+      return "1 hour ago";
+    } else if (diff.inDays < 1) {
       return "${diff.inHours}h ago";
     } else if (diff.inDays == 1) {
       return "Yesterday";

@@ -75,10 +75,19 @@ class LocalDbHelper {
   // Methods to handle last seen times
   static Future<void> updateLastSeenTime(String email) async {
     await _lastSeenBoxInstance.put(email, DateTime.now().toIso8601String());
+    // if (kDebugMode) {
+    //   debugPrint("📂 Hive last seen data: ${_lastSeenBoxInstance.toMap()}");
+    // }
   }
 
   static DateTime? getLastSeenTime(String email) {
     String? lastSeen = _lastSeenBoxInstance.get(email);
-    return lastSeen != null ? DateTime.parse(lastSeen) : null;
+    if (lastSeen != null) {
+      DateTime parsedDate = DateTime.parse(lastSeen);
+      // debugPrint(
+      //     "📅 Retrieved last seen time from Hive for $email: $parsedDate");
+      return parsedDate;
+    }
+    return null;
   }
 }
