@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -42,7 +42,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  // final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final qualityController = TextEditingController();
   final quantityController = TextEditingController();
   final weaveController = TextEditingController();
@@ -110,7 +109,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     setState(() {
       messages.add({
-        "text": messageText, // Set message as mediaUrl if it's a media type
+        "text": messageText,
         "timestamp": currentTime,
         "isMe": true,
         "type": type,
@@ -122,7 +121,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     _socketService.sendMessage(
       targetEmail: widget.customerEmail!,
-      message: messageText, // Send media URL as message if type is 'media'
+      message: messageText,
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
       type: type!,
@@ -202,7 +201,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           IconButton(
             onPressed: () {
               // transfer chat
-              Navigator.pushNamed(context, MarketingRoutes.transferAgentScreen);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return TransferAgentScreen(
+                      customerEmailId: widget.customerEmail!,
+                    );
+                  },
+                ),
+              );
             },
             icon: const Icon(Icons.swap_horizontal_circle_outlined,
                 color: Colors.black),
@@ -272,106 +280,4 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       ),
     );
   }
-
-  // void _showFormOverlay() {
-  //   showModalBottomSheet(
-  //     context: context,
-  //     isScrollControlled: true,
-  //     backgroundColor: Colors.transparent,
-  //     elevation: 10,
-  //     shape: RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-  //     ),
-  //     builder: (context) {
-  //       return Form(
-  //         key: _formKey,
-  //         child: Container(
-  //           decoration: BoxDecoration(
-  //             color: Colors.white,
-  //             borderRadius: BorderRadius.circular(20.0),
-  //           ),
-  //           margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
-  //           padding: const EdgeInsets.all(10.0),
-  //           child: Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               TextFormField(
-  //                 decoration: InputDecoration(labelText: "Quality"),
-  //                 controller: qualityController,
-  //                 validator: (value) {
-  //                   if (value == null || value.isEmpty) {
-  //                     return 'Please enter quality';
-  //                   }
-  //                   return null;
-  //                 },
-  //               ),
-  //               TextFormField(
-  //                 decoration: InputDecoration(labelText: "Quantity"),
-  //                 controller: quantityController,
-  //                 validator: (value) {
-  //                   if (value == null || value.isEmpty) {
-  //                     return 'Please enter quantity';
-  //                   }
-  //                   return null;
-  //                 },
-  //               ),
-  //               TextFormField(
-  //                 decoration: InputDecoration(labelText: "Weave"),
-  //                 controller: weaveController,
-  //                 validator: (value) {
-  //                   if (value == null || value.isEmpty) {
-  //                     return 'Please enter weave';
-  //                   }
-  //                   return null;
-  //                 },
-  //               ),
-  //               TextFormField(
-  //                 decoration: InputDecoration(labelText: "Composition"),
-  //                 controller: compositionController,
-  //                 validator: (value) {
-  //                   if (value == null || value.isEmpty) {
-  //                     return 'Please enter composition';
-  //                   }
-  //                   return null;
-  //                 },
-  //               ),
-  //               TextFormField(
-  //                 decoration: InputDecoration(labelText: "Rate"),
-  //                 controller: rateController,
-  //                 validator: (value) {
-  //                   if (value == null || value.isEmpty) {
-  //                     return 'Please enter rate';
-  //                   }
-  //                   return null;
-  //                 },
-  //               ),
-  //               const SizedBox(height: 10),
-  //               CustomButton(
-  //                 onPressed: () {
-  //                   if (_formKey.currentState!.validate()) {
-  //                     // Collect form data and send it back
-  //                     final formData = {
-  //                       "quality": qualityController.text,
-  //                       "quantity": quantityController.text,
-  //                       "weave": weaveController.text,
-  //                       "composition": compositionController.text,
-  //                       "rate": rateController.text,
-  //                     };
-  //                     _sendMessage(
-  //                         messageText: "product", type: 'form', form: formData);
-  //                     Navigator.pop(context);
-  //                   }
-  //                 },
-  //                 textColor: Colors.white,
-  //                 fontSize: 14,
-  //                 backgroundColor: AppColors.blue,
-  //                 text: "Submit",
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
 }

@@ -3,7 +3,6 @@ import 'package:kkp_chat_app/presentation/admin/screens/add_agent.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/agent_profile_list.dart';
 import 'package:kkp_chat_app/presentation/admin/screens/customer_inquries.dart';
-import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
@@ -34,7 +33,7 @@ class MarketingRoutes {
   static const String marketingProductDescription =
       "Marketing_Product_Description_Page";
   static const String marketingSettings = "/Marketing_Settings";
-  static const String transferAgentScreen = "Transfer_agent";
+  // static const String transferAgentScreen = "Transfer_agent";
 
   static List<String> allRoutes = [
     home,
@@ -50,7 +49,7 @@ class MarketingRoutes {
     marketingProductDescription,
     marketingSettings,
     agentChatScreen,
-    transferAgentScreen,
+    //transferAgentScreen,
   ];
 }
 
@@ -71,8 +70,8 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
     case MarketingRoutes.addProductScreen:
       return MaterialPageRoute(builder: (_) => AddProductScreen());
 
-    case MarketingRoutes.transferAgentScreen:
-      return MaterialPageRoute(builder: (_) => TransferAgentScreen());
+    // case MarketingRoutes.transferAgentScreen:
+    //   return MaterialPageRoute(builder: (_) => TransferAgentScreen());
 
     case MarketingRoutes.marketingProductDescription:
       final product = settings.arguments as Product?;

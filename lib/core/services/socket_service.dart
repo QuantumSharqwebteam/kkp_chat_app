@@ -167,8 +167,8 @@ class SocketService {
   }
 
   void sendMessage({
-    required String targetEmail,
-    required String message,
+    String? targetEmail,
+    String? message,
     required String senderEmail,
     required String senderName,
     String type = 'text',
@@ -177,12 +177,18 @@ class SocketService {
   }) {
     if (_isConnected) {
       Map<String, dynamic> messageData = {
-        'targetId': targetEmail,
-        'message': message,
         'senderId': senderEmail,
         'senderName': senderName,
         'type': type,
       };
+
+      if (targetEmail != null) {
+        messageData['targetId'] = targetEmail;
+      }
+
+      if (message != null) {
+        messageData['message'] = message;
+      }
 
       if (form != null) {
         messageData['form'] = form;

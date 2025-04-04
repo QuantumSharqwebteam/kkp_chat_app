@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 
 class ChatService {
   final String baseUrl = "https://kkp-chat.onrender.com/chat";
@@ -98,6 +99,47 @@ class ChatService {
       }
     } catch (e) {
       throw Exception('Error fetching chatted user list: $e');
+    }
+  }
+
+  /// **Transfer Customer to Another Agent**
+  Future<bool> transferCustomerToAgent({
+    required String customerEmail,
+    required String agentEmail,
+  }) async {
+    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/updateUser");
+    final token = LocalDbHelper.getToken();
+
+    if (token == null) {
+      throw Exception('Token not found. Please log in again.');
+    }
+
+    final Map<String, String> headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+
+    final Map<String, dynamic> body = {
+      "email": customerEmail,
+      "agentId": agentEmail,
+    };
+
+    try {
+      final response = await client.put(
+        url,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        debugPrint("❌ Failed to transfer: ${response.body}");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("❌ Error transferring user: $e");
+      throw Exception("Failed to transfer user: $e");
     }
   }
 }

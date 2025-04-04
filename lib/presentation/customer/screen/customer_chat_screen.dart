@@ -120,7 +120,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     });
 
     _socketService.sendMessage(
-      targetEmail: widget.agentEmail!,
+      //targetEmail: widget.agentEmail!,
       message: messageText,
       senderEmail: widget.customerEmail!,
       senderName: widget.customerName!,
