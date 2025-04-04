@@ -165,7 +165,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                 crossAxisCount: 2,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.8,
+                                mainAxisExtent: 250,
                               ),
                               itemCount: previousProducts.length,
                               itemBuilder: (context, index) {
