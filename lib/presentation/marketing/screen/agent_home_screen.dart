@@ -235,8 +235,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             isActive: isOnline,
             time: isOnline ? "Online" : lastSeen,
             enableLongPress: false,
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AgentChatScreen(
@@ -247,6 +247,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   ),
                 ),
               );
+              if (result == true) {
+                await _fetchAssignedCustomers();
+              }
             },
           ),
         );

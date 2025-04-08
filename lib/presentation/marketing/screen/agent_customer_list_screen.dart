@@ -126,8 +126,8 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                                 style: AppTextStyles.grey12_600,
                               ),
                               trailing: Icon(Icons.arrow_forward_ios),
-                              onTap: () {
-                                Navigator.push(
+                              onTap: () async {
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => AgentChatScreen(
@@ -138,6 +138,9 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                                     ),
                                   ),
                                 );
+                                if (result == true) {
+                                  await fetchCustomers();
+                                }
                               },
                             ),
                           );
