@@ -205,8 +205,9 @@ class SocketService {
     }
   }
 
-  void initiateCall(String targetEmail, dynamic signalData, String senderEmail,
-      String senderName) {
+  // Send offer or answer
+  void initiateCall(String targetEmail, Map<String, dynamic> signalData,
+      String senderEmail, String senderName) {
     _socket.emit('initiateCall', {
       'targetId': targetEmail,
       'signalData': signalData,
@@ -221,12 +222,42 @@ class SocketService {
     });
   }
 
-  void answerCall(String targetSocketId, String mediaType, bool mediaStatus) {
+  void answerCall({
+    required String targetSocketId,
+    required Map<String, dynamic> answerData, // should include 'sdp' and 'type'
+    String mediaType = 'audio',
+    bool mediaStatus = true,
+  }) {
     _socket.emit('answerCall', {
       'to': targetSocketId,
+      'sdp': answerData['sdp'],
+      'type': answerData['type'],
       'mediaType': mediaType,
       'mediaStatus': mediaStatus,
     });
+  }
+
+  void sendSignalCandidate(String targetId, Map<String, dynamic> candidate) {
+    _socket.emit('signalCandidate', {
+      'targetId': targetId,
+      'candidate': candidate,
+    });
+  }
+
+  void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
+    _socket.on('signalCandidate', (data) {
+      if (data is Map<String, dynamic>) {
+        callback(data);
+      } else if (data is Map) {
+        callback(Map<String, dynamic>.from(data));
+      } else {
+        debugPrint("Invalid signalCandidate format: $data");
+      }
+    });
+  }
+
+  void listenForCallAnswered(Function(dynamic) callback) {
+    _socket.on('callAnswered', callback);
   }
 
   void terminateCall(String targetEmail) {

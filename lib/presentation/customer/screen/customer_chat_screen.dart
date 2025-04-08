@@ -6,6 +6,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -191,24 +192,28 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           ],
         ),
         actions: [
+          // IconButton(
+          //   onPressed: () {
+          //     _socketService.initiateCall(
+          //       widget.agentEmail!,
+          //       {},
+          //       widget.customerEmail!,
+          //       widget.customerName!,
+          //     );
+          //   },
+          //   icon: Icon(Icons.videocam_outlined, color: Colors.black),
+          // ),
           IconButton(
             onPressed: () {
-              _socketService.initiateCall(
-                widget.agentEmail!,
-                {},
-                widget.customerEmail!,
-                widget.customerName!,
-              );
-            },
-            icon: Icon(Icons.videocam_outlined, color: Colors.black),
-          ),
-          IconButton(
-            onPressed: () {
-              _socketService.initiateCall(
-                widget.agentEmail!,
-                {},
-                widget.customerEmail!,
-                widget.customerName!,
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AudioCallScreen(
+                    selfId: widget.customerEmail!,
+                    targetId: widget.agentEmail!,
+                    isCaller: true,
+                  ),
+                ),
               );
             },
             icon: Icon(Icons.call_outlined, color: Colors.black),

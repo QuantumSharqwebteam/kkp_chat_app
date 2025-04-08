@@ -5,6 +5,8 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
+
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -218,6 +220,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           IconButton(
             onPressed: () {
               // Initiate an audio call
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AudioCallScreen(
+                    selfId: widget.agentEmail!,
+                    targetId: widget.customerEmail!,
+                    isCaller: true,
+                  ),
+                ),
+              );
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
