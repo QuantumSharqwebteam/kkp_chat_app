@@ -3,7 +3,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 
-import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
+import 'package:kkp_chat_app/presentation/marketing/widget/feed_list_card.dart';
 
 class TrackInquries extends StatefulWidget {
   const TrackInquries({super.key});
@@ -99,7 +99,7 @@ class _TrackInquriesState extends State<TrackInquries> {
         final message = messages[index];
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: RecentMessagesListCard(
+          child: FeedListCard(
             name: message['name'],
             message: message['message'],
             time: message['time'],

@@ -4,7 +4,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
 
-class RecentMessagesListCard extends StatelessWidget {
+class FeedListCard extends StatelessWidget {
   final String name;
   final String? message;
   final String? time;
@@ -13,8 +13,9 @@ class RecentMessagesListCard extends StatelessWidget {
   final bool isPinned;
   final VoidCallback onTap;
   final VoidCallback? onPinTap;
+  final bool enableLongPress;
 
-  const RecentMessagesListCard({
+  const FeedListCard({
     super.key,
     required this.name,
     this.message,
@@ -24,6 +25,7 @@ class RecentMessagesListCard extends StatelessWidget {
     this.isPinned = false,
     required this.onTap,
     this.onPinTap,
+    this.enableLongPress = true,
   });
 
   String _getCurrentTime() {
@@ -36,9 +38,11 @@ class RecentMessagesListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      onLongPressStart: (LongPressStartDetails details) {
-        _showPinMenu(context, details.globalPosition);
-      }, // Show menu on long press
+      onLongPressStart: enableLongPress && onPinTap != null
+          ? (LongPressStartDetails details) {
+              _showPinMenu(context, details.globalPosition);
+            }
+          : null, // Show menu on long press
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: ProfileAvatar(

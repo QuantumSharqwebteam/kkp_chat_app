@@ -28,8 +28,8 @@ class AgentChatScreen extends StatefulWidget {
     this.customerImage = ImageConstants.userImage,
     this.agentName = "Agent N/A",
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "rayeenshoaib20786@gmail.com",
+    this.customerEmail = "customer@gmail.com",
+    this.agentEmail = "agent@gmail.com",
   });
 
   @override

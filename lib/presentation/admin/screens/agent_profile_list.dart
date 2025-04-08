@@ -30,6 +30,13 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
   Future<void> _fetchAgents() async {
     try {
       List<Agent> agents = await _auth.getAgent();
+      // Sort so that 'AgentHead' comes first
+      agents.sort((a, b) {
+        if (a.role == 'AgentHead' && b.role != 'AgentHead') return -1;
+        if (a.role != 'AgentHead' && b.role == 'AgentHead') return 1;
+        return 0; // maintain original order if roles are the same or neither is AgentHead
+      });
+
       setState(() {
         _agentsList = agents;
         _isLoading = false;
@@ -39,6 +46,60 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  void assignAgentToList(String email) async {
+    try {
+      final result = await AuthApi().assignAgent(email: email);
+      if (result['status'] == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    "✅ ${result['message']} for getting transfered customers")),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    "⚠️ ${result['message']}! now not eligible for getting transfered customers")),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Failed to assign agent: $e")),
+        );
+      }
+    }
+  }
+
+  void removeAgentFromList(String email) async {
+    try {
+      final success = await AuthApi().removeAssignedAgent(email: email);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("✅ Agent removed from list")),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("⚠️ Failed to remove agent")),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Error: $e")),
+        );
+      }
     }
   }
 
@@ -106,9 +167,11 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
 
   Widget _buildStatsSection() {
     int totalAgents = _agentsList.length;
+    DateTime now = DateTime.now();
+    DateTime last7Days = now.subtract(const Duration(days: 7));
+
     int newAgents = _agentsList
-        .where((agent) => DateTime.parse(agent.createdAt)
-            .isAfter(DateTime.now().subtract(const Duration(days: 30))))
+        .where((agent) => DateTime.parse(agent.createdAt).isAfter(last7Days))
         .length;
 
     return Row(
@@ -178,12 +241,41 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                 backgroundImage: AssetImage("assets/images/user3.png"),
               ),
               title: Text(agent.name, style: AppTextStyles.black16_600),
-              subtitle: Text(
-                agent.role,
-                style: AppTextStyles.black14_400.copyWith(
-                  color: AppColors.black60opac,
-                ),
-              ),
+              subtitle: agent.role == 'AgentHead'
+                  ? Row(
+                      children: [
+                        Text(
+                          "🔰${agent.role}",
+                          style: AppTextStyles.black14_400.copyWith(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Head',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      agent.role,
+                      style: AppTextStyles.black14_400.copyWith(
+                        color: AppColors.black60opac,
+                      ),
+                    ),
               trailing: PopupMenuButton<String>(
                 splashRadius: 20,
                 borderRadius: BorderRadius.circular(20),
@@ -191,14 +283,27 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                 surfaceTintColor: Colors.white,
                 elevation: 10,
                 onSelected: (value) {
-                  // Handle actions here
+                  if (value == 'Add agent to assign list') {
+                    assignAgentToList(agent.email); // Replace with actual email
+                  } else if (value == 'Remove from Assigned list') {
+                    removeAgentFromList(
+                        agent.email); // Replace with actual email
+                  } else if (value == 'Delete') {
+                    // Add delete logic here
+                  }
                 },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                      value: "restrict", child: Text("Restrict Access")),
-                  const PopupMenuItem(
-                      value: "delete", child: Text("Delete Profile")),
-                ],
+                itemBuilder: (BuildContext context) {
+                  return [
+                    'Add agent to assign list',
+                    'Remove from Assigned list',
+                    'Delete'
+                  ].map((String choice) {
+                    return PopupMenuItem<String>(
+                      value: choice,
+                      child: Text(choice),
+                    );
+                  }).toList();
+                },
               ),
             ),
           ),

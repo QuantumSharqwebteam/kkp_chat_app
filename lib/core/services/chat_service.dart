@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/data/models/form_data_model.dart';
 
 class ChatService {
-  final String baseUrl = "https://kkp-chat.onrender.com/chat";
+  final String baseUrl = "https://kkp-chat.onrender.com";
 
   final http.Client client;
 
@@ -13,8 +14,7 @@ class ChatService {
   /// ** Get Previous Chat Messages**
   Future<List<Map<String, dynamic>>> getPreviousChats(
       String mailId1, String mailId2) async {
-    final url =
-        Uri.parse("https://kkp-chat.onrender.com/api/chat/$mailId2/$mailId1");
+    final url = Uri.parse("$baseUrl/api/chat/$mailId2/$mailId1");
 
     try {
       final response = await client.get(url);
@@ -30,9 +30,36 @@ class ChatService {
     }
   }
 
-  /// **Get Agent-wise User List**
+  /// **Get Assigned Customers by Agent Email **
+  Future<List<Map<String, dynamic>>> getAssignedCustomers(
+      String agentEmail) async {
+    final Uri url = Uri.parse("$baseUrl/user/getUsersByAgentId/$agentEmail");
+
+    try {
+      final response = await client.get(url);
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && jsonResponse["message"] is List) {
+        // Success: Return the list of assigned users
+        return List<Map<String, dynamic>>.from(jsonResponse["message"]);
+      } else if (response.statusCode == 404 ||
+          jsonResponse["message"] == "No users found for this agent") {
+        // No users assigned to this agent
+        debugPrint("ℹ️ No users assigned to this agent:$agentEmail");
+        return [];
+      } else {
+        // Unexpected structure or error
+        throw Exception("Failed to fetch assigned customers: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint(" Error fetching assigned customers: $e");
+      throw Exception("Error fetching assigned customers: $e");
+    }
+  }
+
+  /// **Get Agent-wise chatted User List(who have started  chatting ) **
   Future<List<Map<String, dynamic>>> getAgentUserList(String agentId) async {
-    final url = Uri.parse("$baseUrl/getAgentUserList/$agentId");
+    final url = Uri.parse("$baseUrl/chat/getAgentUserList/$agentId");
 
     try {
       final response = await client.get(url);
@@ -71,9 +98,9 @@ class ChatService {
     }
   }
 
-  /// **Get Chatted User List**
+  /// **Get Chatted User List** users who have inquired to any agnet or started chatted
   Future<List<Map<String, dynamic>>> getChattedUserList() async {
-    final url = Uri.parse("$baseUrl/getUserList");
+    final url = Uri.parse("$baseUrl/chat/getUserList");
 
     try {
       final response = await client.get(url);
@@ -106,7 +133,7 @@ class ChatService {
     required String customerEmail,
     required String agentEmail,
   }) async {
-    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/updateUser");
+    final Uri url = Uri.parse("$baseUrl/user/updateUser");
     final token = LocalDbHelper.getToken();
 
     if (token == null) {
@@ -139,6 +166,24 @@ class ChatService {
     } catch (e) {
       debugPrint("❌ Error transferring user: $e");
       throw Exception("Failed to transfer user: $e");
+    }
+  }
+
+  /// get inqury form data
+  Future<List<FormDataModel>> getFormData() async {
+    final url = Uri.parse('$baseUrl/chat/getFormData');
+    final response = await client.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      List<FormDataModel> formList = (data['formData'] as List)
+          .map((item) => FormDataModel.fromJson(item))
+          .toList();
+
+      return formList;
+    } else {
+      throw Exception('Failed to load form data');
     }
   }
 }

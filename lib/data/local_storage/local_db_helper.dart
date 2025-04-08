@@ -8,9 +8,15 @@ class LocalDbHelper {
   static const String _email = 'email';
   static const String _profile = 'profile';
 
+  // feed
+  static const String _pinnedAgentsKey = 'pinnedAgents';
+  static const String _lastSeenMapKey = 'lastSeenMap';
+
   static Box<dynamic> get _box => Hive.box('CREDENTIALS');
   // for storing user last seen time or when he/ she came online
   static Box<dynamic> get _lastSeenBoxInstance => Hive.box("lastSeenTimeBox");
+
+  static Box<dynamic> get _feedBox => Hive.box('feedBox');
 
   static Future<void> saveToken(String token) async {
     await _box.put(_keyToken, token);
@@ -89,5 +95,23 @@ class LocalDbHelper {
       return parsedDate;
     }
     return null;
+  }
+
+  static Future<void> clearLastSeenMap() async {
+    await _lastSeenBoxInstance.delete(_lastSeenMapKey);
+  }
+
+  // pinned agents
+  static Future<void> savePinnedAgents(Set<String> agentEmails) async {
+    await _feedBox.put(_pinnedAgentsKey, agentEmails.toList());
+  }
+
+  static Set<String> getPinnedAgents() {
+    final List<dynamic>? emails = _feedBox.get(_pinnedAgentsKey);
+    return emails != null ? Set<String>.from(emails) : {};
+  }
+
+  static Future<void> clearPinnedAgents() async {
+    await _feedBox.delete(_pinnedAgentsKey);
   }
 }

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/form_data_model.dart';
+import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
@@ -14,15 +17,18 @@ class CustomerInquiriesPage extends StatefulWidget {
   State<CustomerInquiriesPage> createState() => _CustomerInquiriesPageState();
 }
 
-class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
+class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
+    with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
+  final _chatRepository = ChatRepository();
+
   bool showFilters = false;
   String selectedAgent = 'All Agents';
   String selectedDateRange = 'Last 30 days';
   String selectedQuality = "Quality";
-  int currentIndex = 0; // For pagination
+  int currentIndex = 0;
 
-  List<String> agents = ['All Agents', 'Agent Sam', 'Agent Sammy'];
+  List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
   List<String> dateRanges = [
     'Today',
     'Last Week',
@@ -31,104 +37,80 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
   ];
   List<String> qualities = ["Quality", "Standard", "Premium"];
 
-  List<Map<String, dynamic>> inquiries = [
-    {
-      'agent': 'Agent Sam',
-      'customer': 'Sarah',
-      'date': 'Jan 15, 2025',
-      'status': 'Confirmed',
-      'sNo': '01',
-      'quality': 'Premium Cotton',
-      'weave': 'Plain',
-      'quantity': '500 pcs',
-      'composition': '100% Cotton',
-      'rate': 'Rs. 50,000'
-    },
-    {
-      'agent': 'Agent Sammy',
-      'customer': 'John',
-      'date': 'Jan 15, 2025',
-      'status': 'Declined',
-      'sNo': '02',
-      'quality': 'Premium Cotton',
-      'weave': 'Plain',
-      'quantity': '500 pcs',
-      'composition': '100% Cotton',
-      'rate': 'Rs. 50,000'
-    },
-    {
-      'agent': 'Agent Sam',
-      'customer': 'Alice',
-      'date': 'Feb 5, 2025',
-      'status': 'Confirmed',
-      'sNo': '03',
-      'quality': 'Silk',
-      'weave': 'Satin',
-      'quantity': '300 pcs',
-      'composition': '100% Silk',
-      'rate': 'Rs. 70,000'
-    },
-    {
-      'agent': 'Agent Sammy',
-      'customer': 'Bob',
-      'date': 'Feb 10, 2025',
-      'status': 'Pending',
-      'sNo': '04',
-      'quality': 'Linen',
-      'weave': 'Twill',
-      'quantity': '600 pcs',
-      'composition': '80% Cotton, 20% Linen',
-      'rate': 'Rs. 60,000'
-    },
-    {
-      'agent': 'Agent Sam',
-      'customer': 'Sarah',
-      'date': 'Jan 15, 2025',
-      'status': 'Confirmed',
-      'sNo': '01',
-      'quality': 'Premium Cotton',
-      'weave': 'Plain',
-      'quantity': '500 pcs',
-      'composition': '100% Cotton',
-      'rate': 'Rs. 50,000'
-    },
-    {
-      'agent': 'Agent Sammy',
-      'customer': 'John',
-      'date': 'Jan 15, 2025',
-      'status': 'Declined',
-      'sNo': '02',
-      'quality': 'Premium Cotton',
-      'weave': 'Plain',
-      'quantity': '500 pcs',
-      'composition': '100% Cotton',
-      'rate': 'Rs. 50,000'
-    },
-    {
-      'agent': 'Agent Sam',
-      'customer': 'Alice',
-      'date': 'Feb 5, 2025',
-      'status': 'Confirmed',
-      'sNo': '03',
-      'quality': 'Silk',
-      'weave': 'Satin',
-      'quantity': '300 pcs',
-      'composition': '100% Silk',
-      'rate': 'Rs. 70,000'
-    },
-    {
-      'agent': 'Agent Sammy',
-      'customer': 'Bob',
-      'date': 'Feb 10, 2025',
-      'status': 'Pending',
-      'sNo': '04',
-      'quality': 'Linen',
-      'weave': 'Twill',
-      'quantity': '600 pcs',
-      'composition': '80% Cotton, 20% Linen',
-      'rate': 'Rs. 60,000'
-    },
-  ];
+  List<FormDataModel> allInquiries = [];
+  List<FormDataModel> filteredInquiries = [];
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchInquiries();
+    _searchController.addListener(_applyFilters);
+  }
+
+  Future<void> fetchInquiries() async {
+    try {
+      final data = await _chatRepository.fetchFormData();
+      setState(() {
+        isLoading = false;
+        allInquiries = data;
+        _applyFilters();
+      });
+    } catch (e) {
+      debugPrint("Failed to fetch inquiries: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _applyFilters() {
+    String search = _searchController.text.toLowerCase();
+    final now = DateTime.now();
+
+    filteredInquiries = allInquiries.where((item) {
+      final matchAgent =
+          selectedAgent == 'All Agents' || item.agentName == selectedAgent;
+
+      final matchQuality = selectedQuality == 'Quality' ||
+          item.quality.contains(selectedQuality);
+
+      final matchSearch = item.customerName.toLowerCase().contains(search) ||
+          item.agentName.toLowerCase().contains(search) ||
+          item.quality.toLowerCase().contains(search) ||
+          item.weave.toLowerCase().contains(search) ||
+          item.composition.toLowerCase().contains(search) ||
+          item.rate.toLowerCase().contains(search) ||
+          item.quantity.toLowerCase().contains(search);
+
+      bool matchDate = true;
+      final date = item.parsedDate;
+
+      switch (selectedDateRange) {
+        case 'Today':
+          matchDate = date?.day == now.day &&
+              date?.month == now.month &&
+              date?.year == now.year;
+          break;
+        case 'Last Week':
+          matchDate = date!.isAfter(now.subtract(const Duration(days: 7)));
+          break;
+        case 'Last Month':
+          matchDate = date!.isAfter(DateTime(now.year, now.month - 1, now.day));
+          break;
+        case 'Last 30 days':
+          matchDate = date!.isAfter(now.subtract(const Duration(days: 30)));
+          break;
+      }
+
+      return matchAgent && matchQuality && matchSearch && matchDate;
+    }).toList();
+
+    currentIndex = 0;
+    setState(() {});
+  }
 
   void toggleShowFilters() {
     setState(() {
@@ -138,7 +120,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
 
   void loadMore() {
     setState(() {
-      if (currentIndex + 2 < inquiries.length) {
+      if (currentIndex + 2 < filteredInquiries.length) {
         currentIndex += 2;
       }
     });
@@ -157,15 +139,18 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Column(
-          spacing: 10, // Flutter 3.29+ feature
-          children: [
-            _buildSearchRow(),
-            if (showFilters) _buildFilters(),
-            Expanded(child: _buildInquiryList()),
-            if (currentIndex + 2 < inquiries.length) _buildNextButton(),
-          ],
-        ),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                spacing: 10,
+                children: [
+                  _buildSearchRow(),
+                  if (showFilters) _buildFilters(),
+                  Expanded(child: _buildInquiryList()),
+                  if (currentIndex + 2 < filteredInquiries.length)
+                    _buildNextButton(),
+                ],
+              ),
       ),
     );
   }
@@ -175,20 +160,23 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
       spacing: 10,
       children: [
         Expanded(
-            child: CustomSearchBar(
-          enable: true,
-          controller: _searchController,
-          hintText: "Search",
-        )),
+          child: CustomSearchBar(
+            enable: true,
+            controller: _searchController,
+            hintText: "Search by anything...",
+            onChanged: (value) => _applyFilters(),
+          ),
+        ),
         GestureDetector(
           onTap: toggleShowFilters,
           child: Container(
             width: 50,
             height: 42,
             decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(width: 1, color: AppColors.greyB2BACD)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(width: 1, color: AppColors.greyB2BACD),
+            ),
             child: CustomImage(
               imagePath: ImageConstants.filterIcon,
               height: 25,
@@ -210,17 +198,26 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
           CustomDropDown(
             value: selectedAgent,
             items: agents,
-            onChanged: (value) => setState(() => selectedAgent = value!),
+            onChanged: (value) {
+              setState(() => selectedAgent = value!);
+              _applyFilters();
+            },
           ),
           CustomDropDown(
             value: selectedDateRange,
             items: dateRanges,
-            onChanged: (value) => setState(() => selectedDateRange = value!),
+            onChanged: (value) {
+              setState(() => selectedDateRange = value!);
+              _applyFilters();
+            },
           ),
           CustomDropDown(
             value: selectedQuality,
             items: qualities,
-            onChanged: (value) => setState(() => selectedQuality = value!),
+            onChanged: (value) {
+              setState(() => selectedQuality = value!);
+              _applyFilters();
+            },
           ),
         ],
       ),
@@ -228,18 +225,26 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
   }
 
   Widget _buildInquiryList() {
+    final displayList = filteredInquiries.take(currentIndex + 2).toList();
+
+    if (displayList.isEmpty) {
+      return const Center(child: Text("No inquiries found."));
+    }
+
     return ListView.builder(
-      itemCount: currentIndex + 2 <= inquiries.length
-          ? currentIndex + 2
-          : inquiries.length,
+      itemCount: displayList.length,
       itemBuilder: (context, index) {
-        final inquiry = inquiries[index];
-        return _buildInquiryCard(inquiry);
+        final inquiry = displayList[index];
+        return AnimatedOpacity(
+          opacity: 1,
+          duration: Duration(milliseconds: 400 + (index * 100)),
+          child: _buildInquiryCard(inquiry),
+        );
       },
     );
   }
 
-  Widget _buildInquiryCard(Map<String, dynamic> inquiry) {
+  Widget _buildInquiryCard(FormDataModel inquiry) {
     return Card(
       color: Colors.white,
       surfaceTintColor: Colors.white,
@@ -248,7 +253,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 10, // Flutter 3.29+ feature
+          spacing: 10,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -265,21 +270,16 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
                       ),
                     ),
                     Text(
-                        '${inquiry['agent']}\nCustomer: ${inquiry['customer']}',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                      '${inquiry.agentName}\nCustomer: ${inquiry.customerName}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
                 Column(
-                  spacing: 5, // Flutter 3.29+ feature
+                  spacing: 5,
                   children: [
-                    Text(inquiry['date']),
-                    Text(inquiry['status'],
-                        style: TextStyle(
-                          color: inquiry['status'] == 'Confirmed'
-                              ? Colors.green
-                              : Colors.red,
-                          fontWeight: FontWeight.bold,
-                        )),
+                    Text(inquiry.dateOnly, style: AppTextStyles.black12_400),
+                    Text(inquiry.timeOnly, style: AppTextStyles.black12_400),
                   ],
                 ),
               ],
@@ -292,17 +292,16 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage> {
     );
   }
 
-  Widget _buildInquiryDetails(Map<String, dynamic> inquiry) {
+  Widget _buildInquiryDetails(FormDataModel inquiry) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 5, // Flutter 3.29+ feature
+      spacing: 5,
       children: [
-        _buildDetailRow('S.No.', inquiry['sNo']),
-        _buildDetailRow('Quality', inquiry['quality']),
-        _buildDetailRow('Weave', inquiry['weave']),
-        _buildDetailRow('Quantity', inquiry['quantity']),
-        _buildDetailRow('Composition', inquiry['composition']),
-        _buildDetailRow('Rate', inquiry['rate']),
+        _buildDetailRow('Quality', inquiry.quality),
+        _buildDetailRow('Weave', inquiry.weave),
+        _buildDetailRow('Quantity', inquiry.quantity),
+        _buildDetailRow('Composition', inquiry.composition),
+        _buildDetailRow('Rate', inquiry.rate),
       ],
     );
   }

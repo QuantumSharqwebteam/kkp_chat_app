@@ -3,7 +3,6 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
 
@@ -42,7 +41,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
 
     try {
       final fetchedCustomerList =
-          await _chatRepo.fetchAgentUserList(widget.agentEmail);
+          await _chatRepo.fetchAssignedCustomerList(widget.agentEmail);
       setState(() {
         customers = fetchedCustomerList;
       });
@@ -113,9 +112,11 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                             ]),
                             child: ListTile(
                               tileColor: Colors.white,
-                              leading: ProfileAvatar(
-                                  image: ImageConstants.userImage,
-                                  isActive: true),
+                              leading: CircleAvatar(
+                                radius: 30,
+                                backgroundImage:
+                                    AssetImage(ImageConstants.userImage),
+                              ),
                               title: Text(
                                 customer['name'] ?? "User",
                                 style: AppTextStyles.black14_600,

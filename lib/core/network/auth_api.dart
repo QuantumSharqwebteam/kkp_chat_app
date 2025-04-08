@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/models/address_model.dart';
 import 'package:kkp_chat_app/data/models/agent.dart';
@@ -327,6 +328,59 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception('Error during signup new agent : $e');
+    }
+  }
+
+  // to assign agent in the assigned agent list who are eligible to get assgigned for chat with customer
+  Future<Map<String, dynamic>> assignAgent({required String email}) async {
+    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/assignAgent");
+    final body = {
+      "agentNames": [email]
+    };
+
+    try {
+      final response = await client.post(
+        url,
+        body: jsonEncode(body),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      final jsonResponse = jsonDecode(response.body);
+      return jsonResponse;
+    } catch (e) {
+      debugPrint("❌ Error assigning agent: $e");
+      throw Exception(
+          "Failed to add agent in the Assigned agent list:${e.toString()}");
+    }
+  }
+
+  Future<bool> removeAssignedAgent({required String email}) async {
+    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/removeAgent");
+    final body = {
+      "agentNames": [email]
+    };
+
+    try {
+      final response = await client.put(
+        url,
+        body: jsonEncode(body),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (jsonResponse["status"] == 200) {
+        debugPrint("✅ ${jsonResponse["message"]}");
+        return true;
+      } else {
+        debugPrint("⚠️ ${jsonResponse["message"]}");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("❌ Error: $e");
+      return false;
     }
   }
 

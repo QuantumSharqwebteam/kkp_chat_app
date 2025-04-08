@@ -3,12 +3,12 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 
 class AgentAvatar extends StatelessWidget {
   final String image;
-  final String status;
+  final bool isOnline;
 
   const AgentAvatar({
     super.key,
     required this.image,
-    required this.status,
+    required this.isOnline,
   });
 
   @override
@@ -18,9 +18,7 @@ class AgentAvatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: status == 'active'
-              ? AppColors.activeGreen
-              : AppColors.inActiveRed,
+          color: isOnline ? AppColors.activeGreen : AppColors.inActiveRed,
           width: 3,
         ),
       ),

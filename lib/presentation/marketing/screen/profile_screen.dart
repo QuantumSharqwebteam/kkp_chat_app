@@ -84,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           CircleAvatar(
             radius: 80,
             backgroundImage: AssetImage("assets/images/user2.png"),
-            foregroundImage: NetworkImage(url ?? ""),
+            // foregroundImage: NetworkImage(url ?? ""),
           ),
           const SizedBox(height: 10),
           Text(

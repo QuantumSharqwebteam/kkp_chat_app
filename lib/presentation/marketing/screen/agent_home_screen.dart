@@ -9,7 +9,7 @@ import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
+import 'package:kkp_chat_app/presentation/marketing/widget/feed_list_card.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
@@ -53,7 +53,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
     try {
       final fetchedCustomerList =
-          await _chatRepo.fetchAgentUserList(widget.agentEmail!);
+          await _chatRepo.fetchAssignedCustomerList(widget.agentEmail!);
       setState(() {
         _assignedCustomers = fetchedCustomerList;
         _filteredCustomers = fetchedCustomerList;
@@ -123,7 +123,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                                 ? Center(
                                     child: Text("No Customers Assigned"),
                                   )
-                                : _buildRecentMessages();
+                                : _buildCustomerInquiriesList();
                           },
                         ),
                       ),
@@ -217,7 +217,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   // }
 
   // Recent Messages List
-  Widget _buildRecentMessages() {
+  Widget _buildCustomerInquiriesList() {
     return ListView.builder(
       itemCount: _filteredCustomers.length,
       physics: AlwaysScrollableScrollPhysics(),
@@ -228,12 +228,13 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             _socketService.getLastSeenTime(assignedCustomer["email"]);
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: RecentMessagesListCard(
+          child: FeedListCard(
             name: assignedCustomer["name"],
             message: "last message",
             image: "assets/images/user3.png",
             isActive: isOnline,
             time: isOnline ? "Online" : lastSeen,
+            enableLongPress: false,
             onTap: () {
               Navigator.push(
                 context,

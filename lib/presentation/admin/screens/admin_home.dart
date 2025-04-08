@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/presentation/admin/widgets/agent_management_list_tile.dart';
 import 'package:kkp_chat_app/presentation/admin/widgets/home_chart.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
@@ -17,32 +22,48 @@ class AdminHome extends StatefulWidget {
 }
 
 class _AdminHomeState extends State<AdminHome> {
-  List<Map<String, dynamic>> agents = [
-    {
-      "title": "Marketing Agent 1",
-      "subtitle": "Rumi",
-      "image": "assets/images/user1.png",
-      "status": "active",
-    },
-    {
-      "title": "Marketing Agent 2",
-      "subtitle": "Riya",
-      "image": "assets/images/user2.png",
-      "status": "active",
-    },
-    {
-      "title": "Marketing Agent 3",
-      "subtitle": "Mariya",
-      "image": "assets/images/user4.png",
-      "status": "inactive",
-    },
-    {
-      "title": "Marketing Agent 4",
-      "subtitle": "Kesi",
-      "image": "assets/images/user5.png",
-      "status": "inactive",
-    },
-  ];
+  final AuthApi _auth = AuthApi();
+  final SocketService _socketService = SocketService();
+  List<Agent> _agentsList = [];
+  bool _isLoading = true;
+
+  StreamSubscription<List<String>>? _statusSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAgents();
+    _statusSubscription = _socketService.statusStream.listen((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchAgents() async {
+    try {
+      List<Agent> agents = await _auth.getAgent();
+      if (mounted) {
+        setState(() {
+          _agentsList = agents;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching agents: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -254,78 +275,97 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildAgentManagementSection() {
-    // Counting Active & Offline Agents
-    int activeCount =
-        agents.where((agent) => agent["status"] == "active").length;
-    int offlineCount =
-        agents.where((agent) => agent["status"] == "inactive").length;
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    // Calculate online and offline agent counts
+    final onlineEmails = _socketService.onlineUsers;
+    final activeCount =
+        _agentsList.where((agent) => onlineEmails.contains(agent.email)).length;
+    final offlineCount = _agentsList.length - activeCount;
+
+    return StreamBuilder<List<String>>(
+      stream: _socketService.statusStream,
+      builder: (context, snapshot) {
+        return Container(
+          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "Agent Management",
-                style: AppTextStyles.black16_700
-                    .copyWith(color: AppColors.black60opac),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Agent Management",
+                    style: AppTextStyles.black16_700
+                        .copyWith(color: AppColors.black60opac),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                          context, MarketingRoutes.agentProfileList);
+                    },
+                    child: Text(
+                      "See All",
+                      style: AppTextStyles.black12_400.copyWith(
+                        color: AppColors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(
-                        context, MarketingRoutes.agentProfileList);
-                  },
-                  child: Text("See All")),
+              // Agent Status Bar
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 2, vertical: 10),
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundEEEDED,
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatusItem(
+                        "Active", activeCount, AppColors.activeGreen),
+                    _buildStatusItem("Offline", offlineCount, AppColors.blue),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 10),
+
+              // Agent List
+              _isLoading
+                  ? Center(child: const CircularProgressIndicator())
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount:
+                          _agentsList.length > 5 ? 5 : _agentsList.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 2,
+                        color: AppColors.dividerD9D9D9,
+                      ),
+                      itemBuilder: (context, index) {
+                        final agent = _agentsList[index];
+                        final isOnline =
+                            _socketService.isUserOnline(agent.email);
+                        return AgentManagementListTile(
+                          title: agent.name,
+                          subtitle: agent.role,
+                          image: ImageConstants.userImage,
+                          isOnline: isOnline,
+                        );
+                      },
+                    ),
             ],
           ),
-          // Agent Status Bar
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 2, vertical: 10),
-            padding: EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundEEEDED,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatusItem("Active", activeCount, AppColors.activeGreen),
-                _buildStatusItem("Offline", offlineCount, AppColors.blue),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 10),
-
-          // Agent List
-          ListView.separated(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: agents.length,
-            separatorBuilder: (context, index) => Divider(
-              height: 2,
-              color: AppColors.dividerD9D9D9,
-            ),
-            itemBuilder: (context, index) {
-              final agent = agents[index];
-              return AgentManagementListTile(
-                title: agent["title"]!,
-                subtitle: agent["subtitle"]!,
-                image: agent["image"]!,
-                status: agent["status"]!,
-              );
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

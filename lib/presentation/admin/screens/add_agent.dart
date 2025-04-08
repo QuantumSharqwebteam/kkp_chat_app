@@ -56,10 +56,12 @@ class _AddAgentState extends State<AddAgent> {
         if (mounted) {
           Utils().showSuccessDialog(context, "Agent Profile created", true);
         }
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          Navigator.pop(context);
-        }
+
+        // adding agent in the assginment list also
+        await assignAgentToList(emailController.text);
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) Navigator.pop(context);
+        });
       } else if (response["status"] == 400 || response["status"] == 401) {
         if (mounted) {
           Utils().showSuccessDialog(context, "${response["message"]}", false);
@@ -70,7 +72,8 @@ class _AddAgentState extends State<AddAgent> {
         }
       } else {
         if (mounted) {
-          Utils().showSuccessDialog(context, "Failed to add Agent!", false);
+          Utils().showSuccessDialog(
+              context, "Failed to add Agent ,Try again later!", false);
         }
       }
     } catch (e) {
@@ -79,6 +82,38 @@ class _AddAgentState extends State<AddAgent> {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> assignAgentToList(String email) async {
+    try {
+      final assignResponse = await _auth.assignAgent(email: email);
+      if (assignResponse["status"] == 200 &&
+          assignResponse["message"] == "agents assigned successfully") {
+        debugPrint("✅ Agent assigned successfully");
+
+        if (mounted) {
+          Utils().showSuccessDialog(
+            context,
+            "Agent added to assigned list successfully",
+            true,
+          );
+        }
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) Navigator.pop(context);
+        });
+      } else {
+        debugPrint("⚠️ Agent assignment failed: ${assignResponse["message"]}");
+        if (mounted) {
+          Utils().showSuccessDialog(
+            context,
+            "Failed to add agent in the assigned list}",
+            false,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("❌ Error assigning agent: ${e.toString()}");
     }
   }
 

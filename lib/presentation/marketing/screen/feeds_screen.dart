@@ -5,11 +5,12 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/network/auth_api.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/data/models/agent.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/widget/filter_button.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
+import 'package:kkp_chat_app/presentation/marketing/widget/feed_list_card.dart';
 
 class FeedsScreen extends StatefulWidget {
   final String? loggedAgentEmail;
@@ -31,6 +32,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
   void initState() {
     super.initState();
     _fetchAgents();
+    pinnedAgentsSet = LocalDbHelper.getPinnedAgents();
     _statusSubscription = _socketService.statusStream.listen((_) {
       if (mounted) {
         setState(() {}); // Forces a rebuild to reflect the new online status
@@ -79,6 +81,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
       } else {
         pinnedAgentsSet.add(agentEmail);
       }
+      LocalDbHelper.savePinnedAgents(pinnedAgentsSet);
     });
   }
 
@@ -185,7 +188,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
         final isOnline = _socketService.isUserOnline(agent.email);
         final String lastSeen = _socketService.getLastSeenTime(agent.email);
 
-        return RecentMessagesListCard(
+        return FeedListCard(
           name: agent.name,
           message: "Hi any update....",
           time: isOnline ? "Online" : lastSeen,

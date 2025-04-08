@@ -11,6 +11,7 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox('CREDENTIALS');
   await Hive.openBox("lastSeenTimeBox");
+  await Hive.openBox('feedBox');
   await dotenv.load(fileName: "keys.env");
   runApp(const MyApp());
 }

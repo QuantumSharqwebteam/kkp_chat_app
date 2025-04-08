@@ -19,6 +19,7 @@ class SocketService {
   bool isChatPageOpen = false;
   List<String> _roomMembers = [];
   // Map<String, DateTime> lastSeenTimes = {};
+  List<String> get onlineUsers => List.from(_roomMembers);
 
   StreamController<List<String>> _statusController =
       StreamController.broadcast();

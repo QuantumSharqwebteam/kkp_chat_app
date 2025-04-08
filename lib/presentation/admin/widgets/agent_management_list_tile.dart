@@ -7,13 +7,13 @@ class AgentManagementListTile extends StatelessWidget {
   final String subtitle;
 
   final String image;
-  final String status;
+  final bool isOnline;
   const AgentManagementListTile(
       {super.key,
       required this.title,
       required this.subtitle,
       required this.image,
-      required this.status});
+      required this.isOnline});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class AgentManagementListTile extends StatelessWidget {
         width: double.maxFinite,
         decoration: BoxDecoration(color: Colors.white),
         child: ListTile(
-          leading: AgentAvatar(image: image, status: status),
+          leading: AgentAvatar(image: image, isOnline: isOnline),
           title: Text(
             title,
             style: AppTextStyles.black16_500,
