@@ -61,6 +61,20 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _handleIncomingCall(dynamic data) {
+    debugPrint(
+        "📞📞📞 Callee ChatScreen: _handleIncomingCall TRIGGERED with data: $data"); // <-- ADD THIS LINE
+    // Data structure from server 'incomingCall' event is expected to be:
+    // { 'from': callerId, 'signal': offerMap, 'callerName': callerName }
+
+    // Perform type checking for safety
+    if (data is! Map<String, dynamic> ||
+        !data.containsKey('from') ||
+        !data.containsKey('signal') ||
+        data['signal'] is! Map<String, dynamic>) {
+      debugPrint("⚠️ Received incoming call signal with invalid format: $data");
+      return;
+    }
+
     final String callerId = data['from'];
     final Map<String, dynamic> offer =
         Map<String, dynamic>.from(data['signal']);

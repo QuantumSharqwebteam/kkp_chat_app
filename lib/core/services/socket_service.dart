@@ -271,9 +271,32 @@ class SocketService {
     debugPrint('🧊 Sending candidate to $targetId: $candidate');
   }
 
-  void terminateCall(String targetId) {
-    debugPrint("📵 [CONNECTION] Terminating call with $targetId");
-    _socket.emit('terminateCall', {'targetId': targetId});
+  // void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
+  //   _socket.on('signalCandidate', (data) {
+  //     debugPrint("📥 [ICE-RECV] Received ICE candidate: $data");
+  //     if (data is Map<String, dynamic>) {
+  //       callback(data);
+  //     } else if (data is Map) {
+  //       callback(Map<String, dynamic>.from(data));
+  //     } else {
+  //       debugPrint("❌ [ICE-ERROR] Invalid signalCandidate format: $data");
+  //     }
+  //   });
+  // }
+
+  // void listenForCallAnswered(Function(dynamic) callback) {
+  //   _socket.on('callAnswered', callback);
+  // }
+
+  // void listenForIncomingCall(Function(dynamic) onIncomingCall) {
+  //   _socket.on('incomingCall', (data) {
+  //     onIncomingCall(data);
+  //   });
+  // }
+
+  void terminateCall(String targetEmail) {
+    debugPrint("📵 [CONNECTION] Terminating call with $targetEmail");
+    _socket.emit('terminateCall', {'targetId': targetEmail});
   }
 
   void listenForIncomingCall(Function(dynamic) callback) {
