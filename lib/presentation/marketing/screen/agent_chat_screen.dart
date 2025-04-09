@@ -69,20 +69,42 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     if (!mounted) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AudioCallScreen(
-          selfId: widget.agentEmail!,
-          targetId: callerId,
-          isCaller: false,
-          callerName: callerName,
-          initialOffer: offer,
-        ),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Incoming Call'),
+        content: Text('$callerName is calling...'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Reject the call
+              _socketService.terminateCall(callerId);
+            },
+            child: Text('Reject'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Answer the call
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AudioCallScreen(
+                    selfId: widget.agentEmail!,
+                    targetId: callerId,
+                    isCaller: false,
+                    callerName: callerName,
+                    initialOffer: offer,
+                  ),
+                ),
+              );
+            },
+            child: Text('Answer'),
+          ),
+        ],
       ),
-    ).then((_) {
-      // Optional: Code to run after the call screen is popped
-    });
+    );
   }
 
   @override
