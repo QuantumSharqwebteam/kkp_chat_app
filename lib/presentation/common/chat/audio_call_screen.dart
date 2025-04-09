@@ -334,7 +334,6 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
     _localStream?.getTracks().forEach((track) {
       track.stop();
-      track.dispose();
     });
     _localStream?.dispose();
     _localStream = null;

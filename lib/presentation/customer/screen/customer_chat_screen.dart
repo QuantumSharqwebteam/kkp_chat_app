@@ -253,10 +253,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           IconButton(
             onPressed: () {
               // Initiate an audio call
-              final String selfEmail = widget.agentEmail!; // Agent is self
+              final String selfEmail = widget.customerEmail!; // Agent is self
               final String targetEmail =
-                  widget.customerEmail!; // Customer is target
-              final String selfName = widget.agentName!;
+                  widget.agentEmail!; // Customer is target
+              final String selfName = widget.customerName!;
 
               // Ensure target email is valid before navigating
               if (targetEmail.isEmpty) {
