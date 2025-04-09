@@ -53,6 +53,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final rateController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [];
+  bool _isListeningForCall = false;
 
   @override
   void initState() {
@@ -61,14 +62,31 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _socketService.listenForIncomingCall(_handleIncomingCall);
+    if (!_isListeningForCall) {
+      _isListeningForCall = true;
+      _socketService.listenForIncomingCall(_handleIncomingCall);
+    }
   }
 
   void _handleIncomingCall(dynamic data) {
-    final String callerId = data['from'];
-    final Map<String, dynamic> offer =
-        Map<String, dynamic>.from(data['signal']);
-    final String callerName =
-        data['callerName']?.toString() ?? 'Unknown Caller';
+    debugPrint('📞 Incoming Call Received: $data');
+
+    if (data is! Map ||
+        data['from'] == null ||
+        data['callerName'] == null ||
+        data['signal'] == null) {
+      debugPrint('⚠️ Invalid incoming call data: $data');
+      return;
+    }
+
+    final callerId = data['from'] as String;
+    final callerName = data['callerName'] as String;
+    final offer = Map<String, dynamic>.from(data['signal']);
+
+    if (callerId.isEmpty || offer.isEmpty) {
+      debugPrint("❌ Missing caller ID or offer in call payload.");
+      return;
+    }
 
     if (!mounted) return;
 
@@ -81,7 +99,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Reject the call
               _socketService.terminateCall(callerId);
             },
             child: Text('Reject'),
@@ -89,16 +106,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Answer the call
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AudioCallScreen(
-                    selfId: widget.customerEmail!,
+                    selfId: widget.agentEmail!,
                     targetId: callerId,
                     isCaller: false,
                     callerName: callerName,
-                    initialOffer: offer,
                   ),
                 ),
               );
