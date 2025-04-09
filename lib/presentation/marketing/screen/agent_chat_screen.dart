@@ -6,7 +6,6 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
-
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -62,48 +61,27 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _handleIncomingCall(dynamic data) {
-    // Data structure from server 'incomingCall' event is expected to be:
-    // { 'from': callerId, 'signal': offerMap, 'callerName': callerName }
-
-    // Perform type checking for safety
-    if (data is! Map<String, dynamic> ||
-        !data.containsKey('from') ||
-        !data.containsKey('signal') ||
-        data['signal'] is! Map<String, dynamic>) {
-      debugPrint("⚠️ Received incoming call signal with invalid format: $data");
-      return;
-    }
-
     final String callerId = data['from'];
-    // Ensure 'signal' is correctly casted
     final Map<String, dynamic> offer =
         Map<String, dynamic>.from(data['signal']);
-    final String callerName = data['callerName']?.toString() ??
-        'Unknown Caller'; // Handle potential null callerName
+    final String callerName =
+        data['callerName']?.toString() ?? 'Unknown Caller';
 
-    // Ensure context is still valid before navigating
     if (!mounted) return;
-
-    debugPrint(
-        "📞 Handling incoming call in ChatScreen from $callerId. Navigating to AudioCallScreen.");
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AudioCallScreen(
-          // In an incoming call:
-          selfId: widget.agentEmail!, // Agent's email is selfId here
-          targetId: callerId, // The ID of the customer calling
-          isCaller: false, // This user (Agent) is the CALLEE
-          callerName: callerName, // Display name of the caller (Customer)
-          // *** Pass the offer data to the AudioCallScreen constructor ***
+          selfId: widget.agentEmail!,
+          targetId: callerId,
+          isCaller: false,
+          callerName: callerName,
           initialOffer: offer,
         ),
       ),
     ).then((_) {
       // Optional: Code to run after the call screen is popped
-      debugPrint("Returned from AudioCallScreen");
-      // Maybe refresh state if needed
     });
   }
 
@@ -138,7 +116,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         "text": data["message"],
         "timeStamp": currentTime,
         "isMe": data["senderId"] == widget.agentEmail,
-        "type": data["type"] ?? "text", // Default to 'text' if not specified
+        "type": data["type"] ?? "text",
         "mediaUrl": data["mediaUrl"],
         "form": data["form"],
       });
@@ -199,7 +177,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      // Upload the image to AWS S3 and get the image URL
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
@@ -208,13 +185,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
-  Future<void> _sendForm() async {
-    _sendMessage(messageText: "Fill details");
-  }
-
   String formatTimestamp(String? timestamp) {
     if (timestamp == null || timestamp.isEmpty) {
-      // Return the current date and time in the desired format
       final currentTime = DateTime.now();
       return DateFormat('hh:mm a').format(currentTime);
     }
@@ -222,7 +194,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       final dateTime = DateTime.parse(timestamp).toLocal();
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
-      // In case of an error, return the current date and time in the desired format
       final currentTime = DateTime.now();
       return DateFormat('hh:mm a').format(currentTime);
     }
@@ -249,7 +220,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         actions: [
           IconButton(
             onPressed: () {
-              // transfer chat
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -266,29 +236,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           ),
           IconButton(
             onPressed: () {
-              // Initiate an audio call
-              final String selfEmail = widget.agentEmail!; // Agent is self
-              final String targetEmail =
-                  widget.customerEmail!; // Customer is target
+              final String selfEmail = widget.agentEmail!;
+              final String targetEmail = widget.customerEmail!;
               final String selfName = widget.agentName!;
 
-              // Ensure target email is valid before navigating
               if (targetEmail.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content:
                         Text("Cannot initiate call: Target user invalid.")));
                 return;
               }
-              debugPrint("🚀 Initiating call from ChatScreen to $targetEmail.");
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AudioCallScreen(
                     selfId: selfEmail,
                     targetId: targetEmail,
-                    isCaller: true, // Agent is the CALLER
-                    callerName: selfName, // Agent's name
-                    // initialOffer is null/not needed when isCaller is true
+                    isCaller: true,
+                    callerName: selfName,
                   ),
                 ),
               );
@@ -329,8 +294,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                       } else if (msg['text'] == 'Fill details') {
                         return FillFormButton(
                           onSubmit: () {
-                            //agent not allowedd to fill the form,
-                          }, //_showFormOverlay,
+                            // Agent not allowed to fill the form
+                          },
                         );
                       }
                       return MessageBubble(
@@ -348,7 +313,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             controller: _chatController,
             onSend: () => _sendMessage(messageText: _chatController.text),
             onSendImage: _pickAndSendImage,
-            onSendForm: _sendForm,
+            onSendForm: () {},
           ),
         ],
       ),
