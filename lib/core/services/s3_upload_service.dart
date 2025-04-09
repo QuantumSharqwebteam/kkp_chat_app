@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
+import 'package:path_provider/path_provider.dart';
 
 class S3UploadService {
   final String accessKey = dotenv.env["AWS_ACCESS_KEY"]!;
@@ -14,11 +16,18 @@ class S3UploadService {
 
   Future<String?> uploadFile(File file) async {
     try {
+      // Compress the image to 80% quality
+      final compressedFile = await compressImage(file, quality: 80);
+      if (compressedFile == null) {
+        debugPrint("Image compression failed.");
+        return null;
+      }
+
       final String isoDate = _getIsoDate();
       final String shortDate = isoDate.substring(0, 8);
       String sanitizedFileName = file.path.split('/').last.replaceAll(
           RegExp(r'[^a-zA-Z0-9._-]'),
-          '_'); //to remove all the unncessary charactes from the path causing issues for uploading image
+          '_'); //to remove all the unnecessary characters from the path causing issues for uploading image
       final String destinationKey =
           "uploads/${DateTime.now().millisecondsSinceEpoch}_$sanitizedFileName";
 
@@ -27,10 +36,11 @@ class S3UploadService {
       final String endpoint = "https://$host/$destinationKey";
 
       // Detect MIME type
-      final mimeType = lookupMimeType(file.path) ?? "application/octet-stream";
+      final mimeType =
+          lookupMimeType(compressedFile.path) ?? "application/octet-stream";
 
       // Read file bytes
-      final List<int> fileBytes = await file.readAsBytes();
+      final List<int> fileBytes = await compressedFile.readAsBytes();
       final String payloadHash = sha256.convert(fileBytes).toString();
 
       // Step 1: Create Canonical Request
@@ -81,6 +91,24 @@ class S3UploadService {
       debugPrint("Upload Error: $e");
       return null;
     }
+  }
+
+  Future<File?> compressImage(File file, {int quality = 80}) async {
+    final tempDir = await getTemporaryDirectory();
+    final path = tempDir.path;
+    int rand = DateTime.now().millisecondsSinceEpoch;
+
+    final XFile? compressedImageXFile =
+        await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      '$path/img_$rand.jpg',
+      quality: quality,
+    );
+
+    // Convert XFile to File
+    return compressedImageXFile != null
+        ? File(compressedImageXFile.path)
+        : null;
   }
 
   /// Generates HMAC signature key

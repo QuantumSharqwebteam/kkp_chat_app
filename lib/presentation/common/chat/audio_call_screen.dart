@@ -83,9 +83,9 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         await createPeerConnection(configuration, offerSdpConstraints);
 
     _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
+      debugPrint('Sending ICE candidate: ${candidate.toMap()}');
       _socketService.sendSignalCandidate(widget.targetId, candidate.toMap());
     };
-
     _peerConnection!.onConnectionState = (RTCPeerConnectionState state) {
       switch (state) {
         case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
@@ -399,7 +399,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           boxShadow: [
             BoxShadow(
                 color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))
