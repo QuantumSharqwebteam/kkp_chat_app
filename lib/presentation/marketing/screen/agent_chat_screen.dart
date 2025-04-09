@@ -62,6 +62,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _handleIncomingCall(dynamic data) {
+    debugPrint(
+        "📞📞📞 Callee ChatScreen: _handleIncomingCall TRIGGERED with data: $data"); // <-- ADD THIS LINE
     // Data structure from server 'incomingCall' event is expected to be:
     // { 'from': callerId, 'signal': offerMap, 'callerName': callerName }
 
