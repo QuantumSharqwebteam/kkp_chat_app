@@ -48,17 +48,22 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
     try {
       await _createPeerConnection();
+
+      // 🔧 CHANGE: check for null after peer connection creation
+      if (_peerConnection == null) {
+        _handleCallError("PeerConnection failed to initialize");
+        return;
+      }
+
       await _setupLocalMedia();
       _setupSocketListeners();
 
       if (widget.isCaller) {
         await _makeOffer();
-      } else if (widget.initialOffer != null) {
-        await handleIncomingOffer(widget.initialOffer!);
-      } else {
-        _handleCallError("Missing call initiation data.");
       }
+      // 🔧 REMOVED: handling of widget.initialOffer - moved to socket
     } catch (e) {
+      debugPrint("Init call error: $e");
       _handleCallError("Initialization failed");
     }
   }
@@ -134,12 +139,18 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   void _setupSocketListeners() {
+    // For caller - receive answer
     _socketService.listenForCallAnswered((answerMap) async {
       if (!widget.isCaller || _peerConnection == null) return;
-      final answer = RTCSessionDescription(answerMap['sdp'], answerMap['type']);
-      await _peerConnection?.setRemoteDescription(answer);
+      final sdp = answerMap['sdp'];
+      final type = answerMap['type'];
+      if (sdp != null && type != null) {
+        final answer = RTCSessionDescription(sdp, type);
+        await _peerConnection?.setRemoteDescription(answer);
+      }
     });
 
+    // Receive ICE candidates
     _socketService.listenForSignalCandidate((candidateMap) {
       if (_peerConnection == null) return;
       final candidate = RTCIceCandidate(
@@ -150,23 +161,48 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       _peerConnection?.addCandidate(candidate);
     });
 
+    // Handle peer hang up
     _socketService.listenForCallTerminated((data) {
       _handleCallEnd(isPeerHangup: true);
     });
+
+    // ✅ NEW: treat `incomingCall` as offer for callee
+    _socketService.listenForIncomingCall((data) async {
+      if (_peerConnection == null || widget.isCaller) return;
+
+      final signal = data['signal'];
+      final from = data['from'];
+      final name = data['name'];
+      if (signal != null && signal['sdp'] != null && signal['type'] != null) {
+        final offer = RTCSessionDescription(signal['sdp'], signal['type']);
+        await _peerConnection!.setRemoteDescription(offer);
+        final answer = await _peerConnection!.createAnswer();
+        await _peerConnection!.setLocalDescription(answer);
+
+        _socketService.answerCall(
+          targetEmail: from, // send back to original caller
+          answerData: answer.toMap(),
+        );
+
+        setState(() {
+          _callConnected = true;
+        });
+      }
+    });
   }
 
-  Future<void> handleIncomingOffer(Map<String, dynamic> offerMap) async {
-    if (widget.isCaller || _peerConnection == null) return;
+  // Future<void> handleIncomingOffer(Map<String, dynamic> offerMap) async {
+  //   if (widget.isCaller || _peerConnection == null) return;
 
-    final offer = RTCSessionDescription(offerMap['sdp'], offerMap['type']);
-    await _peerConnection!.setRemoteDescription(offer);
-    final answer = await _peerConnection!.createAnswer();
-    await _peerConnection!.setLocalDescription(answer);
-    _socketService.answerCall(
-      targetEmail: widget.targetId,
-      answerData: answer.toMap(),
-    );
-  }
+  //   final offer = RTCSessionDescription(offerMap['sdp'], offerMap['type']);
+  //   await _peerConnection!.setRemoteDescription(offer);
+  //   final answer = await _peerConnection!.createAnswer();
+  //   await _peerConnection!.setLocalDescription(answer);
+  //   _socketService.answerCall(
+  //     targetEmail: widget.targetId,
+  //     answerData: answer.toMap(),
+  //   );
+  // }
 
   void _connectCall() {
     if (mounted && !_callConnected) {
@@ -220,7 +256,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && Navigator.canPop(context)) {
+      if (mounted) {
         Navigator.pop(context);
       }
     });
@@ -369,9 +405,21 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
                   ),
                   FloatingActionButton(
                     heroTag: 'acceptCallBtn_${widget.targetId}',
-                    onPressed: () {
-                      debugPrint(
-                          "Accept button pressed - connection process initiated.");
+                    onPressed: () async {
+                      // You might also want to ensure media and peer connection are ready
+                      final signal =
+                          widget.initialOffer?['signal']; // optional safety
+                      if (signal != null) {
+                        final offer = RTCSessionDescription(
+                            signal['sdp'], signal['type']);
+                        await _peerConnection!.setRemoteDescription(offer);
+                        final answer = await _peerConnection!.createAnswer();
+                        await _peerConnection!.setLocalDescription(answer);
+                        _socketService.answerCall(
+                          targetEmail: widget.targetId,
+                          answerData: answer.toMap(),
+                        );
+                      }
                     },
                     backgroundColor: Colors.green,
                     child: Icon(Icons.call, color: Colors.white),

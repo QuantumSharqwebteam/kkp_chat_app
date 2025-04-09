@@ -302,6 +302,13 @@ class SocketService {
   void listenForIncomingCall(Function(dynamic) callback) {
     _onIncomingCall = callback;
   }
+  // void listenForIncomingCall(Function(Map<String, dynamic>) onIncomingCall) {
+  //   _socket.on('incomingCall', (data) {
+  //     if (data is Map<String, dynamic>) {
+  //       onIncomingCall(data);
+  //     }
+  //   });
+  // }
 
   void listenForCallAnswered(Function(Map<String, dynamic>) callback) {
     _onCallAnswered = callback;
