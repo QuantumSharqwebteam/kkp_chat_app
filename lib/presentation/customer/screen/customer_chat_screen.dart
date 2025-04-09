@@ -67,16 +67,49 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingCall(dynamic data) {
+    // Data structure from server 'incomingCall' event is expected to be:
+    // { 'from': callerId, 'signal': offerMap, 'callerName': callerName }
+
+    // Perform type checking for safety
+    if (data is! Map<String, dynamic> ||
+        !data.containsKey('from') ||
+        !data.containsKey('signal') ||
+        data['signal'] is! Map<String, dynamic>) {
+      debugPrint("⚠️ Received incoming call signal with invalid format: $data");
+      return;
+    }
+
+    final String callerId = data['from'];
+    // Ensure 'signal' is correctly casted
+    final Map<String, dynamic> offer =
+        Map<String, dynamic>.from(data['signal']);
+    final String callerName = data['callerName']?.toString() ??
+        'Unknown Caller'; // Handle potential null callerName
+
+    // Ensure context is still valid before navigating
+    if (!mounted) return;
+
+    debugPrint(
+        "📞 Handling incoming call in ChatScreen from $callerId. Navigating to AudioCallScreen.");
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AudioCallScreen(
-          selfId: widget.customerEmail!,
-          targetId: data['from'],
-          isCaller: false,
+          // In an incoming call:
+          selfId: widget.agentEmail!, // Agent's email is selfId here
+          targetId: callerId, // The ID of the customer calling
+          isCaller: false, // This user (Agent) is the CALLEE
+          callerName: callerName, // Display name of the caller (Customer)
+          // *** Pass the offer data to the AudioCallScreen constructor ***
+          initialOffer: offer,
         ),
       ),
-    );
+    ).then((_) {
+      // Optional: Code to run after the call screen is popped
+      debugPrint("Returned from AudioCallScreen");
+      // Maybe refresh state if needed
+    });
   }
 
   @override
@@ -219,13 +252,29 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           // ),
           IconButton(
             onPressed: () {
+              // Initiate an audio call
+              final String selfEmail = widget.agentEmail!; // Agent is self
+              final String targetEmail =
+                  widget.customerEmail!; // Customer is target
+              final String selfName = widget.agentName!;
+
+              // Ensure target email is valid before navigating
+              if (targetEmail.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content:
+                        Text("Cannot initiate call: Target user invalid.")));
+                return;
+              }
+              debugPrint("🚀 Initiating call from ChatScreen to $targetEmail.");
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => AudioCallScreen(
-                    selfId: widget.customerEmail!,
-                    targetId: widget.agentEmail!,
-                    isCaller: true,
+                    selfId: selfEmail,
+                    targetId: targetEmail,
+                    isCaller: true, // Agent is the CALLER
+                    callerName: selfName, // Agent's name
+                    // initialOffer is null/not needed when isCaller is true
                   ),
                 ),
               );

@@ -15,6 +15,12 @@ class SocketService {
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
+  Function(dynamic)? _onIncomingCall; // Callback for incoming call signal
+  Function(Map<String, dynamic>)?
+      _onCallAnswered; // Callback for call answered signal
+  Function(Map<String, dynamic>)?
+      _onSignalCandidate; // Callback for ICE candidate signal
+  Function(dynamic)? _onCallTerminated; // Callback for call terminated signal
 
   bool isChatPageOpen = false;
   List<String> _roomMembers = [];
@@ -62,7 +68,41 @@ class SocketService {
         _showPushNotification(data);
       }
     });
+    // --- WebRTC Signaling Listeners (using the declared callback variables) ---
+    _socket.on('incomingCall', (data) {
+      debugPrint('📞 Incoming Call Received: $data');
+      _onIncomingCall?.call(data); // Use the assigned callback
+    });
 
+    _socket.on('callAnswered', (data) {
+      debugPrint('✅ Call Answered Received: $data');
+      // Ensure data structure includes 'answer' as expected by AudioCallScreen
+      if (data is Map<String, dynamic> && data.containsKey('answer')) {
+        _onCallAnswered?.call(data['answer']);
+      } else {
+        debugPrint('⚠️ Call Answered data format incorrect: $data');
+        // Optionally call with the raw data if the handler can manage it
+        // _onCallAnswered?.call(Map<String, dynamic>.from(data));
+      }
+    });
+
+    _socket.on('signalCandidate', (data) {
+      debugPrint('🧊 Signal Candidate Received: $data');
+      // Ensure data structure includes 'candidate'
+      if (data is Map<String, dynamic> && data.containsKey('candidate')) {
+        _onSignalCandidate?.call(data['candidate']);
+      } else {
+        debugPrint('⚠️ Signal Candidate data format incorrect: $data');
+        // Optionally call with the raw data if the handler can manage it
+        // _onSignalCandidate?.call(Map<String, dynamic>.from(data));
+      }
+    });
+
+    _socket.on('callTerminated', (data) {
+      debugPrint('❌ Call Terminated Received: $data');
+      _onCallTerminated?.call(data); // Pass the whole data payload
+    });
+    // --- End WebRTC Listeners ---
     _socket.onDisconnect((_) {
       _isConnected = false;
       for (String email in _roomMembers) {
@@ -205,69 +245,100 @@ class SocketService {
     }
   }
 
-  // Send offer or answer
-  void initiateCall(String targetEmail, Map<String, dynamic> signalData,
-      String senderEmail, String senderName) {
-    debugPrint("📞 [OFFER] Sending offer to $targetEmail: $signalData");
+  // --- WebRTC Signaling Emitters ---
+
+  // Called by the initiator of the call
+  void initiateCall(String targetEmail, Map<String, dynamic> offer,
+      String selfId, String callerName) {
+    if (!_isConnected) {
+      debugPrint("📡 Socket not connected. Cannot initiate call.");
+      return;
+    }
     _socket.emit('initiateCall', {
-      'targetId': targetEmail,
-      'signalData': signalData,
-      'senderId': senderEmail,
-      'senderName': senderName,
+      'to': targetEmail, // Use 'to'
+      'from': selfId,
+      'callerName': callerName,
+      'signal': offer,
     });
+    debugPrint('🚀 Initiating call to $targetEmail');
   }
 
-  void listenForIncomingCall(Function(dynamic) onIncomingCall) {
-    _socket.on('incomingCall', (data) {
-      onIncomingCall(data);
-    });
-  }
-
-  void answerCall({
-    required String targetSocketId,
-    required Map<String, dynamic> answerData,
-    String mediaType = 'audio',
-    bool mediaStatus = true,
-  }) {
-    debugPrint("📞 [ANSWER] Sending answer to $targetSocketId: $answerData");
+  // Called by the receiver of the call to send the answer back
+  void answerCall(
+      {required String targetEmail, required Map<String, dynamic> answerData}) {
+    if (!_isConnected) {
+      debugPrint("📡 Socket not connected. Cannot answer call.");
+      return;
+    }
     _socket.emit('answerCall', {
-      'to': targetSocketId,
-      'sdp': answerData['sdp'],
-      'type': answerData['type'],
-      'mediaType': mediaType,
-      'mediaStatus': mediaStatus,
+      'to': targetEmail, // Use 'to', targetEmail is the original caller's email
+      'signal': answerData,
     });
+    debugPrint('✅ Answering call to $targetEmail');
   }
 
+  // Called by both peers to exchange ICE candidates
   void sendSignalCandidate(String targetId, Map<String, dynamic> candidate) {
-    debugPrint("📤 [ICE-SEND] Sending ICE candidate to $targetId: $candidate");
+    if (!_isConnected) {
+      debugPrint("📡 Socket not connected. Cannot send candidate.");
+      return;
+    }
     _socket.emit('signalCandidate', {
-      'targetId': targetId,
+      'to': targetId,
       'candidate': candidate,
     });
+    debugPrint('🧊 Sending candidate to $targetId: $candidate');
   }
 
-  void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
-    _socket.on('signalCandidate', (data) {
-      debugPrint("📥 [ICE-RECV] Received ICE candidate: $data");
-      if (data is Map<String, dynamic>) {
-        callback(data);
-      } else if (data is Map) {
-        callback(Map<String, dynamic>.from(data));
-      } else {
-        debugPrint("❌ [ICE-ERROR] Invalid signalCandidate format: $data");
-      }
-    });
-  }
+  // void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
+  //   _socket.on('signalCandidate', (data) {
+  //     debugPrint("📥 [ICE-RECV] Received ICE candidate: $data");
+  //     if (data is Map<String, dynamic>) {
+  //       callback(data);
+  //     } else if (data is Map) {
+  //       callback(Map<String, dynamic>.from(data));
+  //     } else {
+  //       debugPrint("❌ [ICE-ERROR] Invalid signalCandidate format: $data");
+  //     }
+  //   });
+  // }
 
-  void listenForCallAnswered(Function(dynamic) callback) {
-    _socket.on('callAnswered', callback);
-  }
+  // void listenForCallAnswered(Function(dynamic) callback) {
+  //   _socket.on('callAnswered', callback);
+  // }
+  // void listenForIncomingCall(Function(dynamic) onIncomingCall) {
+  //   _socket.on('incomingCall', (data) {
+  //     onIncomingCall(data);
+  //   });
+  // }
 
   void terminateCall(String targetEmail) {
     debugPrint("📵 [CONNECTION] Terminating call with $targetEmail");
     _socket.emit('terminateCall', {'targetId': targetEmail});
   }
+
+  // --- WebRTC Signaling Listener Setters ---
+
+  // Used by Chat screens to set the callback for incoming call offers
+  void listenForIncomingCall(Function(dynamic) callback) {
+    _onIncomingCall = callback;
+  }
+
+  // Used by AudioCallScreen to set the callback for the answer
+  void listenForCallAnswered(Function(Map<String, dynamic>) callback) {
+    _onCallAnswered = callback;
+  }
+
+  // Used by AudioCallScreen to set the callback for ICE candidates
+  void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
+    _onSignalCandidate = callback;
+  }
+
+  // Used by AudioCallScreen to set the callback for the hang-up signal
+  void listenForCallTerminated(Function(dynamic) callback) {
+    _onCallTerminated = callback;
+  }
+  // --- End Listener Setters ---
 
   void disconnect() {
     if (_isConnected) {
