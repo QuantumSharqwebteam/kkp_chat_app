@@ -30,7 +30,7 @@ class AgentChatScreen extends StatefulWidget {
     this.customerImage = ImageConstants.userImage,
     this.agentName = "Agent N/A",
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail = "customer@gmail.com",
+    this.customerEmail = "prabhujivats@gmail.com",
     this.agentEmail = "agent@gmail.com",
   });
 

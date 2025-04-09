@@ -1,0 +1,2 @@
+/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/x86/CMakeFiles/edit_cache.dir
+/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/x86/CMakeFiles/rebuild_cache.dir
