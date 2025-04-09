@@ -63,6 +63,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.listenForIncomingCall(_handleIncomingCall);
+  }
+
+  void _handleIncomingCall(dynamic data) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AudioCallScreen(
+          selfId: widget.customerEmail!,
+          targetId: data['from'],
+          isCaller: false,
+        ),
+      ),
+    );
   }
 
   @override

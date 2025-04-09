@@ -26,6 +26,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   MediaStream? _localStream;
   Timer? _callTimer;
   int _elapsedSeconds = 0;
+  bool _callConnected = false;
 
   @override
   void initState() {
@@ -34,7 +35,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   }
 
   Future<void> _initCall() async {
-    await WebRTC.initialize(); // required once app-wide
+    await WebRTC.initialize();
     await _createPeerConnection();
     await _setupMediaStream();
     _setupSocketListeners();
@@ -98,7 +99,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         answerData: answer.toMap(),
       );
 
-      _startCallTimer(); // Start timer after answering
+      _connectCall();
     });
 
     SocketService().listenForCallAnswered((answerMap) async {
@@ -109,7 +110,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
       await _peerConnection?.setRemoteDescription(answer);
 
-      _startCallTimer(); // Start timer after receiving answer
+      _connectCall();
     });
 
     SocketService().listenForSignalCandidate((candidateMap) {
@@ -120,6 +121,15 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       );
       _peerConnection?.addCandidate(candidate);
     });
+  }
+
+  void _connectCall() {
+    if (!_callConnected) {
+      setState(() {
+        _callConnected = true;
+      });
+      _startCallTimer();
+    }
   }
 
   void _startCallTimer() {
@@ -161,65 +171,89 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            const SizedBox(height: 10),
-            Column(
-              children: [
-                Text(
-                  widget.targetId,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  _formattedDuration(),
-                  style: const TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-              ],
-            ),
-            const CircleAvatar(
-              radius: 70,
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.person, size: 60, color: Colors.white),
-            ),
-            Container(
-              padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppColors.black60opac),
-              child: Row(
+      body: _callConnected
+          ? Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      //  Speaker toggle logic
-                    },
-                    icon: const Icon(Icons.volume_up, color: Colors.white),
-                    color: Colors.grey[800],
-                    iconSize: 28,
+                  const SizedBox(height: 10),
+                  Column(
+                    children: [
+                      Text(
+                        widget.targetId,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _formattedDuration(),
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black54),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Mute/unmute logic
-                    },
-                    icon: const Icon(Icons.mic_off, color: Colors.white),
-                    color: Colors.grey[800],
-                    iconSize: 28,
+                  const CircleAvatar(
+                    radius: 70,
+                    backgroundColor: Colors.grey,
+                    child: Icon(Icons.person, size: 60, color: Colors.white),
                   ),
-                  IconButton(
-                    onPressed: _hangUp,
-                    icon: const Icon(Icons.call_end, color: Colors.red),
-                    iconSize: 40,
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.black60opac,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            //  Speaker toggle logic
+                          },
+                          icon:
+                              const Icon(Icons.volume_up, color: Colors.white),
+                          iconSize: 28,
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            // Mute/unmute logic
+                          },
+                          icon: const Icon(Icons.mic_off, color: Colors.white),
+                          iconSize: 28,
+                        ),
+                        IconButton(
+                          onPressed: _hangUp,
+                          icon: const Icon(Icons.call_end, color: Colors.red),
+                          iconSize: 40,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
+            )
+          : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: Colors.blue),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Ringing...",
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _hangUp,
+                    icon: const Icon(Icons.call_end, color: Colors.white),
+                    label: const Text("Cancel"),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  )
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

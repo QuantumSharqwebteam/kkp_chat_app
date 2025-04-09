@@ -208,6 +208,7 @@ class SocketService {
   // Send offer or answer
   void initiateCall(String targetEmail, Map<String, dynamic> signalData,
       String senderEmail, String senderName) {
+    debugPrint("📞 [OFFER] Sending offer to $targetEmail: $signalData");
     _socket.emit('initiateCall', {
       'targetId': targetEmail,
       'signalData': signalData,
@@ -224,10 +225,11 @@ class SocketService {
 
   void answerCall({
     required String targetSocketId,
-    required Map<String, dynamic> answerData, // should include 'sdp' and 'type'
+    required Map<String, dynamic> answerData,
     String mediaType = 'audio',
     bool mediaStatus = true,
   }) {
+    debugPrint("📞 [ANSWER] Sending answer to $targetSocketId: $answerData");
     _socket.emit('answerCall', {
       'to': targetSocketId,
       'sdp': answerData['sdp'],
@@ -238,6 +240,7 @@ class SocketService {
   }
 
   void sendSignalCandidate(String targetId, Map<String, dynamic> candidate) {
+    debugPrint("📤 [ICE-SEND] Sending ICE candidate to $targetId: $candidate");
     _socket.emit('signalCandidate', {
       'targetId': targetId,
       'candidate': candidate,
@@ -246,12 +249,13 @@ class SocketService {
 
   void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
     _socket.on('signalCandidate', (data) {
+      debugPrint("📥 [ICE-RECV] Received ICE candidate: $data");
       if (data is Map<String, dynamic>) {
         callback(data);
       } else if (data is Map) {
         callback(Map<String, dynamic>.from(data));
       } else {
-        debugPrint("Invalid signalCandidate format: $data");
+        debugPrint("❌ [ICE-ERROR] Invalid signalCandidate format: $data");
       }
     });
   }
@@ -261,6 +265,7 @@ class SocketService {
   }
 
   void terminateCall(String targetEmail) {
+    debugPrint("📵 [CONNECTION] Terminating call with $targetEmail");
     _socket.emit('terminateCall', {'targetId': targetEmail});
   }
 
