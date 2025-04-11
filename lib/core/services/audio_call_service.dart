@@ -67,19 +67,20 @@ class AudioCallService {
       });
       _localRenderer.srcObject = _localStream;
 
+      // ✅ Fix: use correct key from signalData
       RTCSessionDescription offer = RTCSessionDescription(
         signalData['sdp'],
         signalData['type'],
       );
       await _peerConnection!.setRemoteDescription(offer);
-      _remoteDescriptionSet = true; // ✅ Set flag
+      _remoteDescriptionSet = true;
 
       RTCSessionDescription answer = await _peerConnection!.createAnswer({});
       await _peerConnection!.setLocalDescription(answer);
 
       _socketService.answerCall(
         to: callerId,
-        signalData: answer.toMap(),
+        signalData: answer.toMap(), // ✅ consistent key usage
       );
       debugPrint('📢 Answer sent to $callerId');
     } catch (e) {
@@ -107,10 +108,10 @@ class AudioCallService {
 
       _peerConnection!.onIceCandidate = (candidate) async {
         if (_remoteDescriptionSet) {
-          _peerConnection!.addCandidate(candidate); // 🔄 changed
+          _peerConnection!.addCandidate(candidate); // ✅ updated logic
           debugPrint('🧊 ICE candidate added directly');
         } else {
-          _iceCandidates.add(candidate); // 🔄 changed
+          _iceCandidates.add(candidate); // ✅ buffer
           debugPrint('🧊 ICE candidate buffered');
         }
       };
@@ -155,18 +156,25 @@ class AudioCallService {
 
   void _handleCallAnswered(Map<String, dynamic> data) async {
     try {
+      // ✅ Fix: use correct key, not 'sdpAnswer'
+      final signalData = data['signalData'];
+      if (signalData == null) {
+        debugPrint('❌ signalData is null!');
+        return;
+      }
+
       RTCSessionDescription answer = RTCSessionDescription(
-        data['sdpAnswer']['sdp'],
-        data['sdpAnswer']['type'],
+        signalData['sdp'],
+        signalData['type'],
       );
       await _peerConnection!.setRemoteDescription(answer);
-      _remoteDescriptionSet = true; // ✅ Set flag
+      _remoteDescriptionSet = true;
       debugPrint('📢 Call answered, remote description set');
 
       for (RTCIceCandidate candidate in _iceCandidates) {
         _peerConnection!.addCandidate(candidate);
       }
-      _iceCandidates.clear(); // ✅ Clear buffered candidates
+      _iceCandidates.clear();
     } catch (e) {
       debugPrint('⚠️ Error setting remote description: $e');
     }
@@ -180,7 +188,7 @@ class AudioCallService {
       _localRenderer.dispose();
       _remoteRenderer.dispose();
       _iceCandidates.clear();
-      _remoteDescriptionSet = false; // ✅ Reset flag
+      _remoteDescriptionSet = false;
       debugPrint('🔄 Resources disposed');
     } catch (e) {
       debugPrint('⚠️ Error handling call termination: $e');
@@ -196,10 +204,10 @@ class AudioCallService {
       );
 
       if (_remoteDescriptionSet) {
-        _peerConnection!.addCandidate(candidate); // ✅ Conditionally add
+        _peerConnection!.addCandidate(candidate);
         debugPrint('🧊 ICE candidate added directly');
       } else {
-        _iceCandidates.add(candidate); // ✅ Buffer candidate
+        _iceCandidates.add(candidate);
         debugPrint('🧊 ICE candidate buffered');
       }
     } catch (e) {
@@ -223,8 +231,8 @@ class AudioCallService {
       _localStream?.dispose();
       _localRenderer.dispose();
       _remoteRenderer.dispose();
-      _iceCandidates.clear(); // ✅ Ensure buffer is cleared
-      _remoteDescriptionSet = false; // ✅ Reset flag
+      _iceCandidates.clear();
+      _remoteDescriptionSet = false;
       debugPrint('🔄 AudioCallService disposed');
     } catch (e) {
       debugPrint('⚠️ Error disposing AudioCallService: $e');

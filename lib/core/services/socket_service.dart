@@ -253,7 +253,7 @@ class SocketService {
     required String senderId,
     required String senderName,
   }) {
-    debugPrint("📞 Sending offer: $signalData");
+    debugPrint("📞 Sending offer: $signalData"); // ✅ ADDED
 
     if (_isConnected) {
       _socket.emit('initiateCall', {
@@ -272,7 +272,7 @@ class SocketService {
     required dynamic signalData,
   }) {
     if (_isConnected) {
-      debugPrint("✅ Sending answer: $signalData");
+      debugPrint("✅ Sending answer: $signalData"); // ✅ ADDED
       _socket.emit('answerCall', {
         'to': to,
         'signalData': signalData,
@@ -286,6 +286,7 @@ class SocketService {
     required String targetId,
   }) {
     if (_isConnected) {
+      debugPrint("❌ Sending terminate call to $targetId"); // ✅ ADDED
       _socket.emit('terminateCall', {
         'targetId': targetId,
       });
@@ -299,7 +300,7 @@ class SocketService {
     required dynamic candidate,
   }) {
     if (_isConnected) {
-      debugPrint("🧊 Sending ICE candidate: $candidate");
+      debugPrint("🧊 Sending ICE candidate: $candidate"); // ✅ ADDED
       _socket.emit('signalCandidate', {
         'to': to,
         'candidate': candidate,
