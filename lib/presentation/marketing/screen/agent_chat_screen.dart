@@ -67,22 +67,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _handleIncomingCall(dynamic data) {
-    debugPrint(
-        "📞📞📞 Callee ChatScreen: _handleIncomingCall TRIGGERED with data: $data");
+    debugPrint('📞 Incoming Call Received: $data');
 
-    if (data is! Map<String, dynamic> ||
-        !data.containsKey('from') ||
-        !data.containsKey('signal') ||
-        data['signal'] is! Map<String, dynamic>) {
-      debugPrint("⚠️ Received incoming call signal with invalid format: $data");
+    if (data is! Map ||
+        data['from'] == null ||
+        data['callerName'] == null ||
+        data['signal'] == null) {
+      debugPrint('⚠️ Invalid incoming call data: $data');
       return;
     }
 
-    final String callerId = data['from'];
-    final Map<String, dynamic> offer =
-        Map<String, dynamic>.from(data['signal']);
-    final String callerName =
-        data['callerName']?.toString() ?? 'Unknown Caller';
+    final callerId = data['from'] as String;
+    final callerName = data['callerName'] as String;
+    final offer = Map<String, dynamic>.from(data['signal']);
+
+    if (callerId.isEmpty || offer.isEmpty) {
+      debugPrint("❌ Missing caller ID or offer in call payload.");
+      return;
+    }
 
     if (!mounted) return;
 
@@ -177,7 +179,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
-        "timeStamp": currentTime,
+        "timestamp": currentTime,
         "isMe": data["senderId"] == widget.agentEmail,
         "type": data["type"] ?? "text",
         "mediaUrl": data["mediaUrl"],
@@ -196,7 +198,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
     final currentTime = DateTime.now().toIso8601String();
-
     setState(() {
       messages.add({
         "text": messageText,

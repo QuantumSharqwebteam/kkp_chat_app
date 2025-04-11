@@ -49,7 +49,7 @@ class VoiceCallService {
       await _setupLocalMedia();
       _setupSocketListeners();
 
-      if (!isCaller && offer != null) {
+      if (!isCaller && offer.isNotEmpty) {
         await _handleOffer(offer);
       }
     } catch (e) {
