@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
@@ -231,6 +232,11 @@ class SocketService {
     }
   }
 
+  void terminateCall(String targetEmail) {
+    debugPrint("📵 [CONNECTION] Terminating call with $targetEmail");
+    _socket.emit('terminateCall', {'targetId': targetEmail});
+  }
+
   void initiateCall(String targetEmail, Map<String, dynamic> offer,
       String selfId, String callerName) {
     if (!_isConnected) {
@@ -269,34 +275,6 @@ class SocketService {
       'candidate': candidate,
     });
     debugPrint('🧊 Sending candidate to $targetId: $candidate');
-  }
-
-  // void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
-  //   _socket.on('signalCandidate', (data) {
-  //     debugPrint("📥 [ICE-RECV] Received ICE candidate: $data");
-  //     if (data is Map<String, dynamic>) {
-  //       callback(data);
-  //     } else if (data is Map) {
-  //       callback(Map<String, dynamic>.from(data));
-  //     } else {
-  //       debugPrint("❌ [ICE-ERROR] Invalid signalCandidate format: $data");
-  //     }
-  //   });
-  // }
-
-  // void listenForCallAnswered(Function(dynamic) callback) {
-  //   _socket.on('callAnswered', callback);
-  // }
-
-  // void listenForIncomingCall(Function(dynamic) onIncomingCall) {
-  //   _socket.on('incomingCall', (data) {
-  //     onIncomingCall(data);
-  //   });
-  // }
-
-  void terminateCall(String targetEmail) {
-    debugPrint("📵 [CONNECTION] Terminating call with $targetEmail");
-    _socket.emit('terminateCall', {'targetId': targetEmail});
   }
 
   void listenForIncomingCall(Function(dynamic) callback) {

@@ -7,6 +7,7 @@ class AudioCallScreen extends StatefulWidget {
   final String? targetId;
   final bool isCaller;
   final String? callerName;
+  final Map<String, dynamic>? offer; // Add offer to the constructor
 
   const AudioCallScreen({
     super.key,
@@ -14,6 +15,7 @@ class AudioCallScreen extends StatefulWidget {
     this.targetId,
     required this.isCaller,
     this.callerName,
+    this.offer, // Initialize offer
   });
 
   @override
@@ -43,7 +45,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       ..onCallEnded = _onCallEnded
       ..onError = _onError;
 
-    _voiceCallService.init();
+    if (widget.isCaller) {
+      _voiceCallService.init();
+    } else if (widget.offer != null) {
+      _voiceCallService.initWithOffer(widget.offer!);
+    }
   }
 
   void _onCallConnected() {
@@ -53,6 +59,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   void _onCallEnded(bool isPeerHangup) {
     _callTimer?.cancel();
+    Navigator.pop(context);
   }
 
   void _onError(String message) {
@@ -89,7 +96,6 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   void _hangUp() {
     _voiceCallService.endCall();
-    Navigator.pop(context);
   }
 
   @override
