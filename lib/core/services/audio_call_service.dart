@@ -7,11 +7,11 @@ class AudioCallService {
   factory AudioCallService() => _instance;
 
   final SocketService _socketService = SocketService();
-  RTCVideoRenderer _localRenderer = RTCVideoRenderer();
-  RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
-  List<RTCIceCandidate> _iceCandidates = [];
+  final List<RTCIceCandidate> _iceCandidates = [];
 
   AudioCallService._internal() {
     _initRenderers();
@@ -29,101 +29,130 @@ class AudioCallService {
 
   Future<void> initiateCall(
       String targetId, String senderId, String senderName) async {
-    debugPrint('📞 Initiating call to $targetId');
-    await _initRenderers();
-    await _createPeerConnection();
-    _localStream = await _getUserMedia();
-    _localStream!.getTracks().forEach((track) {
-      _peerConnection!.addTrack(track, _localStream!);
-    });
-    _localRenderer.srcObject = _localStream;
+    try {
+      debugPrint('📞 Initiating call to $targetId');
+      await _initRenderers();
+      await _createPeerConnection();
+      _localStream = await _getUserMedia();
+      _localStream!.getTracks().forEach((track) {
+        _peerConnection!.addTrack(track, _localStream!);
+      });
+      _localRenderer.srcObject = _localStream;
 
-    RTCSessionDescription offer = await _peerConnection!.createOffer();
-    await _peerConnection!.setLocalDescription(offer);
+      RTCSessionDescription offer = await _peerConnection!.createOffer({});
+      await _peerConnection!.setLocalDescription(offer);
 
-    _socketService.initiateCall(
-      targetId: targetId,
-      signalData: offer.toMap(),
-      senderId: senderId,
-      senderName: senderName,
-    );
-    debugPrint('📢 Offer sent to $targetId');
+      _socketService.initiateCall(
+        targetId: targetId,
+        signalData: offer.toMap(),
+        senderId: senderId,
+        senderName: senderName,
+      );
+      debugPrint('📢 Offer sent to $targetId');
+    } catch (e) {
+      debugPrint('⚠️ Error initiating call: $e');
+    }
   }
 
   //answer
   Future<void> answerCall(String callerId, dynamic signalData) async {
-    debugPrint('📞 Answering call from $callerId');
-    await _initRenderers();
-    await _createPeerConnection();
-    _localStream = await _getUserMedia();
-    _localStream!.getTracks().forEach((track) {
-      _peerConnection!.addTrack(track, _localStream!);
-    });
-    _localRenderer.srcObject = _localStream;
+    try {
+      debugPrint('📞 Answering call from $callerId');
+      await _initRenderers();
+      await _createPeerConnection();
+      _localStream = await _getUserMedia();
+      _localStream!.getTracks().forEach((track) {
+        _peerConnection!.addTrack(track, _localStream!);
+      });
+      _localRenderer.srcObject = _localStream;
 
-    RTCSessionDescription offer = RTCSessionDescription(
-      signalData['sdp'],
-      signalData['type'],
-    );
-    await _peerConnection!.setRemoteDescription(offer);
+      RTCSessionDescription offer = RTCSessionDescription(
+        signalData['sdp'],
+        signalData['type'],
+      );
+      await _peerConnection!.setRemoteDescription(offer);
 
-    RTCSessionDescription answer = await _peerConnection!.createAnswer();
-    await _peerConnection!.setLocalDescription(answer);
+      RTCSessionDescription answer = await _peerConnection!.createAnswer({});
+      await _peerConnection!.setLocalDescription(answer);
 
-    _socketService.answerCall(
-      to: callerId,
-      signalData: answer.toMap(),
-    );
-    debugPrint('📢 Answer sent to $callerId');
+      _socketService.answerCall(
+        to: callerId,
+        signalData: answer.toMap(),
+      );
+      debugPrint('📢 Answer sent to $callerId');
+    } catch (e) {
+      debugPrint('⚠️ Error answering call: $e');
+    }
   }
 
   Future<void> _createPeerConnection() async {
-    _peerConnection = await createPeerConnection({
-      'iceServers': [
-        {
-          'urls': [
-            'stun:stun1.l.google.com:19302',
-            'stun:stun2.l.google.com:19302'
-          ]
+    try {
+      _peerConnection = await createPeerConnection({
+        'iceServers': [
+          {
+            'urls': [
+              'stun:stun1.l.google.com:19302',
+              'stun:stun2.l.google.com:19302'
+            ]
+          }
+        ]
+      });
+
+      _peerConnection!.onTrack = (event) {
+        _remoteRenderer.srcObject = event.streams[0];
+        debugPrint('🎥 Remote track added');
+      };
+
+      _peerConnection!.onIceCandidate = (candidate) async {
+        _iceCandidates.add(candidate);
+        final remoteDescription = await _peerConnection!.getRemoteDescription();
+        if (remoteDescription != null && remoteDescription.sdp != null) {
+          _socketService.signalCandidate(
+            to: remoteDescription.sdp!.split(' ')[3],
+            candidate: candidate.toMap(),
+          );
+          debugPrint('🧊 ICE candidate signaled');
+        } else {
+          debugPrint('⚠️ Remote description or SDP is null');
         }
-      ]
-    });
+      };
 
-    _peerConnection!.onTrack = (event) {
-      _remoteRenderer.srcObject = event.streams[0];
-      debugPrint('🎥 Remote track added');
-    };
+      _peerConnection!.onConnectionState = (state) {
+        if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
+          debugPrint('⚠️ Peer connection failed');
+          _handleCallTerminated({});
+        }
+      };
 
-    _peerConnection!.onIceCandidate = (candidate) async {
-      _iceCandidates.add(candidate);
-      final remoteDescription = await _peerConnection!.getRemoteDescription();
-      if (remoteDescription != null && remoteDescription.sdp != null) {
-        _socketService.signalCandidate(
-          to: remoteDescription.sdp!.split(' ')[3],
-          candidate: candidate.toMap(),
-        );
-        debugPrint('🧊 ICE candidate signaled');
-      } else {
-        debugPrint('⚠️ Remote description or SDP is null');
-      }
-    };
-    debugPrint('🔗 Peer connection created');
+      debugPrint('🔗 Peer connection created');
+    } catch (e) {
+      debugPrint('⚠️ Error creating peer connection: $e');
+    }
   }
 
   Future<MediaStream> _getUserMedia() async {
-    final Map<String, dynamic> mediaConstraints = {
-      'audio': true,
-      'video': false,
-    };
-    MediaStream stream =
-        await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    debugPrint('🎤 Local media stream obtained');
-    return stream;
+    try {
+      final Map<String, dynamic> mediaConstraints = {
+        'audio': true,
+        'video': false,
+      };
+      MediaStream stream =
+          await navigator.mediaDevices.getUserMedia(mediaConstraints);
+      debugPrint('🎤 Local media stream obtained');
+      return stream;
+    } catch (e) {
+      debugPrint('⚠️ Error getting user media: $e');
+      rethrow;
+    }
   }
 
   void _handleIncomingCall(Map<String, dynamic> data) {
-    debugPrint('📞 Incoming call from ${data['from']}');
-    // Show call UI and allow user to answer or reject the call
+    try {
+      debugPrint('📞 Incoming call from ${data['from']}');
+      // Show call UI and allow user to answer or reject the call
+    } catch (e) {
+      debugPrint('⚠️ Error handling incoming call: $e');
+    }
   }
 
   void _handleCallAnswered(Map<String, dynamic> data) async {
@@ -144,13 +173,17 @@ class AudioCallService {
   }
 
   void _handleCallTerminated(Map<String, dynamic> data) {
-    debugPrint('📞 Call terminated');
-    _peerConnection?.close();
-    _localStream?.dispose();
-    _localRenderer.dispose();
-    _remoteRenderer.dispose();
-    _iceCandidates.clear();
-    debugPrint('🔄 Resources disposed');
+    try {
+      debugPrint('📞 Call terminated');
+      _peerConnection?.close();
+      _localStream?.dispose();
+      _localRenderer.dispose();
+      _remoteRenderer.dispose();
+      _iceCandidates.clear();
+      debugPrint('🔄 Resources disposed');
+    } catch (e) {
+      debugPrint('⚠️ Error handling call termination: $e');
+    }
   }
 
   void _handleSignalCandidate(Map<String, dynamic> data) {
@@ -168,16 +201,24 @@ class AudioCallService {
   }
 
   void terminateCall(String targetId) {
-    _socketService.terminateCall(targetId: targetId);
-    _handleCallTerminated({});
-    debugPrint('📞 Terminating call to $targetId');
+    try {
+      _socketService.terminateCall(targetId: targetId);
+      _handleCallTerminated({});
+      debugPrint('📞 Terminating call to $targetId');
+    } catch (e) {
+      debugPrint('⚠️ Error terminating call: $e');
+    }
   }
 
   void dispose() {
-    _peerConnection?.close();
-    _localStream?.dispose();
-    _localRenderer.dispose();
-    _remoteRenderer.dispose();
-    debugPrint('🔄 AudioCallService disposed');
+    try {
+      _peerConnection?.close();
+      _localStream?.dispose();
+      _localRenderer.dispose();
+      _remoteRenderer.dispose();
+      debugPrint('🔄 AudioCallService disposed');
+    } catch (e) {
+      debugPrint('⚠️ Error disposing AudioCallService: $e');
+    }
   }
 }
