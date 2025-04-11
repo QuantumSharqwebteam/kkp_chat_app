@@ -16,24 +16,6 @@ import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dar
 import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
 
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/services/voice_call_service.dart';
-import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
-import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
-
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
   final String? customerImage;
