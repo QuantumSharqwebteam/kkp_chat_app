@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-
 import 'package:kkp_chat_app/core/services/voice_call_service.dart';
 
 class AudioCallScreen extends StatefulWidget {
@@ -54,9 +53,6 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   void _onCallEnded(bool isPeerHangup) {
     _callTimer?.cancel();
-    if (mounted) {
-      Navigator.pop(context);
-    }
   }
 
   void _onError(String message) {
@@ -93,6 +89,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   void _hangUp() {
     _voiceCallService.endCall();
+    Navigator.pop(context);
   }
 
   @override

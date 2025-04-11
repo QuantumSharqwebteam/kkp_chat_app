@@ -110,7 +110,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 context,
                 MaterialPageRoute(
                   builder: (context) => AudioCallScreen(
-                    selfId: widget.agentEmail!,
+                    selfId: widget.customerEmail!,
                     targetId: callerId,
                     isCaller: false,
                     callerName: callerName,
