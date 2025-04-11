@@ -6,6 +6,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/presentation/common/chat/customer_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -59,6 +60,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onIncomingCall(_handleIncomingCall);
   }
 
   @override
@@ -93,6 +95,43 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       });
       _scrollToBottom();
     });
+  }
+
+  void _handleIncomingCall(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Incoming Call'),
+          content: Text('Incoming call from ${data['name']}'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Reject'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CustomerAudioCallScreen(
+                      agentEmail: data['from'],
+                      customerEmail: widget.customerEmail!,
+                      customerName: widget.customerName!,
+                      signalData: data['signal'],
+                    ),
+                  ),
+                );
+              },
+              child: Text('Answer'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _sendMessage({

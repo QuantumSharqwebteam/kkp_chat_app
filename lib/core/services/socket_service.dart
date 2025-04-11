@@ -15,6 +15,10 @@ class SocketService {
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
+  Function(Map<String, dynamic>)? _onIncomingCall;
+  Function(Map<String, dynamic>)? _onCallAnswered;
+  Function(Map<String, dynamic>)? _onCallTerminated;
+  Function(Map<String, dynamic>)? _onSignalCandidate;
   bool isChatPageOpen = false;
 
   List<String> _roomMembers = [];
@@ -58,6 +62,30 @@ class SocketService {
         _onMessageReceived!(data);
       } else {
         _showPushNotification(data);
+      }
+    });
+
+    _socket.on('incomingCall', (data) {
+      if (_onIncomingCall != null) {
+        _onIncomingCall!(data);
+      }
+    });
+
+    _socket.on('callAnswered', (data) {
+      if (_onCallAnswered != null) {
+        _onCallAnswered!(data);
+      }
+    });
+
+    _socket.on('callTerminated', (data) {
+      if (_onCallTerminated != null) {
+        _onCallTerminated!(data);
+      }
+    });
+
+    _socket.on('signalCandidate', (data) {
+      if (_onSignalCandidate != null) {
+        _onSignalCandidate!(data);
       }
     });
 
@@ -143,6 +171,22 @@ class SocketService {
     _onMessageReceived = callback;
   }
 
+  void onIncomingCall(Function(Map<String, dynamic>) callback) {
+    _onIncomingCall = callback;
+  }
+
+  void onCallAnswered(Function(Map<String, dynamic>) callback) {
+    _onCallAnswered = callback;
+  }
+
+  void onCallTerminated(Function(Map<String, dynamic>) callback) {
+    _onCallTerminated = callback;
+  }
+
+  void onSignalCandidate(Function(Map<String, dynamic>) callback) {
+    _onSignalCandidate = callback;
+  }
+
   void _attemptReconnect(String userName, String userEmail, String role) {
     if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
       _reconnectAttempts++;
@@ -196,6 +240,64 @@ class SocketService {
       _socket.emit('sendMessage', messageData);
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
+    }
+  }
+
+  void initiateCall({
+    required String targetId,
+    required dynamic signalData,
+    required String senderId,
+    required String senderName,
+  }) {
+    if (_isConnected) {
+      _socket.emit('initiateCall', {
+        'targetId': targetId,
+        'signalData': signalData,
+        'senderId': senderId,
+        'senderName': senderName,
+      });
+    } else {
+      debugPrint('Socket is not connected. Cannot initiate call.');
+    }
+  }
+
+  void answerCall({
+    required String to,
+    required dynamic signalData,
+  }) {
+    if (_isConnected) {
+      _socket.emit('answerCall', {
+        'to': to,
+        'signalData': signalData,
+      });
+    } else {
+      debugPrint('Socket is not connected. Cannot answer call.');
+    }
+  }
+
+  void terminateCall({
+    required String targetId,
+  }) {
+    if (_isConnected) {
+      _socket.emit('terminateCall', {
+        'targetId': targetId,
+      });
+    } else {
+      debugPrint('Socket is not connected. Cannot terminate call.');
+    }
+  }
+
+  void signalCandidate({
+    required String to,
+    required dynamic candidate,
+  }) {
+    if (_isConnected) {
+      _socket.emit('signalCandidate', {
+        'to': to,
+        'candidate': candidate,
+      });
+    } else {
+      debugPrint('Socket is not connected. Cannot signal candidate.');
     }
   }
 
