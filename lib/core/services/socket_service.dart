@@ -66,24 +66,28 @@ class SocketService {
     });
 
     _socket.on('incomingCall', (data) {
+      debugPrint('📥 incomingCall: $data'); // ✅ Log full structure
       if (_onIncomingCall != null) {
         _onIncomingCall!(data);
       }
     });
 
     _socket.on('callAnswered', (data) {
+      debugPrint('📥 callAnswered: $data'); // ✅
       if (_onCallAnswered != null) {
         _onCallAnswered!(data);
       }
     });
 
     _socket.on('callTerminated', (data) {
+      debugPrint('📥 callTerminated: $data'); // ✅
       if (_onCallTerminated != null) {
         _onCallTerminated!(data);
       }
     });
 
     _socket.on('signalCandidate', (data) {
+      debugPrint('📥 signalCandidate: $data'); // ✅
       if (_onSignalCandidate != null) {
         _onSignalCandidate!(data);
       }
@@ -249,6 +253,8 @@ class SocketService {
     required String senderId,
     required String senderName,
   }) {
+    debugPrint("📞 Sending offer: $signalData");
+
     if (_isConnected) {
       _socket.emit('initiateCall', {
         'targetId': targetId,
@@ -266,6 +272,7 @@ class SocketService {
     required dynamic signalData,
   }) {
     if (_isConnected) {
+      debugPrint("✅ Sending answer: $signalData");
       _socket.emit('answerCall', {
         'to': to,
         'signalData': signalData,
@@ -292,6 +299,7 @@ class SocketService {
     required dynamic candidate,
   }) {
     if (_isConnected) {
+      debugPrint("🧊 Sending ICE candidate: $candidate");
       _socket.emit('signalCandidate', {
         'to': to,
         'candidate': candidate,
