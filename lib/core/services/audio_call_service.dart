@@ -13,6 +13,8 @@ class AudioCallService {
   MediaStream? _localStream;
   final List<RTCIceCandidate> _iceCandidates = [];
 
+  bool _remoteDescriptionSet = false; // ✅ Added to track remote description set
+
   AudioCallService._internal() {
     _initRenderers();
     _socketService.onIncomingCall(_handleIncomingCall);
@@ -54,7 +56,6 @@ class AudioCallService {
     }
   }
 
-  //answer
   Future<void> answerCall(String callerId, dynamic signalData) async {
     try {
       debugPrint('📞 Answering call from $callerId');
@@ -71,6 +72,7 @@ class AudioCallService {
         signalData['type'],
       );
       await _peerConnection!.setRemoteDescription(offer);
+      _remoteDescriptionSet = true; // ✅ Set flag
 
       RTCSessionDescription answer = await _peerConnection!.createAnswer({});
       await _peerConnection!.setLocalDescription(answer);
@@ -104,16 +106,12 @@ class AudioCallService {
       };
 
       _peerConnection!.onIceCandidate = (candidate) async {
-        _iceCandidates.add(candidate);
-        final remoteDescription = await _peerConnection!.getRemoteDescription();
-        if (remoteDescription != null && remoteDescription.sdp != null) {
-          _socketService.signalCandidate(
-            to: remoteDescription.sdp!.split(' ')[3],
-            candidate: candidate.toMap(),
-          );
-          debugPrint('🧊 ICE candidate signaled');
+        if (_remoteDescriptionSet) {
+          _peerConnection!.addCandidate(candidate); // 🔄 changed
+          debugPrint('🧊 ICE candidate added directly');
         } else {
-          debugPrint('⚠️ Remote description or SDP is null');
+          _iceCandidates.add(candidate); // 🔄 changed
+          debugPrint('🧊 ICE candidate buffered');
         }
       };
 
@@ -162,11 +160,13 @@ class AudioCallService {
         data['sdpAnswer']['type'],
       );
       await _peerConnection!.setRemoteDescription(answer);
+      _remoteDescriptionSet = true; // ✅ Set flag
       debugPrint('📢 Call answered, remote description set');
 
       for (RTCIceCandidate candidate in _iceCandidates) {
         _peerConnection!.addCandidate(candidate);
       }
+      _iceCandidates.clear(); // ✅ Clear buffered candidates
     } catch (e) {
       debugPrint('⚠️ Error setting remote description: $e');
     }
@@ -180,6 +180,7 @@ class AudioCallService {
       _localRenderer.dispose();
       _remoteRenderer.dispose();
       _iceCandidates.clear();
+      _remoteDescriptionSet = false; // ✅ Reset flag
       debugPrint('🔄 Resources disposed');
     } catch (e) {
       debugPrint('⚠️ Error handling call termination: $e');
@@ -193,8 +194,14 @@ class AudioCallService {
         data['candidate']['sdpMid'],
         data['candidate']['sdpMLineIndex'],
       );
-      _peerConnection!.addCandidate(candidate);
-      debugPrint('🧊 ICE candidate added');
+
+      if (_remoteDescriptionSet) {
+        _peerConnection!.addCandidate(candidate); // ✅ Conditionally add
+        debugPrint('🧊 ICE candidate added directly');
+      } else {
+        _iceCandidates.add(candidate); // ✅ Buffer candidate
+        debugPrint('🧊 ICE candidate buffered');
+      }
     } catch (e) {
       debugPrint('⚠️ Error adding ICE candidate: $e');
     }
@@ -216,6 +223,8 @@ class AudioCallService {
       _localStream?.dispose();
       _localRenderer.dispose();
       _remoteRenderer.dispose();
+      _iceCandidates.clear(); // ✅ Ensure buffer is cleared
+      _remoteDescriptionSet = false; // ✅ Reset flag
       debugPrint('🔄 AudioCallService disposed');
     } catch (e) {
       debugPrint('⚠️ Error disposing AudioCallService: $e');
