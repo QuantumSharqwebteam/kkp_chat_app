@@ -5,6 +5,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/core/services/voice_call_service.dart';
 import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
@@ -101,23 +102,50 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AudioCallScreen(
-                    selfId: widget.agentEmail!,
-                    targetId: callerId,
-                    isCaller: false,
-                    callerName: callerName,
-                  ),
-                ),
-              );
+              _answerCall(callerId, callerName, offer);
             },
             child: Text('Answer'),
           ),
         ],
       ),
     );
+  }
+
+  void _answerCall(
+      String callerId, String callerName, Map<String, dynamic> offer) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AudioCallScreen(
+          selfId: widget.agentEmail!,
+          targetId: callerId,
+          isCaller: false,
+          callerName: callerName,
+        ),
+      ),
+    ).then((_) {
+      // Initialize VoiceCallService with the offer if necessary
+      final voiceCallService = VoiceCallService(
+        selfId: widget.agentEmail!,
+        targetId: callerId,
+        isCaller: false,
+        callerName: callerName,
+      );
+
+      voiceCallService.onCallConnected = () {
+        debugPrint("Call connected");
+      };
+
+      voiceCallService.onCallEnded = (isPeerHangup) {
+        debugPrint("Call ended: $isPeerHangup");
+      };
+
+      voiceCallService.onError = (message) {
+        debugPrint("Call error: $message");
+      };
+
+      voiceCallService.initWithOffer(offer);
+    });
   }
 
   @override

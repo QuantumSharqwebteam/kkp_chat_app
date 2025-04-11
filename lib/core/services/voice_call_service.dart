@@ -43,6 +43,20 @@ class VoiceCallService {
     }
   }
 
+  Future<void> initWithOffer(Map<String, dynamic> offer) async {
+    try {
+      await _createPeerConnection();
+      await _setupLocalMedia();
+      _setupSocketListeners();
+
+      if (!isCaller && offer != null) {
+        await _handleOffer(offer);
+      }
+    } catch (e) {
+      onError?.call("Call initialization with offer failed: $e");
+    }
+  }
+
   Future<void> _createPeerConnection() async {
     final config = {
       'iceServers': [
@@ -96,6 +110,18 @@ class VoiceCallService {
     );
   }
 
+  Future<void> _handleOffer(Map<String, dynamic> offer) async {
+    final desc = RTCSessionDescription(offer['sdp'], offer['type']);
+    await _peerConnection!.setRemoteDescription(desc);
+    final answer = await _peerConnection!.createAnswer();
+    await _peerConnection!.setLocalDescription(answer);
+
+    _socketService.answerCall(
+      targetEmail: targetId,
+      answerData: answer.toMap(),
+    );
+  }
+
   void _setupSocketListeners() {
     _socketService.listenForCallAnswered((answer) async {
       if (!isCaller) return;
@@ -121,15 +147,7 @@ class VoiceCallService {
 
       final signal = data['signal'];
       if (signal['sdp'] != null && signal['type'] != null) {
-        final offer = RTCSessionDescription(signal['sdp'], signal['type']);
-        await _peerConnection!.setRemoteDescription(offer);
-        final answer = await _peerConnection!.createAnswer();
-        await _peerConnection!.setLocalDescription(answer);
-
-        _socketService.answerCall(
-          targetEmail: data['from'],
-          answerData: answer.toMap(),
-        );
+        await _handleOffer(signal);
         onCallConnected?.call();
       }
     });
