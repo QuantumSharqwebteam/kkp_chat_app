@@ -1,4 +1,4 @@
-import 'dart:developer';
+import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'socket_service.dart';
 
@@ -21,13 +21,16 @@ class AudioCallService {
     _socketService.onSignalCandidate(_handleSignalCandidate);
   }
 
-  void _initRenderers() async {
+  Future<void> _initRenderers() async {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
+    debugPrint('📹 Local and remote renderers initialized');
   }
 
   Future<void> initiateCall(
       String targetId, String senderId, String senderName) async {
+    debugPrint('📞 Initiating call to $targetId');
+    await _initRenderers();
     await _createPeerConnection();
     _localStream = await _getUserMedia();
     _localStream!.getTracks().forEach((track) {
@@ -44,9 +47,12 @@ class AudioCallService {
       senderId: senderId,
       senderName: senderName,
     );
+    debugPrint('📢 Offer sent to $targetId');
   }
 
   Future<void> answerCall(String callerId, dynamic signalData) async {
+    debugPrint('📞 Answering call from $callerId');
+    await _initRenderers();
     await _createPeerConnection();
     _localStream = await _getUserMedia();
     _localStream!.getTracks().forEach((track) {
@@ -67,6 +73,7 @@ class AudioCallService {
       to: callerId,
       signalData: answer.toMap(),
     );
+    debugPrint('📢 Answer sent to $callerId');
   }
 
   Future<void> _createPeerConnection() async {
@@ -83,18 +90,23 @@ class AudioCallService {
 
     _peerConnection!.onTrack = (event) {
       _remoteRenderer.srcObject = event.streams[0];
+      debugPrint('🎥 Remote track added');
     };
 
     _peerConnection!.onIceCandidate = (candidate) async {
       _iceCandidates.add(candidate);
       final remoteDescription = await _peerConnection!.getRemoteDescription();
-      if (remoteDescription != null) {
+      if (remoteDescription != null && remoteDescription.sdp != null) {
         _socketService.signalCandidate(
           to: remoteDescription.sdp!.split(' ')[3],
           candidate: candidate.toMap(),
         );
+        debugPrint('🧊 ICE candidate signaled');
+      } else {
+        debugPrint('⚠️ Remote description or SDP is null');
       }
     };
+    debugPrint('🔗 Peer connection created');
   }
 
   Future<MediaStream> _getUserMedia() async {
@@ -104,12 +116,12 @@ class AudioCallService {
     };
     MediaStream stream =
         await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    debugPrint('🎤 Local media stream obtained');
     return stream;
   }
 
   void _handleIncomingCall(Map<String, dynamic> data) {
-    // Handle incoming call notification
-    log('Incoming call from ${data['from']}');
+    debugPrint('📞 Incoming call from ${data['from']}');
     // Show call UI and allow user to answer or reject the call
   }
 
@@ -119,6 +131,7 @@ class AudioCallService {
       data['sdpAnswer']['type'],
     );
     await _peerConnection!.setRemoteDescription(answer);
+    debugPrint('📢 Call answered, remote description set');
 
     for (RTCIceCandidate candidate in _iceCandidates) {
       _peerConnection!.addCandidate(candidate);
@@ -126,12 +139,13 @@ class AudioCallService {
   }
 
   void _handleCallTerminated(Map<String, dynamic> data) {
-    // Handle call termination
+    debugPrint('📞 Call terminated');
     _peerConnection?.close();
     _localStream?.dispose();
-    _localRenderer.srcObject = null;
-    _remoteRenderer.srcObject = null;
+    _localRenderer.dispose();
+    _remoteRenderer.dispose();
     _iceCandidates.clear();
+    debugPrint('🔄 Resources disposed');
   }
 
   void _handleSignalCandidate(Map<String, dynamic> data) {
@@ -141,11 +155,13 @@ class AudioCallService {
       data['candidate']['sdpMLineIndex'],
     );
     _peerConnection!.addCandidate(candidate);
+    debugPrint('🧊 ICE candidate added');
   }
 
   void terminateCall(String targetId) {
     _socketService.terminateCall(targetId: targetId);
     _handleCallTerminated({});
+    debugPrint('📞 Terminating call to $targetId');
   }
 
   void dispose() {
@@ -153,5 +169,6 @@ class AudioCallService {
     _localStream?.dispose();
     _localRenderer.dispose();
     _remoteRenderer.dispose();
+    debugPrint('🔄 AudioCallService disposed');
   }
 }
