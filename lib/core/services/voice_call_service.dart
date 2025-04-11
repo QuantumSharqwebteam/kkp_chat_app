@@ -8,7 +8,7 @@ typedef OnError = void Function(String message);
 
 class VoiceCallService {
   final String selfId;
-  final String targetId;
+  final String? targetId;
   final bool isCaller;
   final String? callerName;
   final SocketService _socketService = SocketService();
@@ -22,7 +22,7 @@ class VoiceCallService {
 
   VoiceCallService({
     required this.selfId,
-    required this.targetId,
+    this.targetId,
     required this.isCaller,
     this.callerName,
   });
@@ -67,7 +67,7 @@ class VoiceCallService {
     _peerConnection = await createPeerConnection(config);
 
     _peerConnection!.onIceCandidate = (candidate) {
-      _socketService.sendSignalCandidate(targetId, candidate.toMap());
+      _socketService.sendSignalCandidate(targetId!, candidate.toMap());
     };
 
     _peerConnection!.onConnectionState = (state) {
@@ -103,7 +103,7 @@ class VoiceCallService {
     await _peerConnection!.setLocalDescription(offer);
 
     _socketService.initiateCall(
-      targetId,
+      targetId!,
       offer.toMap(),
       selfId,
       callerName ?? "Unknown",
@@ -171,7 +171,7 @@ class VoiceCallService {
     _localStream?.dispose();
     _localStream = null;
 
-    _socketService.terminateCall(targetId);
+    _socketService.terminateCall(targetId!);
     onCallEnded?.call(false);
   }
 }

@@ -247,7 +247,7 @@ class SocketService {
   }
 
   void answerCall(
-      {required String targetEmail, required Map<String, dynamic> answerData}) {
+      {String? targetEmail, required Map<String, dynamic> answerData}) {
     if (!_isConnected) {
       debugPrint("📡 Socket not connected. Cannot answer call.");
       return;

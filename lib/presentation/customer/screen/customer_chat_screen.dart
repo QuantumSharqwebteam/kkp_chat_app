@@ -383,7 +383,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 MaterialPageRoute(
                   builder: (context) => AudioCallScreen(
                     selfId: selfEmail,
-                    targetId: targetEmail,
+                    targetId: null,
                     isCaller: true,
                     callerName: selfName,
                   ),

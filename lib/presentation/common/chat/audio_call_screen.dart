@@ -4,14 +4,14 @@ import 'package:kkp_chat_app/core/services/voice_call_service.dart';
 
 class AudioCallScreen extends StatefulWidget {
   final String selfId;
-  final String targetId;
+  final String? targetId;
   final bool isCaller;
   final String? callerName;
 
   const AudioCallScreen({
     super.key,
     required this.selfId,
-    required this.targetId,
+    this.targetId,
     required this.isCaller,
     this.callerName,
   });
