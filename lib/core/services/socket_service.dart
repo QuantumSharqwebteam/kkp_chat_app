@@ -15,10 +15,6 @@ class SocketService {
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
-  Function(dynamic)? _onIncomingCall;
-  Function(Map<String, dynamic>)? _onCallAnswered;
-  Function(Map<String, dynamic>)? _onSignalCandidate;
-  Function(dynamic)? _onCallTerminated;
   bool isChatPageOpen = false;
 
   List<String> _roomMembers = [];
@@ -63,34 +59,6 @@ class SocketService {
       } else {
         _showPushNotification(data);
       }
-    });
-
-    _socket.on('incomingCall', (data) {
-      debugPrint('📞 Incoming Call Received: $data');
-      _onIncomingCall?.call(data);
-    });
-
-    _socket.on('callAnswered', (data) {
-      debugPrint('✅ Call Answered Received: $data');
-      if (data is Map<String, dynamic> && data.containsKey('answer')) {
-        _onCallAnswered?.call(data['answer']);
-      } else {
-        debugPrint('⚠️ Call Answered data format incorrect: $data');
-      }
-    });
-
-    _socket.on('signalCandidate', (data) {
-      debugPrint('🧊 Signal Candidate Received: $data');
-      if (data is Map<String, dynamic> && data.containsKey('candidate')) {
-        _onSignalCandidate?.call(data['candidate']);
-      } else {
-        debugPrint('⚠️ Signal Candidate data format incorrect: $data');
-      }
-    });
-
-    _socket.on('callTerminated', (data) {
-      debugPrint('❌ Call Terminated Received: $data');
-      _onCallTerminated?.call(data);
     });
 
     _socket.onDisconnect((_) {
@@ -229,74 +197,6 @@ class SocketService {
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
     }
-  }
-
-  void initiateCall(String targetEmail, Map<String, dynamic> offer,
-      String selfId, String callerName) {
-    if (!_isConnected) {
-      debugPrint("📡 Socket not connected. Cannot initiate call.");
-      return;
-    }
-    _socket.emit('initiateCall', {
-      'targetId': targetEmail,
-      'from': selfId,
-      'callerName': callerName,
-      'signal': offer,
-    });
-    debugPrint('🚀 Initiating call to $targetEmail');
-  }
-
-  void answerCall(
-      {required String targetEmail, required Map<String, dynamic> answerData}) {
-    if (!_isConnected) {
-      debugPrint("📡 Socket not connected. Cannot answer call.");
-      return;
-    }
-    _socket.emit('answerCall', {
-      'to': targetEmail,
-      'signal': answerData,
-    });
-    debugPrint('✅ Answering call to $targetEmail');
-  }
-
-  void sendSignalCandidate(String targetId, Map<String, dynamic> candidate) {
-    if (!_isConnected) {
-      debugPrint("📡 Socket not connected. Cannot send candidate.");
-      return;
-    }
-    _socket.emit('signalCandidate', {
-      'to': targetId,
-      'candidate': candidate,
-    });
-    debugPrint('🧊 Sending candidate to $targetId: $candidate');
-  }
-
-  void terminateCall(String targetId) {
-    debugPrint("📵 [CONNECTION] Terminating call with $targetId");
-    _socket.emit('terminateCall', {'targetId': targetId});
-  }
-
-  void listenForIncomingCall(Function(dynamic) callback) {
-    _onIncomingCall = callback;
-  }
-  // void listenForIncomingCall(Function(Map<String, dynamic>) onIncomingCall) {
-  //   _socket.on('incomingCall', (data) {
-  //     if (data is Map<String, dynamic>) {
-  //       onIncomingCall(data);
-  //     }
-  //   });
-  // }
-
-  void listenForCallAnswered(Function(Map<String, dynamic>) callback) {
-    _onCallAnswered = callback;
-  }
-
-  void listenForSignalCandidate(Function(Map<String, dynamic>) callback) {
-    _onSignalCandidate = callback;
-  }
-
-  void listenForCallTerminated(Function(dynamic) callback) {
-    _onCallTerminated = callback;
   }
 
   void disconnect() {

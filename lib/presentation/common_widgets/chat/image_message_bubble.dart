@@ -3,18 +3,28 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/preview_image.dart';
+import 'dart:io';
 
 class ImageMessageBubble extends StatelessWidget {
   final String imageUrl;
   final bool isMe;
   final String timestamp;
+  final bool uploading;
+  final bool sent;
+  final VoidCallback? onImageLoaded;
 
   const ImageMessageBubble({
     super.key,
     required this.imageUrl,
     required this.isMe,
     required this.timestamp,
+    this.uploading = false,
+    this.sent = false,
+    this.onImageLoaded,
   });
+
+  bool get isLocalFile =>
+      imageUrl.startsWith('/') || imageUrl.startsWith('file://');
 
   @override
   Widget build(BuildContext context) {
@@ -38,33 +48,46 @@ class ImageMessageBubble extends StatelessWidget {
                 );
               },
               child: Container(
-                margin: EdgeInsets.symmetric(vertical: 10),
+                margin: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                    //  color: isMe ? Colors.blue : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.greyE5E7EB)),
-                padding: const EdgeInsets.all(10),
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200,
-                  placeholder: (context, url) => Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  errorWidget: (context, url, error) => const Center(
-                    child: Icon(Icons.broken_image),
-                  ),
-                  memCacheHeight: 200,
-                  memCacheWidth: 400,
-                  maxHeightDiskCache: 200,
-                  maxWidthDiskCache: 400,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.greyE5E7EB),
                 ),
+                padding: const EdgeInsets.all(10),
+                child: isLocalFile
+                    ? Image.file(
+                        File(imageUrl),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 200,
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 200,
+                        placeholder: (context, url) => Container(
+                          height: 200,
+                          color: AppColors.greyE5E7EB,
+                        ),
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.broken_image),
+                      ),
               ),
             ),
-            Text(
-              timestamp,
-              style: AppTextStyles.greyAAAAAA_10_400,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  timestamp,
+                  style: AppTextStyles.greyAAAAAA_10_400,
+                ),
+                const SizedBox(width: 4),
+                if (uploading)
+                  const Icon(Icons.access_time, size: 12, color: Colors.grey)
+                else if (sent)
+                  const Icon(Icons.done_all, size: 14, color: Colors.green),
+              ],
             ),
           ],
         ),

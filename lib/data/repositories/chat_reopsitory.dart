@@ -1,13 +1,15 @@
 import 'package:kkp_chat_app/core/services/chat_service.dart';
 import 'package:kkp_chat_app/data/models/form_data_model.dart';
+import 'package:kkp_chat_app/data/models/message_model.dart';
 
 class ChatRepository {
   final ChatService chatService = ChatService();
 
   /// Get previous chat messages
-  Future<List<Map<String, dynamic>>> fetchPreviousChats(
-      String mailId1, String mailId2) async {
-    return await chatService.getPreviousChats(mailId1, mailId2);
+  Future<List<MessageModel>> fetchPreviousChats(
+      String agentEmail, String customerEmail) async {
+    return await chatService.fetchPreviousMessages(
+        agentEmail: agentEmail, customerEmail: customerEmail);
   }
 
   /// get the list of assigned customers to that agent

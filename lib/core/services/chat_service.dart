@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/data/models/form_data_model.dart';
+import 'package:kkp_chat_app/data/models/message_model.dart';
 
 class ChatService {
   final String baseUrl = "https://kkp-chat.onrender.com";
@@ -12,21 +13,43 @@ class ChatService {
   ChatService({http.Client? httpClient}) : client = httpClient ?? http.Client();
 
   /// ** Get Previous Chat Messages**
-  Future<List<Map<String, dynamic>>> getPreviousChats(
-      String mailId1, String mailId2) async {
-    final url = Uri.parse("$baseUrl/api/chat/$mailId2/$mailId1");
+  // Future<List<Map<String, dynamic>>> getPreviousChats(
+  //     String mailId1, String mailId2) async {
+  //   final url = Uri.parse("$baseUrl/api/chat/$mailId2/$mailId1");
+
+  //   try {
+  //     final response = await client.get(url);
+
+  //     if (response.statusCode == 200) {
+  //       final List<dynamic> data = jsonDecode(response.body);
+  //       return data.cast<Map<String, dynamic>>();
+  //     } else {
+  //       throw Exception('Failed to fetch previous chats: ${response.body}');
+  //     }
+  //   } catch (e) {
+  //     throw Exception('Error fetching previous chats: $e');
+  //   }
+  // }
+  Future<List<MessageModel>> fetchPreviousMessages({
+    required String agentEmail,
+    required String customerEmail,
+  }) async {
+    final url = Uri.parse("$baseUrl/api/chat/$customerEmail/$agentEmail");
 
     try {
       final response = await client.get(url);
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final json = jsonDecode(response.body);
+        final List<dynamic> messagesJson = json['messages'];
+        return messagesJson
+            .map((msg) => MessageModel.fromJson(msg, agentEmail))
+            .toList();
       } else {
-        throw Exception('Failed to fetch previous chats: ${response.body}');
+        throw Exception("Failed to load chat: ${response.body}");
       }
     } catch (e) {
-      throw Exception('Error fetching previous chats: $e');
+      throw Exception("Error fetching chat: $e");
     }
   }
 

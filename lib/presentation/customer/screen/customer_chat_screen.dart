@@ -6,7 +6,6 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -53,7 +52,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final rateController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [];
-  bool _isListeningForCall = false;
 
   @override
   void initState() {
@@ -61,68 +59,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
-    _socketService.listenForIncomingCall(_handleIncomingCall);
-    if (!_isListeningForCall) {
-      _isListeningForCall = true;
-      _socketService.listenForIncomingCall(_handleIncomingCall);
-    }
-  }
-
-  void _handleIncomingCall(dynamic data) {
-    debugPrint('📞 Incoming Call Received: $data');
-
-    if (data is! Map ||
-        data['from'] == null ||
-        data['callerName'] == null ||
-        data['signal'] == null) {
-      debugPrint('⚠️ Invalid incoming call data: $data');
-      return;
-    }
-
-    final callerId = data['from'] as String;
-    final callerName = data['callerName'] as String;
-    final offer = Map<String, dynamic>.from(data['signal']);
-
-    if (callerId.isEmpty || offer.isEmpty) {
-      debugPrint("❌ Missing caller ID or offer in call payload.");
-      return;
-    }
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Incoming Call'),
-        content: Text('$callerName is calling...'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _socketService.terminateCall(callerId);
-            },
-            child: Text('Reject'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AudioCallScreen(
-                    selfId: widget.agentEmail!,
-                    targetId: callerId,
-                    isCaller: false,
-                    callerName: callerName,
-                  ),
-                ),
-              );
-            },
-            child: Text('Answer'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -339,29 +275,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              final String selfEmail = widget.customerEmail!;
-              final String targetEmail = widget.agentEmail!;
-              final String selfName = widget.customerName!;
-
-              if (targetEmail.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content:
-                        Text("Cannot initiate call: Target user invalid.")));
-                return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AudioCallScreen(
-                    selfId: selfEmail,
-                    targetId: targetEmail,
-                    isCaller: true,
-                    callerName: selfName,
-                  ),
-                ),
-              );
-            },
+            onPressed: () {},
             icon: Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],

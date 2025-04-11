@@ -5,7 +5,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
+import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -39,7 +39,9 @@ class AgentChatScreen extends StatefulWidget {
 
 class _AgentChatScreenState extends State<AgentChatScreen>
     with WidgetsBindingObserver {
+  bool _isLoading = true;
   final _chatController = TextEditingController();
+  final ChatRepository _chatRepository = ChatRepository();
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
@@ -50,7 +52,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final rateController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [];
-  bool _isListeningForCall = false;
 
   @override
   void initState() {
@@ -58,68 +59,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
-    _socketService.listenForIncomingCall(_handleIncomingCall);
-    if (!_isListeningForCall) {
-      _isListeningForCall = true;
-      _socketService.listenForIncomingCall(_handleIncomingCall);
-    }
-  }
-
-  void _handleIncomingCall(dynamic data) {
-    debugPrint('📞 Incoming Call Received: $data');
-
-    if (data is! Map ||
-        data['from'] == null ||
-        data['callerName'] == null ||
-        data['signal'] == null) {
-      debugPrint('⚠️ Invalid incoming call data: $data');
-      return;
-    }
-
-    final callerId = data['from'] as String;
-    final callerName = data['callerName'] as String;
-    final offer = Map<String, dynamic>.from(data['signal']);
-
-    if (callerId.isEmpty || offer.isEmpty) {
-      debugPrint("❌ Missing caller ID or offer in call payload.");
-      return;
-    }
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Incoming Call'),
-        content: Text('$callerName is calling...'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _socketService.terminateCall(callerId);
-            },
-            child: Text('Reject'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AudioCallScreen(
-                    selfId: widget.agentEmail!,
-                    targetId: callerId,
-                    isCaller: false,
-                    callerName: callerName,
-                  ),
-                ),
-              );
-            },
-            child: Text('Answer'),
-          ),
-        ],
-      ),
-    );
+    _loadPreviousMessages();
   }
 
   @override
@@ -143,6 +83,53 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       _socketService.toggleChatPageOpen(false);
     } else if (state == AppLifecycleState.resumed) {
       _socketService.toggleChatPageOpen(true);
+    }
+  }
+
+  Future<void> _loadPreviousMessages() async {
+    try {
+      final fetchedMessages = await _chatRepository.fetchPreviousChats(
+        widget.agentEmail!,
+        widget.customerEmail!,
+      );
+      if (mounted) {
+        setState(() {
+          messages = fetchedMessages.map((m) {
+            final formList =
+                m.form; // This is List<dynamic> or List<Map<String, dynamic>>
+            Map<String, dynamic>? formData;
+
+            if (m.type == 'form' && formList != null && formList.isNotEmpty) {
+              final firstForm = formList[0]; // formList is List<dynamic>
+              formData = {
+                "quality": firstForm['quality'],
+                "quantity": firstForm['quantity'],
+                "weave": firstForm['weave'],
+                "composition": firstForm['composition'],
+                "rate": firstForm['rate'],
+              };
+            }
+
+            return {
+              "text": m.message ?? '',
+              "timestamp": m.timestamp ?? '',
+              "isMe": m.isMe,
+              "type": m.type ?? 'text',
+              "mediaUrl": m.mediaUrl,
+              "form": formData, // Will be null if not form type or empty
+            };
+          }).toList();
+          _isLoading = false;
+          _scrollToBottom();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      debugPrint("❌ Error loading chat: $e");
     }
   }
 
@@ -201,13 +188,26 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
       }
     });
   }
 
+  // Future<void> _pickAndSendImage() async {
+  //   final ImagePicker picker = ImagePicker();
+  //   final XFile? pickedFile =
+  //       await picker.pickImage(source: ImageSource.gallery);
+
+  //   if (pickedFile != null) {
+  //     final File imageFile = File(pickedFile.path);
+  //     final imageUrl = await _s3uploadService.uploadFile(imageFile);
+  //     if (imageUrl != null) {
+  //       _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
+  //     }
+  //   }
+  // }
   Future<void> _pickAndSendImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile =
@@ -215,11 +215,54 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     if (pickedFile != null) {
       final File imageFile = File(pickedFile.path);
+
+      // TEMP message
+      final String tempId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      setState(() {
+        messages.add({
+          "id": tempId,
+          "text": "image",
+          "timestamp": DateTime.now().toIso8601String(),
+          "isMe": true,
+          "type": "media",
+          "mediaUrl": imageFile.path,
+          "uploading": true,
+          "sent": false,
+        });
+        _scrollToBottom();
+      });
+
+      // Upload in background
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
+
       if (imageUrl != null) {
-        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
+        final int index = messages.indexWhere((msg) => msg['id'] == tempId);
+        if (index != -1) {
+          setState(() {
+            messages[index]['mediaUrl'] = imageUrl;
+            messages[index]['uploading'] = false;
+            messages[index]['sent'] = true;
+          });
+        }
+
+        // Now send the message only over socket — don't add to messages list again!
+        _socketService.sendMessage(
+          targetEmail: widget.customerEmail!,
+          message: "image",
+          senderEmail: widget.agentEmail!,
+          senderName: widget.agentName!,
+          type: "media",
+          mediaUrl: imageUrl,
+        );
+      } else {
+        // Optionally show error toast or retry option
       }
     }
+  }
+
+  void sendFormButton() {
+    _sendMessage(messageText: "Fill details");
   }
 
   String formatTimestamp(String? timestamp) {
@@ -273,27 +316,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           ),
           IconButton(
             onPressed: () {
-              final String selfEmail = widget.agentEmail!;
-              final String targetEmail = widget.customerEmail!;
-              final String selfName = widget.agentName!;
-
-              if (targetEmail.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content:
-                        Text("Cannot initiate call: Target user invalid.")));
-                return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AudioCallScreen(
-                    selfId: selfEmail,
-                    targetId: targetEmail,
-                    isCaller: true,
-                    callerName: selfName,
-                  ),
-                ),
-              );
+              // audio call button
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
@@ -308,49 +331,54 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       body: Column(
         children: [
           Expanded(
-            child: messages.isEmpty
-                ? NoChatConversation()
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(10),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final msg = messages[index];
-                      if (msg['type'] == 'media') {
-                        return ImageMessageBubble(
-                          imageUrl: msg['mediaUrl'],
-                          isMe: msg['isMe'],
-                          timestamp: formatTimestamp(msg['timestamp']),
-                        );
-                      } else if (msg['type'] == 'form') {
-                        return FormMessageBubble(
-                          formData: msg['form'],
-                          isMe: msg['isMe'],
-                          timestamp: formatTimestamp(msg['timestamp']),
-                        );
-                      } else if (msg['text'] == 'Fill details') {
-                        return FillFormButton(
-                          onSubmit: () {
-                            // Agent not allowed to fill the form
-                          },
-                        );
-                      }
-                      return MessageBubble(
-                        text: msg['text'],
-                        isMe: msg['isMe'],
-                        timestamp: formatTimestamp(msg['timestamp']),
-                        image: msg['isMe']
-                            ? widget.agentImage!
-                            : widget.customerImage!,
-                      );
-                    },
-                  ),
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : messages.isEmpty
+                    ? NoChatConversation()
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(10),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = messages[index];
+                          if (msg['type'] == 'media') {
+                            return ImageMessageBubble(
+                              imageUrl: msg['mediaUrl'],
+                              isMe: msg['isMe'],
+                              timestamp: formatTimestamp(msg['timestamp']),
+                              uploading: msg['uploading'] ?? false,
+                              sent: msg['sent'] ?? false,
+                              onImageLoaded: _scrollToBottom,
+                            );
+                          } else if (msg['type'] == 'form') {
+                            return FormMessageBubble(
+                              formData: msg['form'],
+                              isMe: msg['isMe'],
+                              timestamp: formatTimestamp(msg['timestamp']),
+                            );
+                          } else if (msg['text'] == 'Fill details') {
+                            return FillFormButton(
+                              onSubmit: () {
+                                // Agent not allowed to fill the form
+                              },
+                            );
+                          }
+                          return MessageBubble(
+                            text: msg['text'],
+                            isMe: msg['isMe'],
+                            timestamp: formatTimestamp(msg['timestamp']),
+                            image: msg['isMe']
+                                ? widget.agentImage!
+                                : widget.customerImage!,
+                          );
+                        },
+                      ),
           ),
           ChatInputField(
             controller: _chatController,
             onSend: () => _sendMessage(messageText: _chatController.text),
             onSendImage: _pickAndSendImage,
-            onSendForm: () {},
+            onSendForm: sendFormButton,
           ),
         ],
       ),

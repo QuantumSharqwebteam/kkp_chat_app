@@ -80,50 +80,51 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: Column(
-                children: [
-                  _buildTransferImage(),
-                  _agentsList.isEmpty
-                      ? const Text("No agents available")
-                      : Column(
-                          children: _agentsList.map((agent) {
-                            return _agentButton(agent);
-                          }).toList(),
-                        ),
-                ],
-              ),
-            ),
+          : _agentsList.isEmpty
+              ? const Center(child: Text("No agents available"))
+              : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: _agentsList.length + 1, // +1 for the image section
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return _buildTransferImage();
+                    }
+                    final agent = _agentsList[index - 1];
+                    return _agentButton(agent);
+                  },
+                ),
     );
   }
 
   Widget _buildTransferImage() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 10),
-      child: Stack(children: [
-        Image.asset(
-          'assets/images/oval.png',
-          height: 250,
-          width: 250,
-        ),
-        Positioned(
-          bottom: 50,
-          child: Image.asset(
-            'assets/images/transfer.png',
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 20, bottom: 10),
+        child: Stack(children: [
+          Image.asset(
+            'assets/images/oval.png',
             height: 250,
             width: 250,
           ),
-        ),
-        Positioned(
-          top: 130,
-          left: 70,
-          child: Image.asset(
-            'assets/images/cArrow.png',
-            height: 30,
-            width: 110,
+          Positioned(
+            bottom: 50,
+            child: Image.asset(
+              'assets/images/transfer.png',
+              height: 250,
+              width: 250,
+            ),
           ),
-        ),
-      ]),
+          Positioned(
+            top: 130,
+            left: 70,
+            child: Image.asset(
+              'assets/images/cArrow.png',
+              height: 30,
+              width: 110,
+            ),
+          ),
+        ]),
+      ),
     );
   }
 
