@@ -126,15 +126,19 @@ class AudioCallService {
   }
 
   void _handleCallAnswered(Map<String, dynamic> data) async {
-    RTCSessionDescription answer = RTCSessionDescription(
-      data['sdpAnswer']['sdp'],
-      data['sdpAnswer']['type'],
-    );
-    await _peerConnection!.setRemoteDescription(answer);
-    debugPrint('📢 Call answered, remote description set');
+    try {
+      RTCSessionDescription answer = RTCSessionDescription(
+        data['sdpAnswer']['sdp'],
+        data['sdpAnswer']['type'],
+      );
+      await _peerConnection!.setRemoteDescription(answer);
+      debugPrint('📢 Call answered, remote description set');
 
-    for (RTCIceCandidate candidate in _iceCandidates) {
-      _peerConnection!.addCandidate(candidate);
+      for (RTCIceCandidate candidate in _iceCandidates) {
+        _peerConnection!.addCandidate(candidate);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error setting remote description: $e');
     }
   }
 
@@ -149,13 +153,17 @@ class AudioCallService {
   }
 
   void _handleSignalCandidate(Map<String, dynamic> data) {
-    RTCIceCandidate candidate = RTCIceCandidate(
-      data['candidate']['candidate'],
-      data['candidate']['sdpMid'],
-      data['candidate']['sdpMLineIndex'],
-    );
-    _peerConnection!.addCandidate(candidate);
-    debugPrint('🧊 ICE candidate added');
+    try {
+      RTCIceCandidate candidate = RTCIceCandidate(
+        data['candidate']['candidate'],
+        data['candidate']['sdpMid'],
+        data['candidate']['sdpMLineIndex'],
+      );
+      _peerConnection!.addCandidate(candidate);
+      debugPrint('🧊 ICE candidate added');
+    } catch (e) {
+      debugPrint('⚠️ Error adding ICE candidate: $e');
+    }
   }
 
   void terminateCall(String targetId) {
