@@ -62,12 +62,6 @@ class _CustomerAudioCallScreenState extends State<CustomerAudioCallScreen> {
   }
 
   @override
-  void dispose() {
-    _audioCallService.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
