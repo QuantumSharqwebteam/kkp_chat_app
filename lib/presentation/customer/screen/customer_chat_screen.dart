@@ -6,7 +6,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/presentation/common/chat/customer_audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -98,39 +98,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingCall(Map<String, dynamic> data) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Incoming Call'),
-          content: Text('Incoming call from ${data['name']}'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Reject'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CustomerAudioCallScreen(
-                      agentEmail: data['from'],
-                      customerEmail: widget.customerEmail!,
-                      customerName: widget.customerName!,
-                      signalData: data['signal'],
-                    ),
-                  ),
-                );
-              },
-              child: Text('Answer'),
-            ),
-          ],
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AudioCallScreen(
+          senderId: data['from'],
+          signalData: data['signal'],
+        ),
+      ),
     );
   }
 
@@ -141,7 +116,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     Map<String, dynamic>? form,
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
-
     final currentTime = DateTime.now().toIso8601String();
     setState(() {
       messages.add({
@@ -314,7 +288,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              _initiateAudioCall();
+            },
             icon: Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
@@ -365,6 +341,19 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             onSendForm: _showFormOverlay,
           ),
         ],
+      ),
+    );
+  }
+
+  void _initiateAudioCall() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AudioCallScreen(
+          targetId: widget.agentEmail!,
+          senderId: widget.customerEmail!,
+          senderName: widget.customerName!,
+        ),
       ),
     );
   }

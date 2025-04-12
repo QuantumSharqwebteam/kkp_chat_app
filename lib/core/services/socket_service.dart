@@ -66,14 +66,14 @@ class SocketService {
     });
 
     _socket.on('incomingCall', (data) {
-      debugPrint('📥 incomingCall: $data');
+      debugPrint('📥 incomingCall: $data'); // ✅ Log full structure
       if (_onIncomingCall != null) {
         _onIncomingCall!(data);
       }
     });
 
     _socket.on('callAnswered', (data) {
-      debugPrint('📥 callAnswered: $data');
+      debugPrint('📥 callAnswered: $data'); // ✅
       if (_onCallAnswered != null) {
         _onCallAnswered!(data);
       }
@@ -85,7 +85,7 @@ class SocketService {
     });
 
     _socket.on('signalCandidate', (data) {
-      debugPrint('📥 signalCandidate: $data');
+      debugPrint('📥 signalCandidate: $data'); // ✅
       if (_onSignalCandidate != null) {
         _onSignalCandidate!(data);
       }

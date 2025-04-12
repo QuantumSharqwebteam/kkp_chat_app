@@ -239,16 +239,16 @@ class AudioCallService {
     }
   }
 
-  // void dispose() {
-  //   try {
-  //     _peerConnection?.close();
-  //     _localStream?.dispose();
-  //     _remoteStream?.dispose();
-  //     _iceCandidates.clear();
-  //     _remoteDescriptionSet = false;
-  //     debugPrint('🔄 AudioCallService disposed');
-  //   } catch (e) {
-  //     debugPrint('⚠️ Error disposing AudioCallService: $e');
-  //   }
-  // }
+  void dispose() {
+    try {
+      _peerConnection?.close();
+      _localStream?.dispose();
+      _remoteStream?.dispose();
+      _iceCandidates.clear();
+      _remoteDescriptionSet = false;
+      debugPrint('🔄 AudioCallService disposed');
+    } catch (e) {
+      debugPrint('⚠️ Error disposing AudioCallService: $e');
+    }
+  }
 }
