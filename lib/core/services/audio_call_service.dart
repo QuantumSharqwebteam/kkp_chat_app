@@ -44,7 +44,10 @@ class AudioCallService {
       });
       _localRenderer.srcObject = _localStream;
 
-      RTCSessionDescription offer = await _peerConnection!.createOffer({});
+      final offer = await _peerConnection!.createOffer({
+        'offerToReceiveAudio': true,
+        'offerToReceiveVideo': false,
+      });
       await _peerConnection!.setLocalDescription(offer);
 
       _socketService.initiateCall(
@@ -78,7 +81,10 @@ class AudioCallService {
       await _peerConnection!.setRemoteDescription(offer);
       _remoteDescriptionSet = true;
 
-      RTCSessionDescription answer = await _peerConnection!.createAnswer({});
+      final answer = await _peerConnection!.createAnswer({
+        'offerToReceiveAudio': true,
+        'offerToReceiveVideo': false,
+      });
       await _peerConnection!.setLocalDescription(answer);
 
       _socketService.answerCall(
@@ -109,9 +115,13 @@ class AudioCallService {
         if (event.track.kind == 'audio') {
           _remoteStream = event.streams.first;
           debugPrint('🔊 Remote audio stream assigned');
+
           for (var track in _remoteStream!.getAudioTracks()) {
             debugPrint('🎧 Remote audio track: ${track.id}');
+            debugPrint('🟢 enabled: ${track.enabled}');
           }
+
+          Helper.setSpeakerphoneOn(true); // Ensure speaker is on
         }
       };
 
@@ -142,12 +152,16 @@ class AudioCallService {
   Future<MediaStream> _getUserMedia() async {
     try {
       final Map<String, dynamic> mediaConstraints = {
-        'audio': true,
-        //  {
-        //   'sampleRate': 44100,
-        //   'echoCancellation': true,
-        //   'noiseSuppression': true,
-        // },
+        'audio': {
+          'mandatory': {
+            'echoCancellation': 'true',
+            'googEchoCancellation': 'true',
+            'googEchoCancellation2': 'true',
+            'googNoiseSuppression': 'true',
+            'googDAEchoCancellation': 'true',
+          },
+          'optional': [],
+        },
         'video': false,
       };
       MediaStream stream =
@@ -197,7 +211,7 @@ class AudioCallService {
 
   void _handleCallTerminated(Map<String, dynamic> data) {
     try {
-      debugPrint('📞 Call terminated');
+      debugPrint('📞 Call terminated by ${data['targetId']}');
       _peerConnection?.close();
       _localStream?.dispose();
       _remoteStream?.dispose();
@@ -233,7 +247,7 @@ class AudioCallService {
   void terminateCall(String targetId) {
     try {
       _socketService.terminateCall(targetId: targetId);
-      _handleCallTerminated({});
+      _handleCallTerminated({'targetId': targetId});
       debugPrint('📞 Terminating call to $targetId');
     } catch (e) {
       debugPrint('⚠️ Error terminating call: $e');
