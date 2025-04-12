@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/core/services/audio_call_service.dart';
 
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart'; // adjust as per your path
+
 class AgentAudioCallScreen extends StatefulWidget {
   final String customerEmail;
   final String agentEmail;
@@ -19,26 +22,48 @@ class AgentAudioCallScreen extends StatefulWidget {
 
 class _AgentAudioCallScreenState extends State<AgentAudioCallScreen> {
   final AudioCallService _audioCallService = AudioCallService();
+  bool _isSpeakerOn = false;
 
   @override
   void initState() {
     super.initState();
-    _audioCallService.initiateCall(
-      widget.customerEmail,
-      widget.agentEmail,
-      widget.agentName,
-    );
+    _checkPermissionsAndCall();
+  }
+
+  Future<void> _checkPermissionsAndCall() async {
+    PermissionStatus micStatus = await Permission.microphone.request();
+
+    if (micStatus.isGranted) {
+      _audioCallService.initiateCall(
+        widget.customerEmail,
+        widget.agentEmail,
+        widget.agentName,
+      );
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Microphone permission is required.')),
+        );
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  void _endCall() {
+    _audioCallService.terminateCall(widget.customerEmail);
+    Navigator.pop(context);
+  }
+
+  void _toggleSpeaker() async {
+    _isSpeakerOn = !_isSpeakerOn;
+    await Helper.setSpeakerphoneOn(_isSpeakerOn);
+    setState(() {});
   }
 
   @override
   void dispose() {
     _audioCallService.dispose();
     super.dispose();
-  }
-
-  void _endCall() {
-    _audioCallService.terminateCall(widget.customerEmail);
-    Navigator.pop(context);
   }
 
   @override
@@ -55,10 +80,20 @@ class _AgentAudioCallScreenState extends State<AgentAudioCallScreen> {
               'Calling...',
               style: TextStyle(fontSize: 24),
             ),
-            SizedBox(height: 20),
-            ElevatedButton(
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              icon: Icon(Icons.call_end),
+              label: Text('End Call'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
               onPressed: _endCall,
-              child: Text('End Call'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              icon: Icon(_isSpeakerOn ? Icons.volume_up : Icons.hearing),
+              label: Text(_isSpeakerOn ? 'Speaker On' : 'Speaker Off'),
+              onPressed: _toggleSpeaker,
             ),
           ],
         ),

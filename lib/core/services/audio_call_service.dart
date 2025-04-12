@@ -2,18 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'socket_service.dart';
 
+import 'package:flutter/foundation.dart';
+
 class AudioCallService {
   static final AudioCallService _instance = AudioCallService._internal();
   factory AudioCallService() => _instance;
 
   final SocketService _socketService = SocketService();
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
-  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
+
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
-  final List<RTCIceCandidate> _iceCandidates = [];
+  MediaStream? _remoteStream;
 
-  bool _remoteDescriptionSet = false; // ✅ Added to track remote description set
+  final List<RTCIceCandidate> _iceCandidates = [];
+  bool _remoteDescriptionSet = false;
 
   AudioCallService._internal() {
     _initRenderers();
@@ -25,8 +28,7 @@ class AudioCallService {
 
   Future<void> _initRenderers() async {
     await _localRenderer.initialize();
-    await _remoteRenderer.initialize();
-    debugPrint('📹 Local and remote renderers initialized');
+    debugPrint('📹 Local renderer initialized');
   }
 
   Future<void> initiateCall(
@@ -35,6 +37,7 @@ class AudioCallService {
       debugPrint('📞 Initiating call to $targetId');
       await _initRenderers();
       await _createPeerConnection();
+
       _localStream = await _getUserMedia();
       _localStream!.getTracks().forEach((track) {
         _peerConnection!.addTrack(track, _localStream!);
@@ -61,13 +64,13 @@ class AudioCallService {
       debugPrint('📞 Answering call from $callerId');
       await _initRenderers();
       await _createPeerConnection();
+
       _localStream = await _getUserMedia();
       _localStream!.getTracks().forEach((track) {
         _peerConnection!.addTrack(track, _localStream!);
       });
       _localRenderer.srcObject = _localStream;
 
-      // ✅ Fix: use correct key from signalData
       RTCSessionDescription offer = RTCSessionDescription(
         signalData['sdp'],
         signalData['type'],
@@ -80,7 +83,7 @@ class AudioCallService {
 
       _socketService.answerCall(
         to: callerId,
-        signalData: answer.toMap(), // ✅ consistent key usage
+        signalData: answer.toMap(),
       );
       debugPrint('📢 Answer sent to $callerId');
     } catch (e) {
@@ -102,21 +105,28 @@ class AudioCallService {
       });
 
       _peerConnection!.onTrack = (event) {
-        _remoteRenderer.srcObject = event.streams[0];
         debugPrint('🎥 Remote track added');
+        if (event.track.kind == 'audio') {
+          _remoteStream = event.streams.first;
+          debugPrint('🔊 Remote audio stream assigned');
+          for (var track in _remoteStream!.getAudioTracks()) {
+            debugPrint('🎧 Remote audio track: ${track.id}');
+          }
+        }
       };
 
       _peerConnection!.onIceCandidate = (candidate) async {
         if (_remoteDescriptionSet) {
-          _peerConnection!.addCandidate(candidate); // ✅ updated logic
+          await _peerConnection!.addCandidate(candidate);
           debugPrint('🧊 ICE candidate added directly');
         } else {
-          _iceCandidates.add(candidate); // ✅ buffer
+          _iceCandidates.add(candidate);
           debugPrint('🧊 ICE candidate buffered');
         }
       };
 
       _peerConnection!.onConnectionState = (state) {
+        debugPrint('🔌 Connection state: $state');
         if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
           debugPrint('⚠️ Peer connection failed');
           _handleCallTerminated({});
@@ -133,11 +143,17 @@ class AudioCallService {
     try {
       final Map<String, dynamic> mediaConstraints = {
         'audio': true,
+        //  {
+        //   'sampleRate': 44100,
+        //   'echoCancellation': true,
+        //   'noiseSuppression': true,
+        // },
         'video': false,
       };
       MediaStream stream =
           await navigator.mediaDevices.getUserMedia(mediaConstraints);
       debugPrint('🎤 Local media stream obtained');
+      debugPrint('🔍 Local audio tracks: ${stream.getAudioTracks().length}');
       return stream;
     } catch (e) {
       debugPrint('⚠️ Error getting user media: $e');
@@ -148,7 +164,7 @@ class AudioCallService {
   void _handleIncomingCall(Map<String, dynamic> data) {
     try {
       debugPrint('📞 Incoming call from ${data['from']}');
-      // Show call UI and allow user to answer or reject the call
+      // Add further UI trigger or notification logic if needed
     } catch (e) {
       debugPrint('⚠️ Error handling incoming call: $e');
     }
@@ -156,7 +172,6 @@ class AudioCallService {
 
   void _handleCallAnswered(Map<String, dynamic> data) async {
     try {
-      // ✅ Fix: use correct key, not 'sdpAnswer'
       final signalData = data['signalData'];
       if (signalData == null) {
         debugPrint('❌ signalData is null!');
@@ -172,7 +187,7 @@ class AudioCallService {
       debugPrint('📢 Call answered, remote description set');
 
       for (RTCIceCandidate candidate in _iceCandidates) {
-        _peerConnection!.addCandidate(candidate);
+        await _peerConnection!.addCandidate(candidate);
       }
       _iceCandidates.clear();
     } catch (e) {
@@ -185,8 +200,8 @@ class AudioCallService {
       debugPrint('📞 Call terminated');
       _peerConnection?.close();
       _localStream?.dispose();
+      _remoteStream?.dispose();
       _localRenderer.dispose();
-      _remoteRenderer.dispose();
       _iceCandidates.clear();
       _remoteDescriptionSet = false;
       debugPrint('🔄 Resources disposed');
@@ -229,8 +244,8 @@ class AudioCallService {
     try {
       _peerConnection?.close();
       _localStream?.dispose();
+      _remoteStream?.dispose();
       _localRenderer.dispose();
-      _remoteRenderer.dispose();
       _iceCandidates.clear();
       _remoteDescriptionSet = false;
       debugPrint('🔄 AudioCallService disposed');
