@@ -9,7 +9,6 @@ class AudioCallService {
   factory AudioCallService() => _instance;
 
   final SocketService _socketService = SocketService();
-  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
 
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
@@ -19,34 +18,25 @@ class AudioCallService {
   bool _remoteDescriptionSet = false;
 
   AudioCallService._internal() {
-    _initRenderers();
     _socketService.onIncomingCall(_handleIncomingCall);
     _socketService.onCallAnswered(_handleCallAnswered);
     _socketService.onCallTerminated(_handleCallTerminated);
     _socketService.onSignalCandidate(_handleSignalCandidate);
   }
 
-  Future<void> _initRenderers() async {
-    await _localRenderer.initialize();
-    debugPrint('📹 Local renderer initialized');
-  }
-
   Future<void> initiateCall(
       String targetId, String senderId, String senderName) async {
     try {
       debugPrint('📞 Initiating call to $targetId');
-      await _initRenderers();
       await _createPeerConnection();
 
       _localStream = await _getUserMedia();
       _localStream!.getTracks().forEach((track) {
         _peerConnection!.addTrack(track, _localStream!);
       });
-      _localRenderer.srcObject = _localStream;
 
       final offer = await _peerConnection!.createOffer({
         'offerToReceiveAudio': true,
-        'offerToReceiveVideo': false,
       });
       await _peerConnection!.setLocalDescription(offer);
 
@@ -65,14 +55,12 @@ class AudioCallService {
   Future<void> answerCall(String callerId, dynamic signalData) async {
     try {
       debugPrint('📞 Answering call from $callerId');
-      await _initRenderers();
       await _createPeerConnection();
 
       _localStream = await _getUserMedia();
       _localStream!.getTracks().forEach((track) {
         _peerConnection!.addTrack(track, _localStream!);
       });
-      _localRenderer.srcObject = _localStream;
 
       RTCSessionDescription offer = RTCSessionDescription(
         signalData['sdp'],
@@ -83,7 +71,6 @@ class AudioCallService {
 
       final answer = await _peerConnection!.createAnswer({
         'offerToReceiveAudio': true,
-        'offerToReceiveVideo': false,
       });
       await _peerConnection!.setLocalDescription(answer);
 
@@ -162,7 +149,6 @@ class AudioCallService {
           },
           'optional': [],
         },
-        'video': false,
       };
       MediaStream stream =
           await navigator.mediaDevices.getUserMedia(mediaConstraints);
@@ -211,11 +197,10 @@ class AudioCallService {
 
   void _handleCallTerminated(Map<String, dynamic> data) {
     try {
-      debugPrint('📞 Call terminated by ${data['targetId']}');
+      debugPrint('📞 Call terminated');
       _peerConnection?.close();
       _localStream?.dispose();
       _remoteStream?.dispose();
-      _localRenderer.dispose();
       _iceCandidates.clear();
       _remoteDescriptionSet = false;
       debugPrint('🔄 Resources disposed');
@@ -247,7 +232,7 @@ class AudioCallService {
   void terminateCall(String targetId) {
     try {
       _socketService.terminateCall(targetId: targetId);
-      _handleCallTerminated({'targetId': targetId});
+      _handleCallTerminated({});
       debugPrint('📞 Terminating call to $targetId');
     } catch (e) {
       debugPrint('⚠️ Error terminating call: $e');
@@ -259,7 +244,6 @@ class AudioCallService {
       _peerConnection?.close();
       _localStream?.dispose();
       _remoteStream?.dispose();
-      _localRenderer.dispose();
       _iceCandidates.clear();
       _remoteDescriptionSet = false;
       debugPrint('🔄 AudioCallService disposed');
