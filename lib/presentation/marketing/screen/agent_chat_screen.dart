@@ -6,7 +6,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/agent_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -60,7 +60,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
-    _socketService.onIncomingCall(_handleIncomingCall);
     _loadPreviousMessages();
   }
 
@@ -97,11 +96,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       if (mounted) {
         setState(() {
           messages = fetchedMessages.map((m) {
-            final formList = m.form;
+            final formList =
+                m.form; // This is List<dynamic> or List<Map<String, dynamic>>
             Map<String, dynamic>? formData;
 
             if (m.type == 'form' && formList != null && formList.isNotEmpty) {
-              final firstForm = formList[0];
+              final firstForm = formList[0]; // formList is List<dynamic>
               formData = {
                 "quality": firstForm['quality'],
                 "quantity": firstForm['quantity'],
@@ -117,7 +117,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               "isMe": m.isMe,
               "type": m.type ?? 'text',
               "mediaUrl": m.mediaUrl,
-              "form": formData,
+              "form": formData, // Will be null if not form type or empty
             };
           }).toList();
           _isLoading = false;
@@ -139,7 +139,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
-        "timestamp": currentTime,
+        "timeStamp": currentTime,
         "isMe": data["senderId"] == widget.agentEmail,
         "type": data["type"] ?? "text",
         "mediaUrl": data["mediaUrl"],
@@ -156,6 +156,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     Map<String, dynamic>? form,
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
+
     final currentTime = DateTime.now().toIso8601String();
 
     setState(() {
@@ -256,22 +257,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AudioCallScreen(
-          targetId: widget.customerEmail!,
-          senderId: widget.agentEmail!,
-          senderName: widget.agentName!,
-        ),
-      ),
-    );
-  }
-
-  void _handleIncomingCall(Map<String, dynamic> data) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AudioCallScreen(
-          senderId: data['from'],
-          signalData: data['signal'],
+        builder: (context) => AgentAudioCallScreen(
+          customerEmail: widget.customerEmail!,
+          agentEmail: widget.agentEmail!,
+          agentName: widget.agentName!,
         ),
       ),
     );
