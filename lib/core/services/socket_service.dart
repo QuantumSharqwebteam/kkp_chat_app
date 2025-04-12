@@ -79,22 +79,9 @@ class SocketService {
       }
     });
 
-    // _socket.on('callTerminated', (data) {
-    //   debugPrint('📥 callTerminated: $data'); // ✅
-    //   if (_onCallTerminated != null) {
-    //     _onCallTerminated!(data);
-    //   }
-    // });
     _socket.on('callTerminated', (data) {
-      debugPrint('📥 callTerminated: $data'); // ✅
-
-      // ✅ Fix: check if data is not null and is a Map
-      if (data is Map<String, dynamic> && _onCallTerminated != null) {
-        _onCallTerminated!(data);
-      } else {
-        debugPrint(
-            "⚠️ Invalid or null data received for callTerminated: $data");
-      }
+      debugPrint('📥 callTerminated: $data');
+      _onCallTerminated?.call(data);
     });
 
     _socket.on('signalCandidate', (data) {
