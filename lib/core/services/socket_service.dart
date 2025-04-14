@@ -1,19 +1,35 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
-import 'dart:async';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+/// Combined service for chat (Socket.IO) and WebRTC audio calls
 class SocketService {
   static final SocketService _instance = SocketService._internal();
   factory SocketService() => _instance;
 
+  // Socket.IO
   late io.Socket _socket;
   bool _isConnected = false;
-  final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
+  final String serverUrl = dotenv.env['SOCKET_IO_URL']!;
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
+
+  // User info
+  String? senderId;
+  String? senderName;
+  String? targetId;
+
+  // Room members tracking
+  List<String> _roomMembers = [];
+  late StreamController<List<String>> _statusController;
+  Stream<List<String>> get statusStream => _statusController.stream;
+  List<String> get onlineUsers => List.from(_roomMembers);
+
+  // Chat callbacks
   Function(Map<String, dynamic>)? _onMessageReceived;
   Function(Map<String, dynamic>)? _onIncomingCall;
   Function(Map<String, dynamic>)? _onCallAnswered;
@@ -21,25 +37,19 @@ class SocketService {
   Function(Map<String, dynamic>)? _onSignalCandidate;
   bool isChatPageOpen = false;
 
-  io.Socket get socket => _socket;
-
-  String? senderId;
-  String? senderName;
-  String? targetId;
-
-  List<String> _roomMembers = [];
-  StreamController<List<String>> _statusController =
-      StreamController<List<String>>.broadcast();
-
-  Stream<List<String>> get statusStream => _statusController.stream;
-
-  List<String> get onlineUsers => List.from(_roomMembers);
+  // WebRTC
+  RTCPeerConnection? _peerConnection;
+  MediaStream? _localStream;
+  MediaStream? _remoteStream;
 
   SocketService._internal();
 
-  void initSocket(String userName, String userEmail, String role) {
-    _statusController.close();
+  /// Initialize both Socket.IO and WebRTC peer connection
+  void init(String userName, String userEmail, String role) {
+    // Setup status stream
     _statusController = StreamController<List<String>>.broadcast();
+
+    // Initialize Socket.IO
     _socket = io.io(serverUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
@@ -49,12 +59,16 @@ class SocketService {
     senderId = userEmail;
     senderName = userName;
 
+    // Socket events
     _socket.onConnect((_) {
       _isConnected = true;
       _reconnectAttempts = 0;
       debugPrint('✅ Connected to socket server');
-      _socket
-          .emit('join', {'user': userName, 'userId': userEmail, "role": role});
+      _socket.emit('join', {
+        'user': userName,
+        'userId': userEmail,
+        'role': role,
+      });
     });
 
     _socket.on('socketId', (socketId) {
@@ -66,6 +80,7 @@ class SocketService {
       _updateRoomMembers(List<String>.from(roomMembers));
     });
 
+    // Chat message
     _socket.on('receiveMessage', (data) {
       if (isChatPageOpen && _onMessageReceived != null) {
         _onMessageReceived!(data);
@@ -74,38 +89,36 @@ class SocketService {
       }
     });
 
+    // Audio call signaling events
     _socket.on('incomingCall', (data) {
-      debugPrint('📥 incomingCall: $data'); // ✅ Log full structure
-      if (_onIncomingCall != null) {
-        _onIncomingCall!(data);
-      }
+      debugPrint('📥 incomingCall: $data');
+      _onIncomingCall?.call(data);
+      handleOffer(data['signalData'] ?? data['offer']);
     });
 
     _socket.on('callAnswered', (data) {
-      debugPrint('📥 callAnswered: $data'); // ✅
-      if (_onCallAnswered != null) {
-        _onCallAnswered!(data);
-      }
+      debugPrint('📥 callAnswered: $data');
+      _onCallAnswered?.call(data);
+      handleAnswer(data['signalData'] ?? data['answer']);
+    });
+
+    _socket.on('signalCandidate', (data) {
+      debugPrint('📥 signalCandidate: $data');
+      _onSignalCandidate?.call(data);
+      handleCandidate(data['candidate']);
     });
 
     _socket.on('callTerminated', (data) {
       debugPrint('📥 callTerminated');
       _onCallTerminated?.call(data);
+      hangUp();
     });
 
-    _socket.on('signalCandidate', (data) {
-      debugPrint('📥 signalCandidate: $data'); // ✅
-      if (_onSignalCandidate != null) {
-        _onSignalCandidate!(data);
-      }
-    });
-
+    // Error & disconnect
     _socket.onDisconnect((_) {
       _isConnected = false;
       for (String email in _roomMembers) {
         LocalDbHelper.updateLastSeenTime(email);
-        debugPrint(
-            "⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
       }
       debugPrint('⚠️ Disconnected from socket server');
       _attemptReconnect(userName, userEmail, role);
@@ -117,104 +130,54 @@ class SocketService {
     });
 
     _socket.connect();
+
+    // Initialize WebRTC peer connection
+    _initPeerConnection();
   }
 
-  void _updateRoomMembers(List<String> newRoomMembers) {
-    if (_statusController.isClosed) {
-      debugPrint("StatusController is closed. Cannot update room members.");
-      return;
-    }
+  // ======================== Chat Methods ========================
 
-    Set<String> previousUsers = Set.from(_roomMembers);
-    Set<String> currentUsers = Set.from(newRoomMembers);
-
-    for (String email in previousUsers.difference(currentUsers)) {
+  void _updateRoomMembers(List<String> newMembers) {
+    if (_statusController.isClosed) return;
+    Set<String> prev = Set.from(_roomMembers);
+    Set<String> curr = Set.from(newMembers);
+    for (String email in prev.difference(curr)) {
       LocalDbHelper.updateLastSeenTime(email);
-      debugPrint(
-          "⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
     }
-
-    _roomMembers = newRoomMembers;
+    _roomMembers = newMembers;
     _statusController.add(List.from(_roomMembers));
   }
 
-  void getRoomMembers() {
-    _socket.emit('roomMembers');
-  }
-
-  bool isUserOnline(String email) {
-    return _roomMembers.contains(email);
-  }
-
-  void updateLastSeenTime(String email) {
-    LocalDbHelper.updateLastSeenTime(email);
-  }
-
+  void getRoomMembers() => _socket.emit('roomMembers');
+  bool isUserOnline(String email) => _roomMembers.contains(email);
+  void updateLastSeenTime(String email) =>
+      LocalDbHelper.updateLastSeenTime(email);
   String getLastSeenTime(String email) {
-    if (_roomMembers.contains(email)) {
-      return "Online";
-    }
-
+    if (_roomMembers.contains(email)) return 'Online';
     DateTime? lastSeen = LocalDbHelper.getLastSeenTime(email);
-    if (lastSeen == null) return "Not Available";
-
-    Duration diff = DateTime.now().difference(lastSeen);
-    if (diff.inSeconds < 30) {
-      return "Just now";
-    } else if (diff.inMinutes < 1) {
-      return "Few seconds ago";
-    } else if (diff.inMinutes == 1) {
-      return "1 min ago";
-    } else if (diff.inHours < 1) {
-      return "${diff.inMinutes} min ago";
-    } else if (diff.inHours == 1) {
-      return "1 hour ago";
-    } else if (diff.inDays < 1) {
-      return "${diff.inHours}h ago";
-    } else if (diff.inDays == 1) {
-      return "Yesterday";
-    } else {
-      return "${diff.inDays}d ago";
-    }
+    if (lastSeen == null) return 'Not Available';
+    final diff = DateTime.now().difference(lastSeen);
+    if (diff.inSeconds < 30) return 'Just now';
+    if (diff.inMinutes < 1) return 'Few seconds ago';
+    if (diff.inMinutes == 1) return '1 min ago';
+    if (diff.inHours < 1) return '${diff.inMinutes} min ago';
+    if (diff.inHours == 1) return '1 hour ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    return '${diff.inDays}d ago';
   }
 
-  void onReceiveMessage(Function(Map<String, dynamic>) callback) {
-    _onMessageReceived = callback;
-  }
-
-  void onIncomingCall(Function(Map<String, dynamic>) callback) {
-    _onIncomingCall = callback;
-  }
-
-  void onCallAnswered(Function(Map<String, dynamic>) callback) {
-    _onCallAnswered = callback;
-  }
-
-  void onCallTerminated(Function(Map<String, dynamic>) callback) {
-    _onCallTerminated = callback;
-  }
-
-  void onSignalCandidate(Function(Map<String, dynamic>) callback) {
-    _onSignalCandidate = callback;
-  }
-
-  void _attemptReconnect(String userName, String userEmail, String role) {
-    if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
-      _reconnectAttempts++;
-      debugPrint(
-          '🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
-
-      Future.delayed(_reconnectInterval, () {
-        if (!_isConnected) {
-          _socket.connect();
-          _socket.emit(
-              'join', {'user': userName, 'userId': userEmail, "role": role});
-        }
-      });
-    } else {
-      debugPrint('🚫 Max reconnection attempts reached or user logged out.');
-    }
-  }
+  void onReceiveMessage(Function(Map<String, dynamic>) cb) =>
+      _onMessageReceived = cb;
+  void onIncomingCall(Function(Map<String, dynamic>) cb) =>
+      _onIncomingCall = cb;
+  void onCallAnswered(Function(Map<String, dynamic>) cb) =>
+      _onCallAnswered = cb;
+  void onCallTerminated(Function(Map<String, dynamic>) cb) =>
+      _onCallTerminated = cb;
+  void onSignalCandidate(Function(Map<String, dynamic>) cb) =>
+      _onSignalCandidate = cb;
+  void toggleChatPageOpen(bool open) => isChatPageOpen = open;
 
   void sendMessage({
     String? targetEmail,
@@ -225,103 +188,26 @@ class SocketService {
     Map<String, dynamic>? form,
     String? mediaUrl,
   }) {
-    if (_isConnected) {
-      Map<String, dynamic> messageData = {
-        'senderId': senderEmail,
-        'senderName': senderName,
-        'type': type,
-      };
-
-      if (targetEmail != null) {
-        messageData['targetId'] = targetEmail;
-      }
-
-      if (message != null) {
-        messageData['message'] = message;
-      }
-
-      if (form != null) {
-        messageData['form'] = form;
-      }
-
-      if (mediaUrl != null) {
-        messageData['mediaUrl'] = mediaUrl;
-      }
-
-      _socket.emit('sendMessage', messageData);
-    } else {
+    if (!_isConnected) {
       debugPrint('Socket is not connected. Cannot send message.');
+      return;
     }
-  }
-
-  void initiateCall({
-    required String targetId,
-    required dynamic signalData,
-    required String senderId,
-    required String senderName,
-  }) {
-    debugPrint("📞 Sending offer: $signalData"); // ✅ ADDED
-
-    if (_isConnected) {
-      _socket.emit('initiateCall', {
-        'targetId': targetId,
-        'signalData': signalData,
-        'senderId': senderId,
-        'senderName': senderName,
-      });
-    } else {
-      debugPrint('Socket is not connected. Cannot initiate call.');
-    }
-  }
-
-  void answerCall({
-    required String to,
-    required dynamic signalData,
-  }) {
-    if (_isConnected) {
-      debugPrint("✅ Sending answer: $signalData"); // ✅ ADDED
-      _socket.emit('answerCall', {
-        'to': to,
-        'signalData': signalData,
-      });
-    } else {
-      debugPrint('Socket is not connected. Cannot answer call.');
-    }
-  }
-
-  void terminateCall({
-    required String targetId,
-  }) {
-    if (_isConnected) {
-      debugPrint("❌ Sending terminate call to $targetId"); // ✅ ADDED
-      _socket.emit('terminateCall', {
-        'targetId': targetId,
-      });
-    } else {
-      debugPrint('Socket is not connected. Cannot terminate call.');
-    }
-  }
-
-  void signalCandidate({
-    required String to,
-    required dynamic candidate,
-  }) {
-    if (_isConnected) {
-      debugPrint("🧊 Sending ICE candidate: $candidate"); // ✅ ADDED
-      _socket.emit('signalCandidate', {
-        'to': to,
-        'candidate': candidate,
-      });
-    } else {
-      debugPrint('Socket is not connected. Cannot signal candidate.');
-    }
+    final data = {
+      'senderId': senderEmail,
+      'senderName': senderName,
+      'type': type,
+      if (targetEmail != null) 'targetId': targetEmail,
+      if (message != null) 'message': message,
+      if (form != null) 'form': form,
+      if (mediaUrl != null) 'mediaUrl': mediaUrl,
+    };
+    _socket.emit('sendMessage', data);
   }
 
   void disconnect() {
     if (_isConnected) {
       _socket.disconnect();
       _isConnected = false;
-      debugPrint('🛑 Socket disconnected');
     }
   }
 
@@ -331,19 +217,126 @@ class SocketService {
       _statusController.close();
       _socket.disconnect();
       _isConnected = false;
-      debugPrint('🛑🛑 Socket service disposed completely');
     } else {
       _socket.clearListeners();
       _reconnectAttempts = _maxReconnectAttempts;
-      debugPrint('🛑 🛑 Socket disposed finally ');
     }
+    _peerConnection?.dispose();
+    _localStream?.dispose();
+    _remoteStream?.dispose();
   }
 
   void _showPushNotification(Map<String, dynamic> data) {
     debugPrint('🔔 Push Notification: New message received: $data');
   }
 
-  void toggleChatPageOpen(bool toggle) {
-    isChatPageOpen = toggle;
+  void _attemptReconnect(String userName, String userEmail, String role) {
+    if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
+      _reconnectAttempts++;
+      Future.delayed(_reconnectInterval, () {
+        if (!_isConnected) {
+          _socket.connect();
+          _socket.emit('join', {
+            'user': userName,
+            'userId': userEmail,
+            'role': role,
+          });
+        }
+      });
+    }
+  }
+
+  // ======================== WebRTC Methods ========================
+
+  void _initPeerConnection() async {
+    final config = {
+      'iceServers': [
+        {'url': 'stun:stun.l.google.com:19302'},
+      ]
+    };
+    final mediaConstraints = {
+      'audio': {
+        'mandatory': {
+          'echoCancellation': 'true',
+          'googEchoCancellation': 'true',
+          'googNoiseSuppression': 'true',
+        },
+        'optional': [],
+      }
+    };
+    _peerConnection = await createPeerConnection(config);
+    _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+    _remoteStream = await createLocalMediaStream('remote');
+
+    // Add local tracks
+    _localStream?.getTracks().forEach((track) {
+      _peerConnection?.addTrack(track, _localStream!);
+    });
+
+    // ICE candidate handling
+    _peerConnection?.onIceCandidate = (candidate) {
+      _socket.emit('signalCandidate', {
+        'candidate': candidate.toMap(),
+        'targetId': targetId,
+      });
+    };
+
+    // Remote track handling
+    _peerConnection?.onTrack = (event) {
+      if (event.track.kind == 'audio') {
+        _remoteStream?.addTrack(event.track);
+      }
+    };
+  }
+
+  Future<void> createOffer(String to) async {
+    targetId = to;
+    final offer = await _peerConnection?.createOffer({});
+    await _peerConnection?.setLocalDescription(offer!);
+    _socket.emit('initiateCall', {
+      'targetId': to,
+      'signalData': offer?.toMap(),
+      'senderId': senderId,
+      'senderName': senderName,
+    });
+  }
+
+  Future<void> handleOffer(dynamic offer) async {
+    await _peerConnection?.setRemoteDescription(
+      RTCSessionDescription(offer['sdp'], offer['type']),
+    );
+    final answer = await _peerConnection?.createAnswer({});
+    await _peerConnection?.setLocalDescription(answer!);
+    _socket.emit('answerCall', {
+      'to': targetId,
+      'signalData': answer?.toMap(),
+    });
+  }
+
+  Future<void> handleAnswer(dynamic answer) async {
+    await _peerConnection?.setRemoteDescription(
+      RTCSessionDescription(answer['sdp'], answer['type']),
+    );
+  }
+
+  void handleCandidate(dynamic candidate) {
+    final c = RTCIceCandidate(
+      candidate['candidate'],
+      candidate['sdpMid'],
+      candidate['sdpMLineIndex'],
+    );
+    _peerConnection?.addCandidate(c);
+  }
+
+  void hangUp() {
+    _socket.emit('terminateCall', {
+      'targetId': targetId,
+    });
+    _peerConnection?.close();
+    _localStream?.dispose();
+    _remoteStream?.dispose();
+    _peerConnection = null;
+    _localStream = null;
+    _remoteStream = null;
   }
 }

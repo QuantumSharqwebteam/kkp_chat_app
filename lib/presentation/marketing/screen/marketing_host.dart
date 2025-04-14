@@ -37,7 +37,7 @@ class _MarketingHostState extends State<MarketingHost> {
   Future<void> _loadUserDataAndInitializeSocket() async {
     await _loadUserData().whenComplete(() {
       if (agentName != null && agentEmail != null && rolename != null) {
-        _socketService.initSocket(agentName!, agentEmail!, rolename!);
+        _socketService.init(agentName!, agentEmail!, rolename!);
       } else {
         debugPrint("Skipping socket init: agentName or agentEmail is null");
       }
