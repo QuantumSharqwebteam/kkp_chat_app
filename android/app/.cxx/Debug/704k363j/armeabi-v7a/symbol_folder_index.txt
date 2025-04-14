@@ -1,0 +1,1 @@
+/home/msi/FlutterProjects/kkp_chat_app/build/app/intermediates/cxx/Debug/704k363j/obj/armeabi-v7a

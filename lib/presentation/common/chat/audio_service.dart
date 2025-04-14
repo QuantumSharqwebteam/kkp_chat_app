@@ -19,7 +19,14 @@ class AudioCallService {
     };
 
     final Map<String, dynamic> mediaConstraints = {
-      'audio': true,
+      'audio': {
+        'mandatory': {
+          'echoCancellation': 'true',
+          'googEchoCancellation': 'true',
+          'googNoiseSuppression': 'true',
+        },
+        'optional': [],
+      }
     };
 
     _createPeerConnection(config, mediaConstraints);
