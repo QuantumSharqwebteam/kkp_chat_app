@@ -45,6 +45,22 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   void initState() {
     super.initState();
     _initialize();
+
+    // 👇 Listen for remote ICE candidates
+    _socketService.onSignalCandidate((candidate) async {
+      debugPrint('🧊 Received remote ICE candidate');
+      try {
+        await _peerConnection?.addCandidate(
+          RTCIceCandidate(
+            candidate['candidate'],
+            candidate['sdpMid'],
+            candidate['sdpMLineIndex'],
+          ),
+        );
+      } catch (e) {
+        debugPrint('⚠️ Failed to add candidate: $e');
+      }
+    });
   }
 
   Future<void> _initialize() async {
@@ -83,15 +99,25 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
     try {
       await _createPeerConnection();
       await _getUserMedia();
+
+      // ⬇️ Set the offer received from the caller
+      final remoteOffer = RTCSessionDescription(
+        widget.args.signalData!['sdp'],
+        widget.args.signalData!['type'],
+      );
+      await _peerConnection!.setRemoteDescription(remoteOffer);
+
+      // ⬇️ Now create and send the answer
       final answer = await _peerConnection!.createAnswer({
         'offerToReceiveAudio': true,
       });
-      await _peerConnection!.setRemoteDescription(answer);
+      await _peerConnection!.setLocalDescription(answer);
 
       _socketService.answerCall(
         to: widget.args.remoteUserId,
         signalData: answer.toMap(),
       );
+
       setState(() {
         _isCallRunning = true;
       });
@@ -118,16 +144,21 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
         if (event.track.kind == 'audio') {
           _remoteStream = event.streams.first;
           debugPrint('🔊 Remote audio stream assigned');
+          debugPrint(
+              '🔊 Remote audio tracks: ${_remoteStream?.getAudioTracks().length}');
         }
       };
 
-      _peerConnection!.onIceCandidate = (candidate) async {
-        if (_isCallRunning) {
-          await _peerConnection!.addCandidate(candidate);
-          debugPrint('🧊 ICE candidate added directly');
-        } else {
-          debugPrint('🧊 ICE candidate buffered');
-        }
+      _peerConnection!.onIceCandidate = (candidate) {
+        debugPrint('📡 Sending ICE candidate');
+        _socketService.signalCandidate(
+          to: widget.args.remoteUserId,
+          candidate: {
+            'candidate': candidate.candidate,
+            'sdpMid': candidate.sdpMid,
+            'sdpMLineIndex': candidate.sdpMLineIndex,
+          },
+        );
       };
 
       _peerConnection!.onConnectionState = (state) {
