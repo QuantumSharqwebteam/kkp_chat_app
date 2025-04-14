@@ -2,6 +2,7 @@ C/C++ Structured Logs
 q
 o/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/additional_project_files.txtC
 A
+<<<<<<< HEAD
 ?com.android.build.gradle.internal.cxx.io.EncodedFileFingerPrint	Á³±£â2 ½³±£â2p
 n
 l/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/android_gradle_build.json	Á³±£â2£ ½³±£â2u
@@ -26,3 +27,29 @@ l
 j/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/symbol_folder_index.txt	Á³±£â2a ½³±£â2V
 T
 R/home/msi/SRC/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt	Á³±£â2¤ «©ªØà2
+=======
+?com.android.build.gradle.internal.cxx.io.EncodedFileFingerPrint	˜‹œÏâ2 €ñÊ£â2p
+n
+l/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/android_gradle_build.json	™‹œÏâ2£ „ñÊ£â2u
+s
+q/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/android_gradle_build_mini.json	™‹œÏâ2Ä „ñÊ£â2b
+`
+^/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/build.ninja	™‹œÏâ2©³ øðÊ£â2f
+d
+b/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/build.ninja.txt	™‹œÏâ2k
+i
+g/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/build_file_index.txt	™‹œÏâ2R ˆñÊ£â2l
+j
+h/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/compile_commands.json	™‹œÏâ2p
+n
+l/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/compile_commands.json.bin	™‹œÏâ2	v
+t
+r/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/metadata_generation_command.txt	™‹œÏâ2
+– ˆñÊ£â2i
+g
+e/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/prefab_config.json	™‹œÏâ2( ˆñÊ£â2n
+l
+j/home/msi/FlutterProjects/kkp_chat_app/android/app/.cxx/Debug/6i6j266p/armeabi-v7a/symbol_folder_index.txt	™‹œÏâ2a ˆñÊ£â2V
+T
+R/home/msi/SRC/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt	™‹œÏâ2¤ «©ªØà2
+>>>>>>> 8a086e84165ca66c5c69a01eff3bcbc469a5575f

@@ -38,7 +38,6 @@ class FormMessageBubble extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTextRow("S.NO.", formData["sNo"] ?? ""),
               _buildTextRow("Quality", formData["quality"] ?? ""),
               _buildTextRow("Weave", formData["weave"] ?? ""),
               _buildTextRow("Quantity", formData["quantity"]?.toString() ?? ""),

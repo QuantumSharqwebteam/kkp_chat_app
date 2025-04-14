@@ -53,17 +53,31 @@ class MessageBubble extends StatelessWidget {
                 textAlign: TextAlign.start,
               ),
             ),
-            Positioned(
-              bottom: -1,
-              right: 10,
-              child: Text(
-                timestamp ??
-                    DateFormat('hh:mm a').format(
-                        DateTime.parse(DateTime.now().toIso8601String())
-                            .toLocal()),
-                style: AppTextStyles.greyAAAAAA_10_400,
-              ),
-            ),
+            isMe
+                ? Positioned(
+                    bottom: -1,
+                    right: 10,
+                    child: Text(
+                      timestamp ??
+                          DateFormat('hh:mm a').format(
+                              DateTime.parse(DateTime.now().toIso8601String())
+                                  .toLocal()),
+                      style: AppTextStyles.greyAAAAAA_10_400
+                          .copyWith(fontSize: 8.5),
+                    ),
+                  )
+                : Positioned(
+                    bottom: -1,
+                    left: 10,
+                    child: Text(
+                      timestamp ??
+                          DateFormat('hh:mm a').format(
+                              DateTime.parse(DateTime.now().toIso8601String())
+                                  .toLocal()),
+                      style: AppTextStyles.greyAAAAAA_10_400
+                          .copyWith(fontSize: 8.5),
+                    ),
+                  ),
           ],
         ),
       ],

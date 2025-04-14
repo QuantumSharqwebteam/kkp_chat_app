@@ -6,8 +6,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/services/voice_call_service.dart';
-import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_service.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -45,6 +44,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
+  final AudioCallService _audioCallService;
+  _CustomerChatScreenState()
+      : _audioCallService = AudioCallService(SocketService().socket);
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final qualityController = TextEditingController();
@@ -62,69 +64,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
-    _socketService.listenForIncomingCall(_handleIncomingCall);
-    if (!_isListeningForCall) {
-      _isListeningForCall = true;
-      _socketService.listenForIncomingCall(_handleIncomingCall);
-    }
-  }
-
-  void _handleIncomingCall(dynamic data) {
-    debugPrint('📞 Incoming Call Received: $data');
-
-    if (data is! Map ||
-        data['from'] == null ||
-        data['callerName'] == null ||
-        data['signal'] == null) {
-      debugPrint('⚠️ Invalid incoming call data: $data');
-      return;
-    }
-
-    final callerId = data['from'] as String;
-    final callerName = data['callerName'] as String;
-    final offer = Map<String, dynamic>.from(data['signal']);
-
-    if (callerId.isEmpty || offer.isEmpty) {
-      debugPrint("❌ Missing caller ID or offer in call payload.");
-      return;
-    }
-
-    if (!mounted) return;
-
-    // Push the call screen to answer the call
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AudioCallScreen(
-          selfId: widget.customerEmail!,
-          targetId: callerId,
-          isCaller: false,
-          callerName: callerName,
-        ),
-      ),
-    ).then((_) {
-      // Initialize VoiceCallService with the offer if necessary
-      final voiceCallService = VoiceCallService(
-        selfId: widget.customerEmail!,
-        targetId: callerId,
-        isCaller: false,
-        callerName: callerName,
-      );
-
-      voiceCallService.onCallConnected = () {
-        debugPrint("Call connected");
-      };
-
-      voiceCallService.onCallEnded = (isPeerHangup) {
-        debugPrint("Call ended: $isPeerHangup");
-      };
-
-      voiceCallService.onError = (message) {
-        debugPrint("Call error: $message");
-      };
-
-      voiceCallService.initWithOffer(offer);
-    });
+    _socketService.onIncomingCall(_handleIncomingCall);
+    _socketService.onCallAnswered(_handleCallAnswered);
+    _socketService.onCallTerminated(_handleCallTerminated);
+    _socketService.onSignalCandidate(_handleSignalCandidate);
   }
 
   @override
@@ -132,6 +75,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
+    _audioCallService.dispose();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -159,6 +103,46 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       });
       _scrollToBottom();
     });
+  }
+
+  void _handleIncomingCall(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Incoming Call'),
+          content: Text('Incoming call from ${data['name']}'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _audioCallService.handleOffer(data['offer']);
+              },
+              child: Text('Answer'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _audioCallService.hangUp();
+              },
+              child: Text('Reject'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handleCallAnswered(Map<String, dynamic> data) {
+    _audioCallService.handleAnswer(data['answer']);
+  }
+
+  void _handleCallTerminated(Map<String, dynamic> data) {
+    _audioCallService.hangUp();
+  }
+
+  void _handleSignalCandidate(Map<String, dynamic> data) {
+    _audioCallService.handleCandidate(data['candidate']);
   }
 
   void _sendMessage({
@@ -341,22 +325,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              final String selfEmail = widget.customerEmail!;
-              final String selfName = widget.customerName!;
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AudioCallScreen(
-                    selfId: selfEmail,
-                    targetId: null, // Target ID will be assigned by the backend
-                    isCaller: true,
-                    callerName: selfName,
-                  ),
-                ),
-              );
-            },
+            onPressed: () {},
             icon: Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
