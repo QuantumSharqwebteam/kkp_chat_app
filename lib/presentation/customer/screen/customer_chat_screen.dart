@@ -7,6 +7,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/presentation/common/chat/audio_service.dart';
+// import 'package:kkp_chat_app/core/services/audio_call_service.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -45,8 +46,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
   final AudioCallService _audioCallService;
-  _CustomerChatScreenState()
-      : _audioCallService = AudioCallService(SocketService().socket);
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final qualityController = TextEditingController();
@@ -56,7 +55,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final rateController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [];
-  bool _isListeningForCall = false;
+
+  _CustomerChatScreenState()
+      : _audioCallService = AudioCallService(SocketService().socket);
 
   @override
   void initState() {
