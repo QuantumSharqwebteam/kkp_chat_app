@@ -21,6 +21,12 @@ class SocketService {
   Function(Map<String, dynamic>)? _onSignalCandidate;
   bool isChatPageOpen = false;
 
+  io.Socket get socket => _socket;
+
+  String? senderId;
+  String? senderName;
+  String? targetId;
+
   List<String> _roomMembers = [];
   StreamController<List<String>> _statusController =
       StreamController<List<String>>.broadcast();
@@ -39,6 +45,9 @@ class SocketService {
       'autoConnect': false,
       'reconnection': false,
     });
+
+    senderId = userEmail;
+    senderName = userName;
 
     _socket.onConnect((_) {
       _isConnected = true;

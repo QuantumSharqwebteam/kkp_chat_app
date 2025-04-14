@@ -6,7 +6,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common/chat/agent_audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_service.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -46,6 +46,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
+  final AudioCallService _audioCallService;
+  _AgentChatScreenState()
+      : _audioCallService = AudioCallService(SocketService().socket);
+
   final qualityController = TextEditingController();
   final quantityController = TextEditingController();
   final weaveController = TextEditingController();
@@ -60,6 +64,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onIncomingCall(_handleIncomingCall);
+    _socketService.onCallAnswered(_handleCallAnswered);
+    _socketService.onCallTerminated(_handleCallTerminated);
+    _socketService.onSignalCandidate(_handleSignalCandidate);
     _loadPreviousMessages();
   }
 
@@ -73,6 +81,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     rateController.dispose();
     compositionController.dispose();
     weaveController.dispose();
+    _audioCallService.dispose();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -139,7 +148,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     setState(() {
       messages.add({
         "text": data["message"],
-        "timeStamp": currentTime,
+        "timestamp": currentTime,
         "isMe": data["senderId"] == widget.agentEmail,
         "type": data["type"] ?? "text",
         "mediaUrl": data["mediaUrl"],
@@ -147,6 +156,22 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       });
       _scrollToBottom();
     });
+  }
+
+  void _handleIncomingCall(Map<String, dynamic> data) {
+    _audioCallService.handleOffer(data['offer']);
+  }
+
+  void _handleCallAnswered(Map<String, dynamic> data) {
+    _audioCallService.handleAnswer(data['answer']);
+  }
+
+  void _handleCallTerminated(Map<String, dynamic> data) {
+    _audioCallService.hangUp();
+  }
+
+  void _handleSignalCandidate(Map<String, dynamic> data) {
+    _audioCallService.handleCandidate(data['candidate']);
   }
 
   void _sendMessage({
@@ -254,16 +279,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _initiateAudioCall() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AgentAudioCallScreen(
-          customerEmail: widget.customerEmail!,
-          agentEmail: widget.agentEmail!,
-          agentName: widget.agentName!,
-        ),
-      ),
-    );
+    _audioCallService.createOffer(widget.customerEmail!);
   }
 
   String formatTimestamp(String? timestamp) {
