@@ -6,7 +6,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common/chat/agent_audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -253,19 +253,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _sendMessage(messageText: "Fill details");
   }
 
-  void _initiateAudioCall() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AgentAudioCallScreen(
-          customerEmail: widget.customerEmail!,
-          agentEmail: widget.agentEmail!,
-          agentName: widget.agentName!,
-        ),
-      ),
-    );
-  }
-
   String formatTimestamp(String? timestamp) {
     if (timestamp == null || timestamp.isEmpty) {
       final currentTime = DateTime.now();
@@ -380,6 +367,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             onSendForm: sendFormButton,
           ),
         ],
+      ),
+    );
+  }
+
+  void _initiateAudioCall() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AudioCallScreen(
+          args: AudioCallScreenArgs(
+            callDirection: CallDirection.requestingCall,
+            remoteUserFullName: widget.customerName!,
+            remoteUserId: widget.customerEmail!,
+            senderEmail: widget.agentEmail!,
+            senderName: widget.agentName!,
+          ),
+        ),
       ),
     );
   }

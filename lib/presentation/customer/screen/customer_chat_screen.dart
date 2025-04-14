@@ -6,7 +6,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/presentation/common/chat/customer_audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -117,11 +117,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CustomerAudioCallScreen(
-                      agentEmail: data['from'],
-                      customerEmail: widget.customerEmail!,
-                      customerName: widget.customerName!,
-                      signalData: data['signal'],
+                    builder: (context) => AudioCallScreen(
+                      args: AudioCallScreenArgs(
+                        callDirection: CallDirection.receivingCall,
+                        remoteUserFullName: data['from'],
+                        remoteUserId: data['from'],
+                        signalData: data['signal'],
+                        senderEmail: "",
+                        senderName: "",
+                      ),
                     ),
                   ),
                 );
@@ -133,6 +137,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       },
     );
   }
+
+  // void _handleIncomingCall(Map<String, dynamic> data) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => AudioCallScreen(
+  //         callDirection: CallDirection.receivingCall,
+  //         remoteUserFullName: data['from'],
+  //         remoteUserId: data['from'],
+  //         signalData: data['signal'],
+  //         senderEmail: "",
+  //         sendername: "",
+  //       ),
+  //     ),
+  //   );
+  // }
 
   void _sendMessage({
     required String messageText,

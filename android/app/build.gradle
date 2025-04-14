@@ -8,7 +8,8 @@ plugins {
 android {
     namespace = "com.example.kkp_chat_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "28.0.12674087"
+    //flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

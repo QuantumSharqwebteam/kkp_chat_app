@@ -85,9 +85,10 @@ class SocketService {
     });
 
     _socket.on('signalCandidate', (data) {
-      debugPrint('📥 signalCandidate: $data'); // ✅
+      debugPrint('📥 signalCandidate: $data');
+      // Check if the callback is assigned, then invoke it
       if (_onSignalCandidate != null) {
-        _onSignalCandidate!(data);
+        _onSignalCandidate!(data); // Callback is executed here
       }
     });
 
@@ -186,7 +187,7 @@ class SocketService {
   }
 
   void onSignalCandidate(Function(Map<String, dynamic>) callback) {
-    _onSignalCandidate = callback;
+    _onSignalCandidate = callback; // Assign the callback to the variable
   }
 
   void _attemptReconnect(String userName, String userEmail, String role) {

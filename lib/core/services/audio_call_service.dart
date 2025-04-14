@@ -47,6 +47,9 @@ class AudioCallService {
         senderName: senderName,
       );
       debugPrint('📢 Offer sent to $targetId');
+
+      // ✅ Ensure speaker is on
+      await Helper.setSpeakerphoneOn(true);
     } catch (e) {
       debugPrint('⚠️ Error initiating call: $e');
     }
@@ -79,6 +82,9 @@ class AudioCallService {
         signalData: answer.toMap(),
       );
       debugPrint('📢 Answer sent to $callerId');
+
+      // ✅ Ensure speaker is on
+      await Helper.setSpeakerphoneOn(true);
     } catch (e) {
       debugPrint('⚠️ Error answering call: $e');
     }
@@ -108,7 +114,14 @@ class AudioCallService {
             debugPrint('🟢 enabled: ${track.enabled}');
           }
 
-          Helper.setSpeakerphoneOn(true); // Ensure speaker is on
+          // ✅ Ensure audio plays (especially important for iOS/Android)
+          // Attach remote stream to audio output
+          _remoteStream?.getAudioTracks().forEach((track) {
+            track.enabled = true;
+          });
+
+          // ✅ Enable speaker
+          Helper.setSpeakerphoneOn(true);
         }
       };
 
