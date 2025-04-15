@@ -105,7 +105,7 @@ class SocketService {
       debugPrint('📥 callAnswered: $data');
       _onCallAnswered?.call(data);
       if (data != null) {
-        handleAnswer(data['signal']);
+        handleAnswer(data);
       } else {
         debugPrint('Error: signalData is null in callAnswered.');
       }
