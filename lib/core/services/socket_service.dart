@@ -94,8 +94,8 @@ class SocketService {
     _socket.on('incomingCall', (data) {
       debugPrint('📥 incomingCall: $data');
       _onIncomingCall?.call(data);
-      if (data['signalData'] != null) {
-        handleOffer(data['signalData']);
+      if (data['v'] != null) {
+        handleOffer(data['signal']);
       } else {
         debugPrint('Error: signalData is null in incomingCall.');
       }
@@ -104,8 +104,8 @@ class SocketService {
     _socket.on('callAnswered', (data) {
       debugPrint('📥 callAnswered: $data');
       _onCallAnswered?.call(data);
-      if (data['signalData'] != null) {
-        handleAnswer(data['signalData']);
+      if (data['signal'] != null) {
+        handleAnswer(data['signal']);
       } else {
         debugPrint('Error: signalData is null in callAnswered.');
       }
@@ -312,7 +312,7 @@ class SocketService {
       'senderId': senderId,
       'senderName': senderName,
     });
-    debugPrint('Offer sent to $to: $offer');
+    debugPrint('Offer sent to $to: sdp=${offer.sdp}, type=${offer.type}');
   }
 
   Future<void> handleOffer(dynamic offerData) async {
