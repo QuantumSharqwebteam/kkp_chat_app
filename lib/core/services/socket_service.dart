@@ -90,16 +90,25 @@ class SocketService {
     });
 
     // Audio call signaling events
+
     _socket.on('incomingCall', (data) {
       debugPrint('📥 incomingCall: $data');
       _onIncomingCall?.call(data);
-      handleOffer(data['signalData'] ?? data['offer']);
+      if (data['signalData'] != null) {
+        handleOffer(data['signalData']);
+      } else {
+        debugPrint('Error: signalData is null in incomingCall.');
+      }
     });
 
     _socket.on('callAnswered', (data) {
       debugPrint('📥 callAnswered: $data');
       _onCallAnswered?.call(data);
-      handleAnswer(data['signalData'] ?? data['answer']);
+      if (data['signalData'] != null) {
+        handleAnswer(data['signalData']);
+      } else {
+        debugPrint('Error: signalData is null in callAnswered.');
+      }
     });
 
     _socket.on('signalCandidate', (data) {
@@ -254,7 +263,7 @@ class SocketService {
         {'url': 'stun:stun.l.google.com:19302'},
       ]
     };
-    final mediaConstraints = {
+    final Map<String, dynamic> mediaConstraints = {
       'audio': {
         'mandatory': {
           'echoCancellation': 'true',
@@ -291,26 +300,41 @@ class SocketService {
 
   Future<void> createOffer(String to) async {
     targetId = to;
-    final offer = await _peerConnection?.createOffer({});
-    await _peerConnection?.setLocalDescription(offer!);
+    final offer = await _peerConnection?.createOffer();
+    if (offer == null) {
+      debugPrint('Error: Failed to create offer.');
+      return;
+    }
+    await _peerConnection?.setLocalDescription(offer);
     _socket.emit('initiateCall', {
       'targetId': to,
-      'signalData': offer?.toMap(),
+      'signalData': offer.toMap(),
       'senderId': senderId,
       'senderName': senderName,
     });
+    debugPrint('Offer sent to $to: $offer');
   }
 
-  Future<void> handleOffer(dynamic offer) async {
-    await _peerConnection?.setRemoteDescription(
-      RTCSessionDescription(offer['sdp'], offer['type']),
-    );
-    final answer = await _peerConnection?.createAnswer({});
-    await _peerConnection?.setLocalDescription(answer!);
+  Future<void> handleOffer(dynamic offerData) async {
+    if (offerData == null ||
+        offerData['sdp'] == null ||
+        offerData['type'] == null) {
+      debugPrint('Error: Invalid offer data received.');
+      return;
+    }
+    final offer = RTCSessionDescription(offerData['sdp'], offerData['type']);
+    await _peerConnection?.setRemoteDescription(offer);
+    final answer = await _peerConnection?.createAnswer();
+    if (answer == null) {
+      debugPrint('Error: Failed to create answer.');
+      return;
+    }
+    await _peerConnection?.setLocalDescription(answer);
     _socket.emit('answerCall', {
       'to': targetId,
-      'signalData': answer?.toMap(),
+      'signalData': answer.toMap(),
     });
+    debugPrint('Answer sent to $targetId: $answer');
   }
 
   Future<void> handleAnswer(dynamic answer) async {
