@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
@@ -10,13 +11,9 @@ import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.d
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Combined updated Customer and Agent Chat Screens
-
-// ------------------ CustomerChatScreen ------------------
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
   final String? customerImage;
@@ -54,13 +51,13 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
   final TextEditingController rateController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [];
+  bool _isCallInProgress = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Initialize unified service
     _callService.init(
       widget.customerName!,
       widget.customerEmail!,
@@ -68,12 +65,25 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
     );
     _callService.toggleChatPageOpen(true);
 
-    // Subscribe to events
     _callService.onReceiveMessage(_handleIncomingMessage);
     _callService.onIncomingCall(_handleIncomingCall);
-    _callService.onCallAnswered((_) {});
-    _callService.onCallTerminated((_) {});
+    _callService.onCallAnswered(_handleCallAnswered);
+    _callService.onCallTerminated(_handleCallTerminated);
     _callService.onSignalCandidate((_) {});
+  }
+
+  void _handleCallAnswered(Map<String, dynamic> data) {
+    setState(() {
+      _isCallInProgress = true;
+    });
+    _showCallOverlay();
+  }
+
+  void _handleCallTerminated(Map<String, dynamic> data) {
+    setState(() {
+      _isCallInProgress = false;
+    });
+    Navigator.of(context).pop();
   }
 
   @override
@@ -115,15 +125,15 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
                   _callService.handleOffer(data);
+                  Navigator.pop(context);
                 },
                 child: Text('Answer'),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.pop(context);
                   _callService.hangUp();
+                  Navigator.pop(context);
                 },
                 child: Text('Reject'),
               ),
@@ -135,14 +145,11 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   Future<bool> _requestCallPermissions() async {
-    // Check if microphone permission is already granted
     bool microphoneGranted = await Permission.microphone.isGranted;
 
-    // Request microphone permission if not already granted
     if (!microphoneGranted) {
       microphoneGranted = await Permission.microphone.request().isGranted;
 
-      // Handle permission denied
       if (!microphoneGranted) {
         if (mounted) {
           showDialog(
@@ -165,6 +172,39 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
     }
 
     return true;
+  }
+
+  void _showCallOverlay() {
+    if (!_isCallInProgress) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text('Call in Progress'),
+        content: Text('Tap "End Call" to hang up.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _callService.hangUp();
+              setState(() {
+                _isCallInProgress = false;
+              });
+              Navigator.pop(context);
+            },
+            child: Text('End Call'),
+          ),
+          TextButton(
+            onPressed: _toggleSpeakerphone,
+            child: Text('Speaker'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleSpeakerphone() {
+    // Implement speakerphone toggle logic here
   }
 
   void _sendMessage({
@@ -304,12 +344,6 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
             Text(widget.agentName!, style: AppTextStyles.black14_400),
           ],
         ),
-        actions: [
-          // IconButton(
-          //   icon: Icon(Icons.call_outlined, color: Colors.black),
-          //   onPressed: () {},
-          // ),
-        ],
       ),
       body: Column(
         children: [

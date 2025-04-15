@@ -1,16 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 
-/// Combined service for chat (Socket.IO) and WebRTC audio calls
 class SocketService {
   static final SocketService _instance = SocketService._internal();
   factory SocketService() => _instance;
 
-  // Socket.IO
   late io.Socket _socket;
   bool _isConnected = false;
   final String serverUrl = dotenv.env['SOCKET_IO_URL']!;
@@ -18,18 +16,15 @@ class SocketService {
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
 
-  // User info
   String? senderId;
   String? senderName;
   String? targetId;
 
-  // Room members tracking
   List<String> _roomMembers = [];
   late StreamController<List<String>> _statusController;
   Stream<List<String>> get statusStream => _statusController.stream;
   List<String> get onlineUsers => List.from(_roomMembers);
 
-  // Chat callbacks
   Function(Map<String, dynamic>)? _onMessageReceived;
   Function(Map<String, dynamic>)? _onIncomingCall;
   Function(Map<String, dynamic>)? _onCallAnswered;
@@ -37,19 +32,17 @@ class SocketService {
   Function(Map<String, dynamic>)? _onSignalCandidate;
   bool isChatPageOpen = false;
 
-  // WebRTC
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
   MediaStream? _remoteStream;
 
+  // A set to keep track of ongoing offers
+  final Set<String> _ongoingOffers = <String>{};
+
   SocketService._internal();
 
-  /// Initialize both Socket.IO and WebRTC peer connection
   void init(String userName, String userEmail, String role) {
-    // Setup status stream
     _statusController = StreamController<List<String>>.broadcast();
-
-    // Initialize Socket.IO
     _socket = io.io(serverUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
@@ -59,11 +52,9 @@ class SocketService {
     senderId = userEmail;
     senderName = userName;
 
-    // Socket events
     _socket.onConnect((_) {
       _isConnected = true;
       _reconnectAttempts = 0;
-      debugPrint('✅ Connected to socket server');
       _socket.emit('join', {
         'user': userName,
         'userId': userEmail,
@@ -72,15 +63,13 @@ class SocketService {
     });
 
     _socket.on('socketId', (socketId) {
-      debugPrint('📌 Assigned Socket ID: $socketId');
+      debugPrint('Assigned Socket ID: $socketId');
     });
 
     _socket.on('roomMembers', (roomMembers) {
-      debugPrint('👥 Current Room Members: $roomMembers');
       _updateRoomMembers(List<String>.from(roomMembers));
     });
 
-    // Chat message
     _socket.on('receiveMessage', (data) {
       if (isChatPageOpen && _onMessageReceived != null) {
         _onMessageReceived!(data);
@@ -89,62 +78,39 @@ class SocketService {
       }
     });
 
-    // Audio call signaling events
-
     _socket.on('incomingCall', (data) {
-      // debugPrint('📥 incomingCall: $data');
       _onIncomingCall?.call(data);
-      // if (data != null) {
-      //   handleOffer(data);
-      // } else {
-      //   debugPrint('Error: signalData is null in incomingCall.');
-      // }
     });
 
     _socket.on('callAnswered', (data) {
-      // debugPrint('📥 callAnswered: $data');
       _onCallAnswered?.call(data);
-      // if (data != null) {
-      //   handleAnswer(data);
-      // } else {
-      //   debugPrint('Error: signalData is null in callAnswered.');
-      // }
     });
 
     _socket.on('signalCandidate', (data) {
-      // debugPrint('📥 signalCandidate: $data');
       _onSignalCandidate?.call(data);
       handleCandidate(data['candidate']);
     });
 
     _socket.on('callTerminated', (data) {
-      // debugPrint('📥 callTerminated');
       _onCallTerminated?.call(data);
       hangUp();
     });
 
-    // Error & disconnect
     _socket.onDisconnect((_) {
       _isConnected = false;
       for (String email in _roomMembers) {
         LocalDbHelper.updateLastSeenTime(email);
       }
-      debugPrint('⚠️ Disconnected from socket server');
       _attemptReconnect(userName, userEmail, role);
     });
 
     _socket.onError((error) {
-      debugPrint('❌ Socket Error: $error');
       _attemptReconnect(userName, userEmail, role);
     });
 
     _socket.connect();
-
-    // Initialize WebRTC peer connection
     _initPeerConnection();
   }
-
-  // ======================== Chat Methods ========================
 
   void _updateRoomMembers(List<String> newMembers) {
     if (_statusController.isClosed) return;
@@ -233,16 +199,14 @@ class SocketService {
 
     _peerConnection?.close();
     _peerConnection = null;
-
     _localStream?.dispose();
     _localStream = null;
-
     _remoteStream?.dispose();
     _remoteStream = null;
   }
 
   void _showPushNotification(Map<String, dynamic> data) {
-    debugPrint('🔔 Push Notification: New message received: $data');
+    debugPrint('Push Notification: New message received: $data');
   }
 
   void _attemptReconnect(String userName, String userEmail, String role) {
@@ -261,12 +225,14 @@ class SocketService {
     }
   }
 
-  // ======================== WebRTC Methods ========================
-
   void _initPeerConnection() async {
     final config = {
       'iceServers': [
         {'urls': 'stun:stun.l.google.com:19302'},
+        {'urls': 'stun:stun1.l.google.com:19302'},
+        {'urls': 'stun:stun2.l.google.com:19302'},
+        {'urls': 'stun:stun3.l.google.com:19302'},
+        {'urls': 'stun:stun4.l.google.com:19302'},
       ],
     };
     final Map<String, dynamic> mediaConstraints = {
@@ -289,12 +255,7 @@ class SocketService {
         _peerConnection!.addTrack(track, _localStream!);
       }
     }
-    // // Add local tracks
-    // _localStream?.getTracks().forEach((track) {
-    //   _peerConnection?.addTrack(track, _localStream!);
-    // });
 
-    // ICE candidate handling
     _peerConnection?.onIceCandidate = (candidate) {
       _socket.emit('signalCandidate', {
         'candidate': candidate.toMap(),
@@ -302,7 +263,6 @@ class SocketService {
       });
     };
 
-    // Remote track handling
     _peerConnection?.onTrack = (event) {
       if (event.track.kind == 'audio') {
         _remoteStream?.addTrack(event.track);
@@ -311,37 +271,44 @@ class SocketService {
   }
 
   Future<void> createOffer(String to) async {
-    targetId = to;
-    final offer = await _peerConnection?.createOffer();
-    if (offer == null) {
-      debugPrint('Error: Failed to create offer.');
+    // Check if an offer is already being processed for this target
+    if (_ongoingOffers.contains(to)) {
+      debugPrint('Offer already in progress for target: $to');
       return;
     }
-    await _peerConnection?.setLocalDescription(offer);
-    _socket.emit('initiateCall', {
-      'targetId': to,
-      'signalData': offer.toMap(),
-      'senderId': senderId,
-      'senderName': senderName,
-    });
-    debugPrint('Offer sent to $to: sdp=${offer.sdp}, type=${offer.type}');
+
+    // Add the target to the ongoing offers set
+    _ongoingOffers.add(to);
+    targetId = to;
+
+    try {
+      final offer = await _peerConnection?.createOffer();
+      if (offer == null) {
+        debugPrint('Error: Failed to create offer.');
+        _ongoingOffers.remove(to); // Remove target if offer creation fails
+        return;
+      }
+
+      await _peerConnection?.setLocalDescription(offer);
+      _socket.emit('initiateCall', {
+        'targetId': to,
+        'signalData': offer.toMap(),
+        'senderId': senderId,
+        'senderName': senderName,
+      });
+      debugPrint('Offer sent to $to: sdp=${offer.sdp}, type=${offer.type}');
+    } catch (e) {
+      debugPrint('Error creating offer: $e');
+    } finally {
+      // Remove the target from the ongoing offers set after the offer is sent
+      _ongoingOffers.remove(to);
+    }
   }
 
   Future<void> handleOffer(dynamic offerData) async {
     if (_peerConnection == null) {
       debugPrint('Error: PeerConnection is null.');
       return;
-    }
-
-    // Guard: do not handle offer if already in stable state
-    if (_peerConnection!.signalingState ==
-            RTCSignalingState.RTCSignalingStateStable ||
-        _peerConnection!.signalingState ==
-            RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
-      // allow handling
-    } else {
-      debugPrint(
-          '🚫 Cannot handle offer in current signaling state: ${_peerConnection!.signalingState}');
     }
 
     try {
@@ -359,31 +326,41 @@ class SocketService {
           'signalData': answer.toMap(),
         });
 
-        debugPrint('✅ Answer sent to ${offerData['from']}');
+        debugPrint('Answer sent to ${offerData['from']}');
       }
     } catch (e) {
-      debugPrint('❌ Error in handleOffer: $e');
+      debugPrint('Error in handleOffer: $e');
     }
   }
 
   Future<void> handleAnswer(dynamic answer) async {
-    final signal = answer['signal'];
-    if (signal == null || signal['sdp'] == null || signal['type'] == null) {
-      debugPrint('❌ Invalid answer signal data');
-      return;
+    try {
+      final signal = answer['signal'];
+      if (signal == null || signal['sdp'] == null || signal['type'] == null) {
+        debugPrint('Invalid answer signal data');
+        return;
+      }
+      await _peerConnection?.setRemoteDescription(
+        RTCSessionDescription(signal['sdp'], signal['type']),
+      );
+      debugPrint('Answer handled successfully');
+    } catch (e) {
+      debugPrint('Error handling answer: $e');
     }
-    await _peerConnection?.setRemoteDescription(
-      RTCSessionDescription(signal['sdp'], signal['type']),
-    );
   }
 
   void handleCandidate(dynamic candidate) {
-    final c = RTCIceCandidate(
-      candidate['candidate'],
-      candidate['sdpMid'],
-      candidate['sdpMLineIndex'],
-    );
-    _peerConnection?.addCandidate(c);
+    try {
+      final c = RTCIceCandidate(
+        candidate['candidate'],
+        candidate['sdpMid'],
+        candidate['sdpMLineIndex'],
+      );
+      _peerConnection?.addCandidate(c);
+      debugPrint('ICE candidate added successfully');
+    } catch (e) {
+      debugPrint('Error adding ICE candidate: $e');
+    }
   }
 
   void hangUp() {

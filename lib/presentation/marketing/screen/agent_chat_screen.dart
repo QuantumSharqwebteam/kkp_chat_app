@@ -47,12 +47,6 @@ class AgentChatScreenState extends State<AgentChatScreen>
   final SocketService _callService = SocketService();
   final ChatRepository _chatRepository = ChatRepository();
 
-  final TextEditingController qualityController = TextEditingController();
-  final TextEditingController quantityController = TextEditingController();
-  final TextEditingController weaveController = TextEditingController();
-  final TextEditingController compositionController = TextEditingController();
-  final TextEditingController rateController = TextEditingController();
-
   List<Map<String, dynamic>> messages = [];
 
   @override
@@ -60,7 +54,6 @@ class AgentChatScreenState extends State<AgentChatScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
-    // Initialize unified service
     _callService.init(
       widget.agentName!,
       widget.agentEmail!,
@@ -68,18 +61,27 @@ class AgentChatScreenState extends State<AgentChatScreen>
     );
     _callService.toggleChatPageOpen(true);
 
-    // Subscribe to events
     _callService.onReceiveMessage(_handleIncomingMessage);
     _callService.onIncomingCall((_) {});
-    _callService.onCallAnswered((_) {
-      setState(() => _isCallInProgress = true);
-    });
-    _callService.onCallTerminated((_) {
-      setState(() => _isCallInProgress = false);
-    });
+    _callService.onCallAnswered(_handleCallAnswered);
+    _callService.onCallTerminated(_handleCallTerminated);
     _callService.onSignalCandidate((_) {});
 
     _loadPreviousMessages();
+  }
+
+  void _handleCallAnswered(Map<String, dynamic> data) {
+    setState(() {
+      _isCallInProgress = true;
+    });
+    _showCallOverlay();
+  }
+
+  void _handleCallTerminated(Map<String, dynamic> data) {
+    setState(() {
+      _isCallInProgress = false;
+    });
+    Navigator.of(context).pop();
   }
 
   @override
@@ -196,14 +198,11 @@ class AgentChatScreenState extends State<AgentChatScreen>
   }
 
   Future<bool> _requestCallPermissions() async {
-    // Check if microphone permission is already granted
     bool microphoneGranted = await Permission.microphone.isGranted;
 
-    // Request microphone permission if not already granted
     if (!microphoneGranted) {
       microphoneGranted = await Permission.microphone.request().isGranted;
 
-      // Handle permission denied
       if (!microphoneGranted) {
         if (mounted) {
           showDialog(
@@ -228,9 +227,37 @@ class AgentChatScreenState extends State<AgentChatScreen>
     return true;
   }
 
-  void _endCall() {
-    _callService.hangUp();
-    setState(() => _isCallInProgress = false);
+  void _showCallOverlay() {
+    if (!_isCallInProgress) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: Text('Call in Progress'),
+        content: Text('Tap "End Call" to hang up.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              _callService.hangUp();
+              setState(() {
+                _isCallInProgress = false;
+              });
+              Navigator.pop(context);
+            },
+            child: Text('End Call'),
+          ),
+          TextButton(
+            onPressed: _toggleSpeakerphone,
+            child: Text('Speaker'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleSpeakerphone() {
+    // Implement speakerphone toggle logic here
   }
 
   String _formatTimestamp(String? ts) {
@@ -277,7 +304,8 @@ class AgentChatScreenState extends State<AgentChatScreen>
               _isCallInProgress ? Icons.call_end : Icons.call_outlined,
               color: Colors.black,
             ),
-            onPressed: _isCallInProgress ? _endCall : _initiateAudioCall,
+            onPressed:
+                _isCallInProgress ? _callService.hangUp : _initiateAudioCall,
           ),
         ],
       ),
