@@ -310,10 +310,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               final channelName =
                   'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
               final temptoken =
-                  "007eJxTYPBfJf/teF4Z558vp2+deCE8TcNs++rjaQ8tVFQbIiWvPjqvwJBkbGyUlmhpnmRhmmZimWaZaJSUlmaQlGxpZmFkmWpk/m7vv/SGQEaGmabVLIwMEAjiOzIkpqfmlcTn5mekFGfkJ2YmFSVWpqbmGTuk5yZm5ugl5+fGJ5cWl+TnphbFFxQlJmWUZmWWJZYUI+QZGACBeDr6";
+                  "007eJxTYPj7dc9+voBdyU1/LZ8zqvBum9A9fYvsV/6nmnyBe0+b+i9VYEgyNjZKS7Q0T7IwTTOxTLNMNEpKSzNISrY0szCyTDUyj7z6L70hkJFhesQaVkYGCATx2RlKUotLDI2MGRgAEXwhlQ==";
               SocketService().sendAgoraCall(
                 targetId: widget.customerEmail!,
-                channelName: channelName,
+                channelName: "test123",
                 token: temptoken, //agoraToken,
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
@@ -326,7 +326,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                   builder: (_) => AgoraAudioCallScreen(
                     isCaller: true,
                     token: temptoken,
-                    channelName: channelName,
+                    channelName: "test123",
                     remoteUserId: widget.customerEmail!,
                     remoteUserName: widget.customerName!,
                   ),

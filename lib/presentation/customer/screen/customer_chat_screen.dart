@@ -62,6 +62,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService.onReceiveMessage(_handleIncomingMessage);
     // _socketService.onIncomingCall(_handleIncomingCall);
     _socketService.onIncomingCall((callData) {
+      print('Incoming call data received: $callData');
       final channelName = callData['channelName'];
       final token = callData['token'];
       final callerName = callData['callerName'];
