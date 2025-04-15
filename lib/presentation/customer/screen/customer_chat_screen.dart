@@ -120,11 +120,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     builder: (context) => AudioCallScreen(
                       args: AudioCallScreenArgs(
                         callDirection: CallDirection.receivingCall,
-                        remoteUserFullName: data['from'],
+                        remoteUserFullName: data['name'],
                         remoteUserId: data['from'],
-                        signalData: data['signal'],
                         senderEmail: "",
                         senderName: "",
+                        signalData: data["signal"],
                       ),
                     ),
                   ),
@@ -137,22 +137,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       },
     );
   }
-
-  // void _handleIncomingCall(Map<String, dynamic> data) {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => AudioCallScreen(
-  //         callDirection: CallDirection.receivingCall,
-  //         remoteUserFullName: data['from'],
-  //         remoteUserId: data['from'],
-  //         signalData: data['signal'],
-  //         senderEmail: "",
-  //         sendername: "",
-  //       ),
-  //     ),
-  //   );
-  // }
 
   void _sendMessage({
     required String messageText,

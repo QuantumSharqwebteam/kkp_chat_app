@@ -35,6 +35,7 @@ class AudioCallScreen extends StatefulWidget {
 class _AudioCallScreenState extends State<AudioCallScreen> {
   final SocketService _socketService = SocketService();
   final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
+  final RTCVideoRenderer _remoteRenderer = RTCVideoRenderer();
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
   MediaStream? _remoteStream;
@@ -65,6 +66,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   Future<void> _initialize() async {
     await _localRenderer.initialize();
+    await _remoteRenderer.initialize();
     if (widget.args.callDirection == CallDirection.requestingCall) {
       await _initiateCall();
     } else {
@@ -142,10 +144,11 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
       _peerConnection!.onTrack = (event) {
         debugPrint('🎥 Remote track added');
         if (event.track.kind == 'audio') {
-          _remoteStream = event.streams.first;
+          setState(() {
+            _remoteStream = event.streams.first;
+            _remoteRenderer.srcObject = _remoteStream; // Attach to renderer
+          });
           debugPrint('🔊 Remote audio stream assigned');
-          debugPrint(
-              '🔊 Remote audio tracks: ${_remoteStream?.getAudioTracks().length}');
         }
       };
 
@@ -177,18 +180,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
 
   Future<MediaStream> _getUserMedia() async {
     try {
-      final Map<String, dynamic> mediaConstraints = {
-        'audio': {
-          'mandatory': {
-            'echoCancellation': 'true',
-            'googEchoCancellation': 'true',
-            'googEchoCancellation2': 'true',
-            'googNoiseSuppression': 'true',
-            'googDAEchoCancellation': 'true',
-          },
-          'optional': [],
-        },
-      };
+      final mediaConstraints = {'audio': true};
       MediaStream stream =
           await navigator.mediaDevices.getUserMedia(mediaConstraints);
       debugPrint('🎤 Local media stream obtained');
@@ -236,6 +228,7 @@ class _AudioCallScreenState extends State<AudioCallScreen> {
   void dispose() {
     _peerConnection?.close();
     _localStream?.dispose();
+    _remoteRenderer.dispose();
     _remoteStream?.dispose();
     _localRenderer.dispose();
     super.dispose();
