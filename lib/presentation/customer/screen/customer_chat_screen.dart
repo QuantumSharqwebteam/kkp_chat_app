@@ -116,7 +116,7 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _callService.handleOffer(data['signal']);
+                  _callService.handleOffer(data);
                 },
                 child: Text('Answer'),
               ),

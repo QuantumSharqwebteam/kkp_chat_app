@@ -92,33 +92,33 @@ class SocketService {
     // Audio call signaling events
 
     _socket.on('incomingCall', (data) {
-      debugPrint('📥 incomingCall: $data');
+      // debugPrint('📥 incomingCall: $data');
       _onIncomingCall?.call(data);
-      if (data != null) {
-        handleOffer(data);
-      } else {
-        debugPrint('Error: signalData is null in incomingCall.');
-      }
+      // if (data != null) {
+      //   handleOffer(data);
+      // } else {
+      //   debugPrint('Error: signalData is null in incomingCall.');
+      // }
     });
 
     _socket.on('callAnswered', (data) {
-      debugPrint('📥 callAnswered: $data');
+      // debugPrint('📥 callAnswered: $data');
       _onCallAnswered?.call(data);
-      if (data != null) {
-        handleAnswer(data);
-      } else {
-        debugPrint('Error: signalData is null in callAnswered.');
-      }
+      // if (data != null) {
+      //   handleAnswer(data);
+      // } else {
+      //   debugPrint('Error: signalData is null in callAnswered.');
+      // }
     });
 
     _socket.on('signalCandidate', (data) {
-      debugPrint('📥 signalCandidate: $data');
+      // debugPrint('📥 signalCandidate: $data');
       _onSignalCandidate?.call(data);
       handleCandidate(data['candidate']);
     });
 
     _socket.on('callTerminated', (data) {
-      debugPrint('📥 callTerminated');
+      // debugPrint('📥 callTerminated');
       _onCallTerminated?.call(data);
       hangUp();
     });
@@ -230,9 +230,15 @@ class SocketService {
       _socket.clearListeners();
       _reconnectAttempts = _maxReconnectAttempts;
     }
-    _peerConnection?.dispose();
+
+    _peerConnection?.close();
+    _peerConnection = null;
+
     _localStream?.dispose();
+    _localStream = null;
+
     _remoteStream?.dispose();
+    _remoteStream = null;
   }
 
   void _showPushNotification(Map<String, dynamic> data) {
@@ -260,8 +266,8 @@ class SocketService {
   void _initPeerConnection() async {
     final config = {
       'iceServers': [
-        {'url': 'stun:stun.l.google.com:19302'},
-      ]
+        {'urls': 'stun:stun.l.google.com:19302'},
+      ],
     };
     final Map<String, dynamic> mediaConstraints = {
       'audio': {
@@ -273,14 +279,20 @@ class SocketService {
         'optional': [],
       }
     };
+
     _peerConnection = await createPeerConnection(config);
     _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
     _remoteStream = await createLocalMediaStream('remote');
 
-    // Add local tracks
-    _localStream?.getTracks().forEach((track) {
-      _peerConnection?.addTrack(track, _localStream!);
-    });
+    if (_peerConnection != null && _localStream != null) {
+      for (var track in _localStream!.getTracks()) {
+        _peerConnection!.addTrack(track, _localStream!);
+      }
+    }
+    // // Add local tracks
+    // _localStream?.getTracks().forEach((track) {
+    //   _peerConnection?.addTrack(track, _localStream!);
+    // });
 
     // ICE candidate handling
     _peerConnection?.onIceCandidate = (candidate) {
@@ -323,9 +335,13 @@ class SocketService {
 
     // Guard: do not handle offer if already in stable state
     if (_peerConnection!.signalingState ==
-        RTCSignalingState.RTCSignalingStateStable) {
-      debugPrint('🔄 Skipping handleOffer: Already in stable state.');
-      return;
+            RTCSignalingState.RTCSignalingStateStable ||
+        _peerConnection!.signalingState ==
+            RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
+      // allow handling
+    } else {
+      debugPrint(
+          '🚫 Cannot handle offer in current signaling state: ${_peerConnection!.signalingState}');
     }
 
     try {
@@ -351,8 +367,13 @@ class SocketService {
   }
 
   Future<void> handleAnswer(dynamic answer) async {
+    final signal = answer['signal'];
+    if (signal == null || signal['sdp'] == null || signal['type'] == null) {
+      debugPrint('❌ Invalid answer signal data');
+      return;
+    }
     await _peerConnection?.setRemoteDescription(
-      RTCSessionDescription(answer['sdp'], answer['type']),
+      RTCSessionDescription(signal['sdp'], signal['type']),
     );
   }
 
