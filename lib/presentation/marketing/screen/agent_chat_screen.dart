@@ -190,35 +190,42 @@ class AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _initiateAudioCall() async {
-    //if (await _requestCallPermissions()) {
-    _callService.createOffer(widget.customerEmail!);
-    //}
+    if (await _requestCallPermissions()) {
+      _callService.createOffer(widget.customerEmail!);
+    }
   }
 
   Future<bool> _requestCallPermissions() async {
-    if (await Permission.microphone.request().isGranted &&
-        await Permission.phone.request().isGranted) {
-      return true;
-    } else {
+    // Check if microphone permission is already granted
+    bool microphoneGranted = await Permission.microphone.isGranted;
+
+    // Request microphone permission if not already granted
+    if (!microphoneGranted) {
+      microphoneGranted = await Permission.microphone.request().isGranted;
+
       // Handle permission denied
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: Text('Permission Required'),
-            content: Text(
-                'Both microphone and phone permissions are required for audio calls.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
-              ),
-            ],
-          ),
-        );
+      if (!microphoneGranted) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text('Permission Required'),
+              content:
+                  Text('Microphone permission is required for audio calls.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return false;
       }
-      return false;
     }
+
+    return true;
   }
 
   void _endCall() {

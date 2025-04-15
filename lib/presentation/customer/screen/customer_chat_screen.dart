@@ -105,59 +105,66 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingCall(Map<String, dynamic> data) async {
-    //if (await _requestCallPermissions()) {
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: Text('Incoming Call'),
-          content: Text('Call from ${data['senderName']}'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _callService.handleOffer(data['signalData']);
-              },
-              child: Text('Answer'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _callService.hangUp();
-              },
-              child: Text('Reject'),
-            ),
-          ],
-        ),
-      );
-    }
-    // }
-  }
-
-  Future<bool> _requestCallPermissions() async {
-    if (await Permission.microphone.request().isGranted &&
-        await Permission.phone.request().isGranted) {
-      return true;
-    } else {
-      // Handle permission denied
+    if (await _requestCallPermissions()) {
       if (mounted) {
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: Text('Permission Required'),
-            content: Text(
-                'Both microphone and phone permissions are required for audio calls.'),
+            title: Text('Incoming Call'),
+            content: Text('Call from ${data['senderName']}'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _callService.handleOffer(data['signalData']);
+                },
+                child: Text('Answer'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _callService.hangUp();
+                },
+                child: Text('Reject'),
               ),
             ],
           ),
         );
       }
-      return false;
     }
+  }
+
+  Future<bool> _requestCallPermissions() async {
+    // Check if microphone permission is already granted
+    bool microphoneGranted = await Permission.microphone.isGranted;
+
+    // Request microphone permission if not already granted
+    if (!microphoneGranted) {
+      microphoneGranted = await Permission.microphone.request().isGranted;
+
+      // Handle permission denied
+      if (!microphoneGranted) {
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: Text('Permission Required'),
+              content:
+                  Text('Microphone permission is required for audio calls.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+        return false;
+      }
+    }
+
+    return true;
   }
 
   void _sendMessage({
