@@ -64,11 +64,30 @@ class SocketService {
         _showPushNotification(data);
       }
     });
+    // for webrtc
+    // _socket.on('incomingCall', (data) {
+    //   debugPrint('📥 incomingCall: $data'); // ✅ Log full structure
+    //   if (_onIncomingCall != null) {
+    //     _onIncomingCall!(data);
+    //   }
+    // });
 
+    // for agora
     _socket.on('incomingCall', (data) {
-      debugPrint('📥 incomingCall: $data'); // ✅ Log full structure
+      debugPrint('📥 Agora incomingCall: $data');
+
+      // Expected `data` structure:
+      // {
+      //   "channelName": "test123",
+      //   "token": "agora_temp_token",
+      //   "callerName": "Agent Smith",
+      //   "callerId": "agent@example.com"
+      // }
+
       if (_onIncomingCall != null) {
         _onIncomingCall!(data);
+      } else {
+        debugPrint("⚠️ No onIncomingCall handler set.");
       }
     });
 
@@ -243,6 +262,29 @@ class SocketService {
       _socket.emit('sendMessage', messageData);
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
+    }
+  }
+
+  void sendAgoraCall({
+    required String targetId, // email or userId of the customer
+    required String channelName,
+    required String token,
+    required String callerId,
+    required String callerName,
+  }) {
+    if (_isConnected) {
+      final payload = {
+        'targetId': targetId,
+        'channelName': channelName,
+        'token': token,
+        'callerId': callerId,
+        'callerName': callerName,
+      };
+      debugPrint('📤 Emitting Agora call: $payload');
+      _socket.emit('incomingCall',
+          payload); // Or use 'startCall' if your backend expects that
+    } else {
+      debugPrint('❌ Socket not connected. Cannot start Agora call.');
     }
   }
 

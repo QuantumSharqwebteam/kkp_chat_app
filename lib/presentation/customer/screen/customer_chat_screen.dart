@@ -6,7 +6,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -60,7 +60,27 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
-    _socketService.onIncomingCall(_handleIncomingCall);
+    // _socketService.onIncomingCall(_handleIncomingCall);
+    _socketService.onIncomingCall((callData) {
+      final channelName = callData['channelName'];
+      final token = callData['token'];
+      final callerName = callData['callerName'];
+      final callerId = callData['callerId'];
+
+      // Navigate to AudioCallScreen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AgoraAudioCallScreen(
+            isCaller: false,
+            token: token,
+            channelName: channelName,
+            remoteUserId: callerId,
+            remoteUserName: callerName,
+          ),
+        ),
+      );
+    });
   }
 
   @override
@@ -97,46 +117,46 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     });
   }
 
-  void _handleIncomingCall(Map<String, dynamic> data) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Incoming Call'),
-          content: Text('Incoming call from ${data['name']}'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Reject'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AudioCallScreen(
-                      args: AudioCallScreenArgs(
-                        callDirection: CallDirection.receivingCall,
-                        remoteUserFullName: data['name'],
-                        remoteUserId: data['from'],
-                        senderEmail: "",
-                        senderName: "",
-                        signalData: data["signal"],
-                      ),
-                    ),
-                  ),
-                );
-              },
-              child: Text('Answer'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // void _handleIncomingCall(Map<String, dynamic> data) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return AlertDialog(
+  //         title: Text('Incoming Call'),
+  //         content: Text('Incoming call from ${data['name']}'),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.pop(context);
+  //             },
+  //             child: Text('Reject'),
+  //           ),
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.pop(context);
+  //               Navigator.push(
+  //                 context,
+  //                 MaterialPageRoute(
+  //                   builder: (context) => AudioCallScreen(
+  //                     args: AudioCallScreenArgs(
+  //                       callDirection: CallDirection.receivingCall,
+  //                       remoteUserFullName: data['name'],
+  //                       remoteUserId: data['from'],
+  //                       senderEmail: "",
+  //                       senderName: "",
+  //                       signalData: data["signal"],
+  //                     ),
+  //                   ),
+  //                 ),
+  //               );
+  //             },
+  //             child: Text('Answer'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   void _sendMessage({
     required String messageText,

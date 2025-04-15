@@ -6,7 +6,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common/chat/audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -303,7 +303,36 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 color: Colors.black),
           ),
           IconButton(
-            onPressed: _initiateAudioCall,
+            onPressed: () {
+              // Example channel and token generation (you’ll typically get this from your backend)
+              //final channelName =  "call_${DateTime.now().millisecondsSinceEpoch}";
+              //final agoraToken = await getTokenFromBackend(channelName); // Use your backend logic
+              final channelName =
+                  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
+              final temptoken =
+                  "007eJxTYPBfJf/teF4Z558vp2+deCE8TcNs++rjaQ8tVFQbIiWvPjqvwJBkbGyUlmhpnmRhmmZimWaZaJSUlmaQlGxpZmFkmWpk/m7vv/SGQEaGmabVLIwMEAjiOzIkpqfmlcTn5mekFGfkJ2YmFSVWpqbmGTuk5yZm5ugl5+fGJ5cWl+TnphbFFxQlJmWUZmWWJZYUI+QZGACBeDr6";
+              SocketService().sendAgoraCall(
+                targetId: widget.customerEmail!,
+                channelName: channelName,
+                token: temptoken, //agoraToken,
+                callerId: widget.agentEmail!,
+                callerName: widget.agentName!,
+              );
+
+// Navigate agent to the AudioCallScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AgoraAudioCallScreen(
+                    isCaller: true,
+                    token: temptoken,
+                    channelName: channelName,
+                    remoteUserId: widget.customerEmail!,
+                    remoteUserName: widget.customerName!,
+                  ),
+                ),
+              );
+            },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
@@ -371,20 +400,20 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
   }
 
-  void _initiateAudioCall() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AudioCallScreen(
-          args: AudioCallScreenArgs(
-            callDirection: CallDirection.requestingCall,
-            remoteUserFullName: widget.customerName!,
-            remoteUserId: widget.customerEmail!,
-            senderEmail: widget.agentEmail!,
-            senderName: widget.agentName!,
-          ),
-        ),
-      ),
-    );
-  }
+  // void _initiateAudioCall() {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => AudioCallScreen(
+  //         args: AudioCallScreenArgs(
+  //           callDirection: CallDirection.requestingCall,
+  //           remoteUserFullName: widget.customerName!,
+  //           remoteUserId: widget.customerEmail!,
+  //           senderEmail: widget.agentEmail!,
+  //           senderName: widget.agentName!,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }
