@@ -94,8 +94,8 @@ class SocketService {
     _socket.on('incomingCall', (data) {
       debugPrint('📥 incomingCall: $data');
       _onIncomingCall?.call(data);
-      if (data['v'] != null) {
-        handleOffer(data['signal']);
+      if (data != null) {
+        handleOffer(data);
       } else {
         debugPrint('Error: signalData is null in incomingCall.');
       }
@@ -104,7 +104,7 @@ class SocketService {
     _socket.on('callAnswered', (data) {
       debugPrint('📥 callAnswered: $data');
       _onCallAnswered?.call(data);
-      if (data['signal'] != null) {
+      if (data != null) {
         handleAnswer(data['signal']);
       } else {
         debugPrint('Error: signalData is null in callAnswered.');
@@ -316,25 +316,38 @@ class SocketService {
   }
 
   Future<void> handleOffer(dynamic offerData) async {
-    if (offerData == null ||
-        offerData['sdp'] == null ||
-        offerData['type'] == null) {
-      debugPrint('Error: Invalid offer data received.');
+    if (_peerConnection == null) {
+      debugPrint('Error: PeerConnection is null.');
       return;
     }
-    final offer = RTCSessionDescription(offerData['sdp'], offerData['type']);
-    await _peerConnection?.setRemoteDescription(offer);
-    final answer = await _peerConnection?.createAnswer();
-    if (answer == null) {
-      debugPrint('Error: Failed to create answer.');
+
+    // Guard: do not handle offer if already in stable state
+    if (_peerConnection!.signalingState ==
+        RTCSignalingState.RTCSignalingStateStable) {
+      debugPrint('🔄 Skipping handleOffer: Already in stable state.');
       return;
     }
-    await _peerConnection?.setLocalDescription(answer);
-    _socket.emit('answerCall', {
-      'to': targetId,
-      'signalData': answer.toMap(),
-    });
-    debugPrint('Answer sent to $targetId: $answer');
+
+    try {
+      final offer = RTCSessionDescription(
+          offerData['signal']['sdp'], offerData['signal']['type']);
+
+      await _peerConnection?.setRemoteDescription(offer);
+
+      final answer = await _peerConnection?.createAnswer();
+      if (answer != null) {
+        await _peerConnection?.setLocalDescription(answer);
+
+        _socket.emit('answerCall', {
+          'to': offerData['from'],
+          'signalData': answer.toMap(),
+        });
+
+        debugPrint('✅ Answer sent to ${offerData['from']}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error in handleOffer: $e');
+    }
   }
 
   Future<void> handleAnswer(dynamic answer) async {

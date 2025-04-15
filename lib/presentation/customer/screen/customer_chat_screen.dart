@@ -111,12 +111,12 @@ class CustomerChatScreenState extends State<CustomerChatScreen>
           context: context,
           builder: (_) => AlertDialog(
             title: Text('Incoming Call'),
-            content: Text('Call from ${data['senderName']}'),
+            content: Text('Call from ${data['name']}'),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _callService.handleOffer(data['signalData']);
+                  _callService.handleOffer(data['signal']);
                 },
                 child: Text('Answer'),
               ),
