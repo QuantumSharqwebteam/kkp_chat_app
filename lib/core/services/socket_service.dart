@@ -281,8 +281,7 @@ class SocketService {
         'callerName': callerName,
       };
       debugPrint('📤 Emitting Agora call: $payload');
-      _socket.emit('incomingCall',
-          payload); // Or use 'startCall' if your backend expects that
+      _socket.emit('initiateCall', payload);
     } else {
       debugPrint('❌ Socket not connected. Cannot start Agora call.');
     }

@@ -6,6 +6,7 @@ import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -62,24 +63,72 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService.onReceiveMessage(_handleIncomingMessage);
     // _socketService.onIncomingCall(_handleIncomingCall);
     _socketService.onIncomingCall((callData) {
-      print('Incoming call data received: $callData');
+      debugPrint('📞 Incoming call data: $callData');
+
       final channelName = callData['channelName'];
       final token = callData['token'];
       final callerName = callData['callerName'];
       final callerId = callData['callerId'];
+      final uid = Utils().generateIntUidFromEmail(widget.customerEmail!);
 
-      // Navigate to AudioCallScreen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AgoraAudioCallScreen(
-            isCaller: false,
-            token: token,
-            channelName: channelName,
-            remoteUserId: callerId,
-            remoteUserName: callerName,
-          ),
-        ),
+      showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (context) {
+          return Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$callerName is calling...',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call_end, color: Colors.white),
+                      label: const Text("Reject"),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
+                        // Optionally emit reject event over socket
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call, color: Colors.white),
+                      label: const Text("Answer"),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
+
+                        // Navigate to the audio call screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AgoraAudioCallScreen(
+                              isCaller: false,
+                              token: token,
+                              channelName: channelName,
+                              uid: uid,
+                              remoteUserId: callerId,
+                              remoteUserName: callerName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       );
     });
   }

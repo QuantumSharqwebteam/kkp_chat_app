@@ -209,4 +209,38 @@ class ChatService {
       throw Exception('Failed to load form data');
     }
   }
+
+  /// Get Agora Token
+  Future<String?> getAgoraToken({
+    required String channelName,
+    required int uid,
+  }) async {
+    final url = Uri.parse("$baseUrl/chat/getAgoraToken");
+
+    try {
+      final response = await client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"channelName": channelName, "uid": uid}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data["status"] == 200 && data["token"] != null) {
+          debugPrint("✅ Agora token generated:${data["token"]}");
+          return data["token"];
+        } else {
+          debugPrint("❌ Token not present in response: $data");
+          return null;
+        }
+      } else {
+        debugPrint("❌ Failed to fetch token: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      debugPrint("❌ Exception in getAgoraToken: $e");
+      return null;
+    }
+  }
 }

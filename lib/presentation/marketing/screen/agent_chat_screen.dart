@@ -267,6 +267,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+  int generateIntUidFromEmail(String email) {
+    return email.hashCode & 0x7FFFFFFF;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -303,30 +307,39 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 color: Colors.black),
           ),
           IconButton(
-            onPressed: () {
-              // Example channel and token generation (you’ll typically get this from your backend)
-              //final channelName =  "call_${DateTime.now().millisecondsSinceEpoch}";
-              //final agoraToken = await getTokenFromBackend(channelName); // Use your backend logic
-              final channelName =
-                  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
-              final temptoken =
-                  "007eJxTYPj7dc9+voBdyU1/LZ8zqvBum9A9fYvsV/6nmnyBe0+b+i9VYEgyNjZKS7Q0T7IwTTOxTLNMNEpKSzNISrY0szCyTDUyj7z6L70hkJFhesQaVkYGCATx2RlKUotLDI2MGRgAEXwhlQ==";
+            onPressed: () async {
+              //final channelName =  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
+              final channelName = "agentCall123";
+              final uid = generateIntUidFromEmail(widget.agentEmail!);
+              debugPrint("Generated UID for agent (caller): $uid");
+
+              // Fetch token from backend using generated UID
+              final token =
+                  await _chatRepository.fetchAgoraToken(channelName, uid);
+              debugPrint("Fetched Agora token: $token");
+              if (token == null) {
+                debugPrint("❗ Failed to get token");
+                return;
+              }
+
+              // Send call data over socket to notify customer
               SocketService().sendAgoraCall(
                 targetId: widget.customerEmail!,
-                channelName: "test123",
-                token: temptoken, //agoraToken,
+                channelName: channelName,
+                token: token,
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
               );
 
-// Navigate agent to the AudioCallScreen
+              // Navigate agent to call screen
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => AgoraAudioCallScreen(
                     isCaller: true,
-                    token: temptoken,
-                    channelName: "test123",
+                    token: token,
+                    channelName: channelName,
+                    uid: uid,
                     remoteUserId: widget.customerEmail!,
                     remoteUserName: widget.customerName!,
                   ),
@@ -399,21 +412,4 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       ),
     );
   }
-
-  // void _initiateAudioCall() {
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => AudioCallScreen(
-  //         args: AudioCallScreenArgs(
-  //           callDirection: CallDirection.requestingCall,
-  //           remoteUserFullName: widget.customerName!,
-  //           remoteUserId: widget.customerEmail!,
-  //           senderEmail: widget.agentEmail!,
-  //           senderName: widget.agentName!,
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 }

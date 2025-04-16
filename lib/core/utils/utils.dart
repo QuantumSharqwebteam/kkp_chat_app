@@ -116,4 +116,8 @@ class Utils {
       },
     );
   }
+
+  int generateIntUidFromEmail(String email) {
+    return email.hashCode & 0x7FFFFFFF;
+  }
 }

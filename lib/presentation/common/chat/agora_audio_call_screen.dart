@@ -11,6 +11,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
   final String channelName;
   final String remoteUserId;
   final String remoteUserName;
+  final int uid;
 
   const AgoraAudioCallScreen({
     super.key,
@@ -19,6 +20,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
     required this.channelName,
     required this.remoteUserId,
     required this.remoteUserName,
+    required this.uid,
   });
 
   @override
@@ -49,7 +51,9 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       await _handlePermissions();
 
       _engine = createAgoraRtcEngine();
-      await _engine.initialize(RtcEngineContext(appId: agoraAppId));
+      await _engine.initialize(RtcEngineContext(
+          appId: agoraAppId,
+          channelProfile: ChannelProfileType.channelProfileCommunication));
 
       _setupEventHandlers();
 
@@ -61,16 +65,17 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       await _engine.joinChannel(
         token: widget.token,
         channelId: widget.channelName,
-        uid: 0,
+        uid: widget.uid,
         options: const ChannelMediaOptions(
           autoSubscribeAudio: true,
           publishMicrophoneTrack: true,
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          channelProfile: ChannelProfileType.channelProfileCommunication,
         ),
       );
 
       /// Timeout if remote user doesn’t join
-      _callTimeoutTimer = Timer(const Duration(seconds: 30), () {
+      _callTimeoutTimer = Timer(const Duration(seconds: 50), () {
         if (_remoteUid == null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("No answer. Call ended.")),
