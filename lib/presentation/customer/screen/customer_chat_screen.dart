@@ -66,7 +66,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       debugPrint('📞 Incoming call data: $callData');
 
       final channelName = callData['channelName'];
-      final token = callData['token'];
+      final token =
+          "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
       final callerName = callData['callerName'];
       final callerId = callData['callerId'];
       final uid = Utils().generateIntUidFromEmail(widget.customerEmail!);

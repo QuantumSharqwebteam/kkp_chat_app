@@ -70,7 +70,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
           clientRoleType: widget.isCaller
               ? ClientRoleType.clientRoleBroadcaster
               : ClientRoleType.clientRoleAudience,
-          channelProfile: ChannelProfileType.channelProfileCommunication,
+          //channelProfile: ChannelProfileType.channelProfileCommunication,
         ),
       );
       debugPrint("Attempting to join channel: ${widget.channelName}");
