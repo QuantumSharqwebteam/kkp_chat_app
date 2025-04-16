@@ -5,6 +5,7 @@ import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
@@ -60,6 +61,76 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onIncomingCall((callData) {
+      debugPrint('📞 Incoming call data: $callData');
+
+      final channelName = callData['channelName'];
+      final token =
+          "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
+      final callerName = callData['callerName'];
+      final callerId = callData['callerId'];
+      final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
+
+      showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (context) {
+          return Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$callerName is calling...',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call_end, color: Colors.white),
+                      label: const Text("Reject"),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
+                        // Optionally emit reject event over socket
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call, color: Colors.white),
+                      label: const Text("Answer"),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
+
+                        // Navigate to the audio call screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AgoraAudioCallScreen(
+                              isCaller: false,
+                              token: token,
+                              channelName: channelName,
+                              uid: uid,
+                              remoteUserId: callerId,
+                              remoteUserName: callerName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    });
     _loadPreviousMessages();
   }
 
@@ -314,13 +385,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               debugPrint("Generated UID for agent (caller): $uid");
 
               // Fetch token from backend using generated UID
-              final token =
-                  await _chatRepository.fetchAgoraToken(channelName, uid);
-              debugPrint("Fetched Agora token: $token");
-              if (token == null) {
-                debugPrint("❗ Failed to get token");
-                return;
-              }
+              // final token =
+              //     await _chatRepository.fetchAgoraToken(channelName, uid);
+              // debugPrint("Fetched Agora token: $token");
+              // if (token == null) {
+              //   debugPrint("❗ Failed to get token");
+              //   return;
+              // }
 
               // Send call data over socket to notify customer
               SocketService().sendAgoraCall(

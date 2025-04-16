@@ -65,13 +65,12 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         channelId: widget.channelName,
         uid: widget.uid,
         options: ChannelMediaOptions(
-          autoSubscribeAudio: true,
-          publishMicrophoneTrack: widget.isCaller,
-          clientRoleType: widget.isCaller
-              ? ClientRoleType.clientRoleBroadcaster
-              : ClientRoleType.clientRoleAudience,
-          //channelProfile: ChannelProfileType.channelProfileCommunication,
-        ),
+            autoSubscribeAudio: true,
+            publishMicrophoneTrack: true,
+            clientRoleType: ClientRoleType.clientRoleBroadcaster
+            //: ClientRoleType.clientRoleAudience,
+            //channelProfile: ChannelProfileType.channelProfileCommunication,
+            ),
       );
       debugPrint("Attempting to join channel: ${widget.channelName}");
 

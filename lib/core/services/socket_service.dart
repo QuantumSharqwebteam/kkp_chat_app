@@ -266,7 +266,7 @@ class SocketService {
   }
 
   void sendAgoraCall({
-    required String targetId, // email or userId of the customer
+    String? targetId, // email or userId of the customer
     required String channelName,
     required String token,
     required String callerId,
@@ -274,12 +274,15 @@ class SocketService {
   }) {
     if (_isConnected) {
       final payload = {
-        'targetId': targetId,
+        // 'targetId': targetId,
         'channelName': channelName,
         'token': token,
         'callerId': callerId,
         'callerName': callerName,
       };
+      if (targetId != null) {
+        payload['targetId'] = targetId;
+      }
       debugPrint('📤 Emitting Agora call: $payload');
       _socket.emit('initiateCall', payload);
     } else {

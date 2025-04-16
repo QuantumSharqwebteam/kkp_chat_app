@@ -63,8 +63,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService.onReceiveMessage(_handleIncomingMessage);
     // _socketService.onIncomingCall(_handleIncomingCall);
     _socketService.onIncomingCall((callData) {
-      debugPrint('📞 Incoming call data: $callData');
-
       final channelName = callData['channelName'];
       final token =
           "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
@@ -389,8 +387,48 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         ),
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: Icon(Icons.call_outlined, color: Colors.black),
+            onPressed: () async {
+              //final channelName =  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
+              final channelName = "agentCall123";
+              final uid =
+                  Utils().generateIntUidFromEmail(widget.customerEmail!);
+              debugPrint("Generated UID for agent (caller): $uid");
+
+              // Fetch token from backend using generated UID
+              // final token =
+              //     await _chatRepository.fetchAgoraToken(channelName, uid);
+              // debugPrint("Fetched Agora token: $token");
+              // if (token == null) {
+              //   debugPrint("❗ Failed to get token");
+              //   return;
+              // }
+
+              // Send call data over socket to notify customer
+              SocketService().sendAgoraCall(
+                channelName: channelName,
+                token:
+                    "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                callerId: widget.agentEmail!,
+                callerName: widget.agentName!,
+              );
+
+              // Navigate agent to call screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AgoraAudioCallScreen(
+                    isCaller: true,
+                    token:
+                        "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                    channelName: channelName,
+                    uid: uid,
+                    remoteUserId: widget.customerEmail!,
+                    remoteUserName: widget.customerName!,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
       ),
