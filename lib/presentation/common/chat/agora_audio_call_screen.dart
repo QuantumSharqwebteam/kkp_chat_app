@@ -69,11 +69,11 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
           publishMicrophoneTrack: widget.isCaller,
           clientRoleType: widget.isCaller
               ? ClientRoleType.clientRoleBroadcaster
-              : ClientRoleType
-                  .clientRoleAudience, // Adjusted for caller/receiver
+              : ClientRoleType.clientRoleAudience,
           channelProfile: ChannelProfileType.channelProfileCommunication,
         ),
       );
+      debugPrint("Attempting to join channel: ${widget.channelName}");
 
       /// Timeout if remote user doesn’t join
       _callTimeoutTimer = Timer(const Duration(seconds: 50), () {
@@ -126,6 +126,9 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       },
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
+      },
+      onError: (errorCode, errorMessage) {
+        debugPrint("Error joining channel: $errorCode, $errorMessage");
       },
     ));
   }
