@@ -51,9 +51,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       await _handlePermissions();
 
       _engine = createAgoraRtcEngine();
-      await _engine.initialize(RtcEngineContext(
-          appId: agoraAppId,
-          channelProfile: ChannelProfileType.channelProfileCommunication));
+      await _engine.initialize(RtcEngineContext(appId: agoraAppId));
 
       _setupEventHandlers();
 
@@ -66,10 +64,13 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         token: widget.token,
         channelId: widget.channelName,
         uid: widget.uid,
-        options: const ChannelMediaOptions(
+        options: ChannelMediaOptions(
           autoSubscribeAudio: true,
-          publishMicrophoneTrack: true,
-          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          publishMicrophoneTrack: widget.isCaller,
+          clientRoleType: widget.isCaller
+              ? ClientRoleType.clientRoleBroadcaster
+              : ClientRoleType
+                  .clientRoleAudience, // Adjusted for caller/receiver
           channelProfile: ChannelProfileType.channelProfileCommunication,
         ),
       );
