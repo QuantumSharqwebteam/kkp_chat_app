@@ -33,6 +33,8 @@ migrate_working_dir/
 .pub/
 /build/
 
+/android/app/.cxx/
+
 # Symbolication related
 app.*.symbols
 
@@ -45,3 +47,4 @@ app.*.map.json
 /android/app/release
 
 keys.env
+android/app/.cxx/Debug/704k363j/arm64-v8a/configure_fingerprint.bin
