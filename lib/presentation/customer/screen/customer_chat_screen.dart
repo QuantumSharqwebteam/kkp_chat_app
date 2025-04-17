@@ -32,7 +32,7 @@ class CustomerChatScreen extends StatefulWidget {
     this.agentName = "Agent",
     this.agentImage = "assets/images/user4.png",
     this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "rayeenshoaib20786@gmail.com",
+    this.agentEmail = "agent@gmail.com",
   });
 
   @override
@@ -405,11 +405,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
               // Send call data over socket to notify customer
               SocketService().sendAgoraCall(
+                //  targetId: "mohdshoaibrayeen3@gmail.com",
                 channelName: channelName,
                 token:
                     "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
-                callerId: widget.agentEmail!,
-                callerName: widget.agentName!,
+                callerId: widget.customerEmail!,
+                callerName: widget.customerName!,
               );
 
               // Navigate agent to call screen
@@ -422,8 +423,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                         "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
                     channelName: channelName,
                     uid: uid,
-                    remoteUserId: widget.customerEmail!,
-                    remoteUserName: widget.customerName!,
+                    remoteUserId: widget.agentEmail!,
+                    remoteUserName: widget.agentName!,
                   ),
                 ),
               );
