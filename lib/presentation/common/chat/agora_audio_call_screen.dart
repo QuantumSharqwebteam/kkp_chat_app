@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'dart:async';
@@ -32,9 +33,12 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   bool _joined = false;
   int? _remoteUid;
   bool _muted = false;
+  bool _isSpeakerOn = true; // default to speaker ON
   Duration _callDuration = Duration.zero;
   Timer? _durationTimer;
   Timer? _callTimeoutTimer;
+  bool _isRenewingToken = false;
+  final ChatRepository chatRepository = ChatRepository();
 
   final String agoraAppId = dotenv.env['AGORA_APP_ID']!;
 
@@ -126,15 +130,57 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
       },
-      onError: (errorCode, errorMessage) {
-        debugPrint("Error joining channel: $errorCode, $errorMessage");
+      onError: (ErrorCodeType code, String message) {
+        debugPrint("⚠️Error joinning channel Agora error: $code - $message");
+        // if (code == ErrorCodeType.errTokenExpired) {
+        // //  _handleTokenRenewal();
+        // }
+      },
+      onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
+        debugPrint("⏰ Token will expire soon...");
+        // _handleTokenRenewal();
       },
     ));
+  }
+
+  Future<void> _handleTokenRenewal() async {
+    if (_isRenewingToken) return;
+    _isRenewingToken = true;
+
+    try {
+      debugPrint("🔄 Attempting to renew token...");
+      final newToken = await chatRepository.fetchAgoraToken(
+        widget.channelName,
+        widget.uid,
+      );
+
+      if (newToken != null && newToken != widget.token) {
+        await _engine.renewToken(newToken);
+        debugPrint("✅ Token renewed successfully");
+      } else {
+        debugPrint("⚠️ Received same token again. Skipping renewal.");
+      }
+    } catch (e) {
+      debugPrint("❌ Failed to renew token: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to renew Agora token.")),
+        );
+        _endCall();
+      }
+    } finally {
+      _isRenewingToken = false;
+    }
   }
 
   void _toggleMute() {
     setState(() => _muted = !_muted);
     _engine.muteLocalAudioStream(_muted);
+  }
+
+  void _toggleSpeaker() {
+    setState(() => _isSpeakerOn = !_isSpeakerOn);
+    _engine.setEnableSpeakerphone(_isSpeakerOn);
   }
 
   void _startCallTimer() {
@@ -200,6 +246,13 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
                   icon: Icon(_muted ? Icons.mic_off : Icons.mic,
                       color: Colors.white),
                   onPressed: _toggleMute,
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isSpeakerOn ? Icons.volume_up : Icons.hearing,
+                    color: Colors.white,
+                  ),
+                  onPressed: _toggleSpeaker,
                 ),
                 IconButton(
                   icon: const Icon(Icons.call_end, color: Colors.red),

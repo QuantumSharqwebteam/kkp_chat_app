@@ -65,8 +65,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       debugPrint('📞 Incoming call data: $callData');
 
       final channelName = callData['channelName'];
-      final token =
-          "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
+      final token = callData['token'];
+
       final callerName = callData['callerName'];
       final callerId = callData['callerId'];
       final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
@@ -383,22 +383,22 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               final channelName = "agentCall123";
               final uid = generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
-
-              // Fetch token from backend using generated UID
-              // final token =
-              //     await _chatRepository.fetchAgoraToken(channelName, uid);
-              // debugPrint("Fetched Agora token: $token");
-              // if (token == null) {
-              //   debugPrint("❗ Failed to get token");
-              //   return;
-              // }
+              final tempToken =
+                  "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
+              //Fetch token from backend using generated UID
+              final token =
+                  await _chatRepository.fetchAgoraToken(channelName, uid);
+              debugPrint("Fetched Agora token: $token");
+              if (token == null) {
+                debugPrint("❗ Failed to get token");
+                return;
+              }
 
               // Send call data over socket to notify customer
               SocketService().sendAgoraCall(
                 targetId: widget.customerEmail!,
                 channelName: channelName,
-                token:
-                    "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                token: token,
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
               );
@@ -409,8 +409,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 MaterialPageRoute(
                   builder: (_) => AgoraAudioCallScreen(
                     isCaller: true,
-                    token:
-                        "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                    token: token,
                     channelName: channelName,
                     uid: uid,
                     remoteUserId: widget.customerEmail!,
