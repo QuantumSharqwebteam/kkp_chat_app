@@ -357,13 +357,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                         return ImageMessageBubble(
                           imageUrl: msg.mediaUrl!,
                           isMe: msg.sender == widget.customerEmail,
-                          timestamp: formatTimestamp(msg.timestamp as String?),
+                          timestamp: formatTimestamp(msg.timestamp),
                         );
                       } else if (msg.type == 'form') {
                         return FormMessageBubble(
                           formData: msg.form!,
                           isMe: msg.sender == widget.customerEmail,
-                          timestamp: formatTimestamp(msg.timestamp as String?),
+                          timestamp: formatTimestamp(msg.timestamp),
                         );
                       } else if (msg.message == 'Fill details') {
                         return FillFormButton(
