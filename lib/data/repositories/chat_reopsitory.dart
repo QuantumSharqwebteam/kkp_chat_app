@@ -32,4 +32,9 @@ class ChatRepository {
   Future<List<FormDataModel>> fetchFormData() async {
     return await chatService.getFormData();
   }
+
+  //get agora token which is required for making call for that channel name
+  Future<String?> fetchAgoraToken(String channelName, int uid) async {
+    return await chatService.getAgoraToken(channelName: channelName, uid: uid);
+  }
 }

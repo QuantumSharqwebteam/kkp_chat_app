@@ -1,19 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
+import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -25,27 +27,31 @@ class AgentChatScreen extends StatefulWidget {
 
   const AgentChatScreen({
     super.key,
-    this.customerName = 'Customer 2',
+    this.customerName = "Customer 2",
     this.customerImage = ImageConstants.userImage,
-    this.agentName = 'Agent N/A',
-    this.agentImage = 'assets/images/user4.png',
-    this.customerEmail = 'prabhujivats@gmail.com',
-    this.agentEmail = 'agent@gmail.com',
+    this.agentName = "Agent N/A",
+    this.agentImage = "assets/images/user4.png",
+    this.customerEmail = "prabhujivats@gmail.com",
+    this.agentEmail = "agent@gmail.com",
   });
 
   @override
-  AgentChatScreenState createState() => AgentChatScreenState();
+  State<AgentChatScreen> createState() => _AgentChatScreenState();
 }
 
-class AgentChatScreenState extends State<AgentChatScreen>
+class _AgentChatScreenState extends State<AgentChatScreen>
     with WidgetsBindingObserver {
   bool _isLoading = true;
-  bool _isCallInProgress = false;
-  final TextEditingController _chatController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final S3UploadService _s3uploadService = S3UploadService();
-  final SocketService _callService = SocketService();
+  final _chatController = TextEditingController();
   final ChatRepository _chatRepository = ChatRepository();
+  final SocketService _socketService = SocketService();
+  final S3UploadService _s3uploadService = S3UploadService();
+  final ScrollController _scrollController = ScrollController();
+  final qualityController = TextEditingController();
+  final quantityController = TextEditingController();
+  final weaveController = TextEditingController();
+  final compositionController = TextEditingController();
+  final rateController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [];
 
@@ -53,35 +59,79 @@ class AgentChatScreenState extends State<AgentChatScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _socketService.toggleChatPageOpen(true);
+    _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onIncomingCall((callData) {
+      debugPrint('📞 Incoming call data: $callData');
 
-    _callService.init(
-      widget.agentName!,
-      widget.agentEmail!,
-      'agent',
-    );
-    _callService.toggleChatPageOpen(true);
+      final channelName = callData['channelName'];
+      final token = callData['token'];
+      // "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
+      final callerName = callData['callerName'];
+      final callerId = callData['callerId'];
+      final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
 
-    _callService.onReceiveMessage(_handleIncomingMessage);
-    _callService.onIncomingCall((_) {});
-    _callService.onCallAnswered(_handleCallAnswered);
-    _callService.onCallTerminated(_handleCallTerminated);
-    _callService.onSignalCandidate((_) {});
+      showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (context) {
+          return Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$callerName is calling...',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call_end, color: Colors.white),
+                      label: const Text("Reject"),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
+                        // Optionally emit reject event over socket
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call, color: Colors.white),
+                      label: const Text("Answer"),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
 
+                        // Navigate to the audio call screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AgoraAudioCallScreen(
+                              isCaller: false,
+                              token: token,
+                              channelName: channelName,
+                              uid: uid,
+                              remoteUserId: callerId,
+                              remoteUserName: callerName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    });
     _loadPreviousMessages();
-  }
-
-  void _handleCallAnswered(Map<String, dynamic> data) {
-    setState(() {
-      _isCallInProgress = true;
-    });
-    _showCallOverlay();
-  }
-
-  void _handleCallTerminated(Map<String, dynamic> data) {
-    setState(() {
-      _isCallInProgress = false;
-    });
-    Navigator.of(context).pop();
   }
 
   @override
@@ -89,61 +139,82 @@ class AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
-    _callService.toggleChatPageOpen(false);
+    qualityController.dispose();
+    quantityController.dispose();
+    rateController.dispose();
+    compositionController.dispose();
+    weaveController.dispose();
+    _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _callService.toggleChatPageOpen(state == AppLifecycleState.resumed);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _socketService.toggleChatPageOpen(false);
+    } else if (state == AppLifecycleState.resumed) {
+      _socketService.toggleChatPageOpen(true);
+    }
   }
 
   Future<void> _loadPreviousMessages() async {
     try {
-      final fetched = await _chatRepository.fetchPreviousChats(
+      final fetchedMessages = await _chatRepository.fetchPreviousChats(
         widget.agentEmail!,
         widget.customerEmail!,
       );
-      setState(() {
-        messages = fetched.map((m) {
-          Map<String, dynamic>? formData;
-          if (m.type == 'form' && m.form != null && m.form!.isNotEmpty) {
-            final f = m.form!.first;
-            formData = {
-              'quality': f['quality'],
-              'quantity': f['quantity'],
-              'weave': f['weave'],
-              'composition': f['composition'],
-              'rate': f['rate'],
+      if (mounted) {
+        setState(() {
+          messages = fetchedMessages.map((m) {
+            final formList =
+                m.form; // This is List<dynamic> or List<Map<String, dynamic>>
+            Map<String, dynamic>? formData;
+
+            if (m.type == 'form' && formList != null && formList.isNotEmpty) {
+              final firstForm = formList[0]; // formList is List<dynamic>
+              formData = {
+                "quality": firstForm['quality'],
+                "quantity": firstForm['quantity'],
+                "weave": firstForm['weave'],
+                "composition": firstForm['composition'],
+                "rate": firstForm['rate'],
+              };
+            }
+
+            return {
+              "text": m.message ?? '',
+              "timestamp": m.timestamp ?? '',
+              "isMe": m.isMe,
+              "type": m.type ?? 'text',
+              "mediaUrl": m.mediaUrl,
+              "form": formData, // Will be null if not form type or empty
             };
-          }
-          return {
-            'text': m.message ?? '',
-            'timestamp': m.timestamp ?? '',
-            'isMe': m.isMe,
-            'type': m.type ?? 'text',
-            'mediaUrl': m.mediaUrl,
-            'form': formData,
-          };
-        }).toList();
-        _isLoading = false;
-        _scrollToBottom();
-      });
+          }).toList();
+          _isLoading = false;
+          _scrollToBottom();
+        });
+      }
     } catch (e) {
-      setState(() => _isLoading = false);
-      debugPrint('Error loading chats: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      debugPrint("❌ Error loading chat: $e");
     }
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
+    final currentTime = DateTime.now().toIso8601String();
     setState(() {
       messages.add({
-        'text': data['message'],
-        'timestamp': DateTime.now().toIso8601String(),
-        'isMe': data['senderId'] == widget.agentEmail,
-        'type': data['type'] ?? 'text',
-        'mediaUrl': data['mediaUrl'],
-        'form': data['form'],
+        "text": data["message"],
+        "timeStamp": currentTime,
+        "isMe": data["senderId"] == widget.agentEmail,
+        "type": data["type"] ?? "text",
+        "mediaUrl": data["mediaUrl"],
+        "form": data["form"],
       });
       _scrollToBottom();
     });
@@ -151,125 +222,37 @@ class AgentChatScreenState extends State<AgentChatScreen>
 
   void _sendMessage({
     required String messageText,
-    String type = 'text',
+    String? type = 'text',
     String? mediaUrl,
     Map<String, dynamic>? form,
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
+
+    final currentTime = DateTime.now().toIso8601String();
+
     setState(() {
       messages.add({
-        'text': messageText,
-        'timestamp': DateTime.now().toIso8601String(),
-        'isMe': true,
-        'type': type,
-        'mediaUrl': mediaUrl,
-        'form': form,
+        "text": messageText,
+        "timestamp": currentTime,
+        "isMe": true,
+        "type": type,
+        "mediaUrl": mediaUrl,
+        "form": form,
       });
       _scrollToBottom();
     });
-    _callService.sendMessage(
+
+    _socketService.sendMessage(
       targetEmail: widget.customerEmail!,
+      message: messageText,
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
-      message: messageText,
-      type: type,
+      type: type!,
       mediaUrl: mediaUrl,
       form: form,
     );
+
     _chatController.clear();
-  }
-
-  Future<void> _pickAndSendImage() async {
-    final XFile? picked =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      final File file = File(picked.path);
-      final String? url = await _s3uploadService.uploadFile(file);
-      if (url != null) {
-        _sendMessage(messageText: 'image', type: 'media', mediaUrl: url);
-      }
-    }
-  }
-
-  void _initiateAudioCall() async {
-    if (await _requestCallPermissions()) {
-      _callService.createOffer(widget.customerEmail!);
-    }
-  }
-
-  Future<bool> _requestCallPermissions() async {
-    bool microphoneGranted = await Permission.microphone.isGranted;
-
-    if (!microphoneGranted) {
-      microphoneGranted = await Permission.microphone.request().isGranted;
-
-      if (!microphoneGranted) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: Text('Permission Required'),
-              content:
-                  Text('Microphone permission is required for audio calls.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('OK'),
-                ),
-              ],
-            ),
-          );
-        }
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  void _showCallOverlay() {
-    if (!_isCallInProgress) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        title: Text('Call in Progress'),
-        content: Text('Tap "End Call" to hang up.'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _callService.hangUp();
-              setState(() {
-                _isCallInProgress = false;
-              });
-              Navigator.pop(context);
-            },
-            child: Text('End Call'),
-          ),
-          TextButton(
-            onPressed: _toggleSpeakerphone,
-            child: Text('Speaker'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _toggleSpeakerphone() {
-    // Implement speakerphone toggle logic here
-  }
-
-  String _formatTimestamp(String? ts) {
-    if (ts == null || ts.isEmpty) {
-      return DateFormat('hh:mm a').format(DateTime.now());
-    }
-    final dt = DateTime.parse(ts).toLocal();
-    return DateFormat('hh:mm a').format(dt);
-  }
-
-  void sendFormButton() {
-    _sendMessage(messageText: 'Fill details');
   }
 
   void _scrollToBottom() {
@@ -277,11 +260,86 @@ class AgentChatScreenState extends State<AgentChatScreen>
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
       }
     });
+  }
+
+  Future<void> _pickAndSendImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final File imageFile = File(pickedFile.path);
+
+      // TEMP message
+      final String tempId = DateTime.now().millisecondsSinceEpoch.toString();
+
+      setState(() {
+        messages.add({
+          "id": tempId,
+          "text": "image",
+          "timestamp": DateTime.now().toIso8601String(),
+          "isMe": true,
+          "type": "media",
+          "mediaUrl": imageFile.path,
+          "uploading": true,
+          "sent": false,
+        });
+        _scrollToBottom();
+      });
+
+      // Upload in background
+      final imageUrl = await _s3uploadService.uploadFile(imageFile);
+
+      if (imageUrl != null) {
+        final int index = messages.indexWhere((msg) => msg['id'] == tempId);
+        if (index != -1) {
+          setState(() {
+            messages[index]['mediaUrl'] = imageUrl;
+            messages[index]['uploading'] = false;
+            messages[index]['sent'] = true;
+          });
+        }
+
+        // Now send the message only over socket — don't add to messages list again!
+        _socketService.sendMessage(
+          targetEmail: widget.customerEmail!,
+          message: "image",
+          senderEmail: widget.agentEmail!,
+          senderName: widget.agentName!,
+          type: "media",
+          mediaUrl: imageUrl,
+        );
+      } else {
+        // Optionally show error toast or retry option
+      }
+    }
+  }
+
+  void sendFormButton() {
+    _sendMessage(messageText: "Fill details");
+  }
+
+  String formatTimestamp(String? timestamp) {
+    if (timestamp == null || timestamp.isEmpty) {
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
+    }
+    try {
+      final dateTime = DateTime.parse(timestamp).toLocal();
+      return DateFormat('hh:mm a').format(dateTime);
+    } catch (e) {
+      final currentTime = DateTime.now();
+      return DateFormat('hh:mm a').format(currentTime);
+    }
+  }
+
+  int generateIntUidFromEmail(String email) {
+    return email.hashCode & 0x7FFFFFFF;
   }
 
   @override
@@ -289,25 +347,91 @@ class AgentChatScreenState extends State<AgentChatScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        elevation: 4,
-        backgroundColor: Colors.white,
+        elevation: 10,
+        shadowColor: AppColors.shadowColor,
+        surfaceTintColor: Colors.white10,
         title: Row(
           children: [
-            CircleAvatar(backgroundImage: AssetImage(widget.customerImage!)),
-            SizedBox(width: 8),
-            Text(widget.customerName!, style: AppTextStyles.black14_400),
+            CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
+            const SizedBox(width: 5),
+            Text(
+              widget.agentName!,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: Icon(
-              _isCallInProgress ? Icons.call_end : Icons.call_outlined,
-              color: Colors.black,
-            ),
-            onPressed:
-                _isCallInProgress ? _callService.hangUp : _initiateAudioCall,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return TransferAgentScreen(
+                      customerEmailId: widget.customerEmail!,
+                    );
+                  },
+                ),
+              );
+            },
+            icon: const Icon(Icons.swap_horizontal_circle_outlined,
+                color: Colors.black),
+          ),
+          IconButton(
+            onPressed: () async {
+              final channelName =
+                  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
+              // final channelName = "agentCall123";
+              final uid = generateIntUidFromEmail(widget.agentEmail!);
+              debugPrint("Generated UID for agent (caller): $uid");
+
+              // Fetch token from backend using generated UID
+              final token =
+                  await _chatRepository.fetchAgoraToken(channelName, uid);
+              debugPrint("Fetched Agora token: $token");
+              if (token == null) {
+                debugPrint("❗ Failed to get token");
+                return;
+              }
+
+              // Send call data over socket to notify customer
+              SocketService().sendAgoraCall(
+                targetId: widget.customerEmail!,
+                channelName: channelName,
+                token: token,
+                // token:
+                //     "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                callerId: widget.agentEmail!,
+                callerName: widget.agentName!,
+              );
+
+              // Navigate agent to call screen
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AgoraAudioCallScreen(
+                      isCaller: true,
+                      token: token,
+                      //  "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                      channelName: channelName,
+                      uid: uid,
+                      remoteUserId: widget.customerEmail!,
+                      remoteUserName: widget.customerName!,
+                    ),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(20.0),
+            bottomRight: Radius.circular(20.0),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -318,7 +442,7 @@ class AgentChatScreenState extends State<AgentChatScreen>
                     ? NoChatConversation()
                     : ListView.builder(
                         controller: _scrollController,
-                        padding: EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(10),
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final msg = messages[index];
@@ -326,21 +450,28 @@ class AgentChatScreenState extends State<AgentChatScreen>
                             return ImageMessageBubble(
                               imageUrl: msg['mediaUrl'],
                               isMe: msg['isMe'],
-                              timestamp: _formatTimestamp(msg['timestamp']),
+                              timestamp: formatTimestamp(msg['timestamp']),
+                              uploading: msg['uploading'] ?? false,
+                              sent: msg['sent'] ?? false,
+                              onImageLoaded: _scrollToBottom,
                             );
                           } else if (msg['type'] == 'form') {
                             return FormMessageBubble(
                               formData: msg['form'],
                               isMe: msg['isMe'],
-                              timestamp: _formatTimestamp(msg['timestamp']),
+                              timestamp: formatTimestamp(msg['timestamp']),
                             );
                           } else if (msg['text'] == 'Fill details') {
-                            return FillFormButton(onSubmit: () {});
+                            return FillFormButton(
+                              onSubmit: () {
+                                // Agent not allowed to fill the form
+                              },
+                            );
                           }
                           return MessageBubble(
                             text: msg['text'],
                             isMe: msg['isMe'],
-                            timestamp: _formatTimestamp(msg['timestamp']),
+                            timestamp: formatTimestamp(msg['timestamp']),
                             image: msg['isMe']
                                 ? widget.agentImage!
                                 : widget.customerImage!,

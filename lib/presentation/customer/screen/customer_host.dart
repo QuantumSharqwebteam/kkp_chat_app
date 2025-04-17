@@ -27,7 +27,7 @@ class _CustomerHostState extends State<CustomerHost> {
     super.initState();
 
     _loadCurrentUserData().whenComplete(() {
-      _socketService.init(profile!.name!, profile!.email!, "User");
+      _socketService.initSocket(profile!.name!, profile!.email!, "User");
     });
   }
 
