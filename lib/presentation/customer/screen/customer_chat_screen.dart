@@ -7,6 +7,7 @@ import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -52,6 +53,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final weaveController = TextEditingController();
   final compositionController = TextEditingController();
   final rateController = TextEditingController();
+  final _chatRepository = ChatRepository();
 
   List<Map<String, dynamic>> messages = [];
 
@@ -394,20 +396,19 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               debugPrint("Generated UID for agent (caller): $uid");
 
               // Fetch token from backend using generated UID
-              // final token =
-              //     await _chatRepository.fetchAgoraToken(channelName, uid);
-              // debugPrint("Fetched Agora token: $token");
-              // if (token == null) {
-              //   debugPrint("❗ Failed to get token");
-              //   return;
-              // }
+              final token =
+                  await _chatRepository.fetchAgoraToken(channelName, uid);
+              debugPrint("Fetched Agora token: $token");
+              if (token == null) {
+                debugPrint("❗ Failed to get token");
+                return;
+              }
 
               // Send call data over socket to notify customer
               SocketService().sendAgoraCall(
                 //  targetId: "mohdshoaibrayeen3@gmail.com",
                 channelName: channelName,
-                token:
-                    "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                token: token,
                 callerId: widget.customerEmail!,
                 callerName: widget.customerName!,
               );
@@ -418,8 +419,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 MaterialPageRoute(
                   builder: (_) => AgoraAudioCallScreen(
                     isCaller: true,
-                    token:
-                        "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                    token: token,
                     channelName: channelName,
                     uid: uid,
                     remoteUserId: widget.agentEmail!,

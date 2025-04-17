@@ -215,7 +215,7 @@ class ChatService {
     required String channelName,
     required int uid,
   }) async {
-    final url = Uri.parse("$baseUrl/chat/getAgoraToken");
+    final url = Uri.parse("$baseUrl/chat/getCallToken");
 
     try {
       final response = await client.post(

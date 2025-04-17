@@ -383,8 +383,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               final channelName = "agentCall123";
               final uid = generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
-              final tempToken =
-                  "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
+
               //Fetch token from backend using generated UID
               final token =
                   await _chatRepository.fetchAgoraToken(channelName, uid);

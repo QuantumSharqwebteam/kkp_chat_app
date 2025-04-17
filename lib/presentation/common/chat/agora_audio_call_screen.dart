@@ -37,7 +37,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   Duration _callDuration = Duration.zero;
   Timer? _durationTimer;
   Timer? _callTimeoutTimer;
-  bool _isRenewingToken = false;
+  // bool _isRenewingToken = false;
   final ChatRepository chatRepository = ChatRepository();
 
   final String agoraAppId = dotenv.env['AGORA_APP_ID']!;
@@ -143,35 +143,35 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     ));
   }
 
-  Future<void> _handleTokenRenewal() async {
-    if (_isRenewingToken) return;
-    _isRenewingToken = true;
+  // Future<void> _handleTokenRenewal() async {
+  //   if (_isRenewingToken) return;
+  //   _isRenewingToken = true;
 
-    try {
-      debugPrint("🔄 Attempting to renew token...");
-      final newToken = await chatRepository.fetchAgoraToken(
-        widget.channelName,
-        widget.uid,
-      );
+  //   try {
+  //     debugPrint("🔄 Attempting to renew token...");
+  //     final newToken = await chatRepository.fetchAgoraToken(
+  //       widget.channelName,
+  //       widget.uid,
+  //     );
 
-      if (newToken != null && newToken != widget.token) {
-        await _engine.renewToken(newToken);
-        debugPrint("✅ Token renewed successfully");
-      } else {
-        debugPrint("⚠️ Received same token again. Skipping renewal.");
-      }
-    } catch (e) {
-      debugPrint("❌ Failed to renew token: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to renew Agora token.")),
-        );
-        _endCall();
-      }
-    } finally {
-      _isRenewingToken = false;
-    }
-  }
+  //     if (newToken != null && newToken != widget.token) {
+  //       await _engine.renewToken(newToken);
+  //       debugPrint("✅ Token renewed successfully");
+  //     } else {
+  //       debugPrint("⚠️ Received same token again. Skipping renewal.");
+  //     }
+  //   } catch (e) {
+  //     debugPrint("❌ Failed to renew token: $e");
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         const SnackBar(content: Text("Failed to renew Agora token.")),
+  //       );
+  //       _endCall();
+  //     }
+  //   } finally {
+  //     _isRenewingToken = false;
+  //   }
+  // }
 
   void _toggleMute() {
     setState(() => _muted = !_muted);
