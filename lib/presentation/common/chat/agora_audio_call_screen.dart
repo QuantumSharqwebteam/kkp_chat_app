@@ -83,7 +83,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       debugPrint("Attempting to join channel: ${widget.channelName}");
 
       /// Timeout if remote user doesn’t join
-      _callTimeoutTimer = Timer(const Duration(seconds: 50), () {
+      _callTimeoutTimer = Timer(const Duration(seconds: 30), () {
         if (_remoteUid == null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("No answer. Call ended.")),

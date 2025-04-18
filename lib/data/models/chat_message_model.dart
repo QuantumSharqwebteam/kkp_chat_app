@@ -35,7 +35,7 @@ class ChatMessageModel {
       timestamp: DateTime.parse(map['timestamp']),
       type: map['type'],
       mediaUrl: map['mediaUrl'],
-      form: map['form'],
+      form: map['form'] != null ? Map<String, dynamic>.from(map['form']) : null,
     );
   }
 }

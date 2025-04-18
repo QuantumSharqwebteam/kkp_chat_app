@@ -4,9 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/services/chat_storage_service.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/models/chat_message_model.dart';
 
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
@@ -54,8 +56,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final compositionController = TextEditingController();
   final rateController = TextEditingController();
   // final _chatRepository = ChatRepository();
+  final ChatStorageService _chatStorageService =
+      ChatStorageService(); // Initialize the service
 
-  List<Map<String, dynamic>> messages = [];
+  List<ChatMessageModel> messages = [];
 
   @override
   void initState() {
@@ -63,6 +67,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _loadMessages();
     // _socketService.onIncomingCall(_handleIncomingCall);
     _socketService.onIncomingCall((callData) {
       final channelName = callData['channelName'];
@@ -152,19 +157,31 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  void _handleIncomingMessage(Map<String, dynamic> data) {
-    final currentTime = DateTime.now().toIso8601String();
+  Future<void> _loadMessages() async {
+    final loadedMessages =
+        await _chatStorageService.getMessages(widget.customerEmail!);
     setState(() {
-      messages.add({
-        "text": data["message"],
-        "timestamp": currentTime,
-        "isMe": data["senderId"] == widget.customerEmail,
-        "type": data["type"] ?? "text",
-        "mediaUrl": data["mediaUrl"],
-        "form": data["form"],
-      });
+      messages = loadedMessages;
       _scrollToBottom();
     });
+  }
+
+  void _handleIncomingMessage(Map<String, dynamic> data) {
+    final currentTime = DateTime.now().toIso8601String();
+    final message = ChatMessageModel(
+      message: data["message"],
+      timestamp: DateTime.parse(currentTime),
+      sender: data["senderId"],
+      type: data["type"] ?? "text",
+      mediaUrl: data["mediaUrl"],
+      form: data["form"],
+    );
+    setState(() {
+      messages.add(message);
+      _scrollToBottom();
+    });
+    _chatStorageService.saveMessage(
+        message, widget.customerEmail!); // Save to Hive
   }
 
   // void _handleIncomingCall(Map<String, dynamic> data) {
@@ -217,15 +234,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
     final currentTime = DateTime.now().toIso8601String();
+    final message = ChatMessageModel(
+      message: messageText,
+      timestamp: DateTime.parse(currentTime),
+      sender: widget.customerEmail!,
+      type: type!,
+      mediaUrl: mediaUrl,
+      form: form,
+    );
     setState(() {
-      messages.add({
-        "text": messageText,
-        "timestamp": currentTime,
-        "isMe": true,
-        "type": type,
-        "mediaUrl": mediaUrl,
-        "form": form,
-      });
+      messages.add(message);
       _scrollToBottom();
     });
 
@@ -233,11 +251,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       message: messageText,
       senderEmail: widget.customerEmail!,
       senderName: widget.customerName!,
-      type: type!,
+      type: type,
       mediaUrl: mediaUrl,
       form: form,
     );
 
+    _chatStorageService.saveMessage(
+        message, widget.customerEmail!); // Save to Hive
     _chatController.clear();
   }
 
@@ -276,9 +296,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           key: _formKey,
           child: Container(
             padding: EdgeInsets.all(16.0),
+            height: Utils().height(context) * 0.8,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text("Pls Form details ", style: AppTextStyles.black16_600),
+                const SizedBox(height: 10),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
                   controller: qualityController,
@@ -329,6 +352,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     return null;
                   },
                 ),
+                const SizedBox(height: 20),
                 CustomButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
@@ -357,17 +381,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
   }
 
-  String formatTimestamp(String? timestamp) {
-    if (timestamp == null || timestamp.isEmpty) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
+  String formatTimestamp(dynamic timestamp) {
+    if (timestamp == null) {
+      return DateFormat('hh:mm a').format(DateTime.now());
     }
+
     try {
-      final dateTime = DateTime.parse(timestamp).toLocal();
+      final dateTime = timestamp is DateTime
+          ? timestamp.toLocal()
+          : DateTime.parse(timestamp.toString()).toLocal();
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
+      return DateFormat('hh:mm a').format(DateTime.now());
     }
   }
 
@@ -389,21 +414,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         actions: [
           IconButton(
             onPressed: () async {
-              //final channelName =  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
               final channelName = "customerCall123";
               final uid =
                   Utils().generateIntUidFromEmail(widget.customerEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
-
-              // // Fetch token from backend using generated UID
-              // final token =
-              //     await _chatRepository.fetchAgoraToken(channelName, uid);
-              // debugPrint("Fetched Agora token: $token");
-              // if (token == null) {
-              //   debugPrint("❗ Failed to get token");
-              //   return;
-              // }
-
               // Send call data over socket to notify customer
               _socketService.sendAgoraCall(
                 //  targetId: "mohdshoaibrayeen3@gmail.com",
@@ -443,28 +457,28 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     itemCount: messages.length,
                     itemBuilder: (context, index) {
                       final msg = messages[index];
-                      if (msg['type'] == 'media') {
+                      if (msg.type == 'media') {
                         return ImageMessageBubble(
-                          imageUrl: msg['mediaUrl'],
-                          isMe: msg['isMe'],
-                          timestamp: formatTimestamp(msg['timestamp']),
+                          imageUrl: msg.mediaUrl!,
+                          isMe: msg.sender == widget.customerEmail,
+                          timestamp: formatTimestamp(msg.timestamp),
                         );
-                      } else if (msg['type'] == 'form') {
+                      } else if (msg.type == 'form') {
                         return FormMessageBubble(
-                          formData: msg['form'],
-                          isMe: msg['isMe'],
-                          timestamp: formatTimestamp(msg['timestamp']),
+                          formData: msg.form!,
+                          isMe: msg.sender == widget.customerEmail,
+                          timestamp: formatTimestamp(msg.timestamp),
                         );
-                      } else if (msg['text'] == 'Fill details') {
+                      } else if (msg.message == 'Fill details') {
                         return FillFormButton(
                           onSubmit: _showFormOverlay,
                         );
                       }
                       return MessageBubble(
-                        text: msg['text'],
-                        isMe: msg['isMe'],
-                        timestamp: formatTimestamp(msg['timestamp']),
-                        image: msg['isMe']
+                        text: msg.message,
+                        isMe: msg.sender == widget.customerEmail,
+                        timestamp: formatTimestamp(msg.timestamp),
+                        image: msg.sender == widget.customerEmail
                             ? widget.customerImage!
                             : widget.agentImage!,
                       );
