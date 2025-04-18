@@ -65,7 +65,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       debugPrint('📞 Incoming call data: $callData');
 
       final channelName = callData['channelName'];
-      final token = callData['token'];
+      //final token = callData['token'];
 
       final callerName = callData['callerName'];
       final callerId = callData['callerId'];
@@ -113,7 +113,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                           MaterialPageRoute(
                             builder: (_) => AgoraAudioCallScreen(
                               isCaller: false,
-                              token: token,
+                              //   token: token,
                               channelName: channelName,
                               uid: uid,
                               remoteUserId: callerId,
@@ -384,20 +384,20 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               final uid = generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
 
-              //Fetch token from backend using generated UID
-              final token =
-                  await _chatRepository.fetchAgoraToken(channelName, uid);
-              debugPrint("Fetched Agora token: $token");
-              if (token == null) {
-                debugPrint("❗ Failed to get token");
-                return;
-              }
+              // //Fetch token from backend using generated UID
+              // final token =
+              //     await _chatRepository.fetchAgoraToken(channelName, uid);
+              // debugPrint("Fetched Agora token: $token");
+              // if (token == null) {
+              //   debugPrint("❗ Failed to get token");
+              //   return;
+              // }
 
               // Send call data over socket to notify customer
-              SocketService().sendAgoraCall(
+              _socketService.sendAgoraCall(
                 targetId: widget.customerEmail!,
                 channelName: channelName,
-                token: token,
+                //token: token,
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
               );
@@ -408,7 +408,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 MaterialPageRoute(
                   builder: (_) => AgoraAudioCallScreen(
                     isCaller: true,
-                    token: token,
+                    //   token: token,
                     channelName: channelName,
                     uid: uid,
                     remoteUserId: widget.customerEmail!,

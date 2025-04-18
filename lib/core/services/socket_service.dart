@@ -268,7 +268,7 @@ class SocketService {
   void sendAgoraCall({
     String? targetId, // email or userId of the customer
     required String channelName,
-    required String token,
+    // required String token,
     required String callerId,
     required String callerName,
   }) {
@@ -276,7 +276,7 @@ class SocketService {
       final payload = {
         // 'targetId': targetId,
         'channelName': channelName,
-        'token': token,
+        // 'token': token,
         'callerId': callerId,
         'callerName': callerName,
       };

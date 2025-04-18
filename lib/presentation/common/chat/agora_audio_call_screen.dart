@@ -8,7 +8,7 @@ import 'dart:async';
 
 class AgoraAudioCallScreen extends StatefulWidget {
   final bool isCaller;
-  final String token;
+  //final String token;
   final String channelName;
   final String remoteUserId;
   final String remoteUserName;
@@ -17,7 +17,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
   const AgoraAudioCallScreen({
     super.key,
     required this.isCaller,
-    required this.token,
+    //required this.token,
     required this.channelName,
     required this.remoteUserId,
     required this.remoteUserName,
@@ -64,8 +64,12 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       /// Delay for internal readiness
       await Future.delayed(const Duration(milliseconds: 500));
 
+      // different token for each user who wants to join in the room
+      final token =
+          await chatRepository.fetchAgoraToken(widget.channelName, widget.uid);
+
       await _engine.joinChannel(
-        token: widget.token,
+        token: token!,
         channelId: widget.channelName,
         uid: widget.uid,
         options: ChannelMediaOptions(
