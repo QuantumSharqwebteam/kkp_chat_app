@@ -250,9 +250,11 @@ class _VerificationPageState extends State<VerificationPage> {
                                 } else {
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                            content: Text(
-                                                'Wrong OTP code, please try again')));
+                                      SnackBar(
+                                        content: Text(
+                                            'Wrong OTP code, please try again'),
+                                      ),
+                                    );
                                   }
                                 }
                               },

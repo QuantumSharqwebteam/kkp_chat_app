@@ -27,12 +27,12 @@ class AgentChatScreen extends StatefulWidget {
 
   const AgentChatScreen({
     super.key,
-    this.customerName = "Customer 2",
+    this.customerName,
     this.customerImage = ImageConstants.userImage,
-    this.agentName = "Agent N/A",
+    this.agentName,
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "agent@gmail.com",
+    this.customerEmail,
+    this.agentEmail,
   });
 
   @override
