@@ -218,42 +218,48 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   // Recent Messages List
   Widget _buildCustomerInquiriesList() {
-    return ListView.builder(
-      itemCount: _filteredCustomers.length,
-      physics: AlwaysScrollableScrollPhysics(),
-      itemBuilder: (context, index) {
-        final assignedCustomer = _filteredCustomers[index];
-        final isOnline = _socketService.isUserOnline(assignedCustomer["email"]);
-        final String lastSeen =
-            _socketService.getLastSeenTime(assignedCustomer["email"]);
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: FeedListCard(
-            name: assignedCustomer["name"],
-            message: "last message",
-            image: "assets/images/user3.png",
-            isActive: isOnline,
-            time: isOnline ? "Online" : lastSeen,
-            enableLongPress: false,
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AgentChatScreen(
-                    customerName: assignedCustomer["name"],
-                    customerEmail: assignedCustomer['email'],
-                    agentEmail: widget.agentEmail,
-                    agentName: widget.agentName,
-                  ),
-                ),
-              );
-              if (result == true) {
-                await _fetchAssignedCustomers();
-              }
-            },
-          ),
-        );
+    return RefreshIndicator(
+      onRefresh: () {
+        return _fetchAssignedCustomers();
       },
+      child: ListView.builder(
+        itemCount: _filteredCustomers.length,
+        physics: AlwaysScrollableScrollPhysics(),
+        itemBuilder: (context, index) {
+          final assignedCustomer = _filteredCustomers[index];
+          final isOnline =
+              _socketService.isUserOnline(assignedCustomer["email"]);
+          final String lastSeen =
+              _socketService.getLastSeenTime(assignedCustomer["email"]);
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: FeedListCard(
+              name: assignedCustomer["name"],
+              message: "last message",
+              image: "assets/images/user3.png",
+              isActive: isOnline,
+              time: isOnline ? "Online" : lastSeen,
+              enableLongPress: false,
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AgentChatScreen(
+                      customerName: assignedCustomer["name"],
+                      customerEmail: assignedCustomer['email'],
+                      agentEmail: widget.agentEmail,
+                      agentName: widget.agentName,
+                    ),
+                  ),
+                );
+                if (result == true) {
+                  await _fetchAssignedCustomers();
+                }
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
