@@ -1,10 +1,8 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/data/models/product_model.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';

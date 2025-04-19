@@ -98,7 +98,7 @@ packages:
     source: hosted
     version: "0.3.4+2"
   crypto:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: crypto
       sha256: "1e445881f28f22d6140f181e07737b22f1e099a5e1ff94b0af2f9e4a463f4855"
@@ -113,22 +113,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
-  dio:
-    dependency: "direct main"
-    description:
-      name: dio
-      sha256: "253a18bbd4851fecba42f7343a1df3a9a4c1d31a2c1b37e221086b4fa8c8dbc9"
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.8.0+1"
-  dio_web_adapter:
-    dependency: transitive
-    description:
-      name: dio_web_adapter
-      sha256: "7586e476d70caecaf1686d21eee7247ea43ef5c345eab9e0cc3583ff13378d78"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
   dotted_border:
     dependency: "direct main"
     description:
@@ -169,14 +153,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
-  file_picker:
-    dependency: "direct main"
-    description:
-      name: file_picker
-      sha256: "09b474c0c8117484b80cbebc043801ff91e05cfbd2874d512825c899e1754694"
-      url: "https://pub.dev"
-    source: hosted
-    version: "9.2.3"
   file_selector_linux:
     dependency: transitive
     description:
@@ -345,7 +321,7 @@ packages:
     source: sdk
     version: "0.0.0"
   hive:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: hive
       sha256: "8dcf6db979d7933da8217edcec84e9df1bdb4e4edc7fc77dbd5aa74356d6d941"
@@ -369,7 +345,7 @@ packages:
     source: hosted
     version: "1.3.0"
   http_parser:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: http_parser
       sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
@@ -544,14 +520,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  motion_tab_bar:
-    dependency: "direct main"
-    description:
-      name: motion_tab_bar
-      sha256: "71bcb42a91253479896a2767f18424cac0ed967d73763e0f8ae467b97661a588"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.4"
   motion_tab_bar_v2:
     dependency: "direct main"
     description:
@@ -1013,14 +981,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
-  win32:
-    dependency: transitive
-    description:
-      name: win32
-      sha256: dc6ecaa00a7c708e5b4d10ee7bec8c270e9276dfcab1783f57e9962d7884305f
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.12.0"
   xdg_directories:
     dependency: transitive
     description:
