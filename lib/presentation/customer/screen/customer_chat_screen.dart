@@ -8,7 +8,8 @@ import 'package:kkp_chat_app/core/services/chat_storage_service.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
+import 'package:kkp_chat_app/data/models/chat_message_model.dart';
+
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -18,7 +19,6 @@ import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.d
 import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
-import 'package:kkp_chat_app/data/models/chat_message_model.dart'; // Import the model
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
@@ -48,9 +48,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  final ChatRepository _chatRepository = ChatRepository();
-  final ChatStorageService _chatStorageService =
-      ChatStorageService(); // Initialize the service
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final qualityController = TextEditingController();
@@ -58,8 +55,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final weaveController = TextEditingController();
   final compositionController = TextEditingController();
   final rateController = TextEditingController();
+  // final _chatRepository = ChatRepository();
+  final ChatStorageService _chatStorageService =
+      ChatStorageService(); // Initialize the service
 
-  List<ChatMessageModel> messages = []; // Change to use ChatMessageModel
+  List<ChatMessageModel> messages = [];
 
   @override
   void initState() {
@@ -67,7 +67,75 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
-    _loadMessages(); // Load messages from Hive
+    _loadMessages();
+    // _socketService.onIncomingCall(_handleIncomingCall);
+    _socketService.onIncomingCall((callData) {
+      final channelName = callData['channelName'];
+      //  final token = callData['token'];
+      final callerName = callData['callerName'];
+      final callerId = callData['callerId'];
+      final uid = Utils().generateIntUidFromEmail(widget.customerEmail!);
+
+      showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        builder: (context) {
+          return Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('$callerName is calling...',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call_end, color: Colors.white),
+                      label: const Text("Reject"),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
+                        // Optionally emit reject event over socket
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.call, color: Colors.white),
+                      label: const Text("Answer"),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green),
+                      onPressed: () {
+                        Navigator.pop(context); // close bottom sheet
+
+                        // Navigate to the audio call screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AgoraAudioCallScreen(
+                              isCaller: false,
+                              // token: token,
+                              channelName: channelName,
+                              uid: uid,
+                              remoteUserId: callerId,
+                              remoteUserName: callerName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    });
   }
 
   @override
@@ -115,6 +183,47 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _chatStorageService.saveMessage(
         message, widget.customerEmail!); // Save to Hive
   }
+
+  // void _handleIncomingCall(Map<String, dynamic> data) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return AlertDialog(
+  //         title: Text('Incoming Call'),
+  //         content: Text('Incoming call from ${data['name']}'),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.pop(context);
+  //             },
+  //             child: Text('Reject'),
+  //           ),
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.pop(context);
+  //               Navigator.push(
+  //                 context,
+  //                 MaterialPageRoute(
+  //                   builder: (context) => AudioCallScreen(
+  //                     args: AudioCallScreenArgs(
+  //                       callDirection: CallDirection.receivingCall,
+  //                       remoteUserFullName: data['name'],
+  //                       remoteUserId: data['from'],
+  //                       senderEmail: "",
+  //                       senderName: "",
+  //                       signalData: data["signal"],
+  //                     ),
+  //                   ),
+  //                 ),
+  //               );
+  //             },
+  //             child: Text('Answer'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   void _sendMessage({
     required String messageText,
@@ -187,9 +296,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           key: _formKey,
           child: Container(
             padding: EdgeInsets.all(16.0),
+            height: Utils().height(context) * 0.8,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Text("Pls Form details ", style: AppTextStyles.black16_600),
+                const SizedBox(height: 10),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
                   controller: qualityController,
@@ -240,6 +352,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     return null;
                   },
                 ),
+                const SizedBox(height: 20),
                 CustomButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
@@ -301,42 +414,33 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         actions: [
           IconButton(
             onPressed: () async {
-              final channelName =
-                  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
+              final channelName = "customerCall123";
               final uid =
                   Utils().generateIntUidFromEmail(widget.customerEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
-
-              final token =
-                  await _chatRepository.fetchAgoraToken(channelName, uid);
-              debugPrint("Fetched Agora token: $token");
-              if (token == null) {
-                debugPrint("❗ Failed to get token");
-                return;
-              }
-
-              SocketService().sendAgoraCall(
+              // Send call data over socket to notify customer
+              _socketService.sendAgoraCall(
+                //  targetId: "mohdshoaibrayeen3@gmail.com",
                 channelName: channelName,
-                token: token,
+                //token: token,
                 callerId: widget.customerEmail!,
                 callerName: widget.customerName!,
               );
 
-              if (context.mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AgoraAudioCallScreen(
-                      isCaller: true,
-                      token: token,
-                      channelName: channelName,
-                      uid: uid,
-                      remoteUserId: widget.agentEmail!,
-                      remoteUserName: widget.agentName!,
-                    ),
+              // Navigate agent to call screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AgoraAudioCallScreen(
+                    isCaller: true,
+                    //  token: token,
+                    channelName: channelName,
+                    uid: uid,
+                    remoteUserId: widget.agentEmail!,
+                    remoteUserName: widget.agentName!,
                   ),
-                );
-              }
+                ),
+              );
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),

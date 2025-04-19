@@ -1,3 +1,4 @@
-# Flutter WebRTC
--keep class com.cloudwebrtc.webrtc.** { *; }
--keep class org.webrtc.** { *; }
+# Agora SDK
+-keep class io.agora.** { *; }
+-dontwarn io.agora.**
+-keepclassmembers class io.agora.** { *; }

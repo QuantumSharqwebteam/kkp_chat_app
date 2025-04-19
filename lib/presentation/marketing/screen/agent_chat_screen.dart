@@ -65,8 +65,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       debugPrint('📞 Incoming call data: $callData');
 
       final channelName = callData['channelName'];
-      final token = callData['token'];
-      // "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0";
+      //final token = callData['token'];
+
       final callerName = callData['callerName'];
       final callerId = callData['callerId'];
       final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
@@ -113,7 +113,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                           MaterialPageRoute(
                             builder: (_) => AgoraAudioCallScreen(
                               isCaller: false,
-                              token: token,
+                              //   token: token,
                               channelName: channelName,
                               uid: uid,
                               remoteUserId: callerId,
@@ -379,49 +379,43 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           ),
           IconButton(
             onPressed: () async {
-              final channelName =
-                  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
-              // final channelName = "agentCall123";
+              //final channelName =  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
+              final channelName = "agentCall123";
               final uid = generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
 
-              // Fetch token from backend using generated UID
-              final token =
-                  await _chatRepository.fetchAgoraToken(channelName, uid);
-              debugPrint("Fetched Agora token: $token");
-              if (token == null) {
-                debugPrint("❗ Failed to get token");
-                return;
-              }
+              // //Fetch token from backend using generated UID
+              // final token =
+              //     await _chatRepository.fetchAgoraToken(channelName, uid);
+              // debugPrint("Fetched Agora token: $token");
+              // if (token == null) {
+              //   debugPrint("❗ Failed to get token");
+              //   return;
+              // }
 
               // Send call data over socket to notify customer
-              SocketService().sendAgoraCall(
+              _socketService.sendAgoraCall(
                 targetId: widget.customerEmail!,
                 channelName: channelName,
-                token: token,
-                // token:
-                //     "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
+                //token: token,
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
               );
 
               // Navigate agent to call screen
-              if (context.mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AgoraAudioCallScreen(
-                      isCaller: true,
-                      token: token,
-                      //  "007eJxTYJjkH3s7f+7W0He7Nizv/Cl+L5SZ9bPpxA/bDzidkTAUfPFVgcHM3MTQyMwo2cwyLc3EyMw8KdXAzCQtKS3JxNgozcTQYkbX//SGQEaGlMoVDIxQCOLzMCSmp+aVOCfm5BgaGTMwAAD+0CP0",
-                      channelName: channelName,
-                      uid: uid,
-                      remoteUserId: widget.customerEmail!,
-                      remoteUserName: widget.customerName!,
-                    ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AgoraAudioCallScreen(
+                    isCaller: true,
+                    //   token: token,
+                    channelName: channelName,
+                    uid: uid,
+                    remoteUserId: widget.customerEmail!,
+                    remoteUserName: widget.customerName!,
                   ),
-                );
-              }
+                ),
+              );
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
