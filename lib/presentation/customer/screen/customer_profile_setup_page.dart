@@ -40,8 +40,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   final _streetNumber = TextEditingController();
   final _pinCode = TextEditingController();
   final _cityName = TextEditingController();
-  late bool _isExportSelected;
-  late bool _isDomesticSelected;
+  late bool _isExportSelected = true;
+  late bool _isDomesticSelected = false;
   AuthRepository auth = AuthRepository();
   String? _customerType;
   bool _isLoading = false;
