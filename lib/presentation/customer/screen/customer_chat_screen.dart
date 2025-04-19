@@ -30,12 +30,12 @@ class CustomerChatScreen extends StatefulWidget {
 
   const CustomerChatScreen({
     super.key,
-    this.customerName = "Varun",
-    this.customerImage = ImageConstants.userImage,
+    this.customerName,
+    this.customerImage,
     this.agentName = "Agent",
-    this.agentImage = "assets/images/user4.png",
-    this.customerEmail = "prabhujivats@gmail.com",
-    this.agentEmail = "agent@gmail.com",
+    this.agentImage,
+    this.customerEmail,
+    this.agentEmail,
   });
 
   @override
@@ -479,8 +479,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                         isMe: msg.sender == widget.customerEmail,
                         timestamp: formatTimestamp(msg.timestamp),
                         image: msg.sender == widget.customerEmail
-                            ? widget.customerImage!
-                            : widget.agentImage!,
+                            ? widget.customerImage ?? ImageConstants.userImage
+                            : widget.agentImage ?? ImageConstants.agentImage,
                       );
                     },
                   ),

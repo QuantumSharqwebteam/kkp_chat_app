@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/data/models/product_model.dart';
 import 'package:kkp_chat_app/data/models/profile_model.dart';
 import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
 import 'package:kkp_chat_app/data/repositories/product_repository.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
+import 'package:kkp_chat_app/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkp_chat_app/presentation/customer/widget/custom_app_bar.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/products/product_item.dart';
@@ -85,8 +87,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _enquirySupport(onTap: () {
-                      Navigator.pushNamed(
-                          context, CustomerRoutes.customerSupportChat);
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return CustomerChatScreen(
+                          agentName: "Agent",
+                          customerName: name,
+                          customerEmail: profileData!.email,
+                          customerImage: profileImageUrl,
+                        );
+                      }));
                     }),
                     const SizedBox(height: 20),
 
