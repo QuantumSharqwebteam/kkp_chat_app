@@ -1,13 +1,122 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
+import 'package:kkp_chat_app/presentation/common/auth/new_pass_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:pinput/pinput.dart';
 
-class VerificationPage extends StatelessWidget {
-  VerificationPage({super.key});
+class VerificationPage extends StatefulWidget {
+  const VerificationPage({
+    super.key,
+    required this.email,
+    required this.isNewAccount,
+  });
+  final String email;
+  final bool isNewAccount;
+
+  @override
+  State<VerificationPage> createState() => _VerificationPageState();
+}
+
+class _VerificationPageState extends State<VerificationPage> {
   final _otp = TextEditingController();
+  AuthRepository auth = AuthRepository();
+  bool _isVerifyLoading = false;
+  bool _isResendEnabled = true;
+  int _timerCount = 60;
+  Timer? _timer;
+  bool _isOtpError = false; // State variable to track OTP error
+
+  Future<bool> _verifyOtp(context) async {
+    setState(() {
+      _isVerifyLoading = true;
+      _isOtpError = false; // Reset error state on new attempt
+    });
+
+    if (_otp.text.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Please enter the OTP')));
+      setState(() {
+        _isVerifyLoading = false;
+        _isOtpError = true; // Set error state if OTP is empty
+      });
+      return false;
+    }
+
+    if (_otp.text.length != 6) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('OTP must be 6 digits long')));
+      setState(() {
+        _isVerifyLoading = false;
+        _isOtpError = true; // Set error state if OTP length is incorrect
+      });
+      return false;
+    }
+
+    try {
+      final response =
+          await auth.verifyOtp(email: widget.email, otp: int.parse(_otp.text));
+
+      if (response['message'] == "OTP Verified Successfully!") {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+        return true;
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+        setState(() {
+          _isOtpError = true; // Set error state if OTP verification fails
+        });
+        return false;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("$e"),
+        ),
+      );
+      setState(() {
+        _isOtpError = true; // Set error state if there's an exception
+      });
+      return false;
+    } finally {
+      setState(() {
+        _isVerifyLoading = false;
+      });
+    }
+  }
+
+  void _startTimer() {
+    _timerCount = 90;
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_timerCount > 0) {
+          _timerCount--;
+        } else {
+          _isResendEnabled = true;
+          _timer?.cancel();
+        }
+      });
+    });
+  }
+
+  void _resendOtp() async {
+    await auth.sendOtp(email: widget.email);
+    setState(() {
+      _isResendEnabled = false;
+    });
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,7 +134,7 @@ class VerificationPage extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'We have sent the six digit verification code to your email address',
+                    'We have sent the six digit verification code to ${widget.email}',
                     style: TextStyle(fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
@@ -34,7 +143,8 @@ class VerificationPage extends StatelessWidget {
                   Center(
                     child: Pinput(
                       errorText: '',
-                      forceErrorState: false,
+                      forceErrorState:
+                          _isOtpError, // Use the state variable here
                       errorBuilder: (errorText, pin) {
                         return Padding(
                           padding: const EdgeInsets.only(top: 3),
@@ -115,14 +225,42 @@ class VerificationPage extends StatelessWidget {
                         textColor: Colors.black,
                         fontSize: 12,
                       ),
-                      CustomButton(
-                        text: 'Verify',
-                        onPressed: () {
-                          Navigator.pushNamed(context, Routes.newPass);
-                        },
-                        width: Utils().width(context) * 0.38,
-                        fontSize: 12,
-                      ),
+                      _isVerifyLoading
+                          ? Center(child: CircularProgressIndicator())
+                          : CustomButton(
+                              text: 'Verify',
+                              onPressed: () async {
+                                if (await _verifyOtp(context) == true) {
+                                  if (widget.isNewAccount == true) {
+                                    if (context.mounted) {
+                                      Navigator.pushReplacementNamed(context,
+                                          CustomerRoutes.customerProfileSetup,
+                                          arguments: {"forUpdate": false});
+                                    }
+                                  } else {
+                                    if (context.mounted) {
+                                      Navigator.pushReplacement(context,
+                                          MaterialPageRoute(builder: (_) {
+                                        return NewPassPage(
+                                          email: widget.email,
+                                        );
+                                      }));
+                                    }
+                                  }
+                                } else {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Wrong OTP code, please try again'),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              width: Utils().width(context) * 0.38,
+                              fontSize: 12,
+                            ),
                     ],
                   ),
                   SizedBox(height: 30),
@@ -133,12 +271,16 @@ class VerificationPage extends StatelessWidget {
                       children: [
                         WidgetSpan(
                           child: InkWell(
-                            onTap: () {},
+                            onTap: _isResendEnabled ? _resendOtp : null,
                             child: Text(
-                              'Resend',
+                              _isResendEnabled
+                                  ? 'Resend'
+                                  : 'Resend in $_timerCount seconds',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.blue,
+                                color: _isResendEnabled
+                                    ? AppColors.blue
+                                    : Colors.grey,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

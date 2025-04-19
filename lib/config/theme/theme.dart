@@ -7,10 +7,11 @@ class AppTheme {
     primarySwatch: Colors.blue,
     scaffoldBackgroundColor: Colors.white,
     fontFamily: 'Poppins',
-    appBarTheme: AppBarTheme(
-      color: Colors.white,
-      elevation: 4,
-    ),
+    // appBarTheme: AppBarTheme(
+    //   color: Colors.white,
+    //   backgroundColor: Colors.white,
+    //   elevation: 0,
+    // ),
     // textTheme: TextTheme(
     //   bodyText1: TextStyle(color: Colors.black),
     //   bodyText2: TextStyle(color: Colors.black),

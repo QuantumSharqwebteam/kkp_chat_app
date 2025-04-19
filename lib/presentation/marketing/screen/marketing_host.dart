@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:kkp_chat_app/core/network/auth_api.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/data/models/profile_model.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
+import 'package:kkp_chat_app/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/feeds_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/product_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_screen.dart';
 import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/widget/marketing_nav_bar.dart';
 
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key});
@@ -13,131 +20,104 @@ class MarketingHost extends StatefulWidget {
 
 class _MarketingHostState extends State<MarketingHost> {
   int _selectedIndex = 0;
+  String? role;
+  String? rolename;
+  String? agentEmail;
+  String? agentName;
+  List<Widget> _screens = [];
+  final SocketService _socketService = SocketService();
+  AuthApi auth = AuthApi();
 
-  final List<Widget> _screens = [
-    AgentHomeScreen(),
-    ProductScreen(),
-    ProfileScreen(),
-    FeedsScreen()
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadUserDataAndInitializeSocket();
+  }
 
-  final List<String> _screenNames = [
-    'Home',
-    'Product',
-    'Profile',
-    'Feed',
-  ];
+  Future<void> _loadUserDataAndInitializeSocket() async {
+    await _loadUserData().whenComplete(() {
+      if (agentName != null && agentEmail != null && rolename != null) {
+        _socketService.initSocket(agentName!, agentEmail!, rolename!);
+      } else {
+        debugPrint("Skipping socket init: agentName or agentEmail is null");
+      }
+    });
+  }
 
-  final PageController _pageController = PageController();
+  Future<void> _loadUserData() async {
+    try {
+      // Load role and email
+      role = LocalDbHelper.getUserType();
+      agentEmail = LocalDbHelper.getEmail();
+      debugPrint(
+          'Loaded role: $role, Loaded email: $agentEmail'); // Debug print
+
+      // Determine role name
+      if (role == "1") {
+        rolename = "admin";
+      } else if (role == "2") {
+        rolename = "agent";
+      } else if (role == "3") {
+        rolename = "agent Head";
+      }
+
+      // Load user profile
+      Profile? profile = await auth.getUserInfo();
+      await LocalDbHelper.saveProfile(profile).whenComplete(() {
+        debugPrint(
+            'Loaded profile: $profile'); // Debug print to check loaded profile
+      });
+
+      setState(() {
+        agentName = profile.name ?? "";
+        agentEmail = profile.email ?? ""; // Ensure email is also set
+        debugPrint(
+            'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
+      });
+
+      await _updateScreens();
+    } catch (error) {
+      debugPrint('Error in _loadUserData: $error');
+    }
+  }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _socketService.disconnect(); // Disconnect when leaving the host screen
     super.dispose();
+  }
+
+  Future<void> _updateScreens() async {
+    setState(() {
+      _screens = [
+        if (role == "1" || role == "3")
+          AdminHome()
+        else
+          AgentHomeScreen(agentEmail: agentEmail!, agentName: agentName!),
+        FeedsScreen(loggedAgentEmail: agentEmail!),
+        MarketingProductScreen(),
+        if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
+      ];
+    });
+  }
+
+  void _onTabSelected(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+      body: IndexedStack(
+        index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      width: double.maxFinite,
-      decoration: BoxDecoration(
-        color: Colors.blue,
-        boxShadow: [
-          // Add a shadow (optional)
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            spreadRadius: 5,
-            blurRadius: 7,
-            offset: Offset(0, 3),
-          ),
-        ],
+      bottomNavigationBar: MarketingNavBar(
+        selectedIndex: _selectedIndex,
+        onTabSelected: _onTabSelected,
       ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-            _pageController.jumpToPage(index);
-          });
-        },
-        backgroundColor: Colors
-            .transparent, // Make the BottomNavigationBar background transparent
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white.withOpacity(0.5),
-        showSelectedLabels: false, // Hide labels
-        showUnselectedLabels: false, // Hide labels
-        type: BottomNavigationBarType.fixed, // Important for consistent spacing
-        elevation: 0, // Remove default elevation
-        items: [
-          _buildBarItem(0, Icons.home),
-          _buildBarItem(1, Icons.shopping_cart),
-          _buildBarItem(2, Icons.person),
-          _buildBarItem(3, Icons.feed),
-        ],
-      ),
-    );
-  }
-
-  BottomNavigationBarItem _buildBarItem(int index, IconData icon) {
-    return BottomNavigationBarItem(
-      icon: _buildCustomIcon(index, icon), // Use the custom icon builder
-      label: _screenNames[index], // Still provide a label for accessibility
-    );
-  }
-
-  Widget _buildCustomIcon(int index, IconData icon) {
-    bool isSelected = index == _selectedIndex;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.all(isSelected ? 12 : 5),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.3),
-                      spreadRadius: 2,
-                      blurRadius: 5,
-                    ),
-                  ]
-                : [],
-          ),
-          child: Icon(
-            icon,
-            size: isSelected ? 32 : 24,
-            color: isSelected ? Colors.blue : Colors.white.withOpacity(0.7),
-          ),
-        ),
-        if (isSelected) // Show text only when selected
-          Text(
-            _screenNames[index],
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-            ),
-          ),
-      ],
     );
   }
 }

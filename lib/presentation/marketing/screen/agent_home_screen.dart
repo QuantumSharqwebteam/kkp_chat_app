@@ -1,99 +1,82 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/direct_messages_list_item.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/recent_messages_list_card.dart';
+import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/core/services/socket_service.dart';
+import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
+import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
+import 'package:kkp_chat_app/presentation/marketing/widget/feed_list_card.dart';
 
 class AgentHomeScreen extends StatefulWidget {
-  const AgentHomeScreen({super.key});
+  final String? agentEmail;
+  final String? agentName;
+  const AgentHomeScreen({super.key, this.agentEmail, this.agentName});
 
   @override
   State<AgentHomeScreen> createState() => _AgentHomeScreenState();
 }
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
-  List<Map<String, dynamic>> users = [
-    {
-      "name": "Rumi",
-      "image": "assets/images/user1.png",
-      "status": "active",
-      "unread": 0,
-      "typing": false
-    },
-    {
-      "name": "Riya",
-      "image": "assets/images/user2.png",
-      "status": "active",
-      "unread": 2,
-      "typing": false
-    },
-    {
-      "name": "Radhika",
-      "image": "assets/images/user3.png",
-      "status": "active",
-      "unread": 0,
-      "typing": true
-    },
-    {
-      "name": "Mariya",
-      "image": "assets/images/user4.png",
-      "status": "inactive",
-      "unread": 0,
-      "typing": false
-    },
-    {
-      "name": "Kesi",
-      "image": "assets/images/user5.png",
-      "status": "inactive",
-      "unread": 0,
-      "typing": false
-    },
-  ];
+  final _searchController = TextEditingController();
+  bool _isLoading = true;
+  final _chatRepo = ChatRepository();
+  List<dynamic> _assignedCustomers = [];
+  List<dynamic> _filteredCustomers = [];
+  final SocketService _socketService = SocketService();
+  StreamSubscription<List<String>>? _statusSubscription;
 
-  List<Map<String, dynamic>> messages = [
-    {
-      "name": "Ramesh Jain",
-      "message": "Can you describe....",
-      "time": "2m",
-      "image": "assets/images/user1.png",
-      "isActive": false // Inactive user
-    },
-    {
-      "name": "Rumika Mehra",
-      "message": "How much does.......",
-      "time": "3m",
-      "image": "assets/images/user4.png",
-      "isActive": true // Active user
-    },
-    {
-      "name": "Rumi",
-      "message": "I'm interested in.......",
-      "time": "3m",
-      "image": "assets/images/user1.png",
-      "isActive": false
-    },
-    {
-      "name": "Riya",
-      "message": "I'm interested in.......",
-      "time": "3m",
-      "image": "assets/images/user2.png",
-      "isActive": true // Active user
-    },
-    {
-      "name": "Radhika",
-      "message": "Typing...",
-      "time": "3m",
-      "image": "assets/images/user3.png",
-      "isActive": false
-    },
-    {
-      "name": "Amit Kumar",
-      "message": "Let's connect soon!",
-      "time": "4m",
-      "image": "assets/images/user4.png",
-      "isActive": true // Active user
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchAssignedCustomers();
+    _statusSubscription = _socketService.statusStream.listen((_) {
+      if (mounted) {
+        setState(() {}); // Forces a rebuild to reflect the new online status
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchAssignedCustomers() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final fetchedCustomerList =
+          await _chatRepo.fetchAssignedCustomerList(widget.agentEmail!);
+      setState(() {
+        _assignedCustomers = fetchedCustomerList;
+        _filteredCustomers = fetchedCustomerList;
+      });
+    } catch (e) {
+      debugPrint("Error loading customer list: ${e.toString()}");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredCustomers = _assignedCustomers.where((customer) {
+        final name = customer["name"].toLowerCase();
+        return name.contains(query);
+      }).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,26 +96,37 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     topRight: Radius.circular(15),
                   ),
                 ),
-                child: NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildSearchBar(),
-                            const SizedBox(height: 20),
-                            _buildDirectMessages(),
-                            const SizedBox(height: 20),
-                            Text("Direct Messages",
-                                style: AppTextStyles.black16_500)
-                          ],
+                child: _isLoading
+                    ? ShimmerList(itemCount: 8)
+                    : NestedScrollView(
+                        headerSliverBuilder: (context, innerBoxIsScrolled) {
+                          return [
+                            SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildSearchBar(),
+                                  // const SizedBox(height: 20),
+                                  // _buildDirectMessages(),
+                                  const SizedBox(height: 20),
+                                  Text("Customer Inquiries",
+                                      style: AppTextStyles.black16_500)
+                                ],
+                              ),
+                            ),
+                          ];
+                        },
+                        body: StreamBuilder<List<String>>(
+                          stream: _socketService.statusStream,
+                          builder: (context, snapshot) {
+                            return _filteredCustomers.isEmpty
+                                ? Center(
+                                    child: Text("No Customers Assigned"),
+                                  )
+                                : _buildCustomerInquiriesList();
+                          },
                         ),
                       ),
-                    ];
-                  },
-                  body: _buildRecentMessages(),
-                ),
               ),
             ),
           ],
@@ -147,99 +141,116 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       contentPadding: EdgeInsets.symmetric(horizontal: 16),
       leading: CircleAvatar(
         radius: 26,
-        backgroundImage: AssetImage("assets/images/profile.png"),
+        backgroundImage: AssetImage(ImageConstants.userImage),
       ),
-      title: Text("John", style: AppTextStyles.black16_500),
+      title: Text(widget.agentName ?? "user", style: AppTextStyles.black16_500),
       subtitle:
           Text("Let's find latest messages", style: AppTextStyles.black12_400),
-      trailing: IconButton(
-        onPressed: () {},
-        icon: const Icon(
-          Icons.notifications_active_outlined,
-          color: Colors.black,
-          size: 28,
-        ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(
+                  context, MarketingRoutes.marketingNotifications);
+            },
+            icon: const Icon(
+              Icons.notifications_active_outlined,
+              color: Colors.black,
+              size: 28,
+            ),
+          ),
+          IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, MarketingRoutes.marketingSettings);
+              },
+              icon: Icon(
+                Icons.settings_outlined,
+              ))
+        ],
       ),
     );
   }
 
   // Search Bar
   Widget _buildSearchBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.20),
-            blurRadius: 3,
-            spreadRadius: 0,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Center(
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: "Search Here",
-            border: InputBorder.none,
-            prefixIcon: Icon(Icons.search, color: Colors.grey),
-          ),
-        ),
-      ),
+    return CustomSearchBar(
+      enable: true,
+      controller: _searchController,
+      hintText: "search",
+      onChanged: _onSearchChanged,
     );
   }
 
-  // Direct Messages Section
-  Widget _buildDirectMessages() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Direct Messages",
-          style: AppTextStyles.black16_500,
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: users.length,
-            itemBuilder: (context, index) {
-              final user = users[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: DirectMessagesListItem(
-                  name: user['name'],
-                  image: user['image'],
-                  status: user['status'],
-                  unread: user['unread'],
-                  typing: user['typing'],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
+  // // Direct Messages Section
+  // Widget _buildDirectMessages() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text(
+  //         "Direct Messages",
+  //         style: AppTextStyles.black16_500,
+  //       ),
+  //       const SizedBox(height: 10),
+  //       SizedBox(
+  //         height: 100,
+  //         child: ListView.builder(
+  //           scrollDirection: Axis.horizontal,
+  //           itemCount: users.length,
+  //           itemBuilder: (context, index) {
+  //             final user = users[index];
+  //             return Padding(
+  //               padding: const EdgeInsets.symmetric(horizontal: 10),
+  //               child: DirectMessagesListItem(
+  //                 name: user['name'],
+  //                 image: user['image'],
+  //                 status: user['status'],
+  //                 unread: user['unread'],
+  //                 typing: user['typing'],
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   // Recent Messages List
-  Widget _buildRecentMessages() {
+  Widget _buildCustomerInquiriesList() {
     return ListView.builder(
-      itemCount: messages.length,
+      itemCount: _filteredCustomers.length,
       physics: AlwaysScrollableScrollPhysics(),
       itemBuilder: (context, index) {
-        final message = messages[index];
+        final assignedCustomer = _filteredCustomers[index];
+        final isOnline = _socketService.isUserOnline(assignedCustomer["email"]);
+        final String lastSeen =
+            _socketService.getLastSeenTime(assignedCustomer["email"]);
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: RecentMessagesListCard(
-            name: message['name'],
-            message: message['message'],
-            time: message['time'],
-            image: message['image'],
-            isActive: message['isActive'],
+          child: FeedListCard(
+            name: assignedCustomer["name"],
+            message: "last message",
+            image: "assets/images/user3.png",
+            isActive: isOnline,
+            time: isOnline ? "Online" : lastSeen,
+            enableLongPress: false,
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AgentChatScreen(
+                    customerName: assignedCustomer["name"],
+                    customerEmail: assignedCustomer['email'],
+                    agentEmail: widget.agentEmail,
+                    agentName: widget.agentName,
+                  ),
+                ),
+              );
+              if (result == true) {
+                await _fetchAssignedCustomers();
+              }
+            },
           ),
         );
       },

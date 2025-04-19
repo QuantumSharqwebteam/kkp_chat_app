@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
+import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 
 class OnboardingPage extends StatelessWidget {
@@ -23,11 +24,13 @@ class OnboardingPage extends StatelessWidget {
                   children: [
                     Image.asset(
                       'assets/icons/logo.png',
-                      height: 50,
+                      height: 45,
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, Routes.login);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) {
+                          return LoginPage();
+                        }));
                       },
                       child: Text(
                         'Skip',
@@ -42,11 +45,12 @@ class OnboardingPage extends StatelessWidget {
                 Image.asset(
                   'assets/images/onBoarding.png',
                   width: Utils().width(context) * 0.8,
+                  height: 270,
                 ),
                 Text(
                   '“Instant Inquiries,\n Seamless Sales.”',
                   style: TextStyle(
-                    fontSize: 36,
+                    fontSize: 26,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -56,11 +60,14 @@ class OnboardingPage extends StatelessWidget {
                   style: TextStyle(fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: Utils().height(context) * 0.08),
+                SizedBox(height: Utils().height(context) * 0.04),
                 CustomButton(
                   text: 'Get Started',
                   onPressed: () {
-                    Navigator.pushNamed(context, Routes.signUp);
+                    Navigator.pushReplacement(context,
+                        MaterialPageRoute(builder: (_) {
+                      return LoginPage();
+                    }));
                   },
                   borderRadius: 10,
                   backgroundColor: AppColors.blue,
@@ -96,13 +103,20 @@ class OnboardingPage extends StatelessWidget {
                         ),
                         WidgetSpan(
                           child: InkWell(
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PrivacyPage(),
+                                ),
+                              );
+                            },
                             child: Text(
                               'Privacy Policy',
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.blue),
                             ),
                           ),
                         ),

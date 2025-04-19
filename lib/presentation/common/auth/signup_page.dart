@@ -1,17 +1,179 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:kkp_chat_app/config/routes.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
+import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
 
-class SignupPage extends StatelessWidget {
-  SignupPage({super.key});
+class SignupPage extends StatefulWidget {
+  const SignupPage({super.key});
 
+  @override
+  State<SignupPage> createState() => _SignupPageState();
+}
+
+class _SignupPageState extends State<SignupPage> {
+  AuthRepository auth = AuthRepository();
+  final AuthRepository _authRepository = AuthRepository();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _repass = TextEditingController();
+  bool _isLoading = false;
+  String? nameError;
+  String? emailError;
+  String? passError;
+  String? repassError;
+
+  // Method to validate email format
+  bool _isValidEmail(String email) {
+    final emailRegex =
+        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  Future<void> _signup(context) async {
+    setState(() {
+      _isLoading = true;
+      nameError =
+          emailError = passError = repassError = null; // Clear previous errors
+    });
+
+    if (_name.text.trim().isEmpty) {
+      setState(() {
+        nameError = "Name can't be Empty";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_email.text.trim().isEmpty) {
+      setState(() {
+        emailError = "Email can't be Empty";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (!_isValidEmail(_email.text.trim())) {
+      setState(() {
+        emailError = "Please enter a valid email address";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_pass.text.trim().isEmpty) {
+      setState(() {
+        passError = "Password can't be Empty";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_repass.text.trim().isEmpty) {
+      setState(() {
+        repassError = "Re-enter Password can't be Empty";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_pass.text != _repass.text) {
+      setState(() {
+        passError = repassError = "Password doesn't match";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await _authRepository.signup(
+        email: _email.text,
+        password: _pass.text,
+      );
+
+      if (response['message'] == "User signed up successfully") {
+        try {
+          await LocalDbHelper.saveToken(response['token'].toString());
+
+          await _saveUser(context, _name.text);
+
+          final result = await auth.sendOtp(email: _email.text);
+          if (result['message'] == "OTP sent") {
+            if (context.mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) {
+                    return VerificationPage(
+                      email: _email.text,
+                      isNewAccount: true,
+                    );
+                  },
+                ),
+              );
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(result['message'] + ' Try again later')));
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
+              return LoginPage();
+            }));
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString()),
+          ));
+          return;
+        }
+      } else if (response['status'] == 400) {
+        setState(() {
+          emailError = "Email already exists.";
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(response['message']),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        Utils().showSuccessDialog(context, "Error: ${e.toString()}", false);
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _saveUser(context, String name) async {
+    try {
+      final response = await auth.updateUserDetails(
+          name: name,
+          address: null,
+          customerType: null,
+          gstNo: null,
+          number: null,
+          panNo: null);
+
+      if (response['message'] == "Item updated successfully") {
+        await LocalDbHelper.saveName(response['data']['name'].toString());
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(response['message'])));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+      return;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +188,10 @@ class SignupPage extends StatelessWidget {
               WidgetSpan(
                 child: InkWell(
                   onTap: () {
-                    Navigator.pushNamed(context, Routes.login);
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
+                      return LoginPage();
+                    }));
                   },
                   child: Text(
                     'Login',
@@ -103,6 +268,7 @@ class SignupPage extends StatelessWidget {
                     SizedBox(height: 5),
                     CustomTextField(
                       controller: _name,
+                      errorText: nameError,
                       maxLines: 1,
                       keyboardType: TextInputType.name,
                       hintText: 'Enter your full name',
@@ -124,6 +290,7 @@ class SignupPage extends StatelessWidget {
                     ),
                     SizedBox(height: 5),
                     CustomTextField(
+                      errorText: emailError,
                       controller: _email,
                       maxLines: 1,
                       keyboardType: TextInputType.emailAddress,
@@ -147,7 +314,8 @@ class SignupPage extends StatelessWidget {
                     SizedBox(height: 5),
                     CustomTextField(
                       controller: _pass,
-                      helperText: 'Must be atleast 8 characters',
+                      errorText: passError,
+                      helperText: 'Must be at least 8 characters',
                       maxLines: 1,
                       isPassword: true,
                       keyboardType: TextInputType.visiblePassword,
@@ -171,7 +339,8 @@ class SignupPage extends StatelessWidget {
                     SizedBox(height: 5),
                     CustomTextField(
                       controller: _repass,
-                      helperText: 'Must be atleast 8 characters',
+                      errorText: repassError,
+                      helperText: 'Must be at least 8 characters',
                       borderRadius: 10,
                       height: 45,
                       maxLines: 1,
@@ -182,12 +351,14 @@ class SignupPage extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 40),
-                CustomButton(
-                  text: 'Create Account',
-                  onPressed: () {
-                    Navigator.pushNamed(context, Routes.login);
-                  },
-                ),
+                _isLoading
+                    ? CircularProgressIndicator()
+                    : CustomButton(
+                        text: 'Create Account',
+                        onPressed: () {
+                          _signup(context);
+                        },
+                      ),
               ],
             ),
           ),

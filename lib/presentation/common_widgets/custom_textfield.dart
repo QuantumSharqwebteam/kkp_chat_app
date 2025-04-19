@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CustomTextField extends StatefulWidget {
   const CustomTextField({
@@ -19,9 +20,14 @@ class CustomTextField extends StatefulWidget {
     this.suffixIcon,
     this.prefixIcon,
     this.readOnly = false,
+    this.enabled = true,
     this.backgroundColor,
     this.minLines = 1,
     this.maxLines = 1,
+    this.inputFormatters,
+    this.onChanged,
+    this.maxLength,
+    this.showLength = false, // ✅ Show length property
   });
 
   final double width;
@@ -40,9 +46,14 @@ class CustomTextField extends StatefulWidget {
   final Widget? suffixIcon;
   final Widget? prefixIcon;
   final bool readOnly;
+  final bool enabled;
   final int? minLines;
   final int? maxLines;
   final Color? backgroundColor;
+  final List<TextInputFormatter>? inputFormatters;
+  final ValueChanged<String>? onChanged;
+  final int? maxLength;
+  final bool showLength; // ✅ Show length property
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -74,27 +85,40 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
+    // Calculate the height based on showLength and errorText
+    double effectiveHeight = widget.height + (widget.showLength ? 20 : 0);
+
+    // Ensure the height increase is at most 20
+    if (widget.errorText != null) {
+      effectiveHeight += 10;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: widget.width,
-          height: widget.height,
-          child: TextField(
+          height: effectiveHeight,
+          child: TextFormField(
+            enabled: widget.enabled,
             obscuringCharacter: '*',
             controller: widget.controller,
             keyboardType: widget.keyboardType,
             obscureText: widget.isPassword ? _isObscured : false,
-            style: widget.textStyle ?? const TextStyle(fontSize: 16.0),
+            style: widget.textStyle ?? const TextStyle(fontSize: 14.0),
             readOnly: widget.readOnly,
             minLines: widget.minLines,
             maxLines: widget.maxLines,
+            maxLength: widget.maxLength,
+            inputFormatters: widget.inputFormatters,
+            onChanged: widget.onChanged,
             decoration: InputDecoration(
               filled: true,
+              errorText: widget.errorText,
               fillColor: widget.backgroundColor ?? Colors.white,
               hintText: widget.hintText,
               hintStyle: widget.hintStyle ??
-                  TextStyle(fontSize: 14.0, color: Colors.grey),
+                  const TextStyle(fontSize: 14.0, color: Colors.grey),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 borderSide: BorderSide(
@@ -141,19 +165,19 @@ class _CustomTextFieldState extends State<CustomTextField> {
                   ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              counterText: widget.showLength
+                  ? null
+                  : "", // Show counter text only if showLength is true
             ),
           ),
         ),
-        if (widget.helperText != null) // Helper text below the text field
+        if (widget.helperText != null)
           Padding(
             padding: const EdgeInsets.only(left: 8),
             child: Text(
               widget.helperText!,
               style: widget.helperStyle ??
-                  const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black,
-                  ),
+                  const TextStyle(fontSize: 12, color: Colors.black),
             ),
           ),
       ],

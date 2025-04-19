@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kkp_chat_app/config/routes/customer_routes.dart';
+import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
 import 'package:kkp_chat_app/config/theme/theme.dart';
+import 'package:kkp_chat_app/presentation/common/splash.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  await Hive.openBox('CREDENTIALS');
+  await Hive.openBox("lastSeenTimeBox");
+  await Hive.openBox('feedBox');
+  await dotenv.load(fileName: "keys.env");
   runApp(const MyApp());
 }
 
@@ -15,8 +25,19 @@ class MyApp extends StatelessWidget {
       title: 'KKP Chat App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      initialRoute: Routes.onBoarding,
-      onGenerateRoute: generateRoute,
+      initialRoute: "/splash",
+      routes: {
+        "/splash": (context) => Splash(),
+      },
+      onGenerateRoute: (settings) {
+        if (CustomerRoutes.allRoutes.contains(settings.name)) {
+          return generateCustomerRoute(settings);
+        } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
+          return generateMarketingRoute(settings);
+        } else {
+          return null;
+        }
+      },
     );
   }
 }

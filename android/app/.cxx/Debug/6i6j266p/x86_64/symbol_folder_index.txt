@@ -1,0 +1,1 @@
+/home/msi/FlutterProjects/kkp_chat_app/build/app/intermediates/cxx/Debug/6i6j266p/obj/x86_64
