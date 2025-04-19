@@ -403,7 +403,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       appBar: AppBar(
         title: Row(
           children: [
-            CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
+            CircleAvatar(
+                backgroundImage:
+                    AssetImage(widget.agentImage ?? ImageConstants.agentImage)),
             const SizedBox(width: 5),
             Text(
               widget.agentName!,
