@@ -82,7 +82,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(70),
-                  child: profileImageUrl != null
+                  child: profileImageUrl != ""
                       ? CachedNetworkImage(
                           imageUrl: profileImageUrl!,
                           width: 140,

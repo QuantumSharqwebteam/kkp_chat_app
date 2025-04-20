@@ -30,6 +30,8 @@ class AuthApi {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
+      } else if (response.statusCode == 400 || response.statusCode == 401) {
+        return jsonDecode(response.body);
       } else {
         throw Exception('Failed to login: ${response.body}');
       }

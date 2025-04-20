@@ -21,7 +21,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
       },
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(70),
-        child: widget.url != null
+        child: widget.url != ""
             ? CachedNetworkImage(
                 imageUrl: widget.url!,
                 width: 40,

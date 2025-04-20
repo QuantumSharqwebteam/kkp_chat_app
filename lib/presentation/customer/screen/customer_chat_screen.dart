@@ -8,8 +8,8 @@ import 'package:kkp_chat_app/core/services/chat_storage_service.dart';
 import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
 import 'package:kkp_chat_app/core/services/socket_service.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/data/models/chat_message_model.dart';
-
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -55,7 +55,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final weaveController = TextEditingController();
   final compositionController = TextEditingController();
   final rateController = TextEditingController();
-  // final _chatRepository = ChatRepository();
   final ChatStorageService _chatStorageService =
       ChatStorageService(); // Initialize the service
 
@@ -68,10 +67,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _loadMessages();
-    // _socketService.onIncomingCall(_handleIncomingCall);
     _socketService.onIncomingCall((callData) {
       final channelName = callData['channelName'];
-      //  final token = callData['token'];
       final callerName = callData['callerName'];
       final callerId = callData['callerId'];
       final uid = Utils().generateIntUidFromEmail(widget.customerEmail!);
@@ -101,7 +98,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                           ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       onPressed: () {
                         Navigator.pop(context); // close bottom sheet
-                        // Optionally emit reject event over socket
                       },
                     ),
                     ElevatedButton.icon(
@@ -118,7 +114,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                           MaterialPageRoute(
                             builder: (_) => AgoraAudioCallScreen(
                               isCaller: false,
-                              // token: token,
                               channelName: channelName,
                               uid: uid,
                               remoteUserId: callerId,
@@ -158,12 +153,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   Future<void> _loadMessages() async {
-    final loadedMessages =
-        await _chatStorageService.getMessages(widget.customerEmail!);
-    setState(() {
-      messages = loadedMessages;
-      _scrollToBottom();
-    });
+    final emailFromHive = LocalDbHelper.getProfile()?.email;
+    if (emailFromHive != null && emailFromHive == widget.customerEmail) {
+      final loadedMessages =
+          await _chatStorageService.getMessages(emailFromHive);
+      setState(() {
+        messages = loadedMessages;
+        _scrollToBottom();
+      });
+    }
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
@@ -183,47 +181,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _chatStorageService.saveMessage(
         message, widget.customerEmail!); // Save to Hive
   }
-
-  // void _handleIncomingCall(Map<String, dynamic> data) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) {
-  //       return AlertDialog(
-  //         title: Text('Incoming Call'),
-  //         content: Text('Incoming call from ${data['name']}'),
-  //         actions: [
-  //           TextButton(
-  //             onPressed: () {
-  //               Navigator.pop(context);
-  //             },
-  //             child: Text('Reject'),
-  //           ),
-  //           TextButton(
-  //             onPressed: () {
-  //               Navigator.pop(context);
-  //               Navigator.push(
-  //                 context,
-  //                 MaterialPageRoute(
-  //                   builder: (context) => AudioCallScreen(
-  //                     args: AudioCallScreenArgs(
-  //                       callDirection: CallDirection.receivingCall,
-  //                       remoteUserFullName: data['name'],
-  //                       remoteUserId: data['from'],
-  //                       senderEmail: "",
-  //                       senderName: "",
-  //                       signalData: data["signal"],
-  //                     ),
-  //                   ),
-  //                 ),
-  //               );
-  //             },
-  //             child: Text('Answer'),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
 
   void _sendMessage({
     required String messageText,
@@ -300,7 +257,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("Pls Form details ", style: AppTextStyles.black16_600),
+                Text("Please fill in the form details",
+                    style: AppTextStyles.black16_600),
                 const SizedBox(height: 10),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
@@ -422,9 +380,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               debugPrint("Generated UID for agent (caller): $uid");
               // Send call data over socket to notify customer
               _socketService.sendAgoraCall(
-                //  targetId: "mohdshoaibrayeen3@gmail.com",
                 channelName: channelName,
-                //token: token,
                 callerId: widget.customerEmail!,
                 callerName: widget.customerName!,
               );
@@ -435,7 +391,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 MaterialPageRoute(
                   builder: (_) => AgoraAudioCallScreen(
                     isCaller: true,
-                    //  token: token,
                     channelName: channelName,
                     uid: uid,
                     remoteUserId: widget.agentEmail!,

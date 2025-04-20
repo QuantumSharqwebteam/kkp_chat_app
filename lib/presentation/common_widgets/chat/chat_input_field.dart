@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
+import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
 
 class ChatInputField extends StatefulWidget {
@@ -103,6 +104,15 @@ final List<Map<String, String>> attachmentItems = [
   {"image": ImageConstants.video, "label": "Videos"},
 ];
 
+final List<Map<String, String>> attachmentItemsforCustomer = [
+  {"image": ImageConstants.camera, "label": "Camera"},
+  {"image": ImageConstants.photos, "label": "Photos"},
+  {"image": ImageConstants.documents, "label": "Documents"},
+  {"image": ImageConstants.video, "label": "Videos"},
+];
+
+final String? currentUser = LocalDbHelper.getProfile()?.role;
+
 void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
   showModalBottomSheet(
     context: context,
@@ -133,9 +143,13 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
                 mainAxisSpacing: 0,
                 childAspectRatio: 0.9, // Keeps square shape
               ),
-              itemCount: attachmentItems.length,
+              itemCount: currentUser == "User"
+                  ? attachmentItemsforCustomer.length
+                  : attachmentItems.length,
               itemBuilder: (context, index) {
-                final item = attachmentItems[index];
+                final item = currentUser == "User"
+                    ? attachmentItemsforCustomer[index]
+                    : attachmentItems[index];
                 return GestureDetector(
                   onTap: () {
                     onItemSelected(item['label']!);

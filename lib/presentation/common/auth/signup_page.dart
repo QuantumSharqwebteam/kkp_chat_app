@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkp_chat_app/core/utils/utils.dart';
@@ -27,6 +30,7 @@ class _SignupPageState extends State<SignupPage> {
   String? emailError;
   String? passError;
   String? repassError;
+  DateTime? _lastPressed;
 
   // Method to validate email format
   bool _isValidEmail(String email) {
@@ -135,9 +139,6 @@ class _SignupPageState extends State<SignupPage> {
           emailError = "Email already exists.";
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(response['message']),
-        ));
       }
     } catch (e) {
       if (mounted) {
@@ -162,11 +163,15 @@ class _SignupPageState extends State<SignupPage> {
 
       if (response['message'] == "Item updated successfully") {
         await LocalDbHelper.saveName(response['data']['name'].toString());
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
+        if (kDebugMode) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(response['message'])));
+        }
       } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
+        if (kDebugMode) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(response['message'])));
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context)
@@ -177,193 +182,236 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      persistentFooterAlignment: AlignmentDirectional.center,
-      persistentFooterButtons: [
-        Text.rich(
-          TextSpan(
-            text: 'Already have an Account? ',
-            style: TextStyle(fontSize: 12),
-            children: [
-              WidgetSpan(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) {
-                      return LoginPage();
-                    }));
-                  },
-                  child: Text(
-                    'Login',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: Image.asset(
-              'assets/icons/logo.png',
-              height: 25,
-            ),
-          )
-        ],
-      ),
-      body: Center(
-        heightFactor: 1.2,
-        child: SizedBox(
-          width: Utils().width(context) * 0.8,
-          child: SingleChildScrollView(
-            child: Column(
+    bool isAndroid12orAbove =
+        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+
+    Widget content = GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        persistentFooterAlignment: AlignmentDirectional.center,
+        persistentFooterButtons: [
+          Text.rich(
+            TextSpan(
+              text: 'Already have an Account? ',
+              style: TextStyle(fontSize: 12),
               children: [
-                Text(
-                  'Create Account',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                WidgetSpan(
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) {
+                        return LoginPage();
+                      }));
+                    },
+                    child: Text(
+                      'Login',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(height: 30),
-                CustomButton(
-                  text: 'Signup with Google',
-                  fontSize: 14,
-                  height: 45,
-                  image: SvgPicture.asset('assets/icons/google.svg'),
-                  onPressed: () {},
-                  textColor: Colors.black,
-                  backgroundColor: Colors.white,
-                  borderRadius: 10,
-                  elevation: 0,
-                  borderColor: Colors.grey.shade300,
-                  borderWidth: 1,
-                ),
-                SizedBox(height: 15),
-                Text(
-                  'OR',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 15),
-                // Name textField
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Text(
-                        'Full Name',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    CustomTextField(
-                      controller: _name,
-                      errorText: nameError,
-                      maxLines: 1,
-                      keyboardType: TextInputType.name,
-                      hintText: 'Enter your full name',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                // Email textField
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Text(
-                        'Email',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    CustomTextField(
-                      errorText: emailError,
-                      controller: _email,
-                      maxLines: 1,
-                      keyboardType: TextInputType.emailAddress,
-                      hintText: 'Enter your Email',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                // Password textField
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Text(
-                        'Password',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    CustomTextField(
-                      controller: _pass,
-                      errorText: passError,
-                      helperText: 'Must be at least 8 characters',
-                      maxLines: 1,
-                      isPassword: true,
-                      keyboardType: TextInputType.visiblePassword,
-                      hintText: 'Create a Password',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                // Password textField
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Text(
-                        'Confirm Password',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    CustomTextField(
-                      controller: _repass,
-                      errorText: repassError,
-                      helperText: 'Must be at least 8 characters',
-                      borderRadius: 10,
-                      height: 45,
-                      maxLines: 1,
-                      isPassword: true,
-                      keyboardType: TextInputType.visiblePassword,
-                      hintText: 'Confirm Password',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 40),
-                _isLoading
-                    ? CircularProgressIndicator()
-                    : CustomButton(
-                        text: 'Create Account',
-                        onPressed: () {
-                          _signup(context);
-                        },
-                      ),
               ],
+            ),
+          ),
+        ],
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Image.asset(
+                'assets/icons/logo.png',
+                height: 25,
+              ),
+            )
+          ],
+        ),
+        body: Center(
+          heightFactor: 1.2,
+          child: SizedBox(
+            width: Utils().width(context) * 0.8,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Text(
+                    'Create Account',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 30),
+                  CustomButton(
+                    text: 'Signup with Google',
+                    fontSize: 14,
+                    height: 45,
+                    image: SvgPicture.asset('assets/icons/google.svg'),
+                    onPressed: () {},
+                    textColor: Colors.black,
+                    backgroundColor: Colors.white,
+                    borderRadius: 10,
+                    elevation: 0,
+                    borderColor: Colors.grey.shade300,
+                    borderWidth: 1,
+                  ),
+                  SizedBox(height: 15),
+                  Text(
+                    'OR',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 15),
+                  // Name textField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Text(
+                          'Full Name',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      CustomTextField(
+                        controller: _name,
+                        errorText: nameError,
+                        maxLines: 1,
+                        keyboardType: TextInputType.name,
+                        hintText: 'Enter your full name',
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  // Email textField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Text(
+                          'Email',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      CustomTextField(
+                        errorText: emailError,
+                        controller: _email,
+                        maxLines: 1,
+                        keyboardType: TextInputType.emailAddress,
+                        hintText: 'Enter your Email',
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  // Password textField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Text(
+                          'Password',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      CustomTextField(
+                        controller: _pass,
+                        errorText: passError,
+                        helperText: 'Must be at least 8 characters',
+                        maxLines: 1,
+                        isPassword: true,
+                        keyboardType: TextInputType.visiblePassword,
+                        hintText: 'Create a Password',
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  // Password textField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Text(
+                          'Confirm Password',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      CustomTextField(
+                        controller: _repass,
+                        errorText: repassError,
+                        helperText: 'Must be at least 8 characters',
+                        borderRadius: 10,
+                        height: 45,
+                        maxLines: 1,
+                        isPassword: true,
+                        keyboardType: TextInputType.visiblePassword,
+                        hintText: 'Confirm Password',
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 40),
+                  _isLoading
+                      ? CircularProgressIndicator()
+                      : CustomButton(
+                          text: 'Create Account',
+                          onPressed: () {
+                            _signup(context);
+                          },
+                        ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+
+    return isAndroid12orAbove
+        ? PopScope(
+            child: content,
+            onPopInvoked: (_) {
+              DateTime now = DateTime.now();
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
+                _lastPressed = now;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text('Press back again to exit'),
+                ));
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          )
+        : WillPopScope(
+            child: content,
+            onWillPop: () async {
+              DateTime now = DateTime.now();
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
+                _lastPressed = now;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Press back again to exit"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                return false;
+              }
+              return true;
+            },
+          );
   }
 }

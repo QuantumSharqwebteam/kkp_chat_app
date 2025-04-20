@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/config/routes/customer_routes.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
@@ -48,6 +49,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   bool _isUploading = false;
   String? _profileImage;
   File? _selectedImageFile;
+  DateTime? _lastPressed;
 
   // Error texts for each field
   String? _nameError;
@@ -62,6 +64,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.forUpdate == false) {
+      _name.text = LocalDbHelper.getName()!;
+    }
+
     // Initialize fields with passed arguments if updating
     if (widget.forUpdate && widget.profile != null) {
       _name.text = widget.profile!.name ?? '';
@@ -79,8 +86,12 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       }
       _isExportSelected = widget.profile!.customerType == 'Export';
       _isDomesticSelected = widget.profile!.customerType == 'Domestic';
-      _customerType = _isExportSelected ? 'Export' : 'Domestic';
+    } else {
+      // Set default customer type to Export
+      _isExportSelected = true;
+      _isDomesticSelected = false;
     }
+    _customerType = _isExportSelected ? 'Export' : 'Domestic';
   }
 
   Future<void> _saveUserProfile(context) async {
@@ -113,7 +124,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
           gstNo: _gstNumber.text.isNotEmpty ? _gstNumber.text : null,
           panNo: _panNumber.text.isNotEmpty ? _panNumber.text : null,
           address: addressDetails,
-          profileUrl: _profileImage);
+          profileUrl: _profileImage ?? "");
 
       if (response['message'] == "Item updated successfully") {
         if (!mounted) return;
@@ -161,86 +172,133 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: widget.forUpdate
-          ? AppBar(
-              leading: IconButton(
-                icon: Icon(Icons.close),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-              ),
-              title: Text('Update Profile'),
-            )
-          : null,
-      persistentFooterAlignment: AlignmentDirectional.center,
-      persistentFooterButtons: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Row(
-            children: [
-              if (_currentStep > 0)
-                CustomButton(
-                  text: 'Back',
-                  backgroundColor: Colors.white,
-                  textColor: AppColors.blue,
-                  width: Utils().width(context) * 0.4,
-                  height: 50,
+    bool isAndroid12orAbove =
+        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+
+    Widget content = GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: widget.forUpdate
+            ? AppBar(
+                leading: IconButton(
+                  icon: Icon(Icons.close),
                   onPressed: () {
-                    setState(() {
-                      _currentStep--;
-                    });
+                    Navigator.pop(context);
                   },
                 ),
-              Spacer(),
-              _isLoading || _isUploading
-                  ? Center(child: CircularProgressIndicator())
-                  : CustomButton(
-                      text: _currentStep == getSteps(context).length - 1
-                          ? 'Finish'
-                          : 'Next',
-                      onPressed: () {
-                        if (widget.forUpdate || validateStep()) {
-                          if (_currentStep < getSteps(context).length - 1) {
-                            setState(() {
-                              _currentStep++;
-                            });
-                          } else {
-                            if (!_isDataChanged()) {
-                              Navigator.pop(context);
+                title: Text('Update Profile'),
+              )
+            : null,
+        persistentFooterAlignment: AlignmentDirectional.center,
+        persistentFooterButtons: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                if (_currentStep > 0)
+                  CustomButton(
+                    text: 'Back',
+                    backgroundColor: Colors.white,
+                    textColor: AppColors.blue,
+                    width: Utils().width(context) * 0.4,
+                    height: 50,
+                    onPressed: () {
+                      setState(() {
+                        _currentStep--;
+                      });
+                    },
+                  ),
+                Spacer(),
+                _isLoading || _isUploading
+                    ? Center(child: CircularProgressIndicator())
+                    : CustomButton(
+                        text: _currentStep == getSteps(context).length - 1
+                            ? 'Finish'
+                            : 'Next',
+                        onPressed: () {
+                          if (widget.forUpdate || validateStep()) {
+                            if (_currentStep < getSteps(context).length - 1) {
+                              setState(() {
+                                _currentStep++;
+                              });
                             } else {
-                              _saveUserProfile(context);
+                              if (!_isDataChanged()) {
+                                Navigator.pop(context);
+                              } else {
+                                _saveUserProfile(context);
+                              }
                             }
                           }
-                        }
-                      },
-                      backgroundColor: AppColors.blue,
-                      width: Utils().width(context) * 0.4,
-                      height: 50,
-                    ),
-            ],
-          ),
-        ),
-      ],
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                SizedBox(height: 10),
-                Image.asset(
-                  'assets/icons/app_logo.png',
-                  height: 200,
-                  width: Utils().width(context) * 0.7,
-                ),
-                SizedBox(height: 20),
-                getSteps(context)[_currentStep],
+                        },
+                        backgroundColor: AppColors.blue,
+                        width: Utils().width(context) * 0.4,
+                        height: 50,
+                      ),
               ],
+            ),
+          ),
+        ],
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(height: 10),
+                  Image.asset(
+                    'assets/icons/app_logo.png',
+                    height: 200,
+                    width: Utils().width(context) * 0.7,
+                  ),
+                  SizedBox(height: 20),
+                  getSteps(context)[_currentStep],
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+
+    return isAndroid12orAbove
+        ? PopScope(
+            onPopInvoked: (_) {
+              DateTime now = DateTime.now();
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
+                _lastPressed = now;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Press back again to exit"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                // Allow system navigation
+                Navigator.pop(context);
+              }
+            },
+            child: content,
+          )
+        : WillPopScope(
+            onWillPop: () async {
+              DateTime now = DateTime.now();
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
+                _lastPressed = now;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Press back again to exit"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                return false; // Do not exit yet
+              }
+              return true; // Proceed to exit
+            },
+            child: content,
+          );
   }
 
   List<Widget> getSteps(BuildContext context) {
@@ -341,6 +399,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
             ],
           ),
         ),
+        SizedBox(height: 20),
       ],
     );
   }
@@ -512,6 +571,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
             ],
           ),
         ),
+        SizedBox(height: 20),
       ],
     );
   }
@@ -604,6 +664,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               ],
             ),
           ),
+          SizedBox(height: 20),
         ],
       ),
     );
@@ -622,22 +683,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         _nameError = null;
       }
 
-      if (_selectedImageFile == null && _profileImage == null) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Validation Error'),
-            content: Text('Please select a profile image.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text('OK'),
-              ),
-            ],
-          ),
-        );
-        isValid = false;
-      }
+      // Profile image validation check removed
     } else if (_currentStep == 1) {
       if (_phoneNumber.text.isEmpty) {
         setState(() {

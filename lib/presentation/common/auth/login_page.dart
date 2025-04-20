@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -25,6 +27,7 @@ class _LoginPageState extends State<LoginPage> {
   String emailError = '';
   String passError = '';
   bool isLoading = false;
+  DateTime? _lastPressed;
 
   // Method to validate email format
   bool _isValidEmail(String email) {
@@ -66,6 +69,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       await auth.login(email: email, password: pass).then((value) async {
+        isLoading = true;
         if (value['message'] == 'User logged in successfully') {
           if (kDebugMode) {
             print("🪙TOKEN ${value['token']}");
@@ -107,6 +111,19 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
           }
+          isLoading = false;
+        } else if (value['message'] == "Invalid password") {
+          setState(() {
+            passError = "Wrong password";
+            isLoading = false;
+          });
+          return;
+        } else if (value['message'] == "Invalid email") {
+          setState(() {
+            emailError = "Invalid Email";
+            isLoading = false;
+          });
+          return;
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -133,163 +150,213 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      persistentFooterAlignment: AlignmentDirectional.center,
-      persistentFooterButtons: [
-        Text.rich(
-          TextSpan(
-            text: 'Don\'t have an Account? ',
-            style: TextStyle(fontSize: 12),
-            children: [
-              WidgetSpan(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => SignupPage()));
-                  },
-                  child: Text(
-                    'Signup',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: Image.asset(
-              'assets/icons/logo.png',
-              height: 25,
-            ),
-          )
-        ],
-      ),
-      body: Center(
-        heightFactor: 1.2,
-        child: SizedBox(
-          width: Utils().width(context) * 0.8,
-          child: SingleChildScrollView(
-            child: Column(
+    bool isAndroid12orAbove =
+        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+
+    Widget content = GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        persistentFooterAlignment: AlignmentDirectional.center,
+        persistentFooterButtons: [
+          Text.rich(
+            TextSpan(
+              text: 'Don\'t have an Account? ',
+              style: TextStyle(fontSize: 12),
               children: [
-                Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 30),
-                CustomButton(
-                  text: 'Signup with Google',
-                  fontSize: 14,
-                  height: 45,
-                  image: SvgPicture.asset('assets/icons/google.svg'),
-                  onPressed: () {},
-                  textColor: Colors.black,
-                  backgroundColor: Colors.white,
-                  borderRadius: 10,
-                  elevation: 0,
-                  borderColor: Colors.grey.shade300,
-                  borderWidth: 1,
-                ),
-                SizedBox(height: 15),
-                Text(
-                  'OR',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 15),
-                // Email textField
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Text(
-                        'Email',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    CustomTextField(
-                      errorText: emailError.trim().isEmpty ? null : emailError,
-                      controller: _email,
-                      maxLines: 1,
-                      keyboardType: TextInputType.emailAddress,
-                      hintText: 'Enter your Email',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10),
-                // Password textField
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 5),
-                      child: Text(
-                        'Password',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    CustomTextField(
-                      errorText: passError.trim().isEmpty ? null : passError,
-                      controller: _pass,
-                      maxLines: 1,
-                      isPassword: true,
-                      keyboardType: TextInputType.visiblePassword,
-                      hintText: 'Enter your Password',
-                    ),
-                  ],
-                ),
-                SizedBox(height: 5),
-                Align(
-                  alignment: Alignment.centerRight,
+                WidgetSpan(
                   child: InkWell(
                     onTap: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (_) => ForgotPassPage()));
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (_) => SignupPage()));
                     },
                     child: Text(
-                      'Forgot Password?',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                      'Signup',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
-                SizedBox(height: 40),
-                isLoading
-                    ? const CircularProgressIndicator()
-                    : CustomButton(
-                        text: 'Login',
-                        onPressed: () {
-                          _login(context, _email.text, _pass.text);
-                        },
-                      ),
-                SizedBox(height: 20),
-                // CustomButton(
-                //   text: 'marketing',
-                //   onPressed: () {
-                //     Navigator.pushNamed(
-                //         context, MarketingRoutes.marketingHostScreen);
-                //   },
-                // ),
               ],
+            ),
+          ),
+        ],
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Image.asset(
+                'assets/icons/logo.png',
+                height: 25,
+              ),
+            )
+          ],
+        ),
+        body: Center(
+          heightFactor: 1.2,
+          child: SizedBox(
+            width: Utils().width(context) * 0.8,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Text(
+                    'Login',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 30),
+                  CustomButton(
+                    text: 'Signup with Google',
+                    fontSize: 14,
+                    height: 45,
+                    image: SvgPicture.asset('assets/icons/google.svg'),
+                    onPressed: () {},
+                    textColor: Colors.black,
+                    backgroundColor: Colors.white,
+                    borderRadius: 10,
+                    elevation: 0,
+                    borderColor: Colors.grey.shade300,
+                    borderWidth: 1,
+                  ),
+                  SizedBox(height: 15),
+                  Text(
+                    'OR',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 15),
+                  // Email textField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Text(
+                          'Email',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      CustomTextField(
+                        errorText:
+                            emailError.trim().isEmpty ? null : emailError,
+                        controller: _email,
+                        maxLines: 1,
+                        keyboardType: TextInputType.emailAddress,
+                        hintText: 'Enter your Email',
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  // Password textField
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 5),
+                        child: Text(
+                          'Password',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      CustomTextField(
+                        errorText: passError.trim().isEmpty ? null : passError,
+                        controller: _pass,
+                        maxLines: 1,
+                        isPassword: true,
+                        keyboardType: TextInputType.visiblePassword,
+                        hintText: 'Enter your Password',
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 5),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ForgotPassPage()));
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 40),
+                  isLoading
+                      ? const CircularProgressIndicator()
+                      : CustomButton(
+                          text: 'Login',
+                          onPressed: () {
+                            _login(context, _email.text, _pass.text);
+                          },
+                        ),
+                  SizedBox(height: 20),
+                  // CustomButton(
+                  //   text: 'marketing',
+                  //   onPressed: () {
+                  //     Navigator.pushNamed(
+                  //         context, MarketingRoutes.marketingHostScreen);
+                  //   },
+                  // ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+
+    return isAndroid12orAbove
+        ? PopScope(
+            onPopInvoked: (_) {
+              DateTime now = DateTime.now();
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
+                _lastPressed = now;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Press back again to exit"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else {
+                // Allow system navigation
+                Navigator.pop(context);
+              }
+            },
+            child: content,
+          )
+        : WillPopScope(
+            onWillPop: () async {
+              DateTime now = DateTime.now();
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
+                _lastPressed = now;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Press back again to exit"),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                return false; // Do not exit yet
+              }
+              return true; // Proceed to exit
+            },
+            child: content,
+          );
   }
 }
