@@ -10,7 +10,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
   final bool isCaller;
   //final String token;
   final String channelName;
-  final String remoteUserId;
+  final String? remoteUserId;
   final String remoteUserName;
   final int uid;
 
@@ -19,7 +19,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
     required this.isCaller,
     //required this.token,
     required this.channelName,
-    required this.remoteUserId,
+    this.remoteUserId,
     required this.remoteUserName,
     required this.uid,
   });

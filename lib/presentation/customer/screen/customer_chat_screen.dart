@@ -178,8 +178,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       messages.add(message);
       _scrollToBottom();
     });
-    _chatStorageService.saveMessage(
-        message, widget.customerEmail!); // Save to Hive
+    _chatStorageService.saveMessage(message, widget.customerEmail!);
   }
 
   void _sendMessage({
@@ -213,8 +212,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: form,
     );
 
-    _chatStorageService.saveMessage(
-        message, widget.customerEmail!); // Save to Hive
+    _chatStorageService.saveMessage(message, widget.customerEmail!);
     _chatController.clear();
   }
 
@@ -356,99 +354,104 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-                backgroundImage:
-                    AssetImage(widget.agentImage ?? ImageConstants.agentImage)),
-            const SizedBox(width: 5),
-            Text(
-              widget.agentName!,
-              style: AppTextStyles.black14_400,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: Row(
+            children: [
+              CircleAvatar(
+                  backgroundImage: AssetImage(
+                      widget.agentImage ?? ImageConstants.agentImage)),
+              const SizedBox(width: 5),
+              Text(
+                widget.agentName!,
+                style: AppTextStyles.black14_400,
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              onPressed: () async {
+                final channelName = "customerCall123";
+                final uid =
+                    Utils().generateIntUidFromEmail(widget.customerEmail!);
+                debugPrint("Generated UID for agent (caller): $uid");
+                // Send call data over socket to notify customer
+                _socketService.sendAgoraCall(
+                  channelName: channelName,
+                  callerId: widget.customerEmail!,
+                  callerName: widget.customerName!,
+                );
+
+                // Navigate agent to call screen
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AgoraAudioCallScreen(
+                      isCaller: true,
+                      channelName: channelName,
+                      uid: uid,
+                      //  remoteUserId: widget.agentEmail!,
+                      remoteUserName: widget.agentName!,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.call_outlined, color: Colors.black),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              final channelName = "customerCall123";
-              final uid =
-                  Utils().generateIntUidFromEmail(widget.customerEmail!);
-              debugPrint("Generated UID for agent (caller): $uid");
-              // Send call data over socket to notify customer
-              _socketService.sendAgoraCall(
-                channelName: channelName,
-                callerId: widget.customerEmail!,
-                callerName: widget.customerName!,
-              );
-
-              // Navigate agent to call screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AgoraAudioCallScreen(
-                    isCaller: true,
-                    channelName: channelName,
-                    uid: uid,
-                    remoteUserId: widget.agentEmail!,
-                    remoteUserName: widget.agentName!,
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.call_outlined, color: Colors.black),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: messages.isEmpty
-                ? NoChatConversation()
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(10),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final msg = messages[index];
-                      if (msg.type == 'media') {
-                        return ImageMessageBubble(
-                          imageUrl: msg.mediaUrl!,
+        body: Column(
+          children: [
+            Expanded(
+              child: messages.isEmpty
+                  ? NoChatConversation()
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(10),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        if (msg.type == 'media') {
+                          return ImageMessageBubble(
+                            imageUrl: msg.mediaUrl!,
+                            isMe: msg.sender == widget.customerEmail,
+                            timestamp: formatTimestamp(msg.timestamp),
+                          );
+                        } else if (msg.type == 'form') {
+                          return FormMessageBubble(
+                            formData: msg.form!,
+                            isMe: msg.sender == widget.customerEmail,
+                            timestamp: formatTimestamp(msg.timestamp),
+                          );
+                        } else if (msg.message == 'Fill details') {
+                          return FillFormButton(
+                            onSubmit: _showFormOverlay,
+                          );
+                        }
+                        return MessageBubble(
+                          text: msg.message,
                           isMe: msg.sender == widget.customerEmail,
                           timestamp: formatTimestamp(msg.timestamp),
+                          image: msg.sender == widget.customerEmail
+                              ? widget.customerImage ?? ImageConstants.userImage
+                              : widget.agentImage ?? ImageConstants.agentImage,
                         );
-                      } else if (msg.type == 'form') {
-                        return FormMessageBubble(
-                          formData: msg.form!,
-                          isMe: msg.sender == widget.customerEmail,
-                          timestamp: formatTimestamp(msg.timestamp),
-                        );
-                      } else if (msg.message == 'Fill details') {
-                        return FillFormButton(
-                          onSubmit: _showFormOverlay,
-                        );
-                      }
-                      return MessageBubble(
-                        text: msg.message,
-                        isMe: msg.sender == widget.customerEmail,
-                        timestamp: formatTimestamp(msg.timestamp),
-                        image: msg.sender == widget.customerEmail
-                            ? widget.customerImage ?? ImageConstants.userImage
-                            : widget.agentImage ?? ImageConstants.agentImage,
-                      );
-                    },
-                  ),
-          ),
-          ChatInputField(
-            controller: _chatController,
-            onSend: () => _sendMessage(messageText: _chatController.text),
-            onSendImage: _pickAndSendImage,
-            onSendForm: _showFormOverlay,
-          ),
-        ],
+                      },
+                    ),
+            ),
+            ChatInputField(
+              controller: _chatController,
+              onSend: () => _sendMessage(messageText: _chatController.text),
+              onSendImage: _pickAndSendImage,
+              onSendForm: _showFormOverlay,
+            ),
+          ],
+        ),
       ),
     );
   }

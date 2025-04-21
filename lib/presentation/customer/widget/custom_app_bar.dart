@@ -23,7 +23,8 @@ class _CustomAppBarState extends State<CustomAppBar> {
         borderRadius: BorderRadius.circular(70),
         child: widget.url != ""
             ? CachedNetworkImage(
-                imageUrl: widget.url!,
+                imageUrl: widget.url ??
+                    "https://tse1.mm.bing.net/th/id/OIP.w-L3HP_7QYalYXw7apT2tAHaHx?rs=1&pid=ImgDetMain",
                 width: 40,
                 height: 40,
                 fit: BoxFit.cover,

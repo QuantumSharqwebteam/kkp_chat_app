@@ -39,6 +39,8 @@ class _ChatInputFieldState extends State<ChatInputField> {
                   widget.onSendImage();
                 } else if (selectedItem == "Inquiry Form") {
                   widget.onSendForm();
+                } else if (selectedItem == "Camera") {
+                  widget.onSendImage();
                 }
               });
             },

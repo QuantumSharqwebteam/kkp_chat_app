@@ -8,7 +8,6 @@ import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
 import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_page.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
