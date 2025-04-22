@@ -2,7 +2,12 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkp_chat_app/config/theme/image_constants.dart';
 import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/media_button.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'dart:async';
@@ -89,7 +94,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       }
 
       /// Timeout if remote user doesn’t join
-      _callTimeoutTimer = Timer(const Duration(seconds: 30), () {
+      _callTimeoutTimer = Timer(const Duration(seconds: 2000), () {
         if (_remoteUid == null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("No answer. Call ended.")),
@@ -151,13 +156,17 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   }
 
   void _toggleMute() {
-    setState(() => _muted = !_muted);
-    _engine.muteLocalAudioStream(_muted);
+    if (_joined) {
+      setState(() => _muted = !_muted);
+      _engine.muteLocalAudioStream(_muted);
+    }
   }
 
   void _toggleSpeaker() {
-    setState(() => _isSpeakerOn = !_isSpeakerOn);
-    _engine.setEnableSpeakerphone(_isSpeakerOn);
+    if (_joined) {
+      setState(() => _isSpeakerOn = !_isSpeakerOn);
+      _engine.setEnableSpeakerphone(_isSpeakerOn);
+    }
   }
 
   void _startCallTimer() {
@@ -214,14 +223,15 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black87,
+      backgroundColor: AppColors.backgroundDCEBFF,
       body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            const SizedBox(height: 30),
             Text(
               widget.remoteUserName,
-              style: const TextStyle(color: Colors.white, fontSize: 24),
+              style: AppTextStyles.black24_700,
             ),
             const SizedBox(height: 20),
             if (_joined)
@@ -229,31 +239,71 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
                 _remoteUid != null
                     ? "In call... ${_formatDuration(_callDuration)}"
                     : "Ringing...",
-                style: const TextStyle(color: Colors.white70),
+                style: AppTextStyles.grey5C5C5C_18_700,
               )
             else
-              const CircularProgressIndicator(color: Colors.white),
-            const SizedBox(height: 60),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  icon: Icon(_muted ? Icons.mic_off : Icons.mic,
-                      color: Colors.white),
-                  onPressed: _toggleMute,
-                ),
-                IconButton(
-                  icon: Icon(
-                    _isSpeakerOn ? Icons.volume_up : Icons.hearing,
-                    color: Colors.white,
+              // const CircularProgressIndicator(color: Colors.white),
+              Text(
+                "Connecting....",
+                style: AppTextStyles.grey5C5C5C_18_700,
+              ),
+            const SizedBox(height: 70),
+            Center(
+              child: const CustomImage(
+                imagePath: ImageConstants.profileAvatar,
+                height: 200,
+                width: 200,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: AppColors.grey5C5C5C,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  MediaButton(
+                    backgroundColor:
+                        _isSpeakerOn ? Colors.white : AppColors.black2E2E2E,
+                    iconColor: _isSpeakerOn ? Colors.black : Colors.white,
+                    onTap: _toggleSpeaker,
+                    iconData: _isSpeakerOn ? Icons.volume_up : Icons.volume_off,
                   ),
-                  onPressed: _toggleSpeaker,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.call_end, color: Colors.red),
-                  onPressed: _endCall,
-                ),
-              ],
+                  MediaButton(
+                    backgroundColor:
+                        _muted ? Colors.white : AppColors.black2E2E2E,
+                    iconColor: _muted ? Colors.black : Colors.white,
+                    onTap: _toggleMute,
+                    iconData: _muted ? Icons.mic_off : Icons.mic,
+                  ),
+                  MediaButton(
+                    backgroundColor: AppColors.inActiveRed,
+                    iconColor: Colors.white,
+                    onTap: _endCall,
+                    iconData: Icons.call_end,
+                  ),
+                  // IconButton(
+                  //   icon: Icon(_muted ? Icons.mic_off : Icons.mic,
+                  //       color: Colors.white),
+                  //   onPressed: _toggleMute,
+                  // ),
+                  // IconButton(
+                  //   icon: Icon(
+                  //     _isSpeakerOn ? Icons.volume_up : Icons.hearing,
+                  //     color: Colors.white,
+                  //   ),
+                  //   onPressed: _toggleSpeaker,
+                  // ),
+                  // IconButton(
+                  //   icon: const Icon(Icons.call_end, color: Colors.red),
+                  //   onPressed: _endCall,
+                  // ),
+                ],
+              ),
             ),
           ],
         ),

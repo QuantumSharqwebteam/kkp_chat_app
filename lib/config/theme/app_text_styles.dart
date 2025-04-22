@@ -87,6 +87,11 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
     color: AppColors.grey5C5C5C,
   );
+  static const grey5C5C5C_18_700 = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
+    color: AppColors.grey5C5C5C,
+  );
   static const blue4A76CD_24_600 = TextStyle(
     fontSize: 24,
     fontWeight: FontWeight.w600,
