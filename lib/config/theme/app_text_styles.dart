@@ -7,6 +7,11 @@ class AppTextStyles {
     color: Colors.black,
     fontWeight: FontWeight.w600,
   );
+  static const black24_700 = TextStyle(
+    fontSize: 22,
+    color: Colors.black,
+    fontWeight: FontWeight.w700,
+  );
   static const black28_600 = TextStyle(
     fontSize: 28,
     color: Colors.black,

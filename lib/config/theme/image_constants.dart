@@ -6,6 +6,7 @@ class ImageConstants {
   static const String userImage = "$imageBase/user1.png";
   static const String agentImage = "$imageBase/user4.png";
   static const String noChat = "$imageBase/noChat.png";
+  static const String profileAvatar = "$imageBase/profile_avataar.png";
 
   //Icons asstes
   static const String shirt = "$iconBase/shirt.png";
