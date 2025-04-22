@@ -64,6 +64,7 @@ dependencies:
   path_provider: ^2.1.5
   flutter_image_compress: ^2.4.0
   agora_rtc_engine: ^6.5.1
+  audioplayers: ^6.4.0
   
 
   
@@ -94,6 +95,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - keys.env
+    - assets/sounds/
 
   #   - images/a_dot_ham.jpeg
 
