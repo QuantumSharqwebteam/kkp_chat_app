@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -38,8 +39,9 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   Timer? _durationTimer;
   Timer? _callTimeoutTimer;
   // bool _isRenewingToken = false;
+  bool _isRinging = false;
   final ChatRepository chatRepository = ChatRepository();
-
+  final AudioPlayer _ringingPlayer = AudioPlayer();
   final String agoraAppId = dotenv.env['AGORA_APP_ID']!;
 
   @override
@@ -82,6 +84,10 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       );
       debugPrint("Attempting to join channel: ${widget.channelName}");
 
+      if (widget.isCaller) {
+        _startRinging(); //Start ringing on caller side
+      }
+
       /// Timeout if remote user doesn’t join
       _callTimeoutTimer = Timer(const Duration(seconds: 30), () {
         if (_remoteUid == null && mounted) {
@@ -119,6 +125,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         debugPrint("👤 Remote user $remoteUid joined");
         if (mounted) {
           setState(() => _remoteUid = remoteUid);
+          _stopRinging(); // Stop ringing
           _startCallTimer();
         }
         _callTimeoutTimer?.cancel();
@@ -140,42 +147,8 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         // //  _handleTokenRenewal();
         // }
       },
-      onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {
-        debugPrint("⏰ Token will expire soon...");
-        // _handleTokenRenewal();
-      },
     ));
   }
-
-  // Future<void> _handleTokenRenewal() async {
-  //   if (_isRenewingToken) return;
-  //   _isRenewingToken = true;
-
-  //   try {
-  //     debugPrint("🔄 Attempting to renew token...");
-  //     final newToken = await chatRepository.fetchAgoraToken(
-  //       widget.channelName,
-  //       widget.uid,
-  //     );
-
-  //     if (newToken != null && newToken != widget.token) {
-  //       await _engine.renewToken(newToken);
-  //       debugPrint("✅ Token renewed successfully");
-  //     } else {
-  //       debugPrint("⚠️ Received same token again. Skipping renewal.");
-  //     }
-  //   } catch (e) {
-  //     debugPrint("❌ Failed to renew token: $e");
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(content: Text("Failed to renew Agora token.")),
-  //       );
-  //       _endCall();
-  //     }
-  //   } finally {
-  //     _isRenewingToken = false;
-  //   }
-  // }
 
   void _toggleMute() {
     setState(() => _muted = !_muted);
@@ -201,13 +174,31 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     _durationTimer?.cancel();
     _callTimeoutTimer?.cancel();
     _engine.leaveChannel();
+    _stopRinging(); //Stop ringing if still active
     if (mounted) Navigator.pop(context);
+  }
+
+  //  Start ringing
+  Future<void> _startRinging() async {
+    if (_isRinging) return;
+    _isRinging = true;
+    await _ringingPlayer.setReleaseMode(ReleaseMode.loop);
+    await _ringingPlayer.play(
+        AssetSource('sounds/ringtone.mp3')); // 🔔 Make sure this file exists
+  }
+
+  //Stop ringing
+  Future<void> _stopRinging() async {
+    if (!_isRinging) return;
+    _isRinging = false;
+    await _ringingPlayer.stop();
   }
 
   @override
   void dispose() {
     _durationTimer?.cancel();
     _callTimeoutTimer?.cancel();
+    _stopRinging();
     _engine.leaveChannel();
     _engine.release();
     super.dispose();
