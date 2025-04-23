@@ -415,7 +415,7 @@ class SocketService {
         FlutterLocalNotificationsPlugin();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('app_icon');
+        AndroidInitializationSettings('app_logo');
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(

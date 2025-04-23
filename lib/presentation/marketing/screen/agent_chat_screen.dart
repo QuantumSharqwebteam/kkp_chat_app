@@ -355,7 +355,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
             const SizedBox(width: 5),
             Text(
-              widget.agentName!,
+              widget.customerName!,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
