@@ -64,6 +64,8 @@ dependencies:
   flutter_image_compress: ^2.4.0
   agora_rtc_engine: ^6.5.1
   audioplayers: ^6.4.0
+  flutter_pdfview: ^1.4.0+1
+  open_filex: ^4.7.0
   
 
   

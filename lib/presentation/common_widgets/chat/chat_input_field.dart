@@ -10,6 +10,7 @@ class ChatInputField extends StatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onSendImage;
   final VoidCallback onSendForm;
+  final VoidCallback onSendDocument;
 
   const ChatInputField({
     super.key,
@@ -17,6 +18,7 @@ class ChatInputField extends StatefulWidget {
     required this.onSend,
     required this.onSendImage,
     required this.onSendForm,
+    required this.onSendDocument,
   });
 
   @override
@@ -41,6 +43,8 @@ class _ChatInputFieldState extends State<ChatInputField> {
                   widget.onSendForm();
                 } else if (selectedItem == "Camera") {
                   widget.onSendImage();
+                } else if (selectedItem == "Documents") {
+                  widget.onSendDocument();
                 }
               });
             },

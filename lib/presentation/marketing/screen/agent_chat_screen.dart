@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
@@ -10,6 +11,7 @@ import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkp_chat_app/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -320,6 +322,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+  Future<void> _pickAndSendDocument() async {
+    final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+    );
+
+    if (result != null) {
+      final PlatformFile file = result.files.first;
+      final File documentFile = File(file.path!);
+      final documentUrl = await _s3uploadService.uploadDocument(documentFile);
+      if (documentUrl != null) {
+        _sendMessage(
+            messageText: "document", type: 'document', mediaUrl: documentUrl);
+      }
+    }
+  }
+
   void sendFormButton() {
     _sendMessage(messageText: "Fill details");
   }
@@ -378,20 +397,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 color: Colors.black),
           ),
           IconButton(
-            onPressed: () async {
-              //final channelName =  'agent_${widget.agentEmail}_customer_${widget.customerEmail}';
+            onPressed: () {
               final channelName = "agentCall123";
               final uid = generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
-
-              // //Fetch token from backend using generated UID
-              // final token =
-              //     await _chatRepository.fetchAgoraToken(channelName, uid);
-              // debugPrint("Fetched Agora token: $token");
-              // if (token == null) {
-              //   debugPrint("❗ Failed to get token");
-              //   return;
-              // }
 
               // Send call data over socket to notify customer
               _socketService.sendAgoraCall(
@@ -455,6 +464,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                               isMe: msg['isMe'],
                               timestamp: formatTimestamp(msg['timestamp']),
                             );
+                          } else if (msg['type'] == 'document') {
+                            return DocumentMessageBubble(
+                              documentUrl: msg['mediaUrl'],
+                              isMe: msg['isMe'],
+                              timestamp: formatTimestamp(msg['timestamp']),
+                            );
                           } else if (msg['text'] == 'Fill details') {
                             return FillFormButton(
                               onSubmit: () {
@@ -478,6 +493,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             onSend: () => _sendMessage(messageText: _chatController.text),
             onSendImage: _pickAndSendImage,
             onSendForm: sendFormButton,
+            onSendDocument: _pickAndSendDocument,
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import 'package:kkp_chat_app/core/utils/utils.dart';
 import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
 import 'package:kkp_chat_app/data/models/chat_message_model.dart';
 import 'package:kkp_chat_app/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
@@ -242,6 +244,23 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
+  Future<void> _pickAndSendDocument() async {
+    final FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt'],
+    );
+
+    if (result != null) {
+      final PlatformFile file = result.files.first;
+      final File documentFile = File(file.path!);
+      final documentUrl = await _s3uploadService.uploadDocument(documentFile);
+      if (documentUrl != null) {
+        _sendMessage(
+            messageText: "document", type: 'document', mediaUrl: documentUrl);
+      }
+    }
+  }
+
   void _showFormOverlay() {
     showModalBottomSheet(
       context: context,
@@ -428,6 +447,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                             isMe: msg.sender == widget.customerEmail,
                             timestamp: formatTimestamp(msg.timestamp),
                           );
+                        } else if (msg.type == 'document') {
+                          return DocumentMessageBubble(
+                            documentUrl: msg.mediaUrl!,
+                            isMe: msg.sender == widget.customerEmail,
+                            timestamp: formatTimestamp(msg.timestamp),
+                          );
                         } else if (msg.message == 'Fill details') {
                           return FillFormButton(
                             onSubmit: _showFormOverlay,
@@ -449,6 +474,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               onSend: () => _sendMessage(messageText: _chatController.text),
               onSendImage: _pickAndSendImage,
               onSendForm: _showFormOverlay,
+              onSendDocument: _pickAndSendDocument,
             ),
           ],
         ),
