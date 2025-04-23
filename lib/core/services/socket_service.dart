@@ -458,7 +458,7 @@ class SocketService {
         iOS: iosPlatformChannelSpecifics);
 
     flutterLocalNotificationsPlugin.show(
-      0, // Notification ID
+      DateTime.now().hashCode, // Notification ID
       "New Message from " + data['senderName'], // Notification title
       data['message'], // Notification body
       platformChannelSpecifics,
