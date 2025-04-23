@@ -459,7 +459,7 @@ class SocketService {
 
     flutterLocalNotificationsPlugin.show(
       0, // Notification ID
-      data['senderName'], // Notification title
+      "New Message from " + data['senderName'], // Notification title
       data['message'], // Notification body
       platformChannelSpecifics,
       payload: data['type'],
