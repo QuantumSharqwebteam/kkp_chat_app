@@ -1,24 +1,47 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
-import 'package:kkp_chat_app/config/theme/theme.dart';
-import 'package:kkp_chat_app/presentation/common/splash.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/config/theme/theme.dart';
+import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("📩 [Background] Notification: ${message.notification?.title}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   await Hive.initFlutter();
   await Hive.openBox('CREDENTIALS');
   await Hive.openBox("lastSeenTimeBox");
   await Hive.openBox('feedBox');
   await dotenv.load(fileName: "keys.env");
+
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -38,6 +61,14 @@ class MyApp extends StatelessWidget {
           return null;
         }
       },
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', 'US'),
+      ],
     );
   }
 }

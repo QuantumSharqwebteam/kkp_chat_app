@@ -1,6 +1,6 @@
-import 'package:kkp_chat_app/core/services/chat_service.dart';
-import 'package:kkp_chat_app/data/models/form_data_model.dart';
-import 'package:kkp_chat_app/data/models/message_model.dart';
+import 'package:kkpchatapp/core/services/chat_service.dart';
+import 'package:kkpchatapp/data/models/form_data_model.dart';
+import 'package:kkpchatapp/data/models/message_model.dart';
 
 class ChatRepository {
   final ChatService chatService = ChatService();

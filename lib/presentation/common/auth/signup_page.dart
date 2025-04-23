@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
-import 'package:kkp_chat_app/presentation/common/auth/verification_page.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common/auth/verification_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});

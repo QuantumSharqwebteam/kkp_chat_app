@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_product_item.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_product_item.dart';
 
 class ShimmerGrid extends StatelessWidget {
   const ShimmerGrid({super.key});

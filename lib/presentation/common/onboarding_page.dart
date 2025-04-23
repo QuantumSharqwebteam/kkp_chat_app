@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
-import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common/privacy_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});

@@ -2,7 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'dart:async';

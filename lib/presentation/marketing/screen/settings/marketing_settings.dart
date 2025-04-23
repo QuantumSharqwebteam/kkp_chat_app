@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/colored_divider.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/settings/manage_customers.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/settings/track_inquries.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/marketing_settings_tile.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/colored_divider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/settings/manage_customers.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/settings/track_inquries.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/marketing_settings_tile.dart';
 
 class MarketingSettingsPage extends StatefulWidget {
   const MarketingSettingsPage({super.key});

@@ -1,7 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 
 class CustomAppBar extends StatefulWidget {
   const CustomAppBar({super.key, this.name, this.url});

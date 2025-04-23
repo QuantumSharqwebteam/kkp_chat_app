@@ -1,7 +1,7 @@
 // import 'dart:async';
 // import 'package:flutter/material.dart';
 // import 'package:flutter_webrtc/flutter_webrtc.dart';
-// import 'package:kkp_chat_app/core/services/socket_service.dart';
+// import 'package:kkpchatapp/core/services/socket_service.dart';
 
 // enum CallDirection { receivingCall, requestingCall }
 

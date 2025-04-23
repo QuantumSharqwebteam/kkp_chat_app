@@ -1,4 +1,4 @@
-package com.kkptextile.kkp_chat_app
+package com.kkptextile.kkpchatapp
 
 import io.flutter.embedding.android.FlutterActivity
 

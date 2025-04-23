@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/models/form_data_model.dart';
-import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_drop_down.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/models/form_data_model.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 
 class CustomerInquiriesPage extends StatefulWidget {
   const CustomerInquiriesPage({super.key});

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_home_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_products_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/customer_settings_page.dart';
-import 'package:kkp_chat_app/presentation/customer/widget/customer_nav_bar.dart';
+import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_products_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_profile_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/customer_settings_page.dart';
+import 'package:kkpchatapp/presentation/customer/widget/customer_nav_bar.dart';
 
 class CustomerHost extends StatefulWidget {
   const CustomerHost({super.key});
@@ -20,6 +21,7 @@ class _CustomerHostState extends State<CustomerHost> {
   int _selectedIndex = 0;
   final SocketService _socketService = SocketService();
   AuthApi auth = AuthApi();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   Profile? profile;
 
   @override
@@ -28,7 +30,12 @@ class _CustomerHostState extends State<CustomerHost> {
 
     _loadCurrentUserData().whenComplete(() {
       _socketService.initSocket(profile!.name!, profile!.email!, "User");
+      _initializeNotificationService();
     });
+  }
+
+  Future<void> _initializeNotificationService() async {
+    await NotificationService.init(context, _navigatorKey);
   }
 
   Future<void> _loadCurrentUserData() async {

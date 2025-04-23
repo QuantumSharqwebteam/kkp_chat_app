@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:kkp_chat_app/data/models/product_model.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
 
 class ProductService {
   final String _baseUrl = "https://kkp-chat.onrender.com/product";

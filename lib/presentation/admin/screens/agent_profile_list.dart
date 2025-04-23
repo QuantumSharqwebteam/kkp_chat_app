@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/data/models/agent.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_customer_list_screen.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:shimmer/shimmer.dart';
 // Import reusable shimmer list
 

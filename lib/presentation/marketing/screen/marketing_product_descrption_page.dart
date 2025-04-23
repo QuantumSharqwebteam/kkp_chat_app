@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/models/product_model.dart';
-import 'package:kkp_chat_app/data/repositories/product_repository.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/colored_circles.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/edit_product_screen.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/presentation/common_widgets/colored_circles.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/edit_product_screen.dart';
 
 import '../../../config/theme/app_text_styles.dart';
 

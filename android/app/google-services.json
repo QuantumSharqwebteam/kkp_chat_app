@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "840773427468",
+    "project_id": "kkp-chat-326df",
+    "storage_bucket": "kkp-chat-326df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:840773427468:android:13df850d5b6bd1f84c6929",
+        "android_client_info": {
+          "package_name": "com.kkptextile.kkpchatapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiZCFj2ef6S-7bPyogJqvfTtEX4-xUoQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

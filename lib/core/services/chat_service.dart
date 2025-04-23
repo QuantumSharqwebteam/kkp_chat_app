@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/data/models/form_data_model.dart';
-import 'package:kkp_chat_app/data/models/message_model.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/form_data_model.dart';
+import 'package:kkpchatapp/data/models/message_model.dart';
 
 class ChatService {
   final String baseUrl = "https://kkp-chat.onrender.com";
