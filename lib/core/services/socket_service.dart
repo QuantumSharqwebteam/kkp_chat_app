@@ -5,15 +5,16 @@ import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
+
+import '../../data/models/profile_model.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
   factory SocketService() => _instance;
   final NotificationService notiService = NotificationService();
-  static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
 
   late io.Socket _socket;
   bool _isConnected = false;
@@ -412,13 +413,13 @@ class SocketService {
     }
 
     FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-        FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('app_logo');
+    AndroidInitializationSettings('app_logo');
 
     const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings(
+    DarwinInitializationSettings(
       requestAlertPermission: true,
       requestSoundPermission: true,
       requestBadgePermission: true,
@@ -428,26 +429,43 @@ class SocketService {
     );
 
     const InitializationSettings initializationSettings =
-        InitializationSettings(
-            android: initializationSettingsAndroid,
-            iOS: initializationSettingsIOS);
+    InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS);
 
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse:
             (NotificationResponse notificationResponse) {
-      debugPrint('Notification clicked: ${notificationResponse.payload}');
-      // Handle notification tap
-    });
+          debugPrint('Notification clicked: ${notificationResponse.payload}');
+          // Handle notification tap
+          if (LocalDbHelper.getUserType() == "0") {
+            final Profile? profile = LocalDbHelper.getProfile();
+            if (profile != null) {
+              Navigator.push(
+                notificationResponse.payload as BuildContext,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return CustomerChatScreen(
+                      customerName: profile.name,
+                      customerEmail: profile.email,
+                      customerImage: profile.profileUrl,
+                    );
+                  },
+                ),
+              );
+            }
+          }
+        });
 
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails('your_channel_id', 'your_channel_name',
-            channelDescription: 'your_channel_description',
-            importance: Importance.max,
-            priority: Priority.high,
-            ticker: 'ticker');
+    AndroidNotificationDetails('your_channel_id', 'your_channel_name',
+        channelDescription: 'your_channel_description',
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'ticker');
 
     const DarwinNotificationDetails iosPlatformChannelSpecifics =
-        DarwinNotificationDetails(
+    DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
@@ -457,14 +475,18 @@ class SocketService {
         android: androidPlatformChannelSpecifics,
         iOS: iosPlatformChannelSpecifics);
 
+    final String title = "New Message from ${data['senderName']}";
+    final int notificationId = title.hashCode;
+
     flutterLocalNotificationsPlugin.show(
-      DateTime.now().hashCode, // Notification ID
-      "New Message from " + data['senderName'], // Notification title
+      notificationId, // Notification ID
+      title, // Notification title
       data['message'], // Notification body
       platformChannelSpecifics,
-      payload: data['type'],
+      payload: "chatScreen",
     );
   }
+
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;

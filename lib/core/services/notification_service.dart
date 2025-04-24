@@ -3,19 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
+  FlutterLocalNotificationsPlugin();
   static bool _notificationClicked = false;
   static GlobalKey<NavigatorState>? navigatorKey;
+  static Function(String?)? onNotificationTap;
 
+  // Initialize notification service
   static Future<void> init(
-      BuildContext context, GlobalKey<NavigatorState> navKey) async {
+      BuildContext context, GlobalKey<NavigatorState> navKey,
+      {Function(String?)? onNotificationClick}) async {
     navigatorKey = navKey;
+    onNotificationTap = onNotificationClick;
+
     await _initializeLocalNotifications();
     if (context.mounted) {
       bool isGranted = await _requestPermission(context);
@@ -37,28 +42,29 @@ class NotificationService {
     }
   }
 
+  // Setup for background notifications (when the app is in the background)
+  static void _setupBackgroundNotification() {
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint("🔔 Notification Clicked (Background): ${message.notification?.title}");
+      _handleNotificationClick(message);
+    });
+  }
+
+  // Setup for terminated notifications (when the app is fully closed)
   static void _setupTerminatedNotification() {
     Future.delayed(const Duration(milliseconds: 500), () {
       FirebaseMessaging.instance
           .getInitialMessage()
           .then((RemoteMessage? message) {
         if (message != null) {
-          debugPrint(
-              "🚀 App Opened via Notification: ${message.notification?.body}");
+          debugPrint("🚀 App Opened via Notification: ${message.notification?.body}");
           _handleNotificationClick(message);
         }
       });
     });
   }
 
-  static void _setupBackgroundNotification() {
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint(
-          "🔔 Notification Clicked (Background): ${message.notification?.title}");
-      _handleNotificationClick(message);
-    });
-  }
-
+  // Handle notification clicks (both background and terminated)
   static void _handleNotificationClick(RemoteMessage message) {
     if (_notificationClicked) {
       debugPrint("Duplicate notification click ignored.");
@@ -69,15 +75,20 @@ class NotificationService {
 
     final Map<String, dynamic> notificationData = message.data;
     debugPrint('notification: $notificationData');
+
+    if (onNotificationTap != null) {
+      onNotificationTap!(notificationData['type']); // Trigger the callback
+    }
   }
 
+  // Setup foreground notifications (when the app is in the foreground)
   static void _setupForegroundNotification() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint("📩 Foreground Notification: ${message.notification?.body}");
 
       if (message.notification != null) {
         const AndroidNotificationDetails androidNotificationDetails =
-            AndroidNotificationDetails(
+        AndroidNotificationDetails(
           'high_importance_channel',
           'High Importance Notifications',
           channelDescription: 'This channel is for important notifications',
@@ -86,43 +97,48 @@ class NotificationService {
         );
 
         const NotificationDetails notificationDetails =
-            NotificationDetails(android: androidNotificationDetails);
+        NotificationDetails(android: androidNotificationDetails);
 
         await _localNotificationsPlugin.show(
           message.notification.hashCode,
           message.notification?.body,
           message.data['message'],
           notificationDetails,
-          payload: message.data['type'],
+          payload: message.data['senderId'],
         );
       }
     });
   }
 
+  // Initialize local notifications plugin
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+    AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
+    InitializationSettings(android: initializationSettingsAndroid);
 
-    await _localNotificationsPlugin.initialize(initializationSettings);
+    await _localNotificationsPlugin.initialize(initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          _handleNotificationClick(response.payload! as RemoteMessage); // Handle notification tap
+        });
 
-    // Create a notification channel for Android 8.0 and above
+    // Create notification channel for Android 8.0 and above
     const AndroidNotificationChannel androidNotificationChannel =
-        AndroidNotificationChannel(
-      'high_importance_channel', // ID of the channel
-      'High Importance Notifications', // Name of the channel
+    AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Notifications',
       description: 'This channel is for important notifications',
       importance: Importance.high,
     );
 
     await _localNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+        AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(androidNotificationChannel);
   }
 
+  // Request notification permission
   static Future<bool> _requestPermission(BuildContext context) async {
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
@@ -139,8 +155,7 @@ class NotificationService {
         _showPermissionDialog(context);
       }
       return false;
-    } else if (settings.authorizationStatus ==
-        AuthorizationStatus.provisional) {
+    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
       debugPrint('⚠️ Provisional permission granted');
       return true;
     }
@@ -148,12 +163,13 @@ class NotificationService {
     return false;
   }
 
+  // Show permission dialog if notification permissions are denied
   static void _showPermissionDialog(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
         barrierDismissible:
-            false, // Prevent dismissing the dialog by tapping outside
+        false, // Prevent dismissing the dialog by tapping outside
         builder: (context) {
           return AlertDialog(
             title: const Text("Enable Notifications"),
@@ -169,10 +185,9 @@ class NotificationService {
               TextButton(
                 onPressed: () async {
                   PermissionStatus status =
-                      await Permission.notification.status;
+                  await Permission.notification.status;
                   if (status.isGranted && context.mounted) {
                     Navigator.pop(context);
-                    // _initializeNotificationService(context);
                   } else {
                     debugPrint('❌ User still denied notification permission');
                   }
@@ -185,19 +200,6 @@ class NotificationService {
       );
     });
   }
-
-  // static Future<void> _initializeNotificationService(
-  //     BuildContext context) async {
-  //   await _checkAndUpdateFCMToken();
-  //   _setupForegroundNotification();
-  //   _setupBackgroundNotification();
-  //   _setupTerminatedNotification();
-
-  //   _messaging.onTokenRefresh.listen((newToken) async {
-  //     debugPrint("🔄 [FCM Token Refreshed]: $newToken");
-  //     await _checkAndUpdateFCMToken(newToken: newToken);
-  //   });
-  // }
 
   static Future<void> _checkAndUpdateFCMToken({String? newToken}) async {
     AuthApi auth = AuthApi();
@@ -228,8 +230,13 @@ class NotificationService {
   }
 
   static Future<void> deleteFCMToken() async {
-    await _messaging.deleteToken().whenComplete(() {
-      debugPrint("FCM Token deleted");
-    });
+    try {
+      await _messaging.deleteToken();
+      await LocalDbHelper.clearFCMToken();
+      debugPrint("🧹 FCM Token deleted and local token cleared.");
+    } catch (e) {
+      debugPrint("❌ Failed to delete FCM token: $e");
+    }
   }
+
 }
