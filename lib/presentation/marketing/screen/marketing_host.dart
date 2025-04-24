@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
+import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
@@ -45,6 +47,8 @@ class _MarketingHostState extends State<MarketingHost> {
     await _loadUserData().whenComplete(() {
       if (agentName != null && agentEmail != null && rolename != null) {
         _socketService.initSocket(agentName!, agentEmail!, rolename!);
+        _socketService.onReceiveMessage(_handleIncomingMessage);
+        _socketService.onIncomingCall(_handleIncomingCall);
       } else {
         debugPrint("Skipping socket init: agentName or agentEmail is null");
       }
@@ -112,6 +116,79 @@ class _MarketingHostState extends State<MarketingHost> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  void _handleIncomingMessage(Map<String, dynamic> data) {
+    // Handle incoming message
+    debugPrint('Incoming message: $data');
+  }
+
+  void _handleIncomingCall(Map<String, dynamic> callData) {
+    // Handle incoming call
+    debugPrint('Incoming call: $callData');
+
+    final channelName = callData['channelName'];
+    final callerName = callData['callerName'];
+    final callerId = callData['callerId'];
+    final uid = Utils().generateIntUidFromEmail(agentEmail!);
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (context) {
+        return Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('$callerName is calling...',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.call_end, color: Colors.white),
+                    label: const Text("Reject"),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    onPressed: () {
+                      Navigator.pop(context); // close bottom sheet
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.call, color: Colors.white),
+                    label: const Text("Answer"),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    onPressed: () {
+                      Navigator.pop(context); // close bottom sheet
+
+                      // Navigate to the audio call screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AgoraAudioCallScreen(
+                            isCaller: false,
+                            channelName: channelName,
+                            uid: uid,
+                            remoteUserId: callerId,
+                            remoteUserName: callerName,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override

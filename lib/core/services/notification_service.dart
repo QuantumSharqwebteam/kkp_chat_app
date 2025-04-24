@@ -5,21 +5,23 @@ import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class NotificationService {
+class NotificationService with WidgetsBindingObserver {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   static bool _notificationClicked = false;
   static GlobalKey<NavigatorState>? navigatorKey;
-  static Function(String?)? onNotificationTap;
+  static Function(String?, String?, String?)? onNotificationTap;
+  static AppLifecycleState? _appLifecycleState;
 
   // Initialize notification service
   static Future<void> init(
       BuildContext context, GlobalKey<NavigatorState> navKey,
-      {Function(String?)? onNotificationClick}) async {
+      {Function(String?, String?, String?)? onNotificationClick}) async {
     navigatorKey = navKey;
     onNotificationTap = onNotificationClick;
 
+    WidgetsBinding.instance.addObserver(NotificationService());
     await _initializeLocalNotifications();
     if (context.mounted) {
       bool isGranted = await _requestPermission(context);
@@ -39,6 +41,12 @@ class NotificationService {
         }
       }
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _appLifecycleState = state;
+    super.didChangeAppLifecycleState(state);
   }
 
   // Setup for background notifications (when the app is in the background)
@@ -78,7 +86,11 @@ class NotificationService {
     debugPrint('notification: $notificationData');
 
     if (onNotificationTap != null) {
-      onNotificationTap!(notificationData['type']); // Trigger the callback
+      onNotificationTap!(
+        notificationData['agentName'],
+        notificationData['customerEmail'],
+        notificationData['customerImage'],
+      ); // Trigger the callback
     }
   }
 
@@ -86,6 +98,11 @@ class NotificationService {
   static void _setupForegroundNotification() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint("📩 Foreground Notification: ${message.notification?.body}");
+
+      if (_appLifecycleState == AppLifecycleState.resumed) {
+        // App is in the foreground, do not show local notification
+        return;
+      }
 
       if (message.notification != null) {
         const AndroidNotificationDetails androidNotificationDetails =

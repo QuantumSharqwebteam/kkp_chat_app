@@ -398,10 +398,9 @@ class SocketService {
 
       if (customerEmail != null) {
         // Save the message to Hive local storage
-        final currentTime = DateTime.now().toIso8601String();
         final message = ChatMessageModel(
           message: data["message"],
-          timestamp: DateTime.parse(currentTime),
+          timestamp: DateTime.parse(DateTime.now().toIso8601String()),
           sender: data["senderId"],
           type: data["type"] ?? "text",
           mediaUrl: data["mediaUrl"],
@@ -413,13 +412,13 @@ class SocketService {
     }
 
     FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+        FlutterLocalNotificationsPlugin();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('app_logo');
+        AndroidInitializationSettings('app_logo');
 
     const DarwinInitializationSettings initializationSettingsIOS =
-    DarwinInitializationSettings(
+        DarwinInitializationSettings(
       requestAlertPermission: true,
       requestSoundPermission: true,
       requestBadgePermission: true,
@@ -429,43 +428,43 @@ class SocketService {
     );
 
     const InitializationSettings initializationSettings =
-    InitializationSettings(
-        android: initializationSettingsAndroid,
-        iOS: initializationSettingsIOS);
+        InitializationSettings(
+            android: initializationSettingsAndroid,
+            iOS: initializationSettingsIOS);
 
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse:
             (NotificationResponse notificationResponse) {
-          debugPrint('Notification clicked: ${notificationResponse.payload}');
-          // Handle notification tap
-          if (LocalDbHelper.getUserType() == "0") {
-            final Profile? profile = LocalDbHelper.getProfile();
-            if (profile != null) {
-              Navigator.push(
-                notificationResponse.payload as BuildContext,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return CustomerChatScreen(
-                      customerName: profile.name,
-                      customerEmail: profile.email,
-                      customerImage: profile.profileUrl,
-                    );
-                  },
-                ),
-              );
-            }
-          }
-        });
+      debugPrint('Notification clicked: ${notificationResponse.payload}');
+      // Handle notification tap
+      if (LocalDbHelper.getUserType() == "0") {
+        final Profile? profile = LocalDbHelper.getProfile();
+        if (profile != null) {
+          Navigator.push(
+            notificationResponse.payload as BuildContext,
+            MaterialPageRoute(
+              builder: (context) {
+                return CustomerChatScreen(
+                  customerName: profile.name,
+                  customerEmail: profile.email,
+                  customerImage: profile.profileUrl,
+                );
+              },
+            ),
+          );
+        }
+      }
+    });
 
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
-    AndroidNotificationDetails('your_channel_id', 'your_channel_name',
-        channelDescription: 'your_channel_description',
-        importance: Importance.max,
-        priority: Priority.high,
-        ticker: 'ticker');
+        AndroidNotificationDetails('your_channel_id', 'your_channel_name',
+            channelDescription: 'your_channel_description',
+            importance: Importance.max,
+            priority: Priority.high,
+            ticker: 'ticker');
 
     const DarwinNotificationDetails iosPlatformChannelSpecifics =
-    DarwinNotificationDetails(
+        DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
@@ -486,7 +485,6 @@ class SocketService {
       payload: "chatScreen",
     );
   }
-
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;
