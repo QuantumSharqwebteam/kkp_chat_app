@@ -33,4 +33,5 @@ class AppColors {
   static const greyB2BACD = Color(0xffB2BACD);
   static const grey474747 = Color(0xff474747);
   static const black2E2E2E = Color(0xff2E2E2E);
+  static const recieverMessageBubble = Color(0xffF2F2F2);
 }

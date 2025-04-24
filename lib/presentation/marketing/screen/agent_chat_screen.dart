@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:intl/intl.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
@@ -18,6 +19,8 @@ import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubb
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/voice_message_bubble.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -49,13 +52,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  final qualityController = TextEditingController();
-  final quantityController = TextEditingController();
-  final weaveController = TextEditingController();
-  final compositionController = TextEditingController();
-  final rateController = TextEditingController();
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
 
   List<Map<String, dynamic>> messages = [];
+  bool _isRecording = false;
 
   @override
   void initState() {
@@ -63,6 +63,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _initializeRecorder();
     _socketService.onIncomingCall((callData) {
       debugPrint('📞 Incoming call data: $callData');
 
@@ -141,11 +142,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
-    qualityController.dispose();
-    quantityController.dispose();
-    rateController.dispose();
-    compositionController.dispose();
-    weaveController.dispose();
+    _recorder.closeRecorder();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -158,6 +155,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     } else if (state == AppLifecycleState.resumed) {
       _socketService.toggleChatPageOpen(true);
     }
+  }
+
+  Future<void> _initializeRecorder() async {
+    await _recorder.openRecorder();
+    await Permission.microphone.request();
   }
 
   Future<void> _loadPreviousMessages() async {
@@ -266,6 +268,28 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           curve: Curves.easeOut,
         );
       }
+    });
+  }
+
+  Future<void> _startRecording() async {
+    await _recorder.startRecorder(toFile: 'voice_message.aac');
+    setState(() {
+      _isRecording = true;
+    });
+  }
+
+  Future<void> _stopRecording() async {
+    final path = await _recorder.stopRecorder();
+    if (path != null) {
+      final File voiceFile = File(path);
+      final voiceUrl =
+          await _s3uploadService.uploadFile(voiceFile, isVoiceMessage: true);
+      if (voiceUrl != null) {
+        _sendMessage(messageText: "voice", type: 'voice', mediaUrl: voiceUrl);
+      }
+    }
+    setState(() {
+      _isRecording = false;
     });
   }
 
@@ -470,6 +494,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                               isMe: msg['isMe'],
                               timestamp: formatTimestamp(msg['timestamp']),
                             );
+                          } else if (msg['type'] == 'voice') {
+                            // [VOICE MSG]
+                            return VoiceMessageBubble(
+                              // <-- Make sure this widget exists
+                              voiceUrl: msg['mediaUrl'],
+                              isMe: msg['isMe'],
+                              timestamp: formatTimestamp(msg['timestamp']),
+                            );
                           } else if (msg['text'] == 'Fill details') {
                             return FillFormButton(
                               onSubmit: () {
@@ -494,6 +526,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             onSendImage: _pickAndSendImage,
             onSendForm: sendFormButton,
             onSendDocument: _pickAndSendDocument,
+            onSendVoice: _isRecording
+                ? _stopRecording
+                : _startRecording, // Update this line
+            isRecording: _isRecording,
           ),
         ],
       ),

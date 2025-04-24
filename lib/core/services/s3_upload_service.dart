@@ -14,18 +14,23 @@ class S3UploadService {
   final String region = dotenv.env["AWS_REGION"]!;
   final String bucketName = dotenv.env["AWS_BUCKET_NAME"]!;
 
-  Future<String?> uploadFile(File file) async {
+  Future<String?> uploadFile(File file, {bool isVoiceMessage = false}) async {
     try {
-      // Compress the image to 80% quality
-      final compressedFile = await compressImage(file, quality: 80);
-      if (compressedFile == null) {
-        debugPrint("Image compression failed.");
-        return null;
+      File fileToUpload = file;
+
+      // Compress the image to 80% quality if it's not a voice message
+      if (!isVoiceMessage) {
+        final compressedFile = await compressImage(file, quality: 80);
+        if (compressedFile == null) {
+          debugPrint("Image compression failed.");
+          return null;
+        }
+        fileToUpload = compressedFile;
       }
 
       final String isoDate = _getIsoDate();
       final String shortDate = isoDate.substring(0, 8);
-      String sanitizedFileName = file.path.split('/').last.replaceAll(
+      String sanitizedFileName = fileToUpload.path.split('/').last.replaceAll(
           RegExp(r'[^a-zA-Z0-9._-]'),
           '_'); //to remove all the unnecessary characters from the path causing issues for uploading image
       final String destinationKey =
@@ -37,10 +42,10 @@ class S3UploadService {
 
       // Detect MIME type
       final mimeType =
-          lookupMimeType(compressedFile.path) ?? "application/octet-stream";
+          lookupMimeType(fileToUpload.path) ?? "application/octet-stream";
 
       // Read file bytes
-      final List<int> fileBytes = await compressedFile.readAsBytes();
+      final List<int> fileBytes = await fileToUpload.readAsBytes();
       final String payloadHash = sha256.convert(fileBytes).toString();
 
       // Step 1: Create Canonical Request

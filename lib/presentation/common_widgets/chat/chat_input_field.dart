@@ -11,6 +11,8 @@ class ChatInputField extends StatefulWidget {
   final VoidCallback onSendImage;
   final VoidCallback onSendForm;
   final VoidCallback onSendDocument;
+  final VoidCallback onSendVoice; // Add this line
+  final bool isRecording;
 
   const ChatInputField({
     super.key,
@@ -19,6 +21,8 @@ class ChatInputField extends StatefulWidget {
     required this.onSendImage,
     required this.onSendForm,
     required this.onSendDocument,
+    required this.onSendVoice,
+    required this.isRecording,
   });
 
   @override
@@ -74,9 +78,16 @@ class _ChatInputFieldState extends State<ChatInputField> {
                     icon: const Icon(Icons.camera_alt),
                     onPressed: widget.onSendImage,
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.mic),
-                    onPressed: () {},
+                  GestureDetector(
+                    onLongPressStart: (_) async {
+                      widget.onSendVoice(); // Start recording on long press
+                    },
+                    onLongPressEnd: (_) async {
+                      widget.onSendVoice(); // Stop recording on release
+                    },
+                    child: Icon(
+                      widget.isRecording ? Icons.stop : Icons.mic,
+                    ),
                   ),
                 ],
               ),

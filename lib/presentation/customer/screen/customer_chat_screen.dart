@@ -19,8 +19,11 @@ import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubb
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kkp_chat_app/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
@@ -50,7 +53,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final SocketService _socketService = SocketService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final qualityController = TextEditingController();
   final quantityController = TextEditingController();
@@ -61,6 +64,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       ChatStorageService(); // Initialize the service
 
   List<ChatMessageModel> messages = [];
+  bool _isRecording = false;
 
   @override
   void initState() {
@@ -69,6 +73,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _loadMessages();
+    _initializeRecorder();
     _socketService.onIncomingCall((callData) {
       final channelName = callData['channelName'];
       final callerName = callData['callerName'];
@@ -135,11 +140,21 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     });
   }
 
+  Future<void> _initializeRecorder() async {
+    await _recorder.openRecorder();
+    await Permission.microphone.request();
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
+    qualityController.dispose();
+    quantityController.dispose();
+    rateController.dispose();
+    compositionController.dispose();
+    _recorder.closeRecorder();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -216,6 +231,28 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     _chatStorageService.saveMessage(message, widget.customerEmail!);
     _chatController.clear();
+  }
+
+  Future<void> _startRecording() async {
+    await _recorder.startRecorder(toFile: 'voice_message.aac');
+    setState(() {
+      _isRecording = true;
+    });
+  }
+
+  Future<void> _stopRecording() async {
+    final path = await _recorder.stopRecorder();
+    if (path != null) {
+      final File voiceFile = File(path);
+      final voiceUrl =
+          await _s3uploadService.uploadFile(voiceFile, isVoiceMessage: true);
+      if (voiceUrl != null) {
+        _sendMessage(messageText: "voice", type: 'voice', mediaUrl: voiceUrl);
+      }
+    }
+    setState(() {
+      _isRecording = false;
+    });
   }
 
   void _scrollToBottom() {
@@ -453,6 +490,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                             isMe: msg.sender == widget.customerEmail,
                             timestamp: formatTimestamp(msg.timestamp),
                           );
+                        } else if (msg.type == 'voice') {
+                          return VoiceMessageBubble(
+                            // Add this line
+                            voiceUrl: msg.mediaUrl!,
+                            isMe: msg.sender == widget.customerEmail,
+                            timestamp: formatTimestamp(msg.timestamp),
+                          );
                         } else if (msg.message == 'Fill details') {
                           return FillFormButton(
                             onSubmit: _showFormOverlay,
@@ -475,6 +519,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               onSendImage: _pickAndSendImage,
               onSendForm: _showFormOverlay,
               onSendDocument: _pickAndSendDocument,
+              onSendVoice: _isRecording
+                  ? _stopRecording
+                  : _startRecording, // Update this line
+              isRecording: _isRecording, // Update this line
             ),
           ],
         ),
