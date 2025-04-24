@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/doucment_viewer.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/doucment_viewer.dart';
 
 class DocumentMessageBubble extends StatelessWidget {
   final String documentUrl;

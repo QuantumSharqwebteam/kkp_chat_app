@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
-  FlutterLocalNotificationsPlugin();
+      FlutterLocalNotificationsPlugin();
   static bool _notificationClicked = false;
   static GlobalKey<NavigatorState>? navigatorKey;
   static Function(String?)? onNotificationTap;
@@ -45,7 +44,8 @@ class NotificationService {
   // Setup for background notifications (when the app is in the background)
   static void _setupBackgroundNotification() {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint("🔔 Notification Clicked (Background): ${message.notification?.title}");
+      debugPrint(
+          "🔔 Notification Clicked (Background): ${message.notification?.title}");
       _handleNotificationClick(message);
     });
   }
@@ -57,7 +57,8 @@ class NotificationService {
           .getInitialMessage()
           .then((RemoteMessage? message) {
         if (message != null) {
-          debugPrint("🚀 App Opened via Notification: ${message.notification?.body}");
+          debugPrint(
+              "🚀 App Opened via Notification: ${message.notification?.body}");
           _handleNotificationClick(message);
         }
       });
@@ -88,7 +89,7 @@ class NotificationService {
 
       if (message.notification != null) {
         const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails(
+            AndroidNotificationDetails(
           'high_importance_channel',
           'High Importance Notifications',
           channelDescription: 'This channel is for important notifications',
@@ -97,7 +98,7 @@ class NotificationService {
         );
 
         const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidNotificationDetails);
+            NotificationDetails(android: androidNotificationDetails);
 
         await _localNotificationsPlugin.show(
           message.notification.hashCode,
@@ -113,19 +114,20 @@ class NotificationService {
   // Initialize local notifications plugin
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const InitializationSettings initializationSettings =
-    InitializationSettings(android: initializationSettingsAndroid);
+        InitializationSettings(android: initializationSettingsAndroid);
 
     await _localNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          _handleNotificationClick(response.payload! as RemoteMessage); // Handle notification tap
-        });
+      _handleNotificationClick(
+          response.payload! as RemoteMessage); // Handle notification tap
+    });
 
     // Create notification channel for Android 8.0 and above
     const AndroidNotificationChannel androidNotificationChannel =
-    AndroidNotificationChannel(
+        AndroidNotificationChannel(
       'high_importance_channel',
       'High Importance Notifications',
       description: 'This channel is for important notifications',
@@ -134,7 +136,7 @@ class NotificationService {
 
     await _localNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(androidNotificationChannel);
   }
 
@@ -155,7 +157,8 @@ class NotificationService {
         _showPermissionDialog(context);
       }
       return false;
-    } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+    } else if (settings.authorizationStatus ==
+        AuthorizationStatus.provisional) {
       debugPrint('⚠️ Provisional permission granted');
       return true;
     }
@@ -169,7 +172,7 @@ class NotificationService {
       showDialog(
         context: context,
         barrierDismissible:
-        false, // Prevent dismissing the dialog by tapping outside
+            false, // Prevent dismissing the dialog by tapping outside
         builder: (context) {
           return AlertDialog(
             title: const Text("Enable Notifications"),
@@ -185,7 +188,7 @@ class NotificationService {
               TextButton(
                 onPressed: () async {
                   PermissionStatus status =
-                  await Permission.notification.status;
+                      await Permission.notification.status;
                   if (status.isGranted && context.mounted) {
                     Navigator.pop(context);
                   } else {
@@ -238,5 +241,4 @@ class NotificationService {
       debugPrint("❌ Failed to delete FCM token: $e");
     }
   }
-
 }
