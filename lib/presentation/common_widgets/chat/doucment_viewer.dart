@@ -43,9 +43,9 @@ class _DocumentViewerState extends State<DocumentViewer> {
       if (!isPdf) {
         // Open with system app if not PDF
         OpenFilex.open(file.path);
-        if (mounted) {
-          Navigator.pop(context);
-        } // close viewer after launch
+
+        Navigator.pop(context);
+        // close viewer after launch
       }
     } catch (e) {
       if (kDebugMode) {
@@ -69,3 +69,20 @@ class _DocumentViewerState extends State<DocumentViewer> {
     );
   }
 }
+
+// import 'package:flutter/material.dart';
+// import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+
+// class DocumentViewer extends StatelessWidget {
+//   final String documentUrl;
+
+//   const DocumentViewer({super.key, required this.documentUrl});
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text('Document Viewer')),
+//       body: SfPdfViewer.network(documentUrl),
+//     );
+//   }
+// }
