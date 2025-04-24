@@ -1,0 +1,2 @@
+/home/msi/FlutterProjects/kkpchatapp/android/app/.cxx/RelWithDebInfo/j6w2f503/armeabi-v7a/CMakeFiles/edit_cache.dir
+/home/msi/FlutterProjects/kkpchatapp/android/app/.cxx/RelWithDebInfo/j6w2f503/armeabi-v7a/CMakeFiles/rebuild_cache.dir
