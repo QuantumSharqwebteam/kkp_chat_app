@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 
 class FormMessageBubble extends StatelessWidget {
   final Map<String, dynamic> formData;

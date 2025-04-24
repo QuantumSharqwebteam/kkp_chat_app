@@ -1,16 +1,45 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:kkp_chat_app/data/models/address_model.dart';
-import 'package:kkp_chat_app/data/models/agent.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 
 class AuthApi {
   static const baseUrl = 'https://kkp-chat.onrender.com/';
   final http.Client client;
 
   AuthApi({http.Client? client}) : client = client ?? http.Client();
+
+  Future<Map<String, dynamic>> updateFCMToken(String fcmToken) async {
+    final endPoint = "user/updateUserDetails";
+    final url = Uri.parse('$baseUrl$endPoint');
+    final body = json.encode({
+      "token": fcmToken,
+    });
+    final token = LocalDbHelper.getToken();
+    try {
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to update FCM token');
+      }
+    } catch (e) {
+      debugPrint("Error updating FCM token: $e");
+      throw Exception(e);
+    }
+  }
+
   // login
   Future<Map<String, dynamic>> login(
       {required String email, required String password}) async {

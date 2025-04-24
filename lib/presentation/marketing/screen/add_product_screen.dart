@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/core/services/product_service.dart';
-import 'package:kkp_chat_app/core/services/s3_upload_service.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/models/product_model.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/services/product_service.dart';
+import 'package:kkpchatapp/core/services/s3_upload_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:dotted_border/dotted_border.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});

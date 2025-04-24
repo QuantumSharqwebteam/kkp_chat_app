@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'package:kkp_chat_app/data/models/chat_message_model.dart';
+import 'package:kkpchatapp/data/models/chat_message_model.dart';
 
 class ChatStorageService {
   Future<Box> _openBox(String boxName) async {

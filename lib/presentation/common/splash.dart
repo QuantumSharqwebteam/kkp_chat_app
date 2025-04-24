@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common/onboarding_page.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/common/onboarding_page.dart';
 
 class Splash extends StatefulWidget {
   const Splash({super.key});

@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kkp_chat_app/config/theme/app_colors.dart';
 import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
 import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/media_button.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
 import 'package:permission_handler/permission_handler.dart';

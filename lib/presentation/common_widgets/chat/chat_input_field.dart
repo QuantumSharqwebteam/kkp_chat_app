@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_image.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 
 class ChatInputField extends StatefulWidget {
   final TextEditingController controller;

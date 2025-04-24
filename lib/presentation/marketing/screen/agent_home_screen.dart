@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/feed_list_card.dart';
+import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;

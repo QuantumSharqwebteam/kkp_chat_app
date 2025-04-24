@@ -1,15 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/data/models/address_model.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
 class CustomerProfilePage extends StatefulWidget {
   const CustomerProfilePage({super.key});

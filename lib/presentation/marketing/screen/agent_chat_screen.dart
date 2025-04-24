@@ -16,8 +16,21 @@ import 'package:kkp_chat_app/presentation/common_widgets/chat/fill_form_button.d
 import 'package:kkp_chat_app/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkp_chat_app/presentation/common_widgets/chat/message_bubble.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/services/s3_upload_service.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -374,7 +387,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
             const SizedBox(width: 5),
             Text(
-              widget.agentName!,
+              widget.customerName!,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],

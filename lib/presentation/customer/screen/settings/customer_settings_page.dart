@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_page.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_profile_page.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
@@ -22,17 +23,28 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
     final searchController = TextEditingController();
     final SocketService socketService = SocketService();
     void logOut() async {
-      await LocalDbHelper.removeToken();
-      await LocalDbHelper.removeUserType();
-      await LocalDbHelper.removeEmail();
-      await LocalDbHelper.removeName();
-      await LocalDbHelper.removeProfile();
-      socketService.dispose();
-      if (context.mounted) {
-        Navigator.pushAndRemoveUntil(
+      try {
+        await Future.wait([
+          LocalDbHelper.removeToken(),
+          LocalDbHelper.removeUserType(),
+          LocalDbHelper.removeEmail(),
+          LocalDbHelper.removeName(),
+          LocalDbHelper.removeProfile(),
+          LocalDbHelper.clearFCMToken(),
+          NotificationService.deleteFCMToken(),
+        ]);
+
+        socketService.dispose();
+        if (context.mounted) {
+          Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => LoginPage()),
-            (route) => false);
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        // Handle errors here
+        debugPrint("Error during logout: $e");
       }
     }
 

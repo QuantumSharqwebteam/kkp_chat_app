@@ -1,17 +1,17 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/data/models/product_model.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
-import 'package:kkp_chat_app/data/repositories/product_repository.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_chat_screen.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
-import 'package:kkp_chat_app/presentation/customer/widget/custom_app_bar.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/products/product_item.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:kkpchatapp/presentation/customer/widget/custom_app_bar.dart';
+import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});

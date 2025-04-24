@@ -1,16 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:kkpchatapp/core/services/chat_storage_service.dart';
+import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/chat_message_model.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
+
+import '../../data/models/profile_model.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
   factory SocketService() => _instance;
+  final NotificationService notiService = NotificationService();
 
   late io.Socket _socket;
   bool _isConnected = false;
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
+  ChatStorageService chatStorageService = ChatStorageService();
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
@@ -60,17 +69,13 @@ class SocketService {
     _socket.on('receiveMessage', (data) {
       if (isChatPageOpen && _onMessageReceived != null) {
         _onMessageReceived!(data);
+      } else if (!isChatPageOpen && _onMessageReceived != null) {
+        // trigger foreground notification upon clicking it will open chat page
+        _chatNotification(data);
       } else {
-        _showPushNotification(data);
+        return;
       }
     });
-    // for webrtc
-    // _socket.on('incomingCall', (data) {
-    //   debugPrint('📥 incomingCall: $data'); // ✅ Log full structure
-    //   if (_onIncomingCall != null) {
-    //     _onIncomingCall!(data);
-    //   }
-    // });
 
     // for agora
     _socket.on('incomingCall', (data) {
@@ -375,9 +380,113 @@ class SocketService {
     }
   }
 
-  void _showPushNotification(Map<String, dynamic> data) {
-    debugPrint('🔔 Push Notification: New message received: $data');
+  // void _chatNotification(Map<String, dynamic> data) {
+  //   debugPrint('🔔 Foreground Push Notification: $data');
+
+  //   if (data.isNotEmpty) {
+
+  //   }
+  // }
+
+  void _chatNotification(Map<String, dynamic> data) {
+    debugPrint('🔔 Foreground Push Notification: $data');
+
+    // Check if the user is a customer
+    if (LocalDbHelper.getUserType() == "0") {
+      // Get the customer's email
+      final customerEmail = LocalDbHelper.getEmail();
+
+      if (customerEmail != null) {
+        // Save the message to Hive local storage
+        final currentTime = DateTime.now().toIso8601String();
+        final message = ChatMessageModel(
+          message: data["message"],
+          timestamp: DateTime.parse(currentTime),
+          sender: data["senderId"],
+          type: data["type"] ?? "text",
+          mediaUrl: data["mediaUrl"],
+          form: data["form"],
+        );
+
+        chatStorageService.saveMessage(message, customerEmail);
+      }
+    }
+
+    FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+    const AndroidInitializationSettings initializationSettingsAndroid =
+    AndroidInitializationSettings('app_logo');
+
+    const DarwinInitializationSettings initializationSettingsIOS =
+    DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestSoundPermission: true,
+      requestBadgePermission: true,
+      defaultPresentAlert: true,
+      defaultPresentSound: true,
+      defaultPresentBadge: true,
+    );
+
+    const InitializationSettings initializationSettings =
+    InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS);
+
+    flutterLocalNotificationsPlugin.initialize(initializationSettings,
+        onDidReceiveNotificationResponse:
+            (NotificationResponse notificationResponse) {
+          debugPrint('Notification clicked: ${notificationResponse.payload}');
+          // Handle notification tap
+          if (LocalDbHelper.getUserType() == "0") {
+            final Profile? profile = LocalDbHelper.getProfile();
+            if (profile != null) {
+              Navigator.push(
+                notificationResponse.payload as BuildContext,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return CustomerChatScreen(
+                      customerName: profile.name,
+                      customerEmail: profile.email,
+                      customerImage: profile.profileUrl,
+                    );
+                  },
+                ),
+              );
+            }
+          }
+        });
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    AndroidNotificationDetails('your_channel_id', 'your_channel_name',
+        channelDescription: 'your_channel_description',
+        importance: Importance.max,
+        priority: Priority.high,
+        ticker: 'ticker');
+
+    const DarwinNotificationDetails iosPlatformChannelSpecifics =
+    DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iosPlatformChannelSpecifics);
+
+    final String title = "New Message from ${data['senderName']}";
+    final int notificationId = title.hashCode;
+
+    flutterLocalNotificationsPlugin.show(
+      notificationId, // Notification ID
+      title, // Notification title
+      data['message'], // Notification body
+      platformChannelSpecifics,
+      payload: "chatScreen",
+    );
   }
+
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;

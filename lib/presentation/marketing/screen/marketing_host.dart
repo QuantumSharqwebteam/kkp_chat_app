@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
-import 'package:kkp_chat_app/presentation/admin/screens/admin_profile_page.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/feeds_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/profile_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/marketing_nav_bar.dart';
+import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
+import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/marketing_nav_bar.dart';
 
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key});
@@ -27,11 +28,17 @@ class _MarketingHostState extends State<MarketingHost> {
   List<Widget> _screens = [];
   final SocketService _socketService = SocketService();
   AuthApi auth = AuthApi();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
     _loadUserDataAndInitializeSocket();
+    _initializeNotificationService();
+  }
+
+  Future<void> _initializeNotificationService() async {
+    await NotificationService.init(context, _navigatorKey);
   }
 
   Future<void> _loadUserDataAndInitializeSocket() async {

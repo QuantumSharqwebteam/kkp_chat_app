@@ -1,6 +1,6 @@
-import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/data/models/address_model.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
+import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class AuthRepository {
   final AuthApi _authApi;

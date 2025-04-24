@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class LocalDbHelper {
   static const String _keyToken = 'token';
@@ -7,6 +7,7 @@ class LocalDbHelper {
   static const String _name = 'name';
   static const String _email = 'email';
   static const String _profile = 'profile';
+  static const String _fCMToken = "FCMTOKEN";
 
   // feed
   static const String _pinnedAgentsKey = 'pinnedAgents';
@@ -113,5 +114,17 @@ class LocalDbHelper {
 
   static Future<void> clearPinnedAgents() async {
     await _feedBox.delete(_pinnedAgentsKey);
+  }
+
+  static Future<void> saveFCMToken(String fcmToken) async {
+    await _box.put(_fCMToken, fcmToken);
+  }
+
+  static String? getFCMToken() {
+    return _box.get(_fCMToken);
+  }
+
+  static Future<void> clearFCMToken() async {
+    await _box.delete(_fCMToken);
   }
 }
