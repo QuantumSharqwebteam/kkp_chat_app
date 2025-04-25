@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 
 class VoiceMessageBubble extends StatefulWidget {
   final String voiceUrl;
@@ -104,12 +105,14 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble>
           maxWidth: MediaQuery.of(context).size.width * 0.7,
         ),
         child: Card(
-          color: widget.isMe ? Colors.blue : Colors.grey[200],
+          color: widget.isMe
+              ? AppColors.senderMessageBubbleColor
+              : AppColors.recieverMessageBubble,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -119,6 +122,7 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble>
                       icon: Icon(
                         _isPlaying ? Icons.pause : Icons.play_arrow,
                         color: widget.isMe ? Colors.white : Colors.black,
+                        size: 30,
                       ),
                       onPressed: _togglePlay,
                     ),
@@ -141,7 +145,7 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble>
                       _formatDuration(_position),
                       style: TextStyle(
                         fontSize: 12,
-                        color: widget.isMe ? Colors.white70 : Colors.black54,
+                        color: widget.isMe ? Colors.white : Colors.black54,
                       ),
                     ),
                   ],
@@ -149,7 +153,7 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble>
                 Text(
                   "Voice Message",
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 12,
                     color: widget.isMe ? Colors.white : Colors.black,
                   ),
                 ),
@@ -159,7 +163,7 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble>
                     widget.timestamp,
                     style: TextStyle(
                       fontSize: 12,
-                      color: widget.isMe ? Colors.white54 : Colors.black45,
+                      color: widget.isMe ? Colors.white : Colors.black45,
                     ),
                   ),
                 ),

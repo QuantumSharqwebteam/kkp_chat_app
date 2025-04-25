@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -56,6 +57,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   List<Map<String, dynamic>> messages = [];
   bool _isRecording = false;
+  int _recordedSeconds = 0;
+  Timer? _timer;
 
   @override
   void initState() {
@@ -143,6 +146,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _chatController.dispose();
     _scrollController.dispose();
     _recorder.closeRecorder();
+    _timer?.cancel();
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -275,11 +279,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     await _recorder.startRecorder(toFile: 'voice_message.aac');
     setState(() {
       _isRecording = true;
+      _recordedSeconds = 0; // Reset recorded seconds
+      _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+        setState(() {
+          _recordedSeconds++;
+        });
+      });
     });
   }
 
   Future<void> _stopRecording() async {
     final path = await _recorder.stopRecorder();
+    _timer?.cancel(); // Stop the timer
     if (path != null) {
       final File voiceFile = File(path);
       final voiceUrl =
@@ -290,6 +301,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
     setState(() {
       _isRecording = false;
+      _recordedSeconds = 0;
     });
   }
 
@@ -530,6 +542,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 ? _stopRecording
                 : _startRecording, // Update this line
             isRecording: _isRecording,
+            recordedSeconds: _recordedSeconds,
           ),
         ],
       ),
