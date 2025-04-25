@@ -388,11 +388,11 @@ class SocketService {
   //   }
   // }
 
-  void _chatNotification(Map<String, dynamic> data) {
+  Future<void> _chatNotification(Map<String, dynamic> data) async {
     debugPrint('🔔 Foreground Push Notification: $data');
 
     // Check if the user is a customer
-    if (LocalDbHelper.getUserType() == "0") {
+    if (await LocalDbHelper.getUserType() == "0") {
       // Get the customer's email
       final customerEmail = LocalDbHelper.getEmail();
 
@@ -434,10 +434,11 @@ class SocketService {
 
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse:
-            (NotificationResponse notificationResponse) {
-      debugPrint('Notification clicked: ${notificationResponse.payload}');
+            (NotificationResponse notificationResponse) async {
+      // debugPrint('Notification clicked: ${notificationResponse.data}');
+      debugPrint('Notification clicked: ${notificationResponse.data}');
       // Handle notification tap
-      if (LocalDbHelper.getUserType() == "0") {
+      if (await LocalDbHelper.getUserType() == "0") {
         final Profile? profile = LocalDbHelper.getProfile();
         if (profile != null) {
           Navigator.push(

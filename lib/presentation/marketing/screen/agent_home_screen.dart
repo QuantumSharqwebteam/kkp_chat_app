@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
-import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -80,7 +79,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [

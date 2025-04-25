@@ -58,7 +58,7 @@ class _MarketingHostState extends State<MarketingHost> {
   Future<void> _loadUserData() async {
     try {
       // Load role and email
-      role = LocalDbHelper.getUserType();
+      role = await LocalDbHelper.getUserType();
       agentEmail = LocalDbHelper.getEmail();
       debugPrint(
           'Loaded role: $role, Loaded email: $agentEmail'); // Debug print

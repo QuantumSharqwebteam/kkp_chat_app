@@ -6,28 +6,35 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint("📩 [Background] Notification: ${message.notification?.title}");
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  } catch (e) {
+    debugPrint("Firebase initialization failed: $e");
+  }
 
-  await Hive.initFlutter();
-  await Hive.openBox('CREDENTIALS');
-  await Hive.openBox("lastSeenTimeBox");
-  await Hive.openBox('feedBox');
-  await dotenv.load(fileName: "keys.env");
+  await Hive.initFlutter(); // Ensure Hive is initialized
+
+  await Future.wait([
+    Hive.openBox('CREDENTIALS'),
+    Hive.openBox("lastSeenTimeBox"),
+    Hive.openBox('feedBox'),
+    dotenv.load(fileName: "keys.env"),
+  ]);
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
@@ -50,7 +57,8 @@ class _MyAppState extends State<MyApp> {
       theme: AppTheme.lightTheme,
       initialRoute: "/splash",
       routes: {
-        "/splash": (context) => Splash(),
+        "/splash": (context) => const Splash(),
+        "/login": (context) => LoginPage(),
       },
       onGenerateRoute: (settings) {
         if (CustomerRoutes.allRoutes.contains(settings.name)) {

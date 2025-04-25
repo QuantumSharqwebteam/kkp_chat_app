@@ -47,58 +47,59 @@ class CustomerRoutes {
 Route<dynamic> generateCustomerRoute(RouteSettings settings) {
   switch (settings.name) {
     case CustomerRoutes.customerHost:
-      return MaterialPageRoute(builder: (_) => CustomerHost());
+      return MaterialPageRoute(builder: (context) => CustomerHost());
 
     case CustomerRoutes.customerNotification:
-      return MaterialPageRoute(builder: (_) => CustomerNotificationPage());
+      return MaterialPageRoute(
+          builder: (context) => CustomerNotificationPage());
 
     case CustomerRoutes.customerProductDescriptionPage:
       final product = settings.arguments as Product?;
       if (product == null) {
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(
+          builder: (context) => const Scaffold(
             body: Center(child: Text("Error: No product data provided")),
           ),
         );
       }
       return MaterialPageRoute(
-        builder: (_) => CustomerProductDescriptionPage(product: product),
+        builder: (context) => CustomerProductDescriptionPage(product: product),
       );
 
     case CustomerRoutes.customerProfileSetup:
       final args = settings.arguments as Map<String, dynamic>?;
       final profile = args?['profile'] as Profile?;
       return MaterialPageRoute(
-        builder: (_) => CustomerProfileSetupPage(
+        builder: (context) => CustomerProfileSetupPage(
           forUpdate: profile != null,
           profile: profile,
         ),
       );
 
     case CustomerRoutes.passwordAndSecurity:
-      return MaterialPageRoute(builder: (_) => PasswordAndSecurity());
+      return MaterialPageRoute(builder: (context) => PasswordAndSecurity());
 
     case CustomerRoutes.changePassword:
-      return MaterialPageRoute(builder: (_) => ChangePassword());
+      return MaterialPageRoute(builder: (context) => ChangePassword());
 
     case CustomerRoutes.archiveSettings:
-      return MaterialPageRoute(builder: (_) => ArchiveSettingsPage());
+      return MaterialPageRoute(builder: (context) => ArchiveSettingsPage());
 
     case CustomerRoutes.notificationSettings:
-      return MaterialPageRoute(builder: (_) => NotificationSettings());
+      return MaterialPageRoute(builder: (context) => NotificationSettings());
 
     case CustomerRoutes.orderEnquiries:
-      return MaterialPageRoute(builder: (_) => OrderEnquiries());
+      return MaterialPageRoute(builder: (context) => OrderEnquiries());
 
     case CustomerRoutes.aboutSettingPage:
-      return MaterialPageRoute(builder: (_) => AboutSettingsPage());
+      return MaterialPageRoute(builder: (context) => AboutSettingsPage());
 
     case CustomerRoutes.customerSupportChat:
       return MaterialPageRoute(
-        builder: (_) => CustomerChatScreen(),
+        builder: (context) => CustomerChatScreen(),
       );
 
     default:
-      return MaterialPageRoute(builder: (_) => CustomerHomePage());
+      return MaterialPageRoute(builder: (context) => CustomerHomePage());
   }
 }

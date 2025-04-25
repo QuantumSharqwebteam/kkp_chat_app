@@ -5,10 +5,10 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_profile_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/password_and_security.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
@@ -22,8 +22,10 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
   Widget build(BuildContext context) {
     final searchController = TextEditingController();
     final SocketService socketService = SocketService();
+
     void logOut() async {
       try {
+        // 1. Clear all persistent data
         await Future.wait([
           LocalDbHelper.removeToken(),
           LocalDbHelper.removeUserType(),
@@ -34,16 +36,17 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
           NotificationService.deleteFCMToken(),
         ]);
 
+        // 2. Dispose socket
         socketService.dispose();
+
+        // 3. If still in UI, navigate:
         if (context.mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => LoginPage()),
-            (route) => false,
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            "/login", // ← the named route you defined
+            (Route<dynamic> route) => false, // ← clears everything
           );
         }
       } catch (e) {
-        // Handle errors here
         debugPrint("Error during logout: $e");
       }
     }
@@ -77,15 +80,16 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               leadingIcons: [Icons.shield_moon_outlined],
               onTaps: [
                 () {
-                  Navigator.pushNamed(
-                      context, CustomerRoutes.passwordAndSecurity);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return PasswordAndSecurity();
+                  }));
                 }
               ],
               title: 'Your account',
-              titles: ['Password and Security'],
-              subtitles: ['Password, security, personal details,ad preference'],
+              titles: ['Account and Security'],
+              subtitles: ['Account managment, password change'],
               description:
-                  'Manage your connected experiance and account settings across devices',
+                  'Manage your data and security for  better experience',
             ),
             SizedBox(height: 10),
             Divider(
