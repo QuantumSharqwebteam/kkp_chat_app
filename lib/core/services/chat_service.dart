@@ -157,7 +157,7 @@ class ChatService {
     required String agentEmail,
   }) async {
     final Uri url = Uri.parse("$baseUrl/user/updateUser");
-    final token = LocalDbHelper.getToken();
+    final token = await LocalDbHelper.getToken();
 
     if (token == null) {
       throw Exception('Token not found. Please log in again.');

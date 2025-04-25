@@ -222,7 +222,7 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   static Future<void> _checkAndUpdateFCMToken({String? newToken}) async {
-    AuthApi auth = AuthApi();
+    final AuthApi auth = AuthApi();
     debugPrint("🔑 CHECKING FCM TOKEN ##########");
     try {
       String? currentToken;

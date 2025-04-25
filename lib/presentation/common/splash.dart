@@ -1,9 +1,7 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
-import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/common/onboarding_page.dart';
 
@@ -15,56 +13,66 @@ class Splash extends StatefulWidget {
 }
 
 class _SplashState extends State<Splash> {
-  Future<void> _checkLogin(context) async {
-    await Future.delayed(const Duration(seconds: 1));
-    String? token = LocalDbHelper.getToken();
-    String? userType = LocalDbHelper.getUserType();
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _init();
+    });
+  }
 
-    if (token != null && userType != null) {
-      if (userType == '0') {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
+  Future<void> _init() async {
+    // 1. Read token & userType in parallel
+    final results = await Future.wait([
+      LocalDbHelper.getToken(),
+      LocalDbHelper.getUserType(),
+    ]);
+
+    final String? token = results[0];
+    final String? userType = results[1];
+
+    // 2. Conditionally refresh
+    Map<String, dynamic>? refreshResp;
+    if (token != null) {
+      try {
+        refreshResp = await AuthApi().refreshToken(token);
+        if (refreshResp['status'] == 200 || refreshResp['status'] == 201) {
+          await LocalDbHelper.saveToken(refreshResp['token']);
         }
-      } else if (userType == '1') {
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-              context, MarketingRoutes.marketingHostScreen);
-        }
-      } else if (userType == '2') {
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-              context, MarketingRoutes.marketingHostScreen);
-        }
-      } else if (userType == '3') {
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-              context, MarketingRoutes.marketingHostScreen);
-        }
-      } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Invalid Credentials')));
+      } catch (_) {
+        refreshResp = null;
+      }
+    }
+
+    // Navigate based on the result
+    if (userType != null &&
+        (refreshResp?['status'] == 200 || refreshResp?['status'] == 201)) {
+      final route = (userType == '0')
+          ? CustomerRoutes.customerHost
+          : MarketingRoutes.marketingHostScreen;
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, route);
       }
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
-        return OnboardingPage();
-      }));
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => OnboardingPage()),
+        );
+      }
     }
   }
 
   @override
-  void initState() {
-    _checkLogin(context);
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
-          child: Image.asset(
-        'assets/icons/app_logo.png',
-        width: Utils().width(context) * 0.7,
-      )),
+        child: Image(
+          image: AssetImage('assets/icons/app_logo.png'),
+          width: 200,
+          height: 200,
+        ),
+      ),
     );
   }
 }

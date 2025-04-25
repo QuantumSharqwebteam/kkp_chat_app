@@ -23,7 +23,7 @@ class LocalDbHelper {
     await _box.put(_keyToken, token);
   }
 
-  static String? getToken() {
+  static Future<String?> getToken() async {
     return _box.get(_keyToken);
   }
 
@@ -47,7 +47,7 @@ class LocalDbHelper {
     await _box.put(_userType, userType);
   }
 
-  static String? getUserType() {
+  static Future<String?> getUserType() async {
     return _box.get(_userType);
   }
 

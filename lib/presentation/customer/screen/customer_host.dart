@@ -52,7 +52,7 @@ class _CustomerHostState extends State<CustomerHost> {
       final customerEmail = profile!.email;
       final customerImage = profile!.profileUrl ?? "";
 
-      final userType = LocalDbHelper.getUserType();
+      final userType = await LocalDbHelper.getUserType();
       if (userType == "0") {
         _navigateToChat(
           name: agentName,
@@ -81,8 +81,8 @@ class _CustomerHostState extends State<CustomerHost> {
     await NotificationService.init(
       context,
       _navigatorKey,
-      onNotificationClick: (agentName, customerEmail, customerImage) {
-        String? userType = LocalDbHelper.getUserType();
+      onNotificationClick: (agentName, customerEmail, customerImage) async {
+        String? userType = await LocalDbHelper.getUserType();
         if (userType == "0" && profile != null) {
           _navigateToChat(
             name: agentName,

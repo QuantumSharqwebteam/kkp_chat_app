@@ -18,7 +18,7 @@ class AuthApi {
     final body = json.encode({
       "token": fcmToken,
     });
-    final token = LocalDbHelper.getToken();
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.put(
         url,
@@ -36,6 +36,24 @@ class AuthApi {
       }
     } catch (e) {
       debugPrint("Error updating FCM token: $e");
+      throw Exception(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> refreshToken(String oldToken) async {
+    final endPoint = "user/getRefreshToken";
+    final url = Uri.parse("$baseUrl$endPoint");
+
+    try {
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $oldToken",
+        },
+      );
+      return json.decode(response.body);
+    } catch (e) {
       throw Exception(e);
     }
   }
@@ -113,7 +131,7 @@ class AuthApi {
     const endPoint = 'user/updateUserDetails';
     final url = Uri.parse("$baseUrl$endPoint");
 
-    final token = LocalDbHelper.getToken();
+    final token = await LocalDbHelper.getToken();
 
     if (token == null) {
       throw Exception('Token not found. Please log in again.');
@@ -215,7 +233,7 @@ class AuthApi {
     try {
       // Retrieve token from SharedPreferences
 
-      final token = LocalDbHelper.getToken();
+      final token = await LocalDbHelper.getToken();
 
       if (token == null) {
         throw Exception('Token not found. Please log in again.');
@@ -270,7 +288,7 @@ class AuthApi {
   Future<Profile> getUserInfo() async {
     const endPoint = "user/getInfo";
     final url = Uri.parse('$baseUrl$endPoint');
-    final token = LocalDbHelper.getToken();
+    final token = await LocalDbHelper.getToken();
 
     try {
       final response = await http.get(url, headers: {
@@ -438,6 +456,26 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception('Error fetching users by role: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteUserAccount(
+      String email, String password) async {
+    final endPoint = "user/deleteUserAccount";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper.getToken();
+    final body = jsonEncode({"email": email, "password": password});
+    try {
+      final response = await client.delete(url,
+          headers: {
+            'Content-Type': 'application/json',
+            "Authorization": "Bearer $token",
+          },
+          body: body);
+
+      return json.decode(response.body);
+    } catch (e) {
+      throw Exception(e);
     }
   }
 }
