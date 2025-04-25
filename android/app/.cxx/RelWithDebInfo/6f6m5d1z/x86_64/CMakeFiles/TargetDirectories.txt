@@ -1,0 +1,2 @@
+C:/flutter_windows_3.19.6-stable/kkp_chat_app/android/app/.cxx/RelWithDebInfo/6f6m5d1z/x86_64/CMakeFiles/edit_cache.dir
+C:/flutter_windows_3.19.6-stable/kkp_chat_app/android/app/.cxx/RelWithDebInfo/6f6m5d1z/x86_64/CMakeFiles/rebuild_cache.dir
