@@ -1,13 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
-import 'package:audio_waveforms/audio_waveforms.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class ChatInputField extends StatefulWidget {
   final TextEditingController controller;
@@ -15,8 +11,9 @@ class ChatInputField extends StatefulWidget {
   final VoidCallback onSendImage;
   final VoidCallback onSendForm;
   final VoidCallback onSendDocument;
-  final VoidCallback onSendVoice; // Add this line
+  final VoidCallback onSendVoice;
   final bool isRecording;
+  final int recordedSeconds; // Add this line
 
   const ChatInputField({
     super.key,
@@ -27,87 +24,55 @@ class ChatInputField extends StatefulWidget {
     required this.onSendDocument,
     required this.onSendVoice,
     required this.isRecording,
+    required this.recordedSeconds, // Add this line
   });
 
   @override
   State<ChatInputField> createState() => _ChatInputFieldState();
 }
 
-class _ChatInputFieldState extends State<ChatInputField> {
-  final RecorderController _recorderController = RecorderController();
-  bool _isRecording = false;
-  Timer? _timer;
-  int _recordedSeconds = 0;
-  double _slidePosition = 0.0;
+class _ChatInputFieldState extends State<ChatInputField>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _animation =
+        Tween<double>(begin: 1.0, end: 1.5).animate(_animationController)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _animationController.reverse();
+            } else if (status == AnimationStatus.dismissed) {
+              _animationController.forward();
+            }
+          });
+
+    if (widget.isRecording) {
+      _animationController.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatInputField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isRecording) {
+      _animationController.forward();
+    } else {
+      _animationController.stop();
+      _animationController.value = 0.0;
+    }
+  }
 
   @override
   void dispose() {
-    _recorderController.dispose();
-    _timer?.cancel();
+    _animationController.dispose();
     super.dispose();
-  }
-
-  Future<void> _startRecording() async {
-    final status = await Permission.microphone.request();
-    if (status != PermissionStatus.granted) {
-      // Handle permission denial
-      return;
-    }
-
-    setState(() {
-      _isRecording = true;
-      _slidePosition = 0.0;
-      _recordedSeconds = 0;
-    });
-
-    _recorderController.reset();
-    await _recorderController.record();
-
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        _recordedSeconds++;
-      });
-    });
-  }
-
-  Future<void> _stopRecording() async {
-    await _recorderController.stop();
-    _timer?.cancel();
-    setState(() {
-      _isRecording = false;
-      _recordedSeconds = 0;
-    });
-    widget.onSendVoice(); // Handle the recorded audio file here
-  }
-
-  void _cancelRecording() {
-    _recorderController.stop();
-    _timer?.cancel();
-    setState(() {
-      _isRecording = false;
-      _recordedSeconds = 0;
-      _slidePosition = 0.0;
-    });
-    // Handle cancellation logic here
-  }
-
-  void _handleSlideUpdate(DragUpdateDetails details) {
-    setState(() {
-      _slidePosition += details.primaryDelta!;
-      if (_slidePosition < -100) {
-        _cancelRecording();
-      }
-    });
-  }
-
-  void _handleSlideEnd(DragEndDetails details) {
-    if (_slidePosition < -50) {
-      _cancelRecording();
-    } else {
-      setState(() {
-        _slidePosition = 0.0;
-      });
-    }
   }
 
   @override
@@ -115,132 +80,113 @@ class _ChatInputFieldState extends State<ChatInputField> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
-      child: _isRecording
-          ? GestureDetector(
-              onHorizontalDragUpdate: _handleSlideUpdate,
-              onHorizontalDragEnd: _handleSlideEnd,
-              child: Container(
-                height: 55,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    const Icon(Icons.arrow_back_ios,
-                        size: 16, color: Colors.red),
-                    const SizedBox(width: 5),
-                    AnimatedOpacity(
-                      opacity: _slidePosition < -20 ? 1.0 : 0.6,
-                      duration: Duration(milliseconds: 300),
-                      child: const Text(
-                        'Slide to cancel',
-                        style: TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: AudioWaveforms(
-                        enableGesture: false,
-                        size:
-                            Size(MediaQuery.of(context).size.width * 0.5, 30.0),
-                        recorderController: _recorderController,
-                        waveStyle: const WaveStyle(
-                          waveColor: Colors.blue,
-                          extendWaveform: true,
-                          showMiddleLine: false,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      '$_recordedSeconds s',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.mic, color: Colors.redAccent, size: 28),
-                  ],
-                ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.attachment),
+            onPressed: () {
+              showAttachmentMenu(context, (selectedItem) {
+                if (selectedItem == "Photos") {
+                  widget.onSendImage();
+                } else if (selectedItem == "Inquiry Form") {
+                  widget.onSendForm();
+                } else if (selectedItem == "Camera") {
+                  widget.onSendImage();
+                } else if (selectedItem == "Documents") {
+                  widget.onSendDocument();
+                }
+              });
+            },
+          ),
+          Expanded(
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppColors.greyDBDDE1,
+                borderRadius: BorderRadius.circular(10),
               ),
-            )
-          : Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.attachment),
-                  onPressed: () {
-                    showAttachmentMenu(context, (selectedItem) {
-                      if (selectedItem == "Photos") {
-                        widget.onSendImage();
-                      } else if (selectedItem == "Inquiry Form") {
-                        widget.onSendForm();
-                      } else if (selectedItem == "Camera") {
-                        widget.onSendImage();
-                      } else if (selectedItem == "Documents") {
-                        widget.onSendDocument();
-                      }
-                    });
-                  },
-                ),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.greyDBDDE1,
-                      borderRadius: BorderRadius.circular(10),
+              child: Row(
+                children: [
+                  // IconButton(
+                  //   icon: const Icon(Icons.emoji_emotions_outlined),
+                  //   onPressed: () {},
+                  // ),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: TextField(
+                      controller: widget.controller,
+                      decoration: const InputDecoration(
+                        hintText: "Type here...",
+                        border: InputBorder.none,
+                      ),
                     ),
-                    child: Row(
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.camera_alt),
+                    onPressed: widget.onSendImage,
+                  ),
+                  const SizedBox(
+                    width: 10,
+                  ),
+                  if (widget.isRecording)
+                    Text(
+                      '${widget.recordedSeconds}s',
+                      style: TextStyle(color: AppColors.grey474747),
+                    ),
+                  GestureDetector(
+                    onLongPressStart: (_) async {
+                      widget.onSendVoice();
+                    },
+                    onLongPressEnd: (_) async {
+                      widget.onSendVoice();
+                    },
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.emoji_emotions_outlined),
-                          onPressed: () {},
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: widget.controller,
-                            decoration: const InputDecoration(
-                              hintText: "Type here...",
-                              border: InputBorder.none,
+                        if (widget.isRecording)
+                          ScaleTransition(
+                            scale: _animation,
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color:
+                                    AppColors.blue00ABE9.withValues(alpha: 0.5),
+                              ),
                             ),
                           ),
+                        Icon(
+                          widget.isRecording ? Icons.stop : Icons.mic,
+                          size: widget.isRecording ? 30 : 24,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.camera_alt),
-                          onPressed: widget.onSendImage,
-                        ),
-                        GestureDetector(
-                          onLongPressStart: (_) {
-                            _startRecording();
-                          },
-                          onLongPressEnd: (_) {
-                            _stopRecording();
-                          },
-                          onHorizontalDragUpdate: _handleSlideUpdate,
-                          onHorizontalDragEnd: _handleSlideEnd,
-                          child: Icon(Icons.mic, size: 24),
-                        ),
+                        if (widget.isRecording)
+                          Positioned(
+                            top: 2,
+                            child: Text(
+                              '${widget.recordedSeconds}s',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                // Send button
-                InkWell(
-                  onTap: widget.onSend,
-                  child: CustomImage(
-                    imagePath: ImageConstants.send,
-                    height: 30,
-                    width: 30,
-                  ),
-                )
-              ],
+                ],
+              ),
             ),
+          ),
+          const SizedBox(width: 10),
+          // Send button
+          InkWell(
+            onTap: widget.onSend,
+            child: CustomImage(
+              imagePath: ImageConstants.send,
+              height: 30,
+              width: 30,
+            ),
+          )
+        ],
+      ),
     );
   }
 }
@@ -254,14 +200,14 @@ final List<Map<String, String>> attachmentItems = [
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
-  {"image": ImageConstants.video, "label": "Videos"},
+  // {"image": ImageConstants.video, "label": "Videos"},
 ];
 
 final List<Map<String, String>> attachmentItemsforCustomer = [
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
-  {"image": ImageConstants.video, "label": "Videos"},
+  // {"image": ImageConstants.video, "label": "Videos"},
 ];
 
 final String? currentUser = LocalDbHelper.getProfile()?.role;

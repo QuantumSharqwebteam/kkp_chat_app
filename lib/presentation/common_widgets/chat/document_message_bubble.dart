@@ -199,8 +199,8 @@ class _DocumentMessageBubbleState extends State<DocumentMessageBubble>
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: widget.isMe
-                ? AppColors.blue00ABE9
-                : AppColors.messageBubbleColor,
+                ? AppColors.senderMessageBubbleColor
+                : AppColors.recieverMessageBubble,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
