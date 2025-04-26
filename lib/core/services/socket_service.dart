@@ -439,21 +439,21 @@ class SocketService {
       debugPrint('Notification clicked: ${notificationResponse.data}');
       // Handle notification tap
       if (await LocalDbHelper.getUserType() == "0") {
-        final Profile? profile = LocalDbHelper.getProfile();
-        if (profile != null) {
-          Navigator.push(
-            notificationResponse.payload as BuildContext,
-            MaterialPageRoute(
-              builder: (context) {
-                return CustomerChatScreen(
-                  customerName: profile.name,
-                  customerEmail: profile.email,
-                  customerImage: profile.profileUrl,
-                );
-              },
-            ),
-          );
-        }
+        //final Profile? profile = LocalDbHelper.getProfile();
+        // if (profile != null) {
+        //   Navigator.push(
+        //     notificationResponse.payload as BuildContext,
+        //     MaterialPageRoute(
+        //       builder: (context) {
+        //         return CustomerChatScreen(
+        //           customerName: profile.name,
+        //           customerEmail: profile.email,
+        //           customerImage: profile.profileUrl,
+        //         );
+        //       },
+        //     ),
+        //   );
+        // }
       }
     });
 

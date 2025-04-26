@@ -41,6 +41,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
 
         // 3. If still in UI, navigate:
         if (context.mounted) {
+          Navigator.pop(context);
           Navigator.of(context).pushNamedAndRemoveUntil(
             "/login", // ← the named route you defined
             (Route<dynamic> route) => false, // ← clears everything
