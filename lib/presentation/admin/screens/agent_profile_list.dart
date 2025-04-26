@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:shimmer/shimmer.dart';
@@ -20,6 +23,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
   final AuthApi _auth = AuthApi();
   List<Agent> _agentsList = [];
   bool _isLoading = true;
+  final authRepository = AuthRepository();
 
   @override
   void initState() {
@@ -99,6 +103,24 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("❌ Error: $e")),
         );
+      }
+    }
+  }
+
+  void _deleteAgent(String email) async {
+    try {
+      final result = await authRepository.deleteAgentAccount(agentEmail: email);
+
+      if (mounted) {
+        Utils().showSuccessDialog(context, "${result['message']}", true);
+        _fetchAgents(); // Refresh agent list after deletion
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error deleting agent: ${e.toString()}");
+      }
+      if (mounted) {
+        Utils().showSuccessDialog(context, "Try again later!", false);
       }
     }
   }
@@ -290,6 +312,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                         agent.email); // Replace with actual email
                   } else if (value == 'Delete') {
                     // Add delete logic here
+                    _deleteAgent(agent.email);
                   }
                 },
                 itemBuilder: (BuildContext context) {

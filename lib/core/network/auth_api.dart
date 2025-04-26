@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/data/models/address_model.dart';
@@ -476,6 +477,36 @@ class AuthApi {
       return json.decode(response.body);
     } catch (e) {
       throw Exception(e);
+    }
+  }
+
+  // to delete agent account
+  Future<Map<String, dynamic>> deleteAgent(String email) async {
+    final endPoint = "agent/delete";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper.getToken();
+
+    try {
+      final response = await client.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'email': email}),
+      );
+
+      final reponseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 &&
+          reponseData['message'] == "Agent deleted successfully") {
+        return reponseData;
+      } else {
+        throw Exception(
+            'Failed to delete agent: ${reponseData['message'] ?? response.body}');
+      }
+    } catch (e) {
+      throw Exception('Delete request failed: $e');
     }
   }
 }

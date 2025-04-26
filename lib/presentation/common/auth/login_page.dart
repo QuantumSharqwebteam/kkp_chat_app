@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -159,32 +160,6 @@ class _LoginPageState extends State<LoginPage> {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        persistentFooterAlignment: AlignmentDirectional.center,
-        persistentFooterButtons: [
-          Text.rich(
-            TextSpan(
-              text: 'Don\'t have an Account? ',
-              style: TextStyle(fontSize: 12),
-              children: [
-                WidgetSpan(
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.pushReplacement(context,
-                          MaterialPageRoute(builder: (_) => SignupPage()));
-                    },
-                    child: Text(
-                      'Signup',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -305,14 +280,31 @@ class _LoginPageState extends State<LoginPage> {
                             _login(context, _email.text, _pass.text);
                           },
                         ),
-                  SizedBox(height: 20),
-                  // CustomButton(
-                  //   text: 'marketing',
-                  //   onPressed: () {
-                  //     Navigator.pushNamed(
-                  //         context, MarketingRoutes.marketingHostScreen);
-                  //   },
-                  // ),
+                  SizedBox(height: 30),
+                  Text.rich(
+                    TextSpan(
+                      text: 'Don\'t have an Account? ',
+                      style: AppTextStyles.black10_500,
+                      children: [
+                        WidgetSpan(
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SignupPage(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Signup',
+                              style: AppTextStyles.black12_700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

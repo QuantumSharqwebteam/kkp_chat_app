@@ -62,4 +62,9 @@ class AuthRepository {
     return _authApi.updatePasswordFromSettings(
         currentPassword, newPassword, email);
   }
+
+  Future<Map<String, dynamic>> deleteAgentAccount(
+      {required String agentEmail}) async {
+    return _authApi.deleteAgent(agentEmail);
+  }
 }

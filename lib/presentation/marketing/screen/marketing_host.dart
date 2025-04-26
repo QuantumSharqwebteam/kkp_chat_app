@@ -39,10 +39,6 @@ class _MarketingHostState extends State<MarketingHost> {
     super.initState();
     _loadUserDataAndInitializeSocket();
     _initializeNotificationService();
-    // ✅ Initialize CallOverlayService
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      CallOverlayService().init(_navigatorKey);
-    });
   }
 
   Future<void> _initializeNotificationService() async {
@@ -54,7 +50,7 @@ class _MarketingHostState extends State<MarketingHost> {
       if (agentName != null && agentEmail != null && rolename != null) {
         _socketService.initSocket(agentName!, agentEmail!, rolename!);
         _socketService.onReceiveMessage(_handleIncomingMessage);
-        _socketService.onIncomingCall(_handleIncomingCall);
+        // _socketService.onIncomingCall(_handleIncomingCall);
       } else {
         debugPrint("Skipping socket init: agentName or agentEmail is null");
       }
@@ -129,54 +125,45 @@ class _MarketingHostState extends State<MarketingHost> {
     debugPrint('Incoming message: $data');
   }
 
-  void _handleIncomingCall(Map<String, dynamic> callData) {
-    final channelName = callData['channelName'];
-    final callerName = callData['callerName'];
-    final callerId = callData['callerId'];
-    final uid = Utils().generateIntUidFromEmail(agentEmail!);
+  // void _handleIncomingCall(Map<String, dynamic> callData) {
+  //   final channelName = callData['channelName'];
+  //   final callerName = callData['callerName'];
+  //   final callerId = callData['callerId'];
+  //   final uid = Utils().generateIntUidFromEmail(agentEmail!);
 
-    CallOverlayService().showIncomingCall(
-      callerName: callerName,
-      onAccept: () {
-        Navigator.of(_navigatorKey.currentContext!).push(
-          MaterialPageRoute(
-            builder: (_) => AgoraAudioCallScreen(
-              isCaller: false,
-              channelName: channelName,
-              uid: uid,
-              remoteUserId: callerId,
-              remoteUserName: callerName,
-            ),
-          ),
-        );
-      },
-      onReject: () {
-        debugPrint('Call rejected by user');
-        // send a reject signal via socket if needed
-      },
-    );
-  }
+  //   CallOverlayService().showIncomingCall(
+  //     callerName: callerName,
+  //     onAccept: () {
+  //       Navigator.of(_navigatorKey.currentContext!).push(
+  //         MaterialPageRoute(
+  //           builder: (_) => AgoraAudioCallScreen(
+  //             isCaller: false,
+  //             channelName: channelName,
+  //             uid: uid,
+  //             remoteUserId: callerId,
+  //             remoteUserName: callerName,
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //     onReject: () {
+  //       debugPrint('Call rejected by user');
+  //       // send a reject signal via socket if needed
+  //     },
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Navigator(
-          key: _navigatorKey, // 👈 this is important
-          onGenerateRoute: (settings) => MaterialPageRoute(
-            builder: (_) => Scaffold(
-              body: IndexedStack(
-                index: _selectedIndex,
-                children: _screens,
-              ),
-              bottomNavigationBar: MarketingNavBar(
-                selectedIndex: _selectedIndex,
-                onTabSelected: _onTabSelected,
-              ),
-            ),
-          ),
-        ),
-      ],
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: MarketingNavBar(
+        selectedIndex: _selectedIndex,
+        onTabSelected: _onTabSelected,
+      ),
     );
   }
 }
