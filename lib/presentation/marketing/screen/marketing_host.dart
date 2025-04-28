@@ -14,8 +14,6 @@ import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_scree
 import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/marketing_nav_bar.dart';
 
-import '../../../core/services/call_overlay_service.dart';
-
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key});
 
@@ -52,7 +50,7 @@ class _MarketingHostState extends State<MarketingHost> {
         _socketService.initSocket(agentName!, agentEmail!, rolename!,
             token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
-        // _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onIncomingCall(_handleIncomingCall);
       } else {
         debugPrint("Skipping socket init: agentName or agentEmail is null");
       }
@@ -128,33 +126,72 @@ class _MarketingHostState extends State<MarketingHost> {
     debugPrint('Incoming message: $data');
   }
 
-  // void _handleIncomingCall(Map<String, dynamic> callData) {
-  //   final channelName = callData['channelName'];
-  //   final callerName = callData['callerName'];
-  //   final callerId = callData['callerId'];
-  //   final uid = Utils().generateIntUidFromEmail(agentEmail!);
+  void _handleIncomingCall(Map<String, dynamic> callData) {
+    final channelName = callData['channelName'];
+    final callerName = callData['callerName'];
+    final callerId = callData['callerId'];
+    final uid = Utils().generateIntUidFromEmail(agentEmail!);
 
-  //   CallOverlayService().showIncomingCall(
-  //     callerName: callerName,
-  //     onAccept: () {
-  //       Navigator.of(_navigatorKey.currentContext!).push(
-  //         MaterialPageRoute(
-  //           builder: (_) => AgoraAudioCallScreen(
-  //             isCaller: false,
-  //             channelName: channelName,
-  //             uid: uid,
-  //             remoteUserId: callerId,
-  //             remoteUserName: callerName,
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //     onReject: () {
-  //       debugPrint('Call rejected by user');
-  //       // send a reject signal via socket if needed
-  //     },
-  //   );
-  // }
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (context) {
+        return Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('$callerName is calling...',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.call_end, color: Colors.white),
+                    label: const Text("Reject"),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    onPressed: () {
+                      Navigator.pop(context); // close bottom sheet
+                      // Optionally emit reject event over socket
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.call, color: Colors.white),
+                    label: const Text("Answer"),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    onPressed: () {
+                      Navigator.pop(context); // close bottom sheet
+
+                      // Navigate to the audio call screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AgoraAudioCallScreen(
+                            isCaller: false,
+                            //   token: token,
+                            channelName: channelName,
+                            uid: uid,
+                            remoteUserId: callerId,
+                            remoteUserName: callerName,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
