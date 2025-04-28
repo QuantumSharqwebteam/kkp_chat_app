@@ -205,17 +205,14 @@ class _CustomerHostState extends State<CustomerHost> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      home: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
-        bottomNavigationBar: CustomerNavBar(
-          selectedIndex: _selectedIndex,
-          onTabSelected: _onTabSelected,
-        ),
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: CustomerNavBar(
+        selectedIndex: _selectedIndex,
+        onTabSelected: _onTabSelected,
       ),
     );
   }
