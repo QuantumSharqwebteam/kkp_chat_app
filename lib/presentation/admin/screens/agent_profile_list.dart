@@ -140,7 +140,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHighlightedAgent(),
+            //  _buildHighlightedAgent(),
             const SizedBox(height: 20),
             _isLoading ? _buildShimmerStatsSection() : _buildStatsSection(),
             const SizedBox(height: 20),
@@ -158,34 +158,34 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     );
   }
 
-  Widget _buildHighlightedAgent() {
-    return Card(
-      surfaceTintColor: Colors.white,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 30,
-              backgroundImage: AssetImage("assets/images/user1.png"),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text("Arun",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text("Senior Admin",
-                    style: TextStyle(fontSize: 14, color: Colors.grey)),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildHighlightedAgent() {
+  //   return Card(
+  //     surfaceTintColor: Colors.white,
+  //     color: Colors.white,
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(18.0),
+  //       child: Row(
+  //         children: [
+  //           const CircleAvatar(
+  //             radius: 30,
+  //             backgroundImage: AssetImage("assets/images/user1.png"),
+  //           ),
+  //           const SizedBox(width: 10),
+  //           Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: const [
+  //               Text("Arun",
+  //                   style:
+  //                       TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+  //               Text("Senior Admin",
+  //                   style: TextStyle(fontSize: 14, color: Colors.grey)),
+  //             ],
+  //           )
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildStatsSection() {
     int totalAgents = _agentsList.length;
