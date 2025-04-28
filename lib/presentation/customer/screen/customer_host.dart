@@ -33,8 +33,15 @@ class _CustomerHostState extends State<CustomerHost> {
     super.initState();
 
     _loadCurrentUserData().then((_) async {
+      final token = await LocalDbHelper.getToken();
+
       if (profile != null) {
-        _socketService.initSocket(profile!.name!, profile!.email!, "User");
+        _socketService.initSocket(
+          profile!.name!,
+          profile!.email!,
+          "User",
+          token: token,
+        );
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
         await _initializeNotificationService();

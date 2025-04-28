@@ -40,7 +40,8 @@ class SocketService {
 
   SocketService._internal();
 
-  void initSocket(String userName, String userEmail, String role) {
+  void initSocket(String userName, String userEmail, String role,
+      {String? token}) {
     _statusController.close();
     _statusController = StreamController<List<String>>.broadcast();
     _socket = io.io(serverUrl, <String, dynamic>{
@@ -53,8 +54,12 @@ class SocketService {
       _isConnected = true;
       _reconnectAttempts = 0;
       debugPrint('✅ Connected to socket server');
-      _socket
-          .emit('join', {'user': userName, 'userId': userEmail, "role": role});
+      _socket.emit('join', {
+        'user': userName,
+        'userId': userEmail,
+        "role": role,
+        "token": token,
+      });
     });
 
     _socket.on('socketId', (socketId) {

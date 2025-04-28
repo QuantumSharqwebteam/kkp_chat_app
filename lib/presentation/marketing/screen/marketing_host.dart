@@ -46,9 +46,11 @@ class _MarketingHostState extends State<MarketingHost> {
   }
 
   Future<void> _loadUserDataAndInitializeSocket() async {
+    final token = await LocalDbHelper.getToken();
     await _loadUserData().whenComplete(() {
       if (agentName != null && agentEmail != null && rolename != null) {
-        _socketService.initSocket(agentName!, agentEmail!, rolename!);
+        _socketService.initSocket(agentName!, agentEmail!, rolename!,
+            token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
         // _socketService.onIncomingCall(_handleIncomingCall);
       } else {
@@ -62,6 +64,7 @@ class _MarketingHostState extends State<MarketingHost> {
       // Load role and email
       role = await LocalDbHelper.getUserType();
       agentEmail = LocalDbHelper.getEmail();
+
       debugPrint(
           'Loaded role: $role, Loaded email: $agentEmail'); // Debug print
 
