@@ -4,6 +4,7 @@ import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/colored_divider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
@@ -20,7 +21,7 @@ class MarketingSettingsPage extends StatefulWidget {
 }
 
 class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   @override
   Widget build(BuildContext context) {
     final searchController = TextEditingController();

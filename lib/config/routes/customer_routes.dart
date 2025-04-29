@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_host.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_notification_page.dart';
@@ -47,7 +48,10 @@ class CustomerRoutes {
 Route<dynamic> generateCustomerRoute(RouteSettings settings) {
   switch (settings.name) {
     case CustomerRoutes.customerHost:
-      return MaterialPageRoute(builder: (context) => CustomerHost());
+      return MaterialPageRoute(
+          builder: (context) => CustomerHost(
+                navigatorKey: navigatorKey,
+              ));
 
     case CustomerRoutes.customerNotification:
       return MaterialPageRoute(
@@ -96,7 +100,9 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
 
     case CustomerRoutes.customerSupportChat:
       return MaterialPageRoute(
-        builder: (context) => CustomerChatScreen(),
+        builder: (context) => CustomerChatScreen(
+          navigatorKey: navigatorKey,
+        ),
       );
 
     default:

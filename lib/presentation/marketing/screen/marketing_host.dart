@@ -5,9 +5,11 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
@@ -15,7 +17,8 @@ import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/marketing_nav_bar.dart';
 
 class MarketingHost extends StatefulWidget {
-  const MarketingHost({super.key});
+  const MarketingHost({super.key, required this.navigatorKey});
+  final GlobalKey<NavigatorState> navigatorKey;
 
   @override
   State<MarketingHost> createState() => _MarketingHostState();
@@ -28,7 +31,7 @@ class _MarketingHostState extends State<MarketingHost> {
   String? agentEmail;
   String? agentName;
   List<Widget> _screens = [];
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   AuthApi auth = AuthApi();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
@@ -121,9 +124,29 @@ class _MarketingHostState extends State<MarketingHost> {
     });
   }
 
+  void _navigateToChat({
+    required String? customername,
+    required String? customeremail,
+  }) {
+    Navigator.push(
+        widget.navigatorKey.currentContext!,
+        MaterialPageRoute(
+          builder: (_) => AgentChatScreen(
+            customerName: customername,
+            customerEmail: customeremail,
+            agentEmail: LocalDbHelper.getEmail(),
+            agentImage: LocalDbHelper.getProfile()?.profileUrl ?? "",
+            navigatorKey: widget.navigatorKey,
+          ),
+        ));
+  }
+
   void _handleIncomingMessage(Map<String, dynamic> data) {
     // Handle incoming message
     debugPrint('Incoming message: $data');
+
+    _navigateToChat(
+        customeremail: data["senderEmail"], customername: data["senderName"]);
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {

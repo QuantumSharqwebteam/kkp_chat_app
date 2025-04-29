@@ -7,6 +7,7 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
@@ -93,6 +94,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           customerName: name,
                           customerEmail: profileData!.email,
                           customerImage: profileImageUrl,
+                          navigatorKey: navigatorKey,
                         );
                       }));
                     }),

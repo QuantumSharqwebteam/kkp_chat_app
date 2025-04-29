@@ -3,6 +3,7 @@ import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 
@@ -131,6 +132,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => AgentChatScreen(
+                                      navigatorKey: navigatorKey,
                                       customerName: customer["name"],
                                       customerEmail: customer['email'],
                                       agentEmail: widget.agentEmail,

@@ -7,6 +7,7 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
@@ -255,7 +256,7 @@ void logOut(BuildContext context) async {
     ]);
 
     // 2. Dispose socket
-    SocketService socketService = SocketService();
+    SocketService socketService = SocketService(navigatorKey);
     socketService.dispose();
 
     // 3. If still in UI, navigate:

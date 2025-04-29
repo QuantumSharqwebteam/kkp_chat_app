@@ -10,6 +10,7 @@ import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
@@ -30,6 +31,7 @@ class AgentChatScreen extends StatefulWidget {
   final String? agentImage;
   final String? customerEmail;
   final String? agentEmail;
+  final GlobalKey<NavigatorState> navigatorKey;
 
   const AgentChatScreen({
     super.key,
@@ -39,6 +41,7 @@ class AgentChatScreen extends StatefulWidget {
     this.agentImage = "assets/images/user4.png",
     this.customerEmail,
     this.agentEmail,
+    required this.navigatorKey,
   });
 
   @override
@@ -50,7 +53,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   bool _isLoading = true;
   final _chatController = TextEditingController();
   final ChatRepository _chatRepository = ChatRepository();
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();

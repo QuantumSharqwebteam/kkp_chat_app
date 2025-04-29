@@ -7,6 +7,7 @@ import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/filter_button.dart';
@@ -22,7 +23,7 @@ class FeedsScreen extends StatefulWidget {
 
 class _FeedsScreenState extends State<FeedsScreen> {
   final AuthApi _auth = AuthApi();
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   List<Agent> _agentsList = [];
   bool _isLoading = true;
   Set<String> pinnedAgentsSet = {};

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
+import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
@@ -13,7 +14,11 @@ import '../../data/models/profile_model.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
-  factory SocketService() => _instance;
+  factory SocketService(GlobalKey<NavigatorState> navigatorKey) {
+    _instance._navigatorKey = navigatorKey;
+    return _instance;
+  }
+
   final NotificationService notiService = NotificationService();
 
   late io.Socket _socket;
@@ -29,6 +34,7 @@ class SocketService {
   Function(Map<String, dynamic>)? _onCallTerminated;
   Function(Map<String, dynamic>)? _onSignalCandidate;
   bool isChatPageOpen = false;
+  GlobalKey<NavigatorState>? _navigatorKey;
 
   List<String> _roomMembers = [];
   StreamController<List<String>> _statusController =
@@ -385,16 +391,8 @@ class SocketService {
     }
   }
 
-  // void _chatNotification(Map<String, dynamic> data) {
-  //   debugPrint('🔔 Foreground Push Notification: $data');
-
-  //   if (data.isNotEmpty) {
-
-  //   }
-  // }
-
   Future<void> _chatNotification(Map<String, dynamic> data) async {
-    debugPrint('🔔 Foreground Push Notification: $data');
+    debugPrint('🔔 Foreground Push Notification@@@@@@@@@@: $data');
 
     // Check if the user is a customer
     if (await LocalDbHelper.getUserType() == "0") {
@@ -440,26 +438,8 @@ class SocketService {
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse:
             (NotificationResponse notificationResponse) async {
-      // debugPrint('Notification clicked: ${notificationResponse.data}');
-      debugPrint('Notification clicked: ${notificationResponse.data}');
-      // Handle notification tap
-      if (await LocalDbHelper.getUserType() == "0") {
-        final Profile? profile = LocalDbHelper.getProfile();
-        if (profile != null) {
-          // Navigator.push(
-          //   notificationResponse.payload as BuildContext,
-          //   MaterialPageRoute(
-          //     builder: (context) {
-          //       return CustomerChatScreen(
-          //         customerName: profile.name,
-          //         customerEmail: profile.email,
-          //         customerImage: profile.profileUrl,
-          //       );
-          //     },
-          //   ),
-          // );
-        }
-      }
+      handleNotificationClickForCustomer(
+          _navigatorKey!.currentContext!, navigatorKey, data);
     });
 
     const AndroidNotificationDetails androidPlatformChannelSpecifics =

@@ -33,6 +33,7 @@ class CustomerChatScreen extends StatefulWidget {
   final String? agentImage;
   final String? customerEmail;
   final String? agentEmail;
+  final GlobalKey<NavigatorState> navigatorKey;
 
   const CustomerChatScreen({
     super.key,
@@ -42,6 +43,7 @@ class CustomerChatScreen extends StatefulWidget {
     this.agentImage,
     this.customerEmail,
     this.agentEmail,
+    required this.navigatorKey,
   });
 
   @override
@@ -51,7 +53,7 @@ class CustomerChatScreen extends StatefulWidget {
 class _CustomerChatScreenState extends State<CustomerChatScreen>
     with WidgetsBindingObserver {
   final _chatController = TextEditingController();
-  final SocketService _socketService = SocketService();
+  late final SocketService _socketService;
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
@@ -72,6 +74,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   @override
   void initState() {
     super.initState();
+    _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
@@ -371,7 +374,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                       widget.agentImage ?? ImageConstants.agentImage)),
               const SizedBox(width: 5),
               Text(
-                widget.agentName!,
+                widget.agentName ?? "Agent",
                 style: AppTextStyles.black14_400,
               ),
             ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/add_agent.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/agent_profile_list.dart';
@@ -56,7 +57,10 @@ class MarketingRoutes {
 Route<dynamic> generateMarketingRoute(RouteSettings settings) {
   switch (settings.name) {
     case MarketingRoutes.marketingHostScreen:
-      return MaterialPageRoute(builder: (_) => MarketingHost());
+      return MaterialPageRoute(
+          builder: (_) => MarketingHost(
+                navigatorKey: navigatorKey,
+              ));
 
     case MarketingRoutes.privacy:
       return MaterialPageRoute(builder: (_) => PrivacyPage());
@@ -105,7 +109,10 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
 
     case MarketingRoutes.agentChatScreen:
       // final args = settings.arguments;
-      return MaterialPageRoute(builder: (_) => AgentChatScreen());
+      return MaterialPageRoute(
+          builder: (_) => AgentChatScreen(
+                navigatorKey: navigatorKey,
+              ));
 
     default:
       return MaterialPageRoute(

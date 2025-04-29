@@ -15,7 +15,8 @@ import 'package:kkpchatapp/presentation/customer/widget/customer_nav_bar.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 
 class CustomerHost extends StatefulWidget {
-  const CustomerHost({super.key});
+  const CustomerHost({super.key, required this.navigatorKey});
+  final GlobalKey<NavigatorState> navigatorKey;
 
   @override
   State<CustomerHost> createState() => _CustomerHostState();
@@ -23,7 +24,8 @@ class CustomerHost extends StatefulWidget {
 
 class _CustomerHostState extends State<CustomerHost> {
   int _selectedIndex = 0;
-  final SocketService _socketService = SocketService();
+
+  late final SocketService _socketService;
   AuthApi auth = AuthApi();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   Profile? profile;
@@ -31,7 +33,7 @@ class _CustomerHostState extends State<CustomerHost> {
   @override
   void initState() {
     super.initState();
-
+    _socketService = SocketService(widget.navigatorKey);
     _loadCurrentUserData().then((_) async {
       final token = await LocalDbHelper.getToken();
 
@@ -75,13 +77,16 @@ class _CustomerHostState extends State<CustomerHost> {
     required String? email,
     required String? image,
   }) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => CustomerChatScreen(
-        agentName: name,
-        customerEmail: email,
-        customerImage: image,
-      ),
-    ));
+    Navigator.push(
+        widget.navigatorKey.currentContext!,
+        MaterialPageRoute(
+          builder: (_) => CustomerChatScreen(
+            agentName: name,
+            customerEmail: email,
+            customerImage: image,
+            navigatorKey: widget.navigatorKey,
+          ),
+        ));
   }
 
   Future<void> _initializeNotificationService() async {

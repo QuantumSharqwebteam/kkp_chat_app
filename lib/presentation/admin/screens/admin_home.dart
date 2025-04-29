@@ -9,6 +9,7 @@ import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/home_chart.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -23,7 +24,7 @@ class AdminHome extends StatefulWidget {
 
 class _AdminHomeState extends State<AdminHome> {
   final AuthApi _auth = AuthApi();
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   List<Agent> _agentsList = [];
   bool _isLoading = true;
 

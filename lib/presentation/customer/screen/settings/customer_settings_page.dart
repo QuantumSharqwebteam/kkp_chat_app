@@ -5,6 +5,7 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_profile_page.dart';
@@ -21,7 +22,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final searchController = TextEditingController();
-    final SocketService socketService = SocketService();
+    final SocketService socketService = SocketService(navigatorKey);
 
     void logOut() async {
       try {

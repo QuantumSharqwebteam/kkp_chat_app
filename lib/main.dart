@@ -16,6 +16,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("📩 [Background] Notification: ${message.notification?.title}");
 }
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -27,7 +29,7 @@ void main() async {
     debugPrint("Firebase initialization failed: $e");
   }
 
-  await Hive.initFlutter(); // Ensure Hive is initialized
+  await Hive.initFlutter();
 
   await Future.wait([
     Hive.openBox('CREDENTIALS'),
@@ -38,11 +40,13 @@ void main() async {
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(const MyApp());
+  runApp(MyApp(navigatorKey: navigatorKey));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const MyApp({super.key, required this.navigatorKey});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -52,6 +56,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: widget.navigatorKey,
       title: 'KKP Chat App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

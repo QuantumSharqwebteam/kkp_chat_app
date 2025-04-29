@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -74,7 +75,7 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Handle notification clicks (both background and terminated)
-  static void _handleNotificationClick(RemoteMessage message) {
+  static Future<void> _handleNotificationClick(RemoteMessage message) async {
     if (_notificationClicked) {
       debugPrint("Duplicate notification click ignored.");
       return;
@@ -91,6 +92,14 @@ class NotificationService with WidgetsBindingObserver {
         notificationData['customerEmail'],
         notificationData['customerImage'],
       ); // Trigger the callback
+    }
+    if ("0" == await LocalDbHelper.getUserType()) {
+      handleNotificationClickForCustomer(
+          navigatorKey!.currentContext!, navigatorKey, notificationData);
+    }
+    if ("0" != await LocalDbHelper.getUserType()) {
+      handleNotificationClickForAgent(
+          navigatorKey!.currentContext!, navigatorKey, notificationData);
     }
   }
 
