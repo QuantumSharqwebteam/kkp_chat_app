@@ -5,11 +5,8 @@ import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
-
-import '../../data/models/profile_model.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();

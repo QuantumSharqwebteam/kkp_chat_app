@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -67,76 +68,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
-    // _socketService.onIncomingCall((callData) {
-    //   debugPrint('📞 Incoming call data: $callData');
-
-    //   final channelName = callData['channelName'];
-    //   //final token = callData['token'];
-
-    //   final callerName = callData['callerName'];
-    //   final callerId = callData['callerId'];
-    //   final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
-
-    //   showModalBottomSheet(
-    //     context: context,
-    //     isDismissible: false,
-    //     enableDrag: false,
-    //     builder: (context) {
-    //       return Container(
-    //         color: Colors.white,
-    //         padding: const EdgeInsets.all(20),
-    //         child: Column(
-    //           mainAxisSize: MainAxisSize.min,
-    //           children: [
-    //             Text('$callerName is calling...',
-    //                 style: const TextStyle(
-    //                     fontSize: 18, fontWeight: FontWeight.bold)),
-    //             const SizedBox(height: 20),
-    //             Row(
-    //               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-    //               children: [
-    //                 ElevatedButton.icon(
-    //                   icon: const Icon(Icons.call_end, color: Colors.white),
-    //                   label: const Text("Reject"),
-    //                   style:
-    //                       ElevatedButton.styleFrom(backgroundColor: Colors.red),
-    //                   onPressed: () {
-    //                     Navigator.pop(context); // close bottom sheet
-    //                     // Optionally emit reject event over socket
-    //                   },
-    //                 ),
-    //                 ElevatedButton.icon(
-    //                   icon: const Icon(Icons.call, color: Colors.white),
-    //                   label: const Text("Answer"),
-    //                   style: ElevatedButton.styleFrom(
-    //                       backgroundColor: Colors.green),
-    //                   onPressed: () {
-    //                     Navigator.pop(context); // close bottom sheet
-
-    //                     // Navigate to the audio call screen
-    //                     Navigator.push(
-    //                       context,
-    //                       MaterialPageRoute(
-    //                         builder: (_) => AgoraAudioCallScreen(
-    //                           isCaller: false,
-    //                           //   token: token,
-    //                           channelName: channelName,
-    //                           uid: uid,
-    //                           remoteUserId: callerId,
-    //                           remoteUserName: callerName,
-    //                         ),
-    //                       ),
-    //                     );
-    //                   },
-    //                 ),
-    //               ],
-    //             ),
-    //           ],
-    //         ),
-    //       );
-    //     },
-    //   );
-    // });
     _loadPreviousMessages();
   }
 
@@ -393,10 +324,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
-  int generateIntUidFromEmail(String email) {
-    return email.hashCode & 0x7FFFFFFF;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -411,7 +338,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             const SizedBox(width: 5),
             Text(
               widget.customerName!,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              style: AppTextStyles.black12_700,
             ),
           ],
         ),
@@ -435,7 +362,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           IconButton(
             onPressed: () {
               final channelName = "agentCall123";
-              final uid = generateIntUidFromEmail(widget.agentEmail!);
+              final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
 
               // Send call data over socket to notify customer
@@ -507,9 +434,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                               timestamp: formatTimestamp(msg['timestamp']),
                             );
                           } else if (msg['type'] == 'voice') {
-                            // [VOICE MSG]
                             return VoiceMessageBubble(
-                              // <-- Make sure this widget exists
                               voiceUrl: msg['mediaUrl'],
                               isMe: msg['isMe'],
                               timestamp: formatTimestamp(msg['timestamp']),

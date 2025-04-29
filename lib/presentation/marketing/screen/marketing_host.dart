@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
@@ -8,6 +11,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
@@ -31,6 +35,8 @@ class _MarketingHostState extends State<MarketingHost> {
   final SocketService _socketService = SocketService();
   AuthApi auth = AuthApi();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  OverlayEntry? _activeCallOverlay;
 
   @override
   void initState() {
@@ -127,70 +133,68 @@ class _MarketingHostState extends State<MarketingHost> {
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {
+    // Remove previous overlay if exists
+    _activeCallOverlay?.remove();
+    _activeCallOverlay = null;
+
     final channelName = callData['channelName'];
     final callerName = callData['callerName'];
     final callerId = callData['callerId'];
     final uid = Utils().generateIntUidFromEmail(agentEmail!);
+    final overlayState = Overlay.of(context);
 
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (context) {
-        return Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('$callerName is calling...',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.call_end, color: Colors.white),
-                    label: const Text("Reject"),
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                    onPressed: () {
-                      Navigator.pop(context); // close bottom sheet
-                      // Optionally emit reject event over socket
-                    },
-                  ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.call, color: Colors.white),
-                    label: const Text("Answer"),
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                    onPressed: () {
-                      Navigator.pop(context); // close bottom sheet
+    late OverlayEntry overlayEntry;
+    Timer? timeoutTimer;
+    final audioPlayer = AudioPlayer();
 
-                      // Navigate to the audio call screen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AgoraAudioCallScreen(
-                            isCaller: false,
-                            //   token: token,
-                            channelName: channelName,
-                            uid: uid,
-                            remoteUserId: callerId,
-                            remoteUserName: callerName,
-                          ),
-                        ),
-                      );
-                    },
+    Future<void> stopAndRemoveOverlay() async {
+      await audioPlayer.stop();
+      timeoutTimer?.cancel();
+      overlayEntry.remove();
+      _activeCallOverlay = null;
+    }
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 16,
+        left: 16,
+        right: 16,
+        child: IncomingCallWidget(
+          callerName: callerName,
+          onAnswer: () async {
+            await stopAndRemoveOverlay();
+            if (context.mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AgoraAudioCallScreen(
+                    isCaller: false,
+                    channelName: channelName,
+                    uid: uid,
+                    remoteUserId: callerId,
+                    remoteUserName: callerName,
                   ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                ),
+              );
+            }
+          },
+          onReject: () async {
+            await stopAndRemoveOverlay();
+            // Optionally emit reject event
+          },
+          audioPlayer: audioPlayer,
+        ),
+      ),
     );
+
+    _activeCallOverlay = overlayEntry;
+    overlayState.insert(overlayEntry);
+
+    // Auto-dismiss after 30 seconds
+    timeoutTimer = Timer(const Duration(seconds: 30), () async {
+      await stopAndRemoveOverlay();
+      // Optionally emit missed call
+    });
   }
 
   @override
