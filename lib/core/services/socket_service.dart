@@ -10,8 +10,6 @@ import 'package:kkpchatapp/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
-import '../../data/models/profile_model.dart';
-
 class SocketService {
   static final SocketService _instance = SocketService._internal();
   factory SocketService(GlobalKey<NavigatorState> navigatorKey) {

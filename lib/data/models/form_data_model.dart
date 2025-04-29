@@ -38,7 +38,7 @@ class FormDataModel {
       weave: json['weave'] ?? '',
       quantity: json['quantity'] ?? '',
       composition: json['composition'] ?? '',
-      rate: json['rate'] ?? '',
+      rate: json['rate'].toString(),
       agentName: json['agentName'] ?? '',
       customerName: json['customerName'] ?? '',
     );

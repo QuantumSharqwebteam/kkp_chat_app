@@ -271,7 +271,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                     ),
                     Text(
                       '${inquiry.agentName}\nCustomer: ${inquiry.customerName}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: AppTextStyles.black10_500,
                     ),
                   ],
                 ),
