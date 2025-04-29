@@ -5,7 +5,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart'
 
 Future<void> handleNotificationClickForCustomer(BuildContext context,
     navigatorKey, Map<String, dynamic> notificationData) async {
-  final customerEmail = LocalDbHelper.getEmail();
+  final customerEmail = LocalDbHelper.getProfile()?.email;
   final customerImage = LocalDbHelper.getProfile()?.profileUrl ?? "";
 
   Navigator.push(

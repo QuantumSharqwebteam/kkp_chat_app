@@ -70,7 +70,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isRecording = false;
   int _recordedSeconds = 0; // Add this line
   Timer? _timer;
-  final String? currentUserEmail = LocalDbHelper.getEmail();
 
   @override
   void initState() {
@@ -167,7 +166,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService.sendMessage(
       message: messageText,
       senderEmail: widget.customerEmail!,
-      senderName: currentUserEmail!,
+      senderName: widget.customerName!,
       type: type,
       mediaUrl: mediaUrl,
       form: form,
