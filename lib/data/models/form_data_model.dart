@@ -7,6 +7,8 @@ class FormDataModel {
   final String rate;
   final String agentName;
   final String customerName;
+  final String status;
+  final String id;
 
   late final String dateOnly;
   late final String timeOnly;
@@ -21,6 +23,8 @@ class FormDataModel {
     required this.rate,
     required this.agentName,
     required this.customerName,
+    required this.status,
+    required this.id,
   }) : parsedDate = DateTime.tryParse(date) {
     if (parsedDate != null) {
       dateOnly = _formatDate(parsedDate!);
@@ -38,9 +42,11 @@ class FormDataModel {
       weave: json['weave'] ?? '',
       quantity: json['quantity'] ?? '',
       composition: json['composition'] ?? '',
-      rate: json['rate'].toString(),
+      rate: json['rate']?.toString() ?? '',
       agentName: json['agentName'] ?? '',
       customerName: json['customerName'] ?? '',
+      status: json['status'] ?? '',
+      id: json['_id'] ?? '',
     );
   }
 
