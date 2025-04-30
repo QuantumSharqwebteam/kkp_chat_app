@@ -210,6 +210,24 @@ class ChatService {
     }
   }
 
+  //get inquiry formdata for specific agent
+  Future<List<FormDataModel>> getFormDataByUser({required String email}) async {
+    final url = Uri.parse('$baseUrl/chat/getFormData?$email');
+    final response = await client.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      List<FormDataModel> formList = (data['formData'] as List)
+          .map((item) => FormDataModel.fromJson(item))
+          .toList();
+
+      return formList;
+    } else {
+      throw Exception('Failed to load form data');
+    }
+  }
+
   /// Get Agora Token
   Future<String?> getAgoraToken({
     required String channelName,
