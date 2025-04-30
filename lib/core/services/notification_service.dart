@@ -2,8 +2,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService with WidgetsBindingObserver {
@@ -66,8 +68,7 @@ class NotificationService with WidgetsBindingObserver {
           .getInitialMessage()
           .then((RemoteMessage? message) {
         if (message != null) {
-          debugPrint(
-              "🚀 App Opened via Notification: ${message.notification?.body}");
+          debugPrint("🚀 App Opened via Notification: ${message.data}");
           _handleNotificationClick(message);
         }
       });
@@ -86,21 +87,40 @@ class NotificationService with WidgetsBindingObserver {
     final Map<String, dynamic> notificationData = message.data;
     debugPrint('notification: $notificationData');
 
-    if (onNotificationTap != null) {
-      onNotificationTap!(
-        notificationData['agentName'],
-        notificationData['customerEmail'],
-        notificationData['customerImage'],
-      ); // Trigger the callback
-    }
-    if ("0" == await LocalDbHelper.getUserType()) {
-      handleNotificationClickForCustomer(
-          navigatorKey!.currentContext!, navigatorKey, notificationData);
-    }
-    if ("0" != await LocalDbHelper.getUserType()) {
-      handleNotificationClickForAgent(
-          navigatorKey!.currentContext!, navigatorKey, notificationData);
-    }
+    // if (onNotificationTap != null) {
+    //   onNotificationTap!(
+    //     notificationData['agentName'],
+    //     notificationData['customerEmail'],
+    //     notificationData['customerImage'],
+    //   ); // Trigger the callback
+    // }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if ("0" == await LocalDbHelper.getUserType()) {
+        ChatStorageService chatStorageService =
+            ChatStorageService(); // Get the customer's email
+        final customerEmail = LocalDbHelper.getEmail();
+
+        if (customerEmail != null) {
+          // Save the message to Hive local storage
+          final message = ChatMessageModel(
+            message: notificationData["message"],
+            timestamp: DateTime.parse(DateTime.now().toIso8601String()),
+            sender: notificationData["senderId"],
+            type: notificationData["type"],
+            mediaUrl: notificationData["mediaUrl"],
+            form: notificationData["form"],
+          );
+
+          chatStorageService.saveMessage(message, customerEmail);
+        }
+
+        handlePushNotificationClickForCustomer(navigatorKey!, notificationData);
+      }
+      if ("0" != await LocalDbHelper.getUserType()) {
+        handlePushNotificationClickForAgent(navigatorKey!, notificationData);
+      }
+    });
   }
 
   // Setup foreground notifications (when the app is in the foreground)
@@ -148,7 +168,7 @@ class NotificationService with WidgetsBindingObserver {
     await _localNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
       _handleNotificationClick(
-          response.payload! as RemoteMessage); // Handle notification tap
+          response as RemoteMessage); // Handle notification tap
     });
 
     // Create notification channel for Android 8.0 and above
