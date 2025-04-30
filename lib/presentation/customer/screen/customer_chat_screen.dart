@@ -162,11 +162,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       messages.add(message);
       _scrollToBottom();
     });
+    final String? name = LocalDbHelper.getProfile()?.name;
 
     _socketService.sendMessage(
       message: messageText,
       senderEmail: widget.customerEmail!,
-      senderName: widget.customerName!,
+      senderName: name!,
       type: type,
       mediaUrl: mediaUrl,
       form: form,
