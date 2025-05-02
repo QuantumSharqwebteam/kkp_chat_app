@@ -19,19 +19,19 @@ bool isAppInitialized = false;
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Check if the app is initialized
-  // if (!isAppInitialized) {
-  //   debugPrint("App is not initialized. Skipping background message handling.");
-  //   return;
-  // } else {
-  //   debugPrint("📩 [Background] Notification: ${message.data}");
-  //   // Handle background message here if needed
-  //   if ("0" == await LocalDbHelper.getUserType()) {
-  //     handlePushNotificationClickForCustomer(navigatorKey, message.data);
-  //   }
-  //   if ("0" != await LocalDbHelper.getUserType()) {
-  //     handlePushNotificationClickForAgent(navigatorKey, message.data);
-  //   }
-  // }
+  if (!isAppInitialized) {
+    debugPrint("App is not initialized. Skipping background message handling.");
+    return;
+  } else {
+    debugPrint("📩 [Terminated] Notification: ${message.data}");
+    // Handle background message here if needed
+    if ("0" == await LocalDbHelper.getUserType()) {
+      handlePushNotificationClickForCustomer(navigatorKey, message.data);
+    }
+    if ("0" != await LocalDbHelper.getUserType()) {
+      handlePushNotificationClickForAgent(navigatorKey, message.data);
+    }
+  }
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

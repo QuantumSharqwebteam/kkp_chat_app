@@ -115,14 +115,11 @@ class NotificationService with WidgetsBindingObserver {
           .getInitialMessage()
           .then((RemoteMessage? message) async {
         if (message != null) {
-          debugPrint(
-              "🚀 App Opened via Notification: ${message.notification?.title}");
+          debugPrint("🚀 App Opened via Notification: ${message.toString()}");
 
           if ("0" == await LocalDbHelper.getUserType()) {
             handlePushNotificationClickForCustomer(navigatorKey!, message.data);
-          }
-
-          if ("0" != await LocalDbHelper.getUserType()) {
+          } else {
             handlePushNotificationClickForAgent(navigatorKey!, message.data);
           }
         }
