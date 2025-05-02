@@ -12,9 +12,15 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 
-class PasswordAndSecurity extends StatelessWidget {
+class PasswordAndSecurity extends StatefulWidget {
   const PasswordAndSecurity({super.key});
 
+  @override
+  State<PasswordAndSecurity> createState() => _PasswordAndSecurityState();
+}
+
+class _PasswordAndSecurityState extends State<PasswordAndSecurity> {
+  final role = LocalDbHelper.getUserType();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,50 +70,52 @@ class PasswordAndSecurity extends StatelessWidget {
                 ),
               ),
               Spacer(),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black),
-                  borderRadius: BorderRadius.circular(6),
+              // ignore: unrelated_type_equality_checks
+              if (role == "0")
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Column(
+                    children: [
+                      SettingsTile(
+                        titles: ['Delete Account Permanently'],
+                        tileTitleStyle: TextStyle(
+                            color: Colors.red,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700),
+                        numberOfTiles: 1,
+                        isDense: true,
+                        onTaps: [
+                          () {
+                            confirmDelete(context);
+                          }
+                        ],
+                        trailingIconColor: Colors.red,
+                        leadingIcons: [Icons.delete_forever_rounded],
+                        iconColor: Colors.red,
+                      ),
+                      // SettingsTile(
+                      //   titles: ['Logout'],
+                      //   tileTitleStyle: TextStyle(
+                      //       color: Colors.blue,
+                      //       fontSize: 16,
+                      //       fontWeight: FontWeight.w700),
+                      //   numberOfTiles: 1,
+                      //   isDense: true,
+                      //   onTaps: [
+                      //     () {
+                      //       logOut(context);
+                      //     }
+                      //   ],
+                      //   trailingIconColor: Colors.blue,
+                      //   leadingIcons: [Icons.logout],
+                      //   iconColor: Colors.blue,
+                      // ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    SettingsTile(
-                      titles: ['Delete Account Permanently'],
-                      tileTitleStyle: TextStyle(
-                          color: Colors.red,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700),
-                      numberOfTiles: 1,
-                      isDense: true,
-                      onTaps: [
-                        () {
-                          confirmDelete(context);
-                        }
-                      ],
-                      trailingIconColor: Colors.red,
-                      leadingIcons: [Icons.delete_forever_rounded],
-                      iconColor: Colors.red,
-                    ),
-                    SettingsTile(
-                      titles: ['Logout'],
-                      tileTitleStyle: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700),
-                      numberOfTiles: 1,
-                      isDense: true,
-                      onTaps: [
-                        () {
-                          logOut(context);
-                        }
-                      ],
-                      trailingIconColor: Colors.blue,
-                      leadingIcons: [Icons.logout],
-                      iconColor: Colors.blue,
-                    ),
-                  ],
-                ),
-              ),
               SizedBox(height: 20),
             ],
           ),

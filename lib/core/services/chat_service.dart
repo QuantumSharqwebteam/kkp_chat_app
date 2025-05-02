@@ -212,7 +212,7 @@ class ChatService {
 
   Future<List<FormDataModel>> getFormDataByAgent(
       {required String email}) async {
-    final url = Uri.parse('$baseUrl/chat/getFormData?email');
+    final url = Uri.parse('$baseUrl/chat/getFormData?email=$email');
     final response = await client.get(url);
 
     if (response.statusCode == 200) {
