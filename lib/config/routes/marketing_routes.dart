@@ -6,7 +6,6 @@ import 'package:kkpchatapp/presentation/admin/screens/agent_profile_list.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common/privacy_page.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/add_product_screen.dart';
-import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_host.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_descrption_page.dart';
@@ -107,12 +106,12 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
     case MarketingRoutes.marketingSettings:
       return MaterialPageRoute(builder: (_) => MarketingSettingsPage());
 
-    case MarketingRoutes.agentChatScreen:
-      // final args = settings.arguments;
-      return MaterialPageRoute(
-          builder: (_) => AgentChatScreen(
-                navigatorKey: navigatorKey,
-              ));
+    // case MarketingRoutes.agentChatScreen:
+    //   // final args = settings.arguments;
+    //   return MaterialPageRoute(
+    //       builder: (_) => AgentChatScreen(
+    //             navigatorKey: navigatorKey,
+    //           ));
 
     default:
       return MaterialPageRoute(

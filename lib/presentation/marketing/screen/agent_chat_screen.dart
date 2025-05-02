@@ -10,6 +10,7 @@ import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
@@ -30,7 +31,7 @@ class AgentChatScreen extends StatefulWidget {
   final String? customerImage;
   final String? agentName;
   final String? agentImage;
-  final String? customerEmail;
+  final String customerEmail;
   final String? agentEmail;
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -40,7 +41,7 @@ class AgentChatScreen extends StatefulWidget {
     this.customerImage = ImageConstants.userImage,
     this.agentName,
     this.agentImage = "assets/images/user4.png",
-    this.customerEmail,
+    required this.customerEmail,
     this.agentEmail,
     required this.navigatorKey,
   });
@@ -103,8 +104,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Future<void> _loadPreviousMessages() async {
     try {
       final fetchedMessages = await _chatRepository.fetchPreviousChats(
-        widget.agentEmail!,
-        widget.customerEmail!,
+        LocalDbHelper.getProfile()!.email!,
+        widget.customerEmail,
       );
       if (mounted) {
         setState(() {
@@ -185,7 +186,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     });
 
     _socketService.sendMessage(
-      targetEmail: widget.customerEmail!,
+      targetEmail: widget.customerEmail,
       message: messageText,
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
@@ -279,7 +280,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
         // Now send the message only over socket — don't add to messages list again!
         _socketService.sendMessage(
-          targetEmail: widget.customerEmail!,
+          targetEmail: widget.customerEmail,
           message: "image",
           senderEmail: widget.agentEmail!,
           senderName: widget.agentName!,
@@ -353,7 +354,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 MaterialPageRoute(
                   builder: (context) {
                     return TransferAgentScreen(
-                      customerEmailId: widget.customerEmail!,
+                      customerEmailId: widget.customerEmail,
                     );
                   },
                 ),
@@ -370,7 +371,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
               // Send call data over socket to notify customer
               _socketService.sendAgoraCall(
-                targetId: widget.customerEmail!,
+                targetId: widget.customerEmail,
                 channelName: channelName,
                 //token: token,
                 callerId: widget.agentEmail!,
@@ -386,7 +387,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                     //   token: token,
                     channelName: channelName,
                     uid: uid,
-                    remoteUserId: widget.customerEmail!,
+                    remoteUserId: widget.customerEmail,
                     remoteUserName: widget.customerName!,
                   ),
                 ),
