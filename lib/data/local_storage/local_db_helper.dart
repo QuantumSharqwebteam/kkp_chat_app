@@ -72,7 +72,11 @@ class LocalDbHelper {
   }
 
   static Profile? getProfile() {
-    return Profile.fromMap(_box.get(_profile));
+    final profileMap = _box.get(_profile);
+    if (profileMap != null && profileMap is Map<String, dynamic>) {
+      return Profile.fromMap(profileMap);
+    }
+    return null;
   }
 
   static Future<void> removeProfile() async {
@@ -82,17 +86,12 @@ class LocalDbHelper {
   // Methods to handle last seen times
   static Future<void> updateLastSeenTime(String email) async {
     await _lastSeenBoxInstance.put(email, DateTime.now().toIso8601String());
-    // if (kDebugMode) {
-    //   debugPrint("📂 Hive last seen data: ${_lastSeenBoxInstance.toMap()}");
-    // }
   }
 
   static DateTime? getLastSeenTime(String email) {
     String? lastSeen = _lastSeenBoxInstance.get(email);
     if (lastSeen != null) {
       DateTime parsedDate = DateTime.parse(lastSeen);
-      // debugPrint(
-      //     "📅 Retrieved last seen time from Hive for $email: $parsedDate");
       return parsedDate;
     }
     return null;

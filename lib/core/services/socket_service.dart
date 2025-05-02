@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -436,8 +438,7 @@ class SocketService {
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse:
             (NotificationResponse notificationResponse) async {
-      handleNotificationClickForCustomer(
-          _navigatorKey!.currentContext!, navigatorKey, data);
+      _handleNotificationTap(notificationResponse);
     });
 
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
@@ -466,11 +467,27 @@ class SocketService {
       title, // Notification title
       data['message'], // Notification body
       platformChannelSpecifics,
-      payload: "chatScreen",
+      payload: jsonEncode(data),
     );
   }
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;
+  }
+
+  // Handle notification tap
+  Future<void> _handleNotificationTap(NotificationResponse response) async {
+    debugPrint("Notification tapped: ${response.payload}");
+
+    if (response.payload != null) {
+      final Map<String, dynamic> notificationData =
+          jsonDecode(response.payload!);
+
+      if ("0" == await LocalDbHelper.getUserType()) {
+        handlePushNotificationClickForCustomer(navigatorKey, notificationData);
+      } else {
+        handlePushNotificationClickForAgent(navigatorKey, notificationData);
+      }
+    }
   }
 }

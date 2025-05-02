@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 
 /// Handles notification click for customers.
-/// Navigates to the [CustomerChatScreen] based on the notification data.
 Future<void> handleNotificationClickForCustomer(
     BuildContext context,
     GlobalKey<NavigatorState> navigatorKey,
@@ -25,14 +25,14 @@ Future<void> handleNotificationClickForCustomer(
 }
 
 /// Handles push notification click for customers.
-/// Navigates to the [CustomerChatScreen] based on the notification data.
 Future<void> handlePushNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
   final customerEmail = LocalDbHelper.getProfile()?.email;
   final customerImage = LocalDbHelper.getProfile()?.profileUrl ?? "";
 
-  navigatorKey.currentState?.push(
+  Navigator.push(
+    navigatorKey.currentContext!,
     MaterialPageRoute(
       builder: (_) => CustomerChatScreen(
         agentName: "Agent",
@@ -45,7 +45,6 @@ Future<void> handlePushNotificationClickForCustomer(
 }
 
 /// Handles notification click for agents.
-/// Navigates to the [AgentChatScreen] based on the notification data.
 Future<void> handleNotificationClickForAgent(
     BuildContext context,
     GlobalKey<NavigatorState> navigatorKey,
@@ -57,7 +56,7 @@ Future<void> handleNotificationClickForAgent(
       builder: (_) => AgentChatScreen(
         customerName: customerName,
         customerEmail: customerEmail,
-        agentEmail: LocalDbHelper.getEmail(),
+        agentEmail: LocalDbHelper.getProfile()?.email,
         agentName: LocalDbHelper.getProfile()?.name,
         navigatorKey: navigatorKey,
       ),
@@ -66,13 +65,18 @@ Future<void> handleNotificationClickForAgent(
 }
 
 /// Handles push notification click for agents.
-/// Navigates to the [AgentChatScreen] based on the notification data.
 Future<void> handlePushNotificationClickForAgent(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
+  if (!isAppInitialized) {
+    debugPrint("App is not initialized. Skipping notification handling.");
+    return;
+  }
+
   final customerEmail = notificationData['senderId'];
   final customerName = notificationData['senderName'];
-  navigatorKey.currentState?.push(
+  Navigator.push(
+    navigatorKey.currentContext!,
     MaterialPageRoute(
       builder: (_) => AgentChatScreen(
         customerName: customerName,

@@ -9,6 +9,7 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
@@ -54,8 +55,15 @@ class _CustomerHostState extends State<CustomerHost> {
         _socketService.onIncomingCall(_handleIncomingCall);
         await _initializeNotificationService();
         _handleFirebaseNotificationTaps();
+
+        initCheck();
       }
     });
+  }
+
+  void initCheck() async {
+    // Set the global flag to true after initialization
+    isAppInitialized = true;
   }
 
   void _handleFirebaseNotificationTaps() {
@@ -63,17 +71,21 @@ class _CustomerHostState extends State<CustomerHost> {
       debugPrint(
           '🔔 Notification opened (background/terminated): ${message.data}');
 
-      final agentName = message.data['senderName'];
-      final customerEmail = profile!.email;
-      final customerImage = profile!.profileUrl ?? "";
+      if (isAppInitialized) {
+        final agentName = message.data['senderName'];
+        final customerEmail = profile!.email;
+        final customerImage = profile!.profileUrl ?? "";
 
-      final userType = await LocalDbHelper.getUserType();
-      if (userType == "0") {
-        _navigateToChat(
-          name: agentName,
-          email: customerEmail,
-          image: customerImage,
-        );
+        final userType = await LocalDbHelper.getUserType();
+        if (userType == "0") {
+          _navigateToChat(
+            name: agentName,
+            email: customerEmail,
+            image: customerImage,
+          );
+        }
+      } else {
+        debugPrint("App is not initialized. Skipping notification handling.");
       }
     });
   }

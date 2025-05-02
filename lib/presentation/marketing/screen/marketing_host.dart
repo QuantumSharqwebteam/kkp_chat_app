@@ -44,8 +44,15 @@ class _MarketingHostState extends State<MarketingHost> {
   @override
   void initState() {
     super.initState();
-    _loadUserDataAndInitializeSocket();
-    _initializeNotificationService();
+    _loadUserDataAndInitializeSocket().then((_) {
+      _initializeNotificationService().then((_) {});
+    });
+    initCheck();
+  }
+
+  void initCheck() async {
+    // Set the global flag to true after initialization
+    isAppInitialized = true;
   }
 
   Future<void> _initializeNotificationService() async {
@@ -132,7 +139,7 @@ class _MarketingHostState extends State<MarketingHost> {
 
   void _navigateToChat({
     required String? customername,
-    required String? customeremail,
+    required String customeremail,
   }) {
     Navigator.push(
         widget.navigatorKey.currentContext!,
