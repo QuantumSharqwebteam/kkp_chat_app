@@ -210,6 +210,24 @@ class ChatService {
     }
   }
 
+  Future<List<FormDataModel>> getFormDataByAgent(
+      {required String email}) async {
+    final url = Uri.parse('$baseUrl/chat/getFormData?email');
+    final response = await client.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      List<FormDataModel> formList = (data['formData'] as List)
+          .map((item) => FormDataModel.fromJson(item))
+          .toList();
+
+      return formList;
+    } else {
+      throw Exception('Failed to load form data');
+    }
+  }
+
   /// Get Agora Token
   Future<String?> getAgoraToken({
     required String channelName,
@@ -241,6 +259,28 @@ class ChatService {
     } catch (e) {
       debugPrint("❌ Exception in getAgoraToken: $e");
       return null;
+    }
+  }
+
+  /// **Get Admin Home Page Traffic Data**
+  Future<List<Map<String, dynamic>>> getAdminGraphData() async {
+    final url = Uri.parse("$baseUrl/chat/getadminGraphData");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        if (jsonResponse["status"] == 200 && jsonResponse["traffic"] is List) {
+          return List<Map<String, dynamic>>.from(jsonResponse["traffic"]);
+        } else {
+          throw Exception("Failed to fetch admin graph data: ${response.body}");
+        }
+      } else {
+        throw Exception("Failed to fetch admin graph data: ${response.body}");
+      }
+    } catch (e) {
+      throw Exception("Error fetching admin graph data: $e");
     }
   }
 }

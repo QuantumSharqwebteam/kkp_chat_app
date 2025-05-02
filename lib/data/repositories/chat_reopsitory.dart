@@ -37,4 +37,9 @@ class ChatRepository {
   Future<String?> fetchAgoraToken(String channelName, int uid) async {
     return await chatService.getAgoraToken(channelName: channelName, uid: uid);
   }
+
+  //fetch admin home traffic chart data
+  Future<List<Map<String, dynamic>>> fetchTrafficChartData() async {
+    return await chatService.getAdminGraphData();
+  }
 }

@@ -1,12 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
-import 'package:kkpchatapp/core/utils/utils.dart';
+
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
+
+//import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 
@@ -26,7 +28,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   String selectedAgent = 'All Agents';
   String selectedDateRange = 'Last 30 days';
   String selectedQuality = "Quality";
-  int currentIndex = 0;
+  bool isFetchingMore = false;
 
   List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
   List<String> dateRanges = [
@@ -42,11 +44,24 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   bool isLoading = true;
 
+  late ScrollController _scrollController;
+  int visibleItemCount = 10;
+  final int itemsPerPage = 10;
+
   @override
   void initState() {
     super.initState();
     fetchInquiries();
     _searchController.addListener(_applyFilters);
+    _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchInquiries() async {
@@ -62,6 +77,21 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     } finally {
       setState(() {
         isLoading = false;
+      });
+    }
+  }
+
+  void _onScroll() async {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !isFetchingMore &&
+        visibleItemCount < filteredInquiries.length) {
+      setState(() => isFetchingMore = true);
+      await Future.delayed(const Duration(milliseconds: 500)); // Simulate fetch
+      setState(() {
+        visibleItemCount = (visibleItemCount + itemsPerPage)
+            .clamp(0, filteredInquiries.length);
+        isFetchingMore = false;
       });
     }
   }
@@ -83,7 +113,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           item.weave.toLowerCase().contains(search) ||
           item.composition.toLowerCase().contains(search) ||
           item.rate.toLowerCase().contains(search) ||
-          item.quantity.toLowerCase().contains(search);
+          item.quantity.toLowerCase().contains(search) ||
+          item.status.toLowerCase().contains(search);
 
       bool matchDate = true;
       final date = item.parsedDate;
@@ -108,21 +139,13 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       return matchAgent && matchQuality && matchSearch && matchDate;
     }).toList();
 
-    currentIndex = 0;
+    visibleItemCount = min(itemsPerPage, filteredInquiries.length);
     setState(() {});
   }
 
   void toggleShowFilters() {
     setState(() {
       showFilters = !showFilters;
-    });
-  }
-
-  void loadMore() {
-    setState(() {
-      if (currentIndex + 2 < filteredInquiries.length) {
-        currentIndex += 2;
-      }
     });
   }
 
@@ -142,13 +165,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : Column(
-                spacing: 10,
                 children: [
                   _buildSearchRow(),
-                  if (showFilters) _buildFilters(),
+                  const SizedBox(height: 20),
+                  //  if (showFilters) _buildFilters(),
                   Expanded(child: _buildInquiryList()),
-                  if (currentIndex + 2 < filteredInquiries.length)
-                    _buildNextButton(),
                 ],
               ),
       ),
@@ -157,7 +178,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   Widget _buildSearchRow() {
     return Row(
-      spacing: 10,
       children: [
         Expanded(
           child: CustomSearchBar(
@@ -167,6 +187,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             onChanged: (value) => _applyFilters(),
           ),
         ),
+        const SizedBox(width: 10),
         GestureDetector(
           onTap: toggleShowFilters,
           child: Container(
@@ -188,53 +209,62 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     );
   }
 
-  Widget _buildFilters() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        spacing: 10,
-        children: [
-          CustomDropDown(
-            value: selectedAgent,
-            items: agents,
-            onChanged: (value) {
-              setState(() => selectedAgent = value!);
-              _applyFilters();
-            },
-          ),
-          CustomDropDown(
-            value: selectedDateRange,
-            items: dateRanges,
-            onChanged: (value) {
-              setState(() => selectedDateRange = value!);
-              _applyFilters();
-            },
-          ),
-          CustomDropDown(
-            value: selectedQuality,
-            items: qualities,
-            onChanged: (value) {
-              setState(() => selectedQuality = value!);
-              _applyFilters();
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildFilters() {
+  //   return SingleChildScrollView(
+  //     scrollDirection: Axis.horizontal,
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.start,
+  //       children: [
+  //         // CustomDropDown(
+  //         //   value: selectedAgent,
+  //         //   items: agents,
+  //         //   onChanged: (value) {
+  //         //     setState(() => selectedAgent = value!);
+  //         //     _applyFilters();
+  //         //   },
+  //         // ),
+  //         // const SizedBox(width: 10),
+  //         CustomDropDown(
+  //           value: selectedDateRange,
+  //           items: dateRanges,
+  //           onChanged: (value) {
+  //             setState(() => selectedDateRange = value!);
+  //             _applyFilters();
+  //           },
+  //         ),
+  //         const SizedBox(width: 10),
+  //         CustomDropDown(
+  //           value: selectedQuality,
+  //           items: qualities,
+  //           onChanged: (value) {
+  //             setState(() => selectedQuality = value!);
+  //             _applyFilters();
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildInquiryList() {
-    final displayList = filteredInquiries.take(currentIndex + 2).toList();
-
-    if (displayList.isEmpty) {
-      return const Center(child: Text("No inquiries found."));
+    if (filteredInquiries.isEmpty) {
+      return const Center(child: Text("No related inquiries found."));
     }
 
+    final visibleItems = filteredInquiries.take(visibleItemCount).toList();
+
     return ListView.builder(
-      itemCount: displayList.length,
+      controller: _scrollController,
+      itemCount: visibleItems.length + (isFetchingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        final inquiry = displayList[index];
+        if (index == visibleItems.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final inquiry = visibleItems[index];
         return AnimatedOpacity(
           opacity: 1,
           duration: Duration(milliseconds: 400 + (index * 100)),
@@ -249,17 +279,16 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       color: Colors.white,
       surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 10,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  spacing: 5,
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
@@ -269,6 +298,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         width: 40,
                       ),
                     ),
+                    const SizedBox(width: 5),
                     Text(
                       '${inquiry.agentName}\nCustomer: ${inquiry.customerName}',
                       style: AppTextStyles.black10_500,
@@ -276,10 +306,20 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                   ],
                 ),
                 Column(
-                  spacing: 5,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(inquiry.dateOnly, style: AppTextStyles.black12_400),
                     Text(inquiry.timeOnly, style: AppTextStyles.black12_400),
+                    Text(
+                      inquiry.status,
+                      style: AppTextStyles.black12_400.copyWith(
+                        color: inquiry.status == "Confirmed"
+                            ? AppColors.activeGreen
+                            : inquiry.status == "Declined"
+                                ? AppColors.inActiveRed
+                                : AppColors.helperOrange,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -295,7 +335,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   Widget _buildInquiryDetails(FormDataModel inquiry) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 5,
       children: [
         _buildDetailRow('Quality', inquiry.quality),
         _buildDetailRow('Weave', inquiry.weave),
@@ -307,23 +346,14 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
-  Widget _buildNextButton() {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: CustomButton(
-        width: Utils().width(context) * 0.35,
-        onPressed: loadMore,
-        text: "Next",
-        fontSize: 16,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
