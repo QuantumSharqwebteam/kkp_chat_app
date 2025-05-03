@@ -104,7 +104,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Future<void> _loadPreviousMessages() async {
     try {
       final fetchedMessages = await _chatRepository.fetchPreviousChats(
-        LocalDbHelper.getProfile()!.email!,
+        widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
         widget.customerEmail,
       );
       if (mounted) {
