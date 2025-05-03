@@ -8,6 +8,7 @@ class LocalDbHelper {
   static const String _email = 'email';
   static const String _profile = 'profile';
   static const String _fCMToken = "FCMTOKEN";
+  static const String _lastRefreshTime = 'lastRefreshTime';
 
   // feed
   static const String _pinnedAgentsKey = 'pinnedAgents';
@@ -125,5 +126,13 @@ class LocalDbHelper {
 
   static Future<void> clearFCMToken() async {
     await _box.delete(_fCMToken);
+  }
+
+  static Future<void> saveLastRefreshTime(int time) async {
+    await _box.put(_lastRefreshTime, time);
+  }
+
+  static Future<int?> getLastRefreshTime() async {
+    return _box.get(_lastRefreshTime);
   }
 }

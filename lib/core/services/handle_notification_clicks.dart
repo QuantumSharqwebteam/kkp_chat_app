@@ -75,13 +75,14 @@ Future<void> handlePushNotificationClickForAgent(
 
   final customerEmail = notificationData['senderId'];
   final customerName = notificationData['senderName'];
+  final agentEmail = notificationData['targetId'];
   Navigator.push(
     navigatorKey.currentContext!,
     MaterialPageRoute(
       builder: (_) => AgentChatScreen(
         customerName: customerName,
         customerEmail: customerEmail,
-        agentEmail: LocalDbHelper.getProfile()?.email,
+        agentEmail: agentEmail,
         agentName: LocalDbHelper.getProfile()?.name,
         navigatorKey: navigatorKey,
       ),
