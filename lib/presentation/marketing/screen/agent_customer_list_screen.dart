@@ -6,6 +6,7 @@ import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 
 class AgentCustomersListScreen extends StatefulWidget {
   final String agentName;
@@ -94,7 +95,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
             child: isLoading
                 ? const ShimmerList(itemCount: 8)
                 : customers.isEmpty
-                    ? Center(child: Text("No Customers Assigned"))
+                    ? NoCustomerAssignedWidget()
                     : ListView.separated(
                         itemCount: customers.length,
                         separatorBuilder: (context, index) =>

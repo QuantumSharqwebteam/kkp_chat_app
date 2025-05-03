@@ -10,6 +10,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart'
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
@@ -120,9 +121,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                           stream: _socketService.statusStream,
                           builder: (context, snapshot) {
                             return _filteredCustomers.isEmpty
-                                ? Center(
-                                    child: Text("No Customers Assigned"),
-                                  )
+                                ? Center(child: NoCustomerAssignedWidget())
                                 : _buildCustomerInquiriesList();
                           },
                         ),

@@ -49,6 +49,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   int visibleItemCount = 10;
   final int itemsPerPage = 10;
 
+  // Map to track the expanded state of each inquiry card
+  Map<String, bool> expandedStates = {};
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +157,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   void toggleShowFilters() {
     setState(() {
       showFilters = !showFilters;
+    });
+  }
+
+  void toggleExpandedState(String inquiryId) {
+    setState(() {
+      expandedStates[inquiryId] = !(expandedStates[inquiryId] ?? false);
     });
   }
 
@@ -287,9 +296,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       color: Colors.white,
       surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 2),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -330,10 +339,19 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                     ),
                   ],
                 ),
+                InkWell(
+                  onTap: () => toggleExpandedState(inquiry.id),
+                  child: Icon(
+                    expandedStates[inquiry.id] ?? false
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 20,
+                  ),
+                ),
               ],
             ),
-            const Divider(),
-            _buildInquiryDetails(inquiry),
+            if (expandedStates[inquiry.id] ?? false)
+              _buildInquiryDetails(inquiry),
           ],
         ),
       ),
@@ -344,6 +362,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Divider(),
         _buildDetailRow('Quality', inquiry.quality),
         _buildDetailRow('Weave', inquiry.weave),
         _buildDetailRow('Quantity', inquiry.quantity),
@@ -359,8 +378,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: AppTextStyles.black14_400,
+          ),
+          Text(value, style: AppTextStyles.black14_600),
         ],
       ),
     );

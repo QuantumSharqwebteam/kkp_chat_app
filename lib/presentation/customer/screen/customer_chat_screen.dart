@@ -62,7 +62,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final quantityController = TextEditingController();
   final weaveController = TextEditingController();
   final compositionController = TextEditingController();
-  final rateController = TextEditingController();
+  final sNoController = TextEditingController();
   final ChatStorageService _chatStorageService =
       ChatStorageService(); // Initialize the service
 
@@ -94,7 +94,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _scrollController.dispose();
     qualityController.dispose();
     quantityController.dispose();
-    rateController.dispose();
+    sNoController.dispose();
     compositionController.dispose();
     _recorder.closeRecorder();
     _timer?.cancel();
@@ -266,6 +266,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     style: AppTextStyles.black16_600),
                 const SizedBox(height: 10),
                 TextFormField(
+                  decoration: InputDecoration(
+                      labelText: "S.No",
+                      hintText: "fill here '01' for first form",
+                      hintStyle: AppTextStyles.grey12_600
+                          .copyWith(color: AppColors.greyAAAAAA)),
+                  controller: sNoController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'S.No';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
                   controller: qualityController,
                   validator: (value) {
@@ -305,26 +319,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     return null;
                   },
                 ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Rate"),
-                  controller: rateController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter rate';
-                    }
-                    return null;
-                  },
-                ),
                 const SizedBox(height: 20),
                 CustomButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final formData = {
+                        "S.No": sNoController.text,
                         "quality": qualityController.text,
                         "quantity": quantityController.text,
                         "weave": weaveController.text,
                         "composition": compositionController.text,
-                        "rate": rateController.text,
                       };
                       _sendMessage(
                           messageText: "product", type: 'form', form: formData);

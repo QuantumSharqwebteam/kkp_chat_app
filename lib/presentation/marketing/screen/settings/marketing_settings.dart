@@ -12,7 +12,6 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart'
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/settings/manage_customers.dart';
-import 'package:kkpchatapp/presentation/marketing/screen/settings/track_inquries.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/marketing_settings_tile.dart';
 
 class MarketingSettingsPage extends StatefulWidget {

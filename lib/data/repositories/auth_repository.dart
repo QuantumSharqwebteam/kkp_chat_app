@@ -67,4 +67,14 @@ class AuthRepository {
       {required String agentEmail}) async {
     return _authApi.deleteAgent(agentEmail);
   }
+
+  // to fetch list of users by agnetId for that particular agent
+  Future<List<dynamic>> fetchUsersByAgentId(String agentEmail) async {
+    return _authApi.getUsersByAgentId(agentEmail: agentEmail);
+  }
+
+  // to fetch list of users by role = "User", agnet , admin , "agnetHead"
+  Future<List<dynamic>> fetchUsersByRole(String role) async {
+    return _authApi.getUsersByRole(role: role);
+  }
 }

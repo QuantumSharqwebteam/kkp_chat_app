@@ -122,6 +122,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 "weave": firstForm['weave'],
                 "composition": firstForm['composition'],
                 "rate": firstForm['rate'],
+                "id": firstForm['_id'],
               };
             }
 

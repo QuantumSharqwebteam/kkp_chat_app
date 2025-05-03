@@ -434,8 +434,8 @@ class AuthApi {
     }
   }
 
-  // to fetch list of users, admin , agent
-  Future<List<dynamic>> getUsersByRole(String role) async {
+  // to fetch list of users, admin , agent if role ="User " then all users list will be shown up
+  Future<List<dynamic>> getUsersByRole({required String role}) async {
     const endPoint = 'user/getByRole';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {"role": role};
@@ -457,6 +457,30 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception('Error fetching users by role: $e');
+    }
+  }
+
+  // get users by agentId
+  Future<List<dynamic>> getUsersByAgentId({required String agentEmail}) async {
+    final endPoint = 'user/getUsersByAgentId/$agentEmail';
+    final url = Uri.parse("$baseUrl$endPoint");
+
+    try {
+      final response = await client.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        return responseData['message'] ?? [];
+      } else {
+        throw Exception('Failed to fetch users by agent ID: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching users by agent ID: $e');
     }
   }
 
