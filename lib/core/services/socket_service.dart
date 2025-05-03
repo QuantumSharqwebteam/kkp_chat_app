@@ -77,6 +77,7 @@ class SocketService {
     });
 
     _socket.on('receiveMessage', (data) {
+      debugPrint(data.toString());
       if (isChatPageOpen && _onMessageReceived != null) {
         _onMessageReceived!(data);
       } else if (!isChatPageOpen && _onMessageReceived != null) {

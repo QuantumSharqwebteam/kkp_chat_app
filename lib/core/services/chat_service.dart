@@ -283,4 +283,43 @@ class ChatService {
       throw Exception("Error fetching admin graph data: $e");
     }
   }
+
+  Future<void> updateFormStatus(
+      {required String formId, required status}) async {
+    try {
+      final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
+      final response = await client.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"status": status}),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('Failed to update form status: ${response.body}');
+        throw Exception('Failed to update form status: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating form status: $e');
+    }
+  }
+
+  /// Update form rate
+  Future<void> updateFormRate(
+      {required String formId, required String rate}) async {
+    try {
+      final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
+      final response = await client.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"rate": rate}),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint("Failed to update form rate: ${response.body}");
+        throw Exception('Failed to update form rate: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating form rate: $e');
+    }
+  }
 }
