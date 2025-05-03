@@ -117,6 +117,7 @@ class _SignupPageState extends State<SignupPage> {
                     return VerificationPage(
                       email: _email.text,
                       isNewAccount: true,
+                      name: _name.text,
                     );
                   },
                 ),

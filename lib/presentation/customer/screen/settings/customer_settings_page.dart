@@ -8,7 +8,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_profile_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/password_and_security.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
@@ -99,17 +99,20 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               thickness: 1,
             ),
             SettingsTile(
-              numberOfTiles: 2,
+              numberOfTiles: 1,
               leadingIcons: [
                 Icons.archive_outlined,
                 Icons.notifications_none_outlined
               ],
               title: 'How you use KKP',
-              titles: ['Archive', 'Notifications'],
+              titles: [
+                // 'Archive',
+                'Notifications',
+              ],
               onTaps: [
-                () {
-                  Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
-                },
+                // () {
+                //   Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
+                // },
                 () {
                   Navigator.pushNamed(
                       context, CustomerRoutes.notificationSettings);
@@ -138,18 +141,21 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               thickness: 1,
             ),
             SettingsTile(
-              numberOfTiles: 2,
+              numberOfTiles: 1,
               leadingIcons: [
                 Icons.info_outline_rounded,
                 Icons.info_outline_rounded,
               ],
               title: 'More info and support',
-              titles: ['Help', 'About'],
+              titles: [
+                // 'Help',
+                'About',
+              ],
               onTaps: [
-                () {},
+                // () {},
                 () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CustomerProfilePage();
+                    return AboutUsPage();
                   }));
                 }
               ],

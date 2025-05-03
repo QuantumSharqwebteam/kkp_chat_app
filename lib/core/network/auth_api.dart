@@ -132,7 +132,7 @@ class AuthApi {
     const endPoint = 'user/updateUserDetails';
     final url = Uri.parse("$baseUrl$endPoint");
 
-    final token = await LocalDbHelper.getToken();
+    final String? token = await LocalDbHelper.getToken();
 
     if (token == null) {
       throw Exception('Token not found. Please log in again.');

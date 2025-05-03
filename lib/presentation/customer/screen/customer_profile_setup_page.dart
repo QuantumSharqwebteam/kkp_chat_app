@@ -16,14 +16,12 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class CustomerProfileSetupPage extends StatefulWidget {
-  const CustomerProfileSetupPage({
-    super.key,
-    required this.forUpdate,
-    this.profile,
-  });
+  const CustomerProfileSetupPage(
+      {super.key, required this.forUpdate, this.profile, this.name});
 
   final bool forUpdate;
   final Profile? profile;
+  final String? name;
 
   @override
   State<CustomerProfileSetupPage> createState() =>
@@ -65,7 +63,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     super.initState();
 
     if (widget.forUpdate == false) {
-      _name.text = LocalDbHelper.getName()!;
+      _name.text = (widget.name ?? LocalDbHelper.getProfile()?.name)!;
     }
 
     // Initialize fields with passed arguments if updating

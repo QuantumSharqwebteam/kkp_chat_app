@@ -73,10 +73,12 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
     case CustomerRoutes.customerProfileSetup:
       final args = settings.arguments as Map<String, dynamic>?;
       final profile = args?['profile'] as Profile?;
+      final name = args?['name'] as String?;
       return MaterialPageRoute(
         builder: (context) => CustomerProfileSetupPage(
           forUpdate: profile != null,
           profile: profile,
+          name: name,
         ),
       );
 

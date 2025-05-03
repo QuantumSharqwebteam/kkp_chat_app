@@ -20,8 +20,8 @@ class _SplashState extends State<Splash> {
   Future<void> _checkLogin(context) async {
     // await Future.delayed(const Duration(seconds: 1));
 
-    String? token = await LocalDbHelper.getToken();
-    String? userType = await LocalDbHelper.getUserType();
+    final String? token = await LocalDbHelper.getToken();
+    final String? userType = await LocalDbHelper.getUserType();
 
     // if (token != null && token.isNotEmpty) {
     //   await auth.refreshToken(token).then((response) async {

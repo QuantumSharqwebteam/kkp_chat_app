@@ -15,9 +15,11 @@ class VerificationPage extends StatefulWidget {
     super.key,
     required this.email,
     required this.isNewAccount,
+    this.name,
   });
   final String email;
   final bool isNewAccount;
+  final String? name;
 
   @override
   State<VerificationPage> createState() => _VerificationPageState();
@@ -254,7 +256,10 @@ class _VerificationPageState extends State<VerificationPage> {
                                       if (context.mounted) {
                                         Navigator.pushReplacementNamed(context,
                                             CustomerRoutes.customerProfileSetup,
-                                            arguments: {"forUpdate": false});
+                                            arguments: {
+                                              "forUpdate": false,
+                                              "name": widget.name
+                                            });
                                       }
                                     } else {
                                       if (context.mounted) {

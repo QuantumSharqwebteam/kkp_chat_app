@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -20,7 +21,19 @@ class PasswordAndSecurity extends StatefulWidget {
 }
 
 class _PasswordAndSecurityState extends State<PasswordAndSecurity> {
-  final role = LocalDbHelper.getUserType();
+  String? role = "";
+
+  @override
+  void initState() {
+    getRole();
+    super.initState();
+  }
+
+  void getRole() async {
+    role = await LocalDbHelper.getUserType();
+    setState(() {}); // Update the UI after getting the role
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,7 +83,6 @@ class _PasswordAndSecurityState extends State<PasswordAndSecurity> {
                 ),
               ),
               Spacer(),
-              // ignore: unrelated_type_equality_checks
               if (role == "0")
                 Container(
                   decoration: BoxDecoration(
@@ -96,23 +108,6 @@ class _PasswordAndSecurityState extends State<PasswordAndSecurity> {
                         leadingIcons: [Icons.delete_forever_rounded],
                         iconColor: Colors.red,
                       ),
-                      // SettingsTile(
-                      //   titles: ['Logout'],
-                      //   tileTitleStyle: TextStyle(
-                      //       color: Colors.blue,
-                      //       fontSize: 16,
-                      //       fontWeight: FontWeight.w700),
-                      //   numberOfTiles: 1,
-                      //   isDense: true,
-                      //   onTaps: [
-                      //     () {
-                      //       logOut(context);
-                      //     }
-                      //   ],
-                      //   trailingIconColor: Colors.blue,
-                      //   leadingIcons: [Icons.logout],
-                      //   iconColor: Colors.blue,
-                      // ),
                     ],
                   ),
                 ),
@@ -158,17 +153,20 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
 
   final AuthApi authApi = AuthApi();
 
-  Future<void> deleteAccount() async {
+  Future<void> deleteAccount(context) async {
     try {
       await authApi
           .deleteUserAccount(email.text, password.text)
-          .then((response) {
+          .then((response) async {
         if (response['message'] == "User deleted successfully") {
           widget.scaffoldMessenger
               .showSnackBar(SnackBar(content: Text(response['message'])));
-          if (mounted) {
-            Navigator.of(context).pop();
-          } // Close the bottom sheet
+
+          // Clear Hive storage
+          await clearHiveStorage();
+
+          // Logout and navigate to login page
+          logOut(context);
         } else {
           widget.scaffoldMessenger
               .showSnackBar(SnackBar(content: Text(response['message'])));
@@ -178,6 +176,14 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
       widget.scaffoldMessenger
           .showSnackBar(SnackBar(content: Text(e.toString())));
     }
+  }
+
+  Future<void> clearHiveStorage() async {
+    final boxNames = await Hive.openBox('boxNames');
+    for (var boxName in boxNames.keys) {
+      await Hive.deleteBoxFromDisk(boxName);
+    }
+    await boxNames.clear();
   }
 
   @override
@@ -236,7 +242,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
                 });
 
                 if (emailError == null && passwordError == null) {
-                  deleteAccount();
+                  deleteAccount(context);
                 }
               },
               width: Utils().width(context) * 0.8,
