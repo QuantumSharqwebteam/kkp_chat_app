@@ -70,9 +70,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isRecording = false;
   int _recordedSeconds = 0; // Add this line
   Timer? _timer;
+  String? userRole;
 
   @override
   void initState() {
+    _fetchUserRole();
     super.initState();
     _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
@@ -85,6 +87,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   Future<void> _initializeRecorder() async {
     await _recorder.openRecorder();
     await Permission.microphone.request();
+  }
+
+  Future<void> _fetchUserRole() async {
+    final role = await LocalDbHelper.getUserType();
+    setState(() {
+      userRole = role;
+    });
   }
 
   @override
@@ -435,6 +444,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                           );
                         } else if (msg.type == 'form') {
                           return FormMessageBubble(
+                            userRole: userRole!,
                             formData: msg.form!,
                             isMe: msg.sender == widget.customerEmail,
                             timestamp: formatTimestamp(msg.timestamp),

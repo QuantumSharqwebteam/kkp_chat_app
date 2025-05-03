@@ -64,9 +64,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   bool _isRecording = false;
   int _recordedSeconds = 0;
   Timer? _timer;
+  String? userRole;
 
   @override
   void initState() {
+    _fetchUserRole();
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
@@ -96,6 +98,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+  Future<void> _fetchUserRole() async {
+    final role = await LocalDbHelper.getUserType();
+    setState(() {
+      userRole = role;
+    });
+  }
+
   Future<void> _initializeRecorder() async {
     await _recorder.openRecorder();
     await Permission.microphone.request();
@@ -115,7 +124,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             Map<String, dynamic>? formData;
 
             if (m.type == 'form' && formList != null && formList.isNotEmpty) {
-              final firstForm = formList[0]; // formList is List<dynamic>
+              final firstForm = formList[0];
+              // formList is List<dynamic>
               formData = {
                 "quality": firstForm['quality'],
                 "quantity": firstForm['quantity'],
@@ -428,6 +438,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             );
                           } else if (msg['type'] == 'form') {
                             return FormMessageBubble(
+                              userRole: userRole!,
                               formData: msg['form'],
                               isMe: msg['isMe'],
                               timestamp: formatTimestamp(msg['timestamp']),

@@ -47,4 +47,12 @@ class ChatRepository {
   Future<List<Map<String, dynamic>>> fetchTrafficChartData() async {
     return await chatService.getAdminGraphData();
   }
+
+  Future<void> updateInquiryFormStatus(String formId, String status) async {
+    return chatService.updateFormStatus(formId: formId, status: status);
+  }
+
+  Future<void> updateInquiryFormRate(String formId, String rate) async {
+    return chatService.updateFormRate(formId: formId, rate: rate);
+  }
 }
