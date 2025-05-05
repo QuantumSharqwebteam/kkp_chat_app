@@ -9,7 +9,7 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
-import 'package:kkpchatapp/presentation/customer/screen/settings/password_and_security.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
@@ -83,7 +83,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               onTaps: [
                 () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return PasswordAndSecurity();
+                    return AccountAndSecurity();
                   }));
                 }
               ],

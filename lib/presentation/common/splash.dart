@@ -16,26 +16,26 @@ class Splash extends StatefulWidget {
 
 class _SplashState extends State<Splash> {
   final AuthApi auth = AuthApi();
+  Timer? _refreshTokenTimer;
 
   Future<void> _checkLogin(context) async {
-    // await Future.delayed(const Duration(seconds: 1));
-
-    final String? token = await LocalDbHelper.getToken();
+    String? token = await LocalDbHelper.getToken();
     final String? userType = await LocalDbHelper.getUserType();
+    final int? lastRefreshTime = await LocalDbHelper.getLastRefreshTime();
+    final int currentTime = DateTime.now().millisecondsSinceEpoch;
 
-    // if (token != null && token.isNotEmpty) {
-    //   await auth.refreshToken(token).then((response) async {
-    //     if (response['message'] == "Refresh token generated successfully") {
-    //       token = response['token'];
-    //       await LocalDbHelper.saveToken(response['token']);
-    //       await LocalDbHelper.saveLastRefreshTime(
-    //           DateTime.now().millisecondsSinceEpoch);
-    //     } else {
-    //       ScaffoldMessenger.of(context)
-    //           .showSnackBar(SnackBar(content: Text(response['message'])));
-    //     }
-    //   });
-    // }
+    // Check if 24 hours have passed since the last refresh
+    if (lastRefreshTime != null &&
+        (currentTime - lastRefreshTime) < 24 * 60 * 60 * 1000) {
+      // Schedule the next refresh
+      _scheduleNextRefresh(
+          24 * 60 * 60 * 1000 - (currentTime - lastRefreshTime), context);
+    } else {
+      // Refresh the token immediately
+      await _refreshToken(token, context);
+      // Schedule the next refresh for 24 hours later
+      _scheduleNextRefresh(24 * 60 * 60 * 1000, context);
+    }
 
     if (token != null && userType != null) {
       if (userType == '0') {
@@ -58,10 +58,44 @@ class _SplashState extends State<Splash> {
     }
   }
 
+  Future<void> _refreshToken(String? token, context) async {
+    if (token != null && token.isNotEmpty) {
+      await auth.refreshToken(token).then((response) async {
+        if (response['message'] == "Refresh token generated successfully") {
+          token = response['token'];
+          await LocalDbHelper.saveToken(response['token']);
+          await LocalDbHelper.saveLastRefreshTime(
+              DateTime.now().millisecondsSinceEpoch);
+        } else {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(response['message'])));
+        }
+      });
+    }
+  }
+
+  void _scheduleNextRefresh(int durationMillis, context) {
+    _refreshTokenTimer?.cancel(); // Cancel any existing timer
+    _refreshTokenTimer =
+        Timer(Duration(milliseconds: durationMillis), () async {
+      String? token = await LocalDbHelper.getToken();
+      _refreshToken(token, context);
+      _scheduleNextRefresh(
+          24 * 60 * 60 * 1000, context); // Schedule the next refresh
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _checkLogin(context);
+  }
+
+  @override
+  void dispose() {
+    _refreshTokenTimer
+        ?.cancel(); // Cancel the timer when the widget is disposed
+    super.dispose();
   }
 
   @override

@@ -13,14 +13,14 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 
-class PasswordAndSecurity extends StatefulWidget {
-  const PasswordAndSecurity({super.key});
+class AccountAndSecurity extends StatefulWidget {
+  const AccountAndSecurity({super.key});
 
   @override
-  State<PasswordAndSecurity> createState() => _PasswordAndSecurityState();
+  State<AccountAndSecurity> createState() => _AccountAndSecurityState();
 }
 
-class _PasswordAndSecurityState extends State<PasswordAndSecurity> {
+class _AccountAndSecurityState extends State<AccountAndSecurity> {
   String? role = "";
 
   @override
@@ -124,11 +124,17 @@ Future confirmDelete(BuildContext context) {
   return showModalBottomSheet(
       useSafeArea: true,
       context: context,
-      isDismissible: true,
-      enableDrag: true,
+      isDismissible: false,
+      showDragHandle: true,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+          maxHeight: Utils().height(context) * 0.8,
+          minHeight: Utils().height(context) * 0.6),
+      elevation: 10,
       builder: (BuildContext ctx) {
         return ConfirmDeleteBottomSheet(
             scaffoldMessenger: ScaffoldMessenger.of(context));
@@ -248,7 +254,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
               width: Utils().width(context) * 0.8,
               backgroundColor: Colors.red.shade100,
               textColor: Colors.red,
-            )
+            ),
           ],
         ),
       ),
