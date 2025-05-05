@@ -11,7 +11,7 @@ import 'package:kkpchatapp/presentation/customer/screen/settings/archive_setting
 import 'package:kkpchatapp/presentation/customer/screen/settings/change_password.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/notification_settings.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/order_enquiries.dart';
-import 'package:kkpchatapp/presentation/customer/screen/settings/password_and_security.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 
 import '../../data/models/product_model.dart';
@@ -83,7 +83,7 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
       );
 
     case CustomerRoutes.passwordAndSecurity:
-      return MaterialPageRoute(builder: (context) => PasswordAndSecurity());
+      return MaterialPageRoute(builder: (context) => AccountAndSecurity());
 
     case CustomerRoutes.changePassword:
       return MaterialPageRoute(builder: (context) => ChangePassword());

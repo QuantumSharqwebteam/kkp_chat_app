@@ -652,6 +652,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     CustomTextField(
                       controller: _pinCode,
                       height: 50,
+                      maxLength: 6,
                       hintText: 'Enter Pincode',
                       errorText: widget.forUpdate ? null : _pinCodeError,
                       keyboardType: TextInputType.number,

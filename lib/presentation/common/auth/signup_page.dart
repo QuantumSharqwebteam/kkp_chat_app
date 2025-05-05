@@ -104,7 +104,7 @@ class _SignupPageState extends State<SignupPage> {
       if (response['message'] == "User signed up successfully") {
         try {
           await LocalDbHelper.saveToken(response['token'].toString());
-
+          await LocalDbHelper.saveUserType("0");
           await _saveUser(context, _name.text);
 
           final result = await auth.sendOtp(email: _email.text);
