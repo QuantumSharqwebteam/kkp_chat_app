@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
@@ -127,6 +129,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               final firstForm = formList[0];
               // formList is List<dynamic>
               formData = {
+                "S.No": firstForm['S.No'],
                 "quality": firstForm['quality'],
                 "quantity": firstForm['quantity'],
                 "weave": firstForm['weave'],
@@ -394,7 +397,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           ),
           IconButton(
             onPressed: () {
-              final channelName = "agentCall123";
+              //  final channelName = "agentCall123";
+              final channelName =
+                  sha256.convert(utf8.encode(widget.agentEmail!)).toString();
+
               final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
 

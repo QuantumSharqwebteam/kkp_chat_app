@@ -25,17 +25,17 @@ class _SplashState extends State<Splash> {
     final int currentTime = DateTime.now().millisecondsSinceEpoch;
 
     // Check if 24 hours have passed since the last refresh
-    if (lastRefreshTime != null &&
-        (currentTime - lastRefreshTime) < 24 * 60 * 60 * 1000) {
-      // Schedule the next refresh
-      _scheduleNextRefresh(
-          24 * 60 * 60 * 1000 - (currentTime - lastRefreshTime), context);
-    } else {
-      // Refresh the token immediately
-      await _refreshToken(token, context);
-      // Schedule the next refresh for 24 hours later
-      _scheduleNextRefresh(24 * 60 * 60 * 1000, context);
-    }
+    // if (lastRefreshTime != null &&
+    //     (currentTime - lastRefreshTime) < 24 * 60 * 60 * 1000) {
+    //   // Schedule the next refresh
+    //   _scheduleNextRefresh(
+    //       24 * 60 * 60 * 1000 - (currentTime - lastRefreshTime), context);
+    // } else {
+    //   // Refresh the token immediately
+    //   await _refreshToken(token, context);
+    //   // Schedule the next refresh for 24 hours later
+    //   _scheduleNextRefresh(24 * 60 * 60 * 1000, context);
+    // }
 
     if (token != null && userType != null) {
       if (userType == '0') {

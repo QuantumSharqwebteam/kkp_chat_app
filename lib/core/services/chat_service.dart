@@ -317,6 +317,8 @@ class ChatService {
       if (response.statusCode != 200) {
         debugPrint("Failed to update form rate: ${response.body}");
         throw Exception('Failed to update form rate: ${response.body}');
+      } else {
+        throw Exception("Error to update form : ${response.body}");
       }
     } catch (e) {
       throw Exception('Error updating form rate: $e');

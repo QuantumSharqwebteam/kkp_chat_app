@@ -58,17 +58,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final rateController = TextEditingController();
   final qualityController = TextEditingController();
   final quantityController = TextEditingController();
   final weaveController = TextEditingController();
   final compositionController = TextEditingController();
   final sNoController = TextEditingController();
-  final ChatStorageService _chatStorageService =
-      ChatStorageService(); // Initialize the service
+  final ChatStorageService _chatStorageService = ChatStorageService();
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
-  int _recordedSeconds = 0; // Add this line
+  int _recordedSeconds = 0;
   Timer? _timer;
   String? userRole;
 
@@ -274,20 +274,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 Text("Please fill in the form details",
                     style: AppTextStyles.black16_600),
                 const SizedBox(height: 10),
-                TextFormField(
-                  decoration: InputDecoration(
-                      labelText: "S.No",
-                      hintText: "fill here '01' for first form",
-                      hintStyle: AppTextStyles.grey12_600
-                          .copyWith(color: AppColors.greyAAAAAA)),
-                  controller: sNoController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'S.No';
-                    }
-                    return null;
-                  },
-                ),
+                // TextFormField(
+                //   decoration: InputDecoration(
+                //       labelText: "S.No",
+                //       hintText: "fill here '01' for first form",
+                //       hintStyle: AppTextStyles.grey12_600
+                //           .copyWith(color: AppColors.greyAAAAAA)),
+                //   controller: sNoController,
+                //   validator: (value) {
+                //     if (value == null || value.isEmpty) {
+                //       return 'S.No';
+                //     }
+                //     return null;
+                //   },
+                // ),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
                   controller: qualityController,
@@ -328,16 +328,27 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     return null;
                   },
                 ),
+                TextFormField(
+                  decoration: InputDecoration(labelText: "Rate"),
+                  controller: rateController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please set Rate';
+                    }
+                    return null;
+                  },
+                ),
                 const SizedBox(height: 20),
                 CustomButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final formData = {
-                        "S.No": sNoController.text,
+                        // "S.No": sNoController.text,
                         "quality": qualityController.text,
                         "quantity": quantityController.text,
                         "weave": weaveController.text,
                         "composition": compositionController.text,
+                        "rate": rateController.text,
                       };
                       _sendMessage(
                           messageText: "product", type: 'form', form: formData);
