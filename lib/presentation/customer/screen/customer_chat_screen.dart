@@ -357,6 +357,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
   }
 
+  void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
+    _sendMessage(
+      messageText: "Form rate updated",
+      type: 'form',
+      form: updatedFormData,
+    );
+  }
+
   String formatTimestamp(dynamic timestamp) {
     if (timestamp == null) {
       return DateFormat('hh:mm a').format(DateTime.now());
@@ -448,6 +456,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                             formData: msg.form!,
                             isMe: msg.sender == widget.customerEmail,
                             timestamp: formatTimestamp(msg.timestamp),
+                            onRateUpdated: _handleRateUpdated,
                           );
                         } else if (msg.type == 'document') {
                           return DocumentMessageBubble(

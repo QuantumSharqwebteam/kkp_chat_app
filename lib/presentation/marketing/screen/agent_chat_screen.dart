@@ -325,6 +325,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _sendMessage(messageText: "Fill details");
   }
 
+  void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
+    _sendMessage(
+      messageText: "Form rate updated",
+      type: 'form',
+      form: updatedFormData,
+    );
+  }
+
+  void _handleStatusUpdated(String status, String sNo) {
+    final messageText = status == 'Confirmed'
+        ? "Your order is confirmed with S.No: $sNo"
+        : "Your order is declined with S.No: $sNo";
+    _sendMessage(
+      messageText: messageText,
+      type: 'text',
+    );
+  }
+
   String formatTimestamp(String? timestamp) {
     if (timestamp == null || timestamp.isEmpty) {
       final currentTime = DateTime.now();
@@ -442,6 +460,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                               formData: msg['form'],
                               isMe: msg['isMe'],
                               timestamp: formatTimestamp(msg['timestamp']),
+                              onRateUpdated: _handleRateUpdated,
+                              onStatusUpdated: _handleStatusUpdated,
                             );
                           } else if (msg['type'] == 'document') {
                             return DocumentMessageBubble(

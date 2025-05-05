@@ -1,15 +1,19 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-
-import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-// Adjust the import according to your project structure
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
 class FormMessageBubble extends StatefulWidget {
   final Map<String, dynamic> formData;
   final bool isMe;
   final String timestamp;
   final String userRole;
+  final Function(Map<String, dynamic>)? onRateUpdated;
+  final Function(String, String)? onStatusUpdated;
 
   const FormMessageBubble({
     super.key,
@@ -17,6 +21,8 @@ class FormMessageBubble extends StatefulWidget {
     required this.isMe,
     required this.timestamp,
     required this.userRole,
+    this.onRateUpdated,
+    this.onStatusUpdated,
   });
 
   @override
@@ -25,50 +31,62 @@ class FormMessageBubble extends StatefulWidget {
 
 class _FormMessageBubbleState extends State<FormMessageBubble> {
   final chatRepository = ChatRepository();
+  final rateController = TextEditingController();
 
-  Future<void> _updateFormRate(BuildContext context, String rate) async {
-    final id = widget.formData['id']?.toString();
-    if (id == null || id.isEmpty) {
-      print('Missing _id in formData: ${widget.formData}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Form ID is missing or invalid')),
-      );
-      return;
-    }
-
+  Future<void> _updateFormRate(BuildContext context) async {
+    final id = widget.formData['id'].toString();
+    final rate = rateController.text;
     try {
       await chatRepository.updateInquiryFormRate(id, rate);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rate updated successfully')),
-      );
+      if (context.mounted) {
+        Utils().showSuccessDialog(context, "Rate is updated :$rate", true);
+        await Future.delayed(Duration(seconds: 2), () {
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
+        });
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      }
+      // Call the callback function with the updated form data
+      if (widget.onRateUpdated != null) {
+        final updatedFormData = Map<String, dynamic>.from(widget.formData);
+        updatedFormData['rate'] = rate;
+        widget.onRateUpdated!(updatedFormData);
+      }
     } catch (e) {
-      print('Error updating rate: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update rate: $e')),
-      );
+      if (kDebugMode) {
+        debugPrint('Error updating rate of the form : $e');
+      }
+      if (context.mounted) {
+        Utils().showSuccessDialog(
+            context, "Cannot Update! Try again later!", false);
+      }
     }
   }
 
   Future<void> _updateFormStatus(BuildContext context, String status) async {
-    final id = widget.formData['id']?.toString();
-    if (id == null || id.isEmpty) {
-      print('Missing _id in formData: ${widget.formData}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Form ID is missing or invalid')),
-      );
-      return;
-    }
-
+    final id = widget.formData['id'].toString();
     try {
       await chatRepository.updateInquiryFormStatus(id, status);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Status updated to $status')),
-      );
+      if (context.mounted) {
+        Utils().showSuccessDialog(context, "Status updated to $status", true);
+        await Future.delayed(Duration(seconds: 2), () {
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
+        });
+      }
+      // Call the callback function with the status and S.No
+      if (widget.onStatusUpdated != null) {
+        final sNo = widget.formData["S.No"] ?? "";
+        widget.onStatusUpdated!(status, sNo);
+      }
     } catch (e) {
-      print('Error updating status: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update status: $e')),
-      );
+      if (kDebugMode) {
+        debugPrint('Error updating form data status: $e');
+      }
     }
   }
 
@@ -161,31 +179,42 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   }
 
   void _showRateDialog(BuildContext context) {
-    TextEditingController rateController = TextEditingController();
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Update Rate'),
-          content: TextField(
-            controller: rateController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Enter Rate'),
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          elevation: 10,
+          title: Text(
+            'Update Rate',
+            style: AppTextStyles.black14_600,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomTextField(
+                controller: rateController,
+                keyboardType: TextInputType.number,
+              ),
+            ],
           ),
           actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
+            CustomButton(
+              text: 'Cancel',
+              backgroundColor: Colors.white,
+              width: 90,
+              fontSize: 11,
+              textColor: AppColors.blue0056FB,
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-            TextButton(
-              child: const Text('Update'),
-              onPressed: () async {
-                String rate = rateController.text;
-                await _updateFormRate(context, rate);
-                Navigator.of(context).pop();
-              },
+            CustomButton(
+              onPressed: () => _updateFormRate(context),
+              text: 'Update',
+              fontSize: 12, width: 100,
+              // width: 40,
             ),
           ],
         );
