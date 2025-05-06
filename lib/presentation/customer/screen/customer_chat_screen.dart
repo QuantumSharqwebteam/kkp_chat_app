@@ -274,20 +274,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 Text("Please fill in the form details",
                     style: AppTextStyles.black16_600),
                 const SizedBox(height: 10),
-                // TextFormField(
-                //   decoration: InputDecoration(
-                //       labelText: "S.No",
-                //       hintText: "fill here '01' for first form",
-                //       hintStyle: AppTextStyles.grey12_600
-                //           .copyWith(color: AppColors.greyAAAAAA)),
-                //   controller: sNoController,
-                //   validator: (value) {
-                //     if (value == null || value.isEmpty) {
-                //       return 'S.No';
-                //     }
-                //     return null;
-                //   },
-                // ),
+                TextFormField(
+                  decoration: InputDecoration(
+                      labelText: "S.No",
+                      hintText: "fill here '01' for first form",
+                      hintStyle: AppTextStyles.grey12_600
+                          .copyWith(color: AppColors.greyAAAAAA)),
+                  controller: sNoController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'S.No';
+                    }
+                    return null;
+                  },
+                ),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
                   controller: qualityController,
@@ -343,7 +343,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final formData = {
-                        // "S.No": sNoController.text,
+                        "S.No": sNoController.text,
                         "quality": qualityController.text,
                         "quantity": quantityController.text,
                         "weave": weaveController.text,

@@ -34,10 +34,15 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   final rateController = TextEditingController();
 
   Future<void> _updateFormRate(BuildContext context) async {
-    final id = widget.formData['id'].toString();
+    final formData = widget.formData;
+    final id = widget.formData['_id']?.toString();
     final rate = rateController.text;
+    if (id == null) {
+      debugPrint(
+          "No form id is found to update  : $id in the ${formData.toString()} ");
+    }
     try {
-      await chatRepository.updateInquiryFormRate(id, rate);
+      await chatRepository.updateInquiryFormRate(id!, rate);
       if (context.mounted) {
         Utils().showSuccessDialog(context, "Rate is updated :$rate", true);
         await Future.delayed(Duration(seconds: 2), () {
@@ -61,15 +66,20 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
       }
       if (context.mounted) {
         Utils().showSuccessDialog(
-            context, "Cannot Update! Try again later!", false);
+            context, "Cannot Update , send new form!", false);
       }
     }
   }
 
   Future<void> _updateFormStatus(BuildContext context, String status) async {
-    final id = widget.formData['id'].toString();
+    final formData = widget.formData;
+    final id = widget.formData['_id']?.toString();
+    if (id == null) {
+      debugPrint(
+          "Form id required : $id in the form data: ${formData.toString()} ");
+    }
     try {
-      await chatRepository.updateInquiryFormStatus(id, status);
+      await chatRepository.updateInquiryFormStatus(id!, status);
       if (context.mounted) {
         Utils().showSuccessDialog(context, "Status updated to $status", true);
         await Future.delayed(Duration(seconds: 2), () {

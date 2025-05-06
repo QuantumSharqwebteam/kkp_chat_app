@@ -129,7 +129,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               final firstForm = formList[0];
               // formList is List<dynamic>
               formData = {
-                "S.No": firstForm['S.No'],
+                // "S.No": firstForm['S.No'],
                 "quality": firstForm['quality'],
                 "quantity": firstForm['quantity'],
                 "weave": firstForm['weave'],
@@ -164,6 +164,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
     final currentTime = DateTime.now().toIso8601String();
+    if (data["type"] == "form") {
+      final recievedFormData = data["form"];
+      debugPrint("Recived form data : ${recievedFormData.toString()}");
+    }
     setState(() {
       messages.add({
         "text": data["message"],

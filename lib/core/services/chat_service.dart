@@ -314,14 +314,41 @@ class ChatService {
         body: jsonEncode({"rate": rate}),
       );
 
-      if (response.statusCode != 200) {
+      final responseBody = jsonDecode(response.body);
+
+      if (responseBody['status'] != 200) {
         debugPrint("Failed to update form rate: ${response.body}");
         throw Exception('Failed to update form rate: ${response.body}');
-      } else {
-        throw Exception("Error to update form : ${response.body}");
       }
+      // No need to throw an exception if the status is 200
     } catch (e) {
       throw Exception('Error updating form rate: $e');
+    }
+  }
+
+  /// Update Call Data
+  Future<void> updateCallData(String messageId, String callStatus,
+      {String? callDuration}) async {
+    final url = Uri.parse('$baseUrl/chat/updateCall/$messageId');
+    final body = callDuration != null
+        ? {'callStatus': callStatus, 'callDuration': callDuration}
+        : {'callStatus': callStatus};
+
+    try {
+      final response = await client.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint(
+            '✅ Call data updated successfully:${response.statusCode} with status marked as:$callStatus');
+      } else {
+        debugPrint('Failed to update call data: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint("❌ Error updating call data: $e ");
     }
   }
 }

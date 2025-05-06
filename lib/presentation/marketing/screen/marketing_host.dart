@@ -8,6 +8,7 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
@@ -36,6 +37,7 @@ class _MarketingHostState extends State<MarketingHost> {
   String? agentName;
   List<Widget> _screens = [];
   final SocketService _socketService = SocketService(navigatorKey);
+  final chatRepository = ChatRepository();
   AuthApi auth = AuthApi();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
@@ -163,7 +165,7 @@ class _MarketingHostState extends State<MarketingHost> {
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {
-    debugPrint("Incoming call data2: ${callData.toString()}");
+    // debugPrint("Incoming call data2: ${callData.toString()}");
     // Remove previous overlay if exists
     _activeCallOverlay?.remove();
     _activeCallOverlay = null;
@@ -171,6 +173,7 @@ class _MarketingHostState extends State<MarketingHost> {
     final channelName = callData['channelName'];
     final callerName = callData['callerName'];
     final callerId = callData['callerId'];
+    final incomingCallId = callData["_id"];
     final uid = Utils().generateIntUidFromEmail(agentEmail!);
     final overlayState = Overlay.of(context);
 
@@ -204,6 +207,7 @@ class _MarketingHostState extends State<MarketingHost> {
                     uid: uid,
                     remoteUserId: callerId,
                     remoteUserName: callerName,
+                    messageId: incomingCallId,
                   ),
                 ),
               );
@@ -211,6 +215,7 @@ class _MarketingHostState extends State<MarketingHost> {
           },
           onReject: () async {
             await stopAndRemoveOverlay();
+            await chatRepository.updateCallData(incomingCallId, "missed");
             // Optionally emit reject event
           },
           audioPlayer: audioPlayer,
@@ -225,6 +230,7 @@ class _MarketingHostState extends State<MarketingHost> {
     timeoutTimer = Timer(const Duration(seconds: 30), () async {
       await stopAndRemoveOverlay();
       // Optionally emit missed call
+      await chatRepository.updateCallData(incomingCallId, "missed");
     });
   }
 

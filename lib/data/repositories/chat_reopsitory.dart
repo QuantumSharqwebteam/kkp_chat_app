@@ -55,4 +55,11 @@ class ChatRepository {
   Future<void> updateInquiryFormRate(String formId, String rate) async {
     return chatService.updateFormRate(formId: formId, rate: rate);
   }
+
+  /// Update Call Data
+  Future<void> updateCallData(String messageId, String callStatus,
+      {String? callDuration}) async {
+    return chatService.updateCallData(messageId, callStatus,
+        callDuration: callDuration);
+  }
 }
