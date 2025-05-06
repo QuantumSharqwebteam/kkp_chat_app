@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -28,9 +28,9 @@ import 'package:permission_handler/permission_handler.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
-  final String? customerImage;
+
   final String? agentName;
-  final String? agentImage;
+
   final String? customerEmail;
   final String? agentEmail;
   final GlobalKey<NavigatorState> navigatorKey;
@@ -38,9 +38,7 @@ class CustomerChatScreen extends StatefulWidget {
   const CustomerChatScreen({
     super.key,
     this.customerName,
-    this.customerImage,
     this.agentName = "Agent",
-    this.agentImage,
     this.customerEmail,
     this.agentEmail,
     required this.navigatorKey,
@@ -402,9 +400,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         appBar: AppBar(
           title: Row(
             children: [
-              CircleAvatar(
-                  backgroundImage: AssetImage(
-                      widget.agentImage ?? ImageConstants.agentImage)),
+              Initicon(text: "Agent"),
               const SizedBox(width: 5),
               Text(
                 widget.agentName ?? "Agent",
@@ -492,8 +488,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                           isMe: msg.sender == widget.customerEmail,
                           timestamp: formatTimestamp(msg.timestamp),
                           image: msg.sender == widget.customerEmail
-                              ? widget.customerImage ?? ImageConstants.userImage
-                              : widget.agentImage ?? ImageConstants.agentImage,
+                              ? widget.customerName ?? ""
+                              : "Agent",
                         );
                       },
                     ),

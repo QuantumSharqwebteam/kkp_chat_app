@@ -103,7 +103,6 @@ class _TrackInquriesState extends State<TrackInquries> {
             name: message['name'],
             message: message['message'],
             time: message['time'],
-            image: message['image'],
             isActive: message['isActive'],
             onTap: () {},
           ),

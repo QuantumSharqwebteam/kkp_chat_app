@@ -14,7 +14,6 @@ import 'dart:async';
 class SocketService {
   static final SocketService _instance = SocketService._internal();
   factory SocketService(GlobalKey<NavigatorState> navigatorKey) {
-    _instance._navigatorKey = navigatorKey;
     return _instance;
   }
 
@@ -33,7 +32,6 @@ class SocketService {
   Function(Map<String, dynamic>)? _onCallTerminated;
   Function(Map<String, dynamic>)? _onSignalCandidate;
   bool isChatPageOpen = false;
-  GlobalKey<NavigatorState>? _navigatorKey;
 
   List<String> _roomMembers = [];
   StreamController<List<String>> _statusController =
@@ -411,6 +409,26 @@ class SocketService {
         );
 
         chatStorageService.saveMessage(message, customerEmail);
+      }
+    }
+
+    if (await LocalDbHelper.getUserType() != "0") {
+      // Get the customer's email
+      final agentEmail = LocalDbHelper.getEmail();
+
+      if (agentEmail != null) {
+        String boxName = agentEmail + data['senderId'];
+        // Save the message to Hive local storage
+        final message = ChatMessageModel(
+          message: data["message"],
+          timestamp: DateTime.parse(DateTime.now().toIso8601String()),
+          sender: data["senderId"],
+          type: data["type"] ?? "text",
+          mediaUrl: data["mediaUrl"],
+          form: data["form"],
+        );
+
+        chatStorageService.saveMessage(message, boxName);
       }
     }
 

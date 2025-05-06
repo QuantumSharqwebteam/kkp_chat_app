@@ -1,11 +1,10 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
@@ -13,11 +12,14 @@ import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class CustomerProfileSetupPage extends StatefulWidget {
-  const CustomerProfileSetupPage(
-      {super.key, required this.forUpdate, this.profile, this.name});
+  const CustomerProfileSetupPage({
+    super.key,
+    required this.forUpdate,
+    this.profile,
+    this.name,
+  });
 
   final bool forUpdate;
   final Profile? profile;
@@ -42,10 +44,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   late bool _isDomesticSelected = false;
   AuthRepository auth = AuthRepository();
   String? _customerType;
-  bool _isLoading = false;
-  bool _isUploading = false;
-  String? _profileImage;
-  File? _selectedImageFile;
   DateTime? _lastPressed;
 
   // Error texts for each field
@@ -62,7 +60,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   void initState() {
     super.initState();
 
-    if (widget.forUpdate == false) {
+    if (!widget.forUpdate) {
       _name.text = (widget.name ?? LocalDbHelper.getProfile()?.name)!;
     }
 
@@ -72,7 +70,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       _phoneNumber.text = widget.profile!.mobile.toString();
       _gstNumber.text = widget.profile!.gstNo ?? '';
       _panNumber.text = widget.profile!.panNo ?? '';
-      _profileImage = widget.profile!.profileUrl;
       if (widget.profile!.address != null &&
           widget.profile!.address!.isNotEmpty) {
         var address = widget.profile!.address![0];
@@ -94,10 +91,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   Future<void> _saveUserProfile(context) async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
     // Construct the address object with only changed values
     Address? addressDetails;
     if (_houseFlatNumber.text.isNotEmpty ||
@@ -115,20 +108,16 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
 
     try {
       final response = await auth.updateUserDetails(
-          name: _name.text.isNotEmpty ? _name.text : null,
-          number: _phoneNumber.text.isNotEmpty ? _phoneNumber.text : null,
-          customerType: _customerType,
-          gstNo: _gstNumber.text.isNotEmpty ? _gstNumber.text : null,
-          panNo: _panNumber.text.isNotEmpty ? _panNumber.text : null,
-          address: addressDetails,
-          profileUrl: _profileImage ?? "");
+        name: _name.text.isNotEmpty ? _name.text : widget.name,
+        number: _phoneNumber.text.isNotEmpty ? _phoneNumber.text : null,
+        customerType: _customerType,
+        gstNo: _gstNumber.text.isNotEmpty ? _gstNumber.text : null,
+        panNo: _panNumber.text.isNotEmpty ? _panNumber.text : null,
+        address: addressDetails,
+      );
 
       if (response['message'] == "Item updated successfully") {
         if (!mounted) return;
-
-        setState(() {
-          _isLoading = false;
-        });
 
         Profile updatedProfile = Profile.fromJson(response["data"]);
 
@@ -145,19 +134,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       } else {
         if (!mounted) return;
 
-        setState(() {
-          _isLoading = false;
-        });
-
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(response['message'])));
       }
     } catch (e) {
       if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
 
       if (kDebugMode) {
         print(e.toString());
@@ -208,31 +189,29 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     },
                   ),
                 Spacer(),
-                _isLoading || _isUploading
-                    ? Center(child: CircularProgressIndicator())
-                    : CustomButton(
-                        text: _currentStep == getSteps(context).length - 1
-                            ? 'Finish'
-                            : 'Next',
-                        onPressed: () {
-                          if (widget.forUpdate || validateStep()) {
-                            if (_currentStep < getSteps(context).length - 1) {
-                              setState(() {
-                                _currentStep++;
-                              });
-                            } else {
-                              if (!_isDataChanged()) {
-                                Navigator.pop(context);
-                              } else {
-                                _saveUserProfile(context);
-                              }
-                            }
-                          }
-                        },
-                        backgroundColor: AppColors.blue,
-                        width: Utils().width(context) * 0.4,
-                        height: 50,
-                      ),
+                CustomButton(
+                  text: _currentStep == getSteps(context).length - 1
+                      ? 'Finish'
+                      : 'Next',
+                  onPressed: () {
+                    if (widget.forUpdate || validateStep()) {
+                      if (_currentStep < getSteps(context).length - 1) {
+                        setState(() {
+                          _currentStep++;
+                        });
+                      } else {
+                        if (!_isDataChanged()) {
+                          Navigator.pop(context);
+                        } else {
+                          _saveUserProfile(context);
+                        }
+                      }
+                    }
+                  },
+                  backgroundColor: AppColors.blue,
+                  width: Utils().width(context) * 0.4,
+                  height: 50,
+                ),
               ],
             ),
           ),
@@ -325,56 +304,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Stack(children: [
-                    GestureDetector(
-                      onTap: () async {
-                        // Handle profile image selection
-                        _selectedImageFile = await _pickImage();
-                        if (_selectedImageFile != null) {
-                          setState(() {}); // Update the UI
-                          if (context.mounted) {
-                            _uploadImage(_selectedImageFile!, context);
-                          }
-                        }
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(70),
-                        child: _selectedImageFile != null
-                            ? Image.file(
-                                _selectedImageFile!,
-                                width: 140,
-                                height: 140,
-                                fit: BoxFit.cover,
-                              )
-                            : _profileImage != null
-                                ? CachedNetworkImage(
-                                    imageUrl: _profileImage!,
-                                    width: 140,
-                                    height: 140,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) =>
-                                        CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) =>
-                                        Icon(Icons.error),
-                                  )
-                                : Image.asset(
-                                    'assets/images/profile_avataar.png',
-                                    width: 140,
-                                    height: 140,
-                                    fit: BoxFit.cover,
-                                  ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 5,
-                      right: 3,
-                      child: Icon(
-                        Icons.photo_camera,
-                        color: AppColors.grey525252,
-                        size: 25,
-                      ),
-                    )
-                  ]),
+                  SizedBox(height: 10),
+                  Initicon(
+                    text: (widget.name ?? LocalDbHelper.getProfile()?.name)!,
+                    elevation: 10,
+                    size: 140,
+                  ),
+                  SizedBox(height: 10),
                 ],
               ),
               SizedBox(height: 10),
@@ -388,6 +324,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   CustomTextField(
                     controller: _name,
                     height: 50,
+                    keyboardType: TextInputType.name,
                     hintText: 'Enter your name',
                     errorText: widget.forUpdate ? null : _nameError,
                   ),
@@ -399,45 +336,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         SizedBox(height: 20),
       ],
     );
-  }
-
-  Future<File?> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      return File(pickedFile.path);
-    }
-    return null;
-  }
-
-  Future<void> _uploadImage(File imageFile, context) async {
-    if (!mounted) return;
-
-    setState(() {
-      _isUploading = true;
-    });
-
-    S3UploadService s3uploadService = S3UploadService();
-    final imageUrl = await s3uploadService.uploadFile(imageFile);
-    if (imageUrl != null) {
-      if (!mounted) return;
-
-      setState(() {
-        _profileImage = imageUrl;
-        _isUploading = false;
-      });
-    } else {
-      if (!mounted) return;
-
-      setState(() {
-        _isUploading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Image upload failed. Please try again.')),
-      );
-    }
   }
 
   Widget step_1(BuildContext context) {
@@ -523,6 +421,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   CustomTextField(
                     controller: _phoneNumber,
                     height: 50,
+                    maxLength: 10,
                     keyboardType: TextInputType.phone,
                     hintText: 'Enter your mobile number',
                     errorText: widget.forUpdate ? null : _phoneNumberError,
@@ -680,8 +579,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       } else {
         _nameError = null;
       }
-
-      // Profile image validation check removed
     } else if (_currentStep == 1) {
       if (_phoneNumber.text.isEmpty) {
         setState(() {
@@ -777,7 +674,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         _cityName.text != widget.profile?.address?[0].city ||
         _pinCode.text != widget.profile?.address?[0].pincode ||
         _isExportSelected != (widget.profile?.customerType == 'Export') ||
-        _isDomesticSelected != (widget.profile?.customerType == 'Domestic') ||
-        _profileImage != widget.profile?.profileUrl;
+        _isDomesticSelected != (widget.profile?.customerType == 'Domestic');
   }
 }

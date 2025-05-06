@@ -72,6 +72,7 @@ dependencies:
     sdk: flutter
   file_saver: ^0.2.14
   flutter_sound: ^9.28.0
+  flutter_initicon: ^3.0.1
   
   
 

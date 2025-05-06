@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -90,10 +91,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ]),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 80,
-            backgroundImage: AssetImage("assets/images/user2.png"),
-            // foregroundImage: NetworkImage(url ?? ""),
+          Initicon(
+            text: profile!.name!,
+            size: 100,
           ),
           const SizedBox(height: 10),
           Text(

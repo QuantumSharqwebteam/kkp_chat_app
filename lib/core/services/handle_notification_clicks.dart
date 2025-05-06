@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
@@ -10,14 +12,12 @@ Future<void> handleNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
   final customerEmail = LocalDbHelper.getProfile()?.email;
-  final customerImage = LocalDbHelper.getProfile()?.profileUrl ?? "";
 
   navigatorKey.currentState?.push(
     MaterialPageRoute(
       builder: (_) => CustomerChatScreen(
         agentName: "Agent",
         customerEmail: customerEmail,
-        customerImage: customerImage,
         navigatorKey: navigatorKey,
       ),
     ),
@@ -29,7 +29,20 @@ Future<void> handlePushNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
   final customerEmail = LocalDbHelper.getProfile()?.email;
-  final customerImage = LocalDbHelper.getProfile()?.profileUrl ?? "";
+  ChatStorageService chatStorageService = ChatStorageService();
+  final Map<String, dynamic> notiData = notificationData;
+  final targetId = notificationData['targetId'];
+
+  ChatMessageModel pushMessage = ChatMessageModel(
+    message: notiData['message'],
+    sender: notiData['senderId'],
+    timestamp: DateTime.now(),
+    form: notiData['form'] ?? {},
+    mediaUrl: notiData['mediaUrl'] ?? "",
+    type: notiData['type'] ?? "",
+  );
+
+  chatStorageService.saveMessage(pushMessage, targetId);
 
   Navigator.push(
     navigatorKey.currentContext!,
@@ -37,7 +50,6 @@ Future<void> handlePushNotificationClickForCustomer(
       builder: (_) => CustomerChatScreen(
         agentName: "Agent",
         customerEmail: customerEmail,
-        customerImage: customerImage,
         navigatorKey: navigatorKey,
       ),
     ),
@@ -72,6 +84,22 @@ Future<void> handlePushNotificationClickForAgent(
     debugPrint("App is not initialized. Skipping notification handling.");
     return;
   }
+
+  ChatStorageService chatStorageService = ChatStorageService();
+  final Map<String, dynamic> notiData = notificationData;
+  final boxName =
+      LocalDbHelper.getProfile()!.email! + notificationData['senderId'];
+
+  ChatMessageModel pushMessage = ChatMessageModel(
+    message: notiData['message'],
+    sender: notiData['senderId'],
+    timestamp: DateTime.now(),
+    form: notiData['form'] ?? {},
+    mediaUrl: notiData['mediaUrl'] ?? "",
+    type: notiData['type'] ?? "",
+  );
+
+  chatStorageService.saveMessage(pushMessage, boxName);
 
   final customerEmail = notificationData['senderId'];
   final customerName = notificationData['senderName'];

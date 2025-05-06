@@ -4,15 +4,19 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/chat_message_model.dart';
+import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
@@ -30,9 +34,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
-  final String? customerImage;
   final String? agentName;
-  final String? agentImage;
   final String customerEmail;
   final String? agentEmail;
   final GlobalKey<NavigatorState> navigatorKey;
@@ -40,9 +42,7 @@ class AgentChatScreen extends StatefulWidget {
   const AgentChatScreen({
     super.key,
     this.customerName,
-    this.customerImage = ImageConstants.userImage,
     this.agentName,
-    this.agentImage = "assets/images/user4.png",
     required this.customerEmail,
     this.agentEmail,
     required this.navigatorKey,
@@ -61,8 +61,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final ChatStorageService _chatStorageService = ChatStorageService();
 
-  List<Map<String, dynamic>> messages = [];
+  List<ChatMessageModel> messages = [];
   bool _isRecording = false;
   int _recordedSeconds = 0;
   Timer? _timer;
@@ -77,6 +78,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
     _loadPreviousMessages();
+
+    // Scroll to bottom when the chat page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   @override
@@ -97,6 +103,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       _socketService.toggleChatPageOpen(false);
     } else if (state == AppLifecycleState.resumed) {
       _socketService.toggleChatPageOpen(true);
+      // Scroll to bottom when the app is resumed
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
     }
   }
 
@@ -113,72 +123,67 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   Future<void> _loadPreviousMessages() async {
-    try {
-      final fetchedMessages = await _chatRepository.fetchPreviousChats(
+    final boxName = '${widget.agentName}${widget.customerName}';
+    bool boxExists = await Hive.boxExists(boxName);
+
+    if (!boxExists) {
+      // Fetch messages from API
+      final List<MessageModel> fetchedMessages =
+          await _chatRepository.fetchPreviousChats(
         widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
         widget.customerEmail,
       );
-      if (mounted) {
-        setState(() {
-          messages = fetchedMessages.map((m) {
-            final formList =
-                m.form; // This is List<dynamic> or List<Map<String, dynamic>>
-            Map<String, dynamic>? formData;
 
-            if (m.type == 'form' && formList != null && formList.isNotEmpty) {
-              final firstForm = formList[0];
-              // formList is List<dynamic>
-              formData = {
-                // "S.No": firstForm['S.No'],
-                "quality": firstForm['quality'],
-                "quantity": firstForm['quantity'],
-                "weave": firstForm['weave'],
-                "composition": firstForm['composition'],
-                "rate": firstForm['rate'],
-                "id": firstForm['_id'],
-              };
-            }
+      // Convert MessageModel to ChatMessageModel
+      final chatMessages = fetchedMessages.map((messageJson) {
+        return ChatMessageModel(
+          message: messageJson.message ?? '',
+          timestamp: DateTime.parse(
+              messageJson.timestamp ?? DateTime.now().toIso8601String()),
+          sender: messageJson.senderId!,
+          type: messageJson.type,
+          mediaUrl: messageJson.mediaUrl,
+          form: messageJson.form != null && messageJson.form!.isNotEmpty
+              ? Map<String, dynamic>.from(messageJson.form![0])
+              : null,
+        );
+      }).toList();
 
-            return {
-              "text": m.message ?? '',
-              "timestamp": m.timestamp ?? '',
-              "isMe": m.isMe,
-              "type": m.type ?? 'text',
-              "mediaUrl": m.mediaUrl,
-              "form": formData, // Will be null if not form type or empty
-            };
-          }).toList();
-          _isLoading = false;
-          _scrollToBottom();
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-      debugPrint("❌ Error loading chat: $e");
+      // Save all messages at once
+      await _chatStorageService.saveMessages(chatMessages, boxName);
     }
+
+    // Load messages from Hive
+    final loadedMessages = await _chatStorageService.getMessages(boxName);
+    setState(() {
+      messages = loadedMessages;
+      _isLoading = false;
+      // Scroll to bottom after loading messages
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    });
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    final currentTime = DateTime.now().toIso8601String();
-    if (data["type"] == "form") {
-      final recievedFormData = data["form"];
-      debugPrint("Recived form data : ${recievedFormData.toString()}");
-    }
+    final currentTime = DateTime.now();
+    final message = ChatMessageModel(
+      message: data["message"],
+      timestamp: currentTime,
+      sender: data["senderId"],
+      type: data["type"] ?? "text",
+      mediaUrl: data["mediaUrl"],
+      form: data["form"],
+    );
+
     setState(() {
-      messages.add({
-        "text": data["message"],
-        "timeStamp": currentTime,
-        "isMe": data["senderId"] == widget.agentEmail,
-        "type": data["type"] ?? "text",
-        "mediaUrl": data["mediaUrl"],
-        "form": data["form"],
-      });
+      messages.add(message);
       _scrollToBottom();
     });
+
+    // Save the message to Hive only if it's not already saved
+    _chatStorageService.saveMessage(
+        message, '${widget.agentName}${widget.customerName}');
   }
 
   void _sendMessage({
@@ -189,17 +194,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
-    final currentTime = DateTime.now().toIso8601String();
+    final currentTime = DateTime.now();
+    final message = ChatMessageModel(
+      message: messageText,
+      timestamp: currentTime,
+      sender: widget.agentEmail!,
+      type: type!,
+      mediaUrl: mediaUrl,
+      form: form,
+    );
 
     setState(() {
-      messages.add({
-        "text": messageText,
-        "timestamp": currentTime,
-        "isMe": true,
-        "type": type,
-        "mediaUrl": mediaUrl,
-        "form": form,
-      });
+      messages.add(message);
       _scrollToBottom();
     });
 
@@ -208,31 +214,32 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       message: messageText,
       senderEmail: widget.agentEmail!,
       senderName: widget.agentName!,
-      type: type!,
+      type: type,
       mediaUrl: mediaUrl,
       form: form,
     );
 
+    // Save the message to Hive only if it's not already saved
+    _chatStorageService.saveMessage(
+        message, '${widget.agentName}${widget.customerName}');
     _chatController.clear();
   }
 
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Future<void> _startRecording() async {
     await _recorder.startRecorder(toFile: 'voice_message.aac');
     setState(() {
       _isRecording = true;
-      _recordedSeconds = 0; // Reset recorded seconds
+      _recordedSeconds = 0;
       _timer = Timer.periodic(Duration(seconds: 1), (timer) {
         setState(() {
           _recordedSeconds++;
@@ -243,7 +250,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   Future<void> _stopRecording() async {
     final path = await _recorder.stopRecorder();
-    _timer?.cancel(); // Stop the timer
+    _timer?.cancel();
     if (path != null) {
       final File voiceFile = File(path);
       final voiceUrl =
@@ -266,37 +273,35 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (pickedFile != null) {
       final File imageFile = File(pickedFile.path);
 
-      // TEMP message
       final String tempId = DateTime.now().millisecondsSinceEpoch.toString();
 
       setState(() {
-        messages.add({
-          "id": tempId,
-          "text": "image",
-          "timestamp": DateTime.now().toIso8601String(),
-          "isMe": true,
-          "type": "media",
-          "mediaUrl": imageFile.path,
-          "uploading": true,
-          "sent": false,
-        });
+        messages.add(ChatMessageModel(
+          message: "image",
+          timestamp: DateTime.now(),
+          sender: widget.agentEmail!,
+          type: "media",
+          mediaUrl: imageFile.path,
+        ));
         _scrollToBottom();
       });
 
-      // Upload in background
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
 
       if (imageUrl != null) {
-        final int index = messages.indexWhere((msg) => msg['id'] == tempId);
+        final int index = messages.indexWhere((msg) => msg.message == tempId);
         if (index != -1) {
           setState(() {
-            messages[index]['mediaUrl'] = imageUrl;
-            messages[index]['uploading'] = false;
-            messages[index]['sent'] = true;
+            messages[index] = ChatMessageModel(
+              message: "image",
+              timestamp: messages[index].timestamp,
+              sender: widget.agentEmail!,
+              type: "media",
+              mediaUrl: imageUrl,
+            );
           });
         }
 
-        // Now send the message only over socket — don't add to messages list again!
         _socketService.sendMessage(
           targetEmail: widget.customerEmail,
           message: "image",
@@ -305,8 +310,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           type: "media",
           mediaUrl: imageUrl,
         );
-      } else {
-        // Optionally show error toast or retry option
       }
     }
   }
@@ -374,7 +377,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         surfaceTintColor: Colors.white10,
         title: Row(
           children: [
-            CircleAvatar(backgroundImage: AssetImage(widget.agentImage!)),
+            Initicon(text: widget.customerName ?? ""),
             const SizedBox(width: 5),
             Text(
               widget.customerName!,
@@ -401,29 +404,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           ),
           IconButton(
             onPressed: () {
-              //  final channelName = "agentCall123";
               final channelName =
                   sha256.convert(utf8.encode(widget.agentEmail!)).toString();
 
               final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
               debugPrint("Generated UID for agent (caller): $uid");
 
-              // Send call data over socket to notify customer
               _socketService.sendAgoraCall(
                 targetId: widget.customerEmail,
                 channelName: channelName,
-                //token: token,
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
               );
 
-              // Navigate agent to call screen
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => AgoraAudioCallScreen(
                     isCaller: true,
-                    //   token: token,
                     channelName: channelName,
                     uid: uid,
                     remoteUserId: widget.customerEmail,
@@ -455,37 +453,38 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final msg = messages[index];
-                          if (msg['type'] == 'media') {
+                          if (msg.type == 'media') {
                             return ImageMessageBubble(
-                              imageUrl: msg['mediaUrl'],
-                              isMe: msg['isMe'],
-                              timestamp: formatTimestamp(msg['timestamp']),
-                              uploading: msg['uploading'] ?? false,
-                              sent: msg['sent'] ?? false,
-                              onImageLoaded: _scrollToBottom,
+                              imageUrl: msg.mediaUrl!,
+                              isMe: msg.sender == widget.agentEmail,
+                              timestamp: formatTimestamp(
+                                  msg.timestamp.toIso8601String()),
                             );
-                          } else if (msg['type'] == 'form') {
+                          } else if (msg.type == 'form') {
                             return FormMessageBubble(
                               userRole: userRole!,
-                              formData: msg['form'],
-                              isMe: msg['isMe'],
-                              timestamp: formatTimestamp(msg['timestamp']),
+                              formData: msg.form!,
+                              isMe: msg.sender == widget.agentEmail,
+                              timestamp: formatTimestamp(
+                                  msg.timestamp.toIso8601String()),
                               onRateUpdated: _handleRateUpdated,
                               onStatusUpdated: _handleStatusUpdated,
                             );
-                          } else if (msg['type'] == 'document') {
+                          } else if (msg.type == 'document') {
                             return DocumentMessageBubble(
-                              documentUrl: msg['mediaUrl'],
-                              isMe: msg['isMe'],
-                              timestamp: formatTimestamp(msg['timestamp']),
+                              documentUrl: msg.mediaUrl!,
+                              isMe: msg.sender == widget.agentEmail,
+                              timestamp: formatTimestamp(
+                                  msg.timestamp.toIso8601String()),
                             );
-                          } else if (msg['type'] == 'voice') {
+                          } else if (msg.type == 'voice') {
                             return VoiceMessageBubble(
-                              voiceUrl: msg['mediaUrl'],
-                              isMe: msg['isMe'],
-                              timestamp: formatTimestamp(msg['timestamp']),
+                              voiceUrl: msg.mediaUrl!,
+                              isMe: msg.sender == widget.agentEmail,
+                              timestamp: formatTimestamp(
+                                  msg.timestamp.toIso8601String()),
                             );
-                          } else if (msg['text'] == 'Fill details') {
+                          } else if (msg.message == 'Fill details') {
                             return FillFormButton(
                               onSubmit: () {
                                 // Agent not allowed to fill the form
@@ -493,12 +492,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             );
                           }
                           return MessageBubble(
-                            text: msg['text'],
-                            isMe: msg['isMe'],
-                            timestamp: formatTimestamp(msg['timestamp']),
-                            image: msg['isMe']
-                                ? widget.agentImage!
-                                : widget.customerImage!,
+                            text: msg.message,
+                            isMe: msg.sender == widget.agentEmail,
+                            timestamp: formatTimestamp(
+                                msg.timestamp.toIso8601String()),
+                            image: msg.sender == widget.agentEmail
+                                ? widget.agentName ?? ""
+                                : widget.customerName ?? "",
                           );
                         },
                       ),
@@ -509,9 +509,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             onSendImage: _pickAndSendImage,
             onSendForm: sendFormButton,
             onSendDocument: _pickAndSendDocument,
-            onSendVoice: _isRecording
-                ? _stopRecording
-                : _startRecording, // Update this line
+            onSendVoice: _isRecording ? _stopRecording : _startRecording,
             isRecording: _isRecording,
             recordedSeconds: _recordedSeconds,
           ),
