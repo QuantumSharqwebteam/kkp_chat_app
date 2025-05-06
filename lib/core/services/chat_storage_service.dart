@@ -12,6 +12,14 @@ class ChatStorageService {
     await box.put(message.timestamp.toString(), messageMap);
   }
 
+  Future<void> saveMessages(
+      List<ChatMessageModel> messages, String boxName) async {
+    final box = await _openBox(boxName);
+    final messagesMap = messages.map((message) => message.toMap()).toList();
+    await box.putAll(Map.fromEntries(
+        messagesMap.map((message) => MapEntry(message['timestamp'], message))));
+  }
+
   Future<List<ChatMessageModel>> getMessages(String boxName) async {
     final box = await _openBox(boxName);
     return box.values

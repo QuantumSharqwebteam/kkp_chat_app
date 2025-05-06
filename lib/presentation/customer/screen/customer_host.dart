@@ -101,7 +101,6 @@ class _CustomerHostState extends State<CustomerHost> {
           builder: (_) => CustomerChatScreen(
             agentName: name,
             customerEmail: email,
-            customerImage: image,
             navigatorKey: widget.navigatorKey,
           ),
         ));

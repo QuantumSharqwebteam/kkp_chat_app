@@ -148,7 +148,6 @@ class _MarketingHostState extends State<MarketingHost> {
             customerName: customername,
             customerEmail: customeremail,
             agentEmail: LocalDbHelper.getEmail(),
-            agentImage: LocalDbHelper.getProfile()?.profileUrl ?? "",
             navigatorKey: widget.navigatorKey,
           ),
         ));

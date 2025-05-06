@@ -193,7 +193,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
           name: agent.name,
           message: "Hi any update....",
           time: isOnline ? "Online" : lastSeen,
-          image: "assets/images/user1.png",
           isActive: isOnline,
           isPinned: pinnedAgentsSet.contains(agent.email),
           onPinTap: () => togglePinAgent(agent.email),

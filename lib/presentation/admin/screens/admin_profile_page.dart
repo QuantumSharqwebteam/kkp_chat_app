@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
-import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -81,43 +80,10 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             children: [
               Stack(
                 children: [
-                  Container(
-                    height: Utils().height(context) * 0.15,
-                    width: Utils().width(context) * 0.32,
-                    padding: EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              spreadRadius: 0,
-                              blurRadius: 6,
-                              offset: Offset(0, 4)),
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            spreadRadius: 0,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          )
-                        ]),
-                    child: const CircleAvatar(
-                      backgroundImage: AssetImage(ImageConstants.userImage),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.blue,
-                      radius: 16,
-                      child: Icon(
-                        Icons.lock,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                  Initicon(
+                    text: profile!.name!,
+                    size: 100,
+                  )
                 ],
               ),
               const SizedBox(height: 10),
