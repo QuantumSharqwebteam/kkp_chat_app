@@ -109,24 +109,21 @@ class NotificationService with WidgetsBindingObserver {
     });
   }
 
-  static void _setupTerminatedNotification() {
-    Future.delayed(const Duration(milliseconds: 500), () async {
-      RemoteMessage? message =
-          await FirebaseMessaging.instance.getInitialMessage();
+  static Future<void> _setupTerminatedNotification() async {
+    RemoteMessage? message =
+        await FirebaseMessaging.instance.getInitialMessage();
 
-      if (message != null) {
-        debugPrint(
-            "🚀 App Opened via Notification: ${message.toMap()['data']}");
+    if (message != null) {
+      debugPrint("🚀 App Opened via Notification: ${message.toMap()['data']}");
 
-        if ("0" == await LocalDbHelper.getUserType()) {
-          handlePushNotificationClickForCustomer(
-              navigatorKey!, message.toMap()['data']);
-        } else {
-          handlePushNotificationClickForAgent(
-              navigatorKey!, message.toMap()['data']);
-        }
+      if ("0" == await LocalDbHelper.getUserType()) {
+        handlePushNotificationClickForCustomer(
+            navigatorKey!, message.toMap()['data']);
+      } else {
+        handlePushNotificationClickForAgent(
+            navigatorKey!, message.toMap()['data']);
       }
-    });
+    }
   }
 
   // Setup foreground notifications (when the app is in the foreground)
