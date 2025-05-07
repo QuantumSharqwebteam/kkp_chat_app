@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 
@@ -349,6 +350,25 @@ class ChatService {
       }
     } catch (e) {
       debugPrint("❌ Error updating call data: $e ");
+    }
+  }
+
+  //  get all call logs of user :
+  Future<List<CallLogModel>> getCallLogs(String email) async {
+    final url = Uri.parse("$baseUrl/chat/getCallLog/$email");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final List<dynamic> callLogsJson = json['callLogs'];
+        return callLogsJson.map((log) => CallLogModel.fromJson(log)).toList();
+      } else {
+        throw Exception("Failed to get call logs: ${response.body}");
+      }
+    } catch (e) {
+      throw Exception("Error fetching call logs: $e");
     }
   }
 }

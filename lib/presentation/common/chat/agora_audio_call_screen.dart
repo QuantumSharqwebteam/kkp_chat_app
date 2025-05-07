@@ -159,7 +159,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         _callTimeoutTimer?.cancel();
 
         // Update call status to answered
-        _updateCallData('answered');
+        // _updateCallData('answered');
       },
       onUserOffline: (RtcConnection connection, int remoteUid,
           UserOfflineReasonType reason) {

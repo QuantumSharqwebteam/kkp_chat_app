@@ -24,6 +24,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class CustomerChatScreen extends StatefulWidget {
@@ -63,6 +64,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final compositionController = TextEditingController();
   final sNoController = TextEditingController();
   final ChatStorageService _chatStorageService = ChatStorageService();
+  bool isFormUpdating = false;
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
@@ -132,6 +134,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
+    debugPrint("Recived Message: ${data.toString()}");
     final currentTime = DateTime.now().toIso8601String();
     final message = ChatMessageModel(
       message: data["message"],
@@ -440,72 +443,88 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             ),
           ],
         ),
-        body: Column(
+        body: Stack(
           children: [
-            Expanded(
-              child: messages.isEmpty
-                  ? NoChatConversation()
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(10),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = messages[index];
-                        if (msg.type == 'media') {
-                          return ImageMessageBubble(
-                            imageUrl: msg.mediaUrl!,
-                            isMe: msg.sender == widget.customerEmail,
-                            timestamp: formatTimestamp(msg.timestamp),
-                          );
-                        } else if (msg.type == 'form') {
-                          return FormMessageBubble(
-                            userRole: userRole!,
-                            formData: msg.form!,
-                            isMe: msg.sender == widget.customerEmail,
-                            timestamp: formatTimestamp(msg.timestamp),
-                            onRateUpdated: _handleRateUpdated,
-                          );
-                        } else if (msg.type == 'document') {
-                          return DocumentMessageBubble(
-                            documentUrl: msg.mediaUrl!,
-                            isMe: msg.sender == widget.customerEmail,
-                            timestamp: formatTimestamp(msg.timestamp),
-                          );
-                        } else if (msg.type == 'voice') {
-                          return VoiceMessageBubble(
-                            // Add this line
-                            voiceUrl: msg.mediaUrl!,
-                            isMe: msg.sender == widget.customerEmail,
-                            timestamp: formatTimestamp(msg.timestamp),
-                          );
-                        } else if (msg.message == 'Fill details') {
-                          return FillFormButton(
-                            onSubmit: _showFormOverlay,
-                          );
-                        }
-                        return MessageBubble(
-                          text: msg.message,
-                          isMe: msg.sender == widget.customerEmail,
-                          timestamp: formatTimestamp(msg.timestamp),
-                          image: msg.sender == widget.customerEmail
-                              ? widget.customerName ?? ""
-                              : "Agent",
-                        );
-                      },
-                    ),
+            Column(
+              children: [
+                Expanded(
+                  child: messages.isEmpty
+                      ? NoChatConversation()
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(10),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = messages[index];
+                            if (msg.type == 'media') {
+                              return ImageMessageBubble(
+                                imageUrl: msg.mediaUrl!,
+                                isMe: msg.sender == widget.customerEmail,
+                                timestamp: formatTimestamp(msg.timestamp),
+                              );
+                            } else if (msg.type == 'form') {
+                              return FormMessageBubble(
+                                formData: msg.form!,
+                                isMe: msg.sender == widget.agentEmail,
+                                timestamp: formatTimestamp(
+                                    msg.timestamp.toIso8601String()),
+                                userRole: userRole!,
+                                onRateUpdated: _handleRateUpdated,
+                                onFormUpdateStart: () {
+                                  setState(() {
+                                    isFormUpdating = true;
+                                  });
+                                },
+                                onFormUpdateEnd: () {
+                                  setState(() {
+                                    isFormUpdating = false;
+                                  });
+                                },
+                              );
+                            } else if (msg.type == 'document') {
+                              return DocumentMessageBubble(
+                                documentUrl: msg.mediaUrl!,
+                                isMe: msg.sender == widget.customerEmail,
+                                timestamp: formatTimestamp(msg.timestamp),
+                              );
+                            } else if (msg.type == 'voice') {
+                              return VoiceMessageBubble(
+                                // Add this line
+                                voiceUrl: msg.mediaUrl!,
+                                isMe: msg.sender == widget.customerEmail,
+                                timestamp: formatTimestamp(msg.timestamp),
+                              );
+                            } else if (msg.message == 'Fill details') {
+                              return FillFormButton(
+                                onSubmit: _showFormOverlay,
+                              );
+                            }
+                            return MessageBubble(
+                              text: msg.message,
+                              isMe: msg.sender == widget.customerEmail,
+                              timestamp: formatTimestamp(msg.timestamp),
+                              image: msg.sender == widget.customerEmail
+                                  ? widget.customerName ?? ""
+                                  : "Agent",
+                            );
+                          },
+                        ),
+                ),
+                ChatInputField(
+                  controller: _chatController,
+                  onSend: () => _sendMessage(messageText: _chatController.text),
+                  onSendImage: _pickAndSendImage,
+                  onSendForm: _showFormOverlay,
+                  onSendDocument: _pickAndSendDocument,
+                  onSendVoice: _isRecording
+                      ? _stopRecording
+                      : _startRecording, // Update this line
+                  isRecording: _isRecording,
+                  recordedSeconds: _recordedSeconds, // Update this line
+                ),
+              ],
             ),
-            ChatInputField(
-              controller: _chatController,
-              onSend: () => _sendMessage(messageText: _chatController.text),
-              onSendImage: _pickAndSendImage,
-              onSendForm: _showFormOverlay,
-              onSendDocument: _pickAndSendDocument,
-              onSendVoice: _isRecording
-                  ? _stopRecording
-                  : _startRecording, // Update this line
-              isRecording: _isRecording,
-              recordedSeconds: _recordedSeconds, // Update this line
-            ),
+            if (isFormUpdating) FullScreenLoader()
           ],
         ),
       ),

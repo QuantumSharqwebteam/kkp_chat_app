@@ -6,6 +6,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
@@ -153,7 +154,22 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             icon: const Icon(
               Icons.notifications_active_outlined,
               color: Colors.black,
-              size: 28,
+              size: 24,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              // Navigate to the CallHistoryPage or perform an action related to call logs
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CallHistoryScreen()),
+              );
+            },
+            icon: Icon(
+              Icons
+                  .call_outlined, // You can choose a different icon if preferred
+              color: Colors.black,
+              size: 24,
             ),
           ),
           IconButton(

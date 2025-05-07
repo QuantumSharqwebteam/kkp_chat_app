@@ -9,6 +9,7 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
@@ -32,6 +33,7 @@ class _CustomerHostState extends State<CustomerHost> {
 
   late final SocketService _socketService;
   AuthApi auth = AuthApi();
+  final chatRepository = ChatRepository();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   Profile? profile;
 
@@ -162,6 +164,7 @@ class _CustomerHostState extends State<CustomerHost> {
     final channelName = callData['channelName'];
     final callerName = callData['callerName'];
     final callerId = callData['callerId'];
+    final incomingCallId = callData["_id"];
     final uid = Utils().generateIntUidFromEmail(profile!.email!);
     final overlayState = Overlay.of(context);
 
@@ -195,6 +198,7 @@ class _CustomerHostState extends State<CustomerHost> {
                     uid: uid,
                     remoteUserId: callerId,
                     remoteUserName: callerName,
+                    messageId: incomingCallId,
                   ),
                 ),
               );
@@ -202,6 +206,7 @@ class _CustomerHostState extends State<CustomerHost> {
           },
           onReject: () async {
             await stopAndRemoveOverlay();
+            await chatRepository.updateCallData(incomingCallId, "missed");
             // Optionally emit reject event
           },
           audioPlayer: audioPlayer,
@@ -215,6 +220,7 @@ class _CustomerHostState extends State<CustomerHost> {
     // Auto-dismiss after 30 seconds
     timeoutTimer = Timer(const Duration(seconds: 30), () async {
       await stopAndRemoveOverlay();
+      await chatRepository.updateCallData(incomingCallId, "missed");
       // Optionally emit missed call
     });
   }

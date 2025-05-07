@@ -14,6 +14,9 @@ class FormMessageBubble extends StatefulWidget {
   final String userRole;
   final Function(Map<String, dynamic>)? onRateUpdated;
   final Function(String, String)? onStatusUpdated;
+  final VoidCallback?
+      onFormUpdateStart; // Callback to start the loading indicator
+  final VoidCallback? onFormUpdateEnd; // Callback to end the loading indicator
 
   const FormMessageBubble({
     super.key,
@@ -23,6 +26,8 @@ class FormMessageBubble extends StatefulWidget {
     required this.userRole,
     this.onRateUpdated,
     this.onStatusUpdated,
+    this.onFormUpdateStart,
+    this.onFormUpdateEnd,
   });
 
   @override
@@ -34,6 +39,11 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   final rateController = TextEditingController();
 
   Future<void> _updateFormRate(BuildContext context) async {
+    if (widget.onFormUpdateStart != null) {
+      widget
+          .onFormUpdateStart!(); // Notify the parent to start the loading indicator
+    }
+
     final formData = widget.formData;
     final id = widget.formData['_id']?.toString();
     final rate = rateController.text;
@@ -68,10 +78,20 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
         Utils().showSuccessDialog(
             context, "Cannot Update , send new form!", false);
       }
+    } finally {
+      if (widget.onFormUpdateEnd != null) {
+        widget
+            .onFormUpdateEnd!(); // Notify the parent to end the loading indicator
+      }
     }
   }
 
   Future<void> _updateFormStatus(BuildContext context, String status) async {
+    if (widget.onFormUpdateStart != null) {
+      widget
+          .onFormUpdateStart!(); // Notify the parent to start the loading indicator
+    }
+
     final formData = widget.formData;
     final id = widget.formData['_id']?.toString();
     if (id == null) {
@@ -96,6 +116,11 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating form data status: $e');
+      }
+    } finally {
+      if (widget.onFormUpdateEnd != null) {
+        widget
+            .onFormUpdateEnd!(); // Notify the parent to end the loading indicator
       }
     }
   }
@@ -190,6 +215,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
 
   void _showRateDialog(BuildContext context) {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -223,8 +249,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
             CustomButton(
               onPressed: () => _updateFormRate(context),
               text: 'Update',
-              fontSize: 12, width: 100,
-              // width: 40,
+              fontSize: 12,
+              width: 100,
             ),
           ],
         );
