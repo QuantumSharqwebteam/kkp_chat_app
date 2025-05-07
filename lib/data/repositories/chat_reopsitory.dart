@@ -1,4 +1,5 @@
 import 'package:kkpchatapp/core/services/chat_service.dart';
+import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 
@@ -61,5 +62,10 @@ class ChatRepository {
       {String? callDuration}) async {
     return chatService.updateCallData(messageId, callStatus,
         callDuration: callDuration);
+  }
+
+  /// Get call logs for a given email
+  Future<List<CallLogModel>> fetchCallLogs(String email) async {
+    return await chatService.getCallLogs(email);
   }
 }

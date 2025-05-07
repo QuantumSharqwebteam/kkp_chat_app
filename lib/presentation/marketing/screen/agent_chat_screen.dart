@@ -30,6 +30,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart'
 import 'package:image_picker/image_picker.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class AgentChatScreen extends StatefulWidget {
@@ -55,6 +56,7 @@ class AgentChatScreen extends StatefulWidget {
 class _AgentChatScreenState extends State<AgentChatScreen>
     with WidgetsBindingObserver {
   bool _isLoading = true;
+  bool _isFormUpdating = false;
   final _chatController = TextEditingController();
   final ChatRepository _chatRepository = ChatRepository();
   final SocketService _socketService = SocketService(navigatorKey);
@@ -370,151 +372,165 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 10,
-        shadowColor: AppColors.shadowColor,
-        surfaceTintColor: Colors.white10,
-        title: Row(
-          children: [
-            Initicon(text: widget.customerName ?? ""),
-            const SizedBox(width: 5),
-            Text(
-              widget.customerName!,
-              style: AppTextStyles.black12_700,
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          elevation: 10,
+          shadowColor: AppColors.shadowColor,
+          surfaceTintColor: Colors.white10,
+          title: Row(
+            children: [
+              Initicon(text: widget.customerName ?? ""),
+              const SizedBox(width: 5),
+              Text(
+                widget.customerName!,
+                style: AppTextStyles.black12_700,
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return TransferAgentScreen(
+                        customerEmailId: widget.customerEmail,
+                      );
+                    },
+                  ),
+                );
+              },
+              icon: const Icon(Icons.swap_horizontal_circle_outlined,
+                  color: Colors.black),
+            ),
+            IconButton(
+              onPressed: () {
+                final channelName =
+                    sha256.convert(utf8.encode(widget.agentEmail!)).toString();
+
+                final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
+                debugPrint("Generated UID for agent (caller): $uid");
+
+                _socketService.sendAgoraCall(
+                  targetId: widget.customerEmail,
+                  channelName: channelName,
+                  callerId: widget.agentEmail!,
+                  callerName: widget.agentName!,
+                );
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AgoraAudioCallScreen(
+                      isCaller: true,
+                      channelName: channelName,
+                      uid: uid,
+                      remoteUserId: widget.customerEmail,
+                      remoteUserName: widget.customerName!,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.call_outlined, color: Colors.black),
             ),
           ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return TransferAgentScreen(
-                      customerEmailId: widget.customerEmail,
-                    );
-                  },
-                ),
-              );
-            },
-            icon: const Icon(Icons.swap_horizontal_circle_outlined,
-                color: Colors.black),
-          ),
-          IconButton(
-            onPressed: () {
-              final channelName =
-                  sha256.convert(utf8.encode(widget.agentEmail!)).toString();
-
-              final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
-              debugPrint("Generated UID for agent (caller): $uid");
-
-              _socketService.sendAgoraCall(
-                targetId: widget.customerEmail,
-                channelName: channelName,
-                callerId: widget.agentEmail!,
-                callerName: widget.agentName!,
-              );
-
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AgoraAudioCallScreen(
-                    isCaller: true,
-                    channelName: channelName,
-                    uid: uid,
-                    remoteUserId: widget.customerEmail,
-                    remoteUserName: widget.customerName!,
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.call_outlined, color: Colors.black),
-          ),
-        ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(20.0),
-            bottomRight: Radius.circular(20.0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(20.0),
+              bottomRight: Radius.circular(20.0),
+            ),
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : messages.isEmpty
-                    ? NoChatConversation()
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(10),
-                        itemCount: messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = messages[index];
-                          if (msg.type == 'media') {
-                            return ImageMessageBubble(
-                              imageUrl: msg.mediaUrl!,
-                              isMe: msg.sender == widget.agentEmail,
-                              timestamp: formatTimestamp(
-                                  msg.timestamp.toIso8601String()),
-                            );
-                          } else if (msg.type == 'form') {
-                            return FormMessageBubble(
-                              userRole: userRole!,
-                              formData: msg.form!,
-                              isMe: msg.sender == widget.agentEmail,
-                              timestamp: formatTimestamp(
-                                  msg.timestamp.toIso8601String()),
-                              onRateUpdated: _handleRateUpdated,
-                              onStatusUpdated: _handleStatusUpdated,
-                            );
-                          } else if (msg.type == 'document') {
-                            return DocumentMessageBubble(
-                              documentUrl: msg.mediaUrl!,
-                              isMe: msg.sender == widget.agentEmail,
-                              timestamp: formatTimestamp(
-                                  msg.timestamp.toIso8601String()),
-                            );
-                          } else if (msg.type == 'voice') {
-                            return VoiceMessageBubble(
-                              voiceUrl: msg.mediaUrl!,
-                              isMe: msg.sender == widget.agentEmail,
-                              timestamp: formatTimestamp(
-                                  msg.timestamp.toIso8601String()),
-                            );
-                          } else if (msg.message == 'Fill details') {
-                            return FillFormButton(
-                              onSubmit: () {
-                                // Agent not allowed to fill the form
+        body: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: _isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : messages.isEmpty
+                          ? NoChatConversation()
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(10),
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final msg = messages[index];
+                                if (msg.type == 'media') {
+                                  return ImageMessageBubble(
+                                    imageUrl: msg.mediaUrl!,
+                                    isMe: msg.sender == widget.agentEmail,
+                                    timestamp: formatTimestamp(
+                                        msg.timestamp.toIso8601String()),
+                                  );
+                                } else if (msg.type == 'form') {
+                                  return FormMessageBubble(
+                                    formData: msg.form!,
+                                    isMe: msg.sender == widget.agentEmail,
+                                    timestamp: formatTimestamp(
+                                        msg.timestamp.toIso8601String()),
+                                    userRole: userRole!,
+                                    onRateUpdated: _handleRateUpdated,
+                                    onStatusUpdated: _handleStatusUpdated,
+                                    onFormUpdateStart: () {
+                                      setState(() {
+                                        _isFormUpdating = true;
+                                      });
+                                    },
+                                    onFormUpdateEnd: () {
+                                      setState(() {
+                                        _isFormUpdating = false;
+                                      });
+                                    },
+                                  );
+                                } else if (msg.type == 'document') {
+                                  return DocumentMessageBubble(
+                                    documentUrl: msg.mediaUrl!,
+                                    isMe: msg.sender == widget.agentEmail,
+                                    timestamp: formatTimestamp(
+                                        msg.timestamp.toIso8601String()),
+                                  );
+                                } else if (msg.type == 'voice') {
+                                  return VoiceMessageBubble(
+                                    voiceUrl: msg.mediaUrl!,
+                                    isMe: msg.sender == widget.agentEmail,
+                                    timestamp: formatTimestamp(
+                                        msg.timestamp.toIso8601String()),
+                                  );
+                                } else if (msg.message == 'Fill details') {
+                                  return FillFormButton(
+                                    onSubmit: () {
+                                      // Agent not allowed to fill the form
+                                    },
+                                  );
+                                }
+                                return MessageBubble(
+                                  text: msg.message,
+                                  isMe: msg.sender == widget.agentEmail,
+                                  timestamp: formatTimestamp(
+                                      msg.timestamp.toIso8601String()),
+                                  image: msg.sender == widget.agentEmail
+                                      ? widget.agentName ?? ""
+                                      : widget.customerName ?? "",
+                                );
                               },
-                            );
-                          }
-                          return MessageBubble(
-                            text: msg.message,
-                            isMe: msg.sender == widget.agentEmail,
-                            timestamp: formatTimestamp(
-                                msg.timestamp.toIso8601String()),
-                            image: msg.sender == widget.agentEmail
-                                ? widget.agentName ?? ""
-                                : widget.customerName ?? "",
-                          );
-                        },
-                      ),
-          ),
-          ChatInputField(
-            controller: _chatController,
-            onSend: () => _sendMessage(messageText: _chatController.text),
-            onSendImage: _pickAndSendImage,
-            onSendForm: sendFormButton,
-            onSendDocument: _pickAndSendDocument,
-            onSendVoice: _isRecording ? _stopRecording : _startRecording,
-            isRecording: _isRecording,
-            recordedSeconds: _recordedSeconds,
-          ),
-        ],
-      ),
-    );
+                            ),
+                ),
+                ChatInputField(
+                  controller: _chatController,
+                  onSend: () => _sendMessage(messageText: _chatController.text),
+                  onSendImage: _pickAndSendImage,
+                  onSendForm: sendFormButton,
+                  onSendDocument: _pickAndSendDocument,
+                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                  isRecording: _isRecording,
+                  recordedSeconds: _recordedSeconds,
+                ),
+              ],
+            ),
+            if (_isFormUpdating) FullScreenLoader(),
+          ],
+        ));
   }
 }
