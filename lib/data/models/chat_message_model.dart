@@ -5,6 +5,8 @@ class ChatMessageModel {
   String? type;
   String? mediaUrl;
   Map<String, dynamic>? form;
+  String? callStatus;
+  String? callDuration;
 
   ChatMessageModel({
     required this.message,
@@ -13,6 +15,8 @@ class ChatMessageModel {
     this.type,
     this.mediaUrl,
     this.form,
+    this.callStatus,
+    this.callDuration,
   });
 
   // Convert a ChatMessage object into a Map
@@ -24,6 +28,8 @@ class ChatMessageModel {
       'type': type,
       'mediaUrl': mediaUrl,
       'form': form,
+      'callStatus': callStatus,
+      'callDuration': callDuration,
     };
   }
 
@@ -36,6 +42,8 @@ class ChatMessageModel {
       type: map['type'],
       mediaUrl: map['mediaUrl'],
       form: map['form'] != null ? Map<String, dynamic>.from(map['form']) : null,
+      callStatus: map['callStatus'],
+      callDuration: map['callDuration'],
     );
   }
 }
