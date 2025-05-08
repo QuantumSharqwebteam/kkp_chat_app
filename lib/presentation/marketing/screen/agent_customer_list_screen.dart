@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
@@ -10,13 +10,12 @@ import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_wi
 
 class AgentCustomersListScreen extends StatefulWidget {
   final String agentName;
-  final String agentImage;
+
   final String agentEmail;
 
   const AgentCustomersListScreen({
     super.key,
     required this.agentName,
-    required this.agentImage,
     required this.agentEmail,
   });
 
@@ -65,9 +64,9 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            CircleAvatar(
-              backgroundImage: AssetImage(widget.agentImage),
-              radius: 20,
+            Initicon(
+              text: widget.agentName,
+              size: 30,
             ),
             const SizedBox(width: 10),
             Text(
@@ -114,10 +113,9 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                             ]),
                             child: ListTile(
                               tileColor: Colors.white,
-                              leading: CircleAvatar(
-                                radius: 30,
-                                backgroundImage:
-                                    AssetImage(ImageConstants.userImage),
+                              leading: Initicon(
+                                text: customer['name'],
+                                size: 40,
                               ),
                               title: Text(
                                 customer['name'] ?? "User",

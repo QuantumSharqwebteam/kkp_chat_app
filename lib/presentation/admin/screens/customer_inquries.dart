@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
@@ -309,10 +310,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        ImageConstants.userImage,
-                        height: 40,
-                        width: 40,
+                      child: Initicon(
+                        text: inquiry.agentName,
+                        size: 35,
                       ),
                     ),
                     const SizedBox(width: 5),

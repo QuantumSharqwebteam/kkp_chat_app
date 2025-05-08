@@ -43,11 +43,11 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               width: Utils().width(context),
               color: AppColors.background,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: CustomSearchBar(
-                  width: Utils().width(context),
-                  enable: true,
-                  controller: searchController,
-                  hintText: 'Search'),
+              // child: CustomSearchBar(
+              //     width: Utils().width(context),
+              //     enable: true,
+              //     controller: searchController,
+              //     hintText: 'Search'),
             ),
 
             SettingsTile(

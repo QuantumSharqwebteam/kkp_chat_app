@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -12,6 +13,8 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
+import 'package:kkpchatapp/data/models/message_model.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
@@ -29,9 +32,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
-
   final String? agentName;
-
   final String? customerEmail;
   final String? agentEmail;
   final GlobalKey<NavigatorState> navigatorKey;
@@ -64,6 +65,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final compositionController = TextEditingController();
   final sNoController = TextEditingController();
   final ChatStorageService _chatStorageService = ChatStorageService();
+  final ChatRepository _chatRepository = ChatRepository();
   bool isFormUpdating = false;
 
   List<ChatMessageModel> messages = [];
@@ -71,17 +73,139 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   int _recordedSeconds = 0;
   Timer? _timer;
   String? userRole;
+  int _currentPage = 1;
+  bool _isFetching = false;
+  Set<int> _fetchedPages = Set(); // Keep track of fetched pages
+  bool _isLoadingMore = false; // Show loading indicator when loading more
+  final Set<String> _loadedMessageIds = Set();
 
-  @override
-  void initState() {
-    _fetchUserRole();
-    super.initState();
-    _socketService = SocketService(widget.navigatorKey);
-    WidgetsBinding.instance.addObserver(this);
-    _socketService.toggleChatPageOpen(true);
-    _socketService.onReceiveMessage(_handleIncomingMessage);
-    _loadMessages();
-    _initializeRecorder();
+  Future<void> _loadPreviousMessages() async {
+    final boxName = widget.customerEmail!;
+    bool boxExists = await Hive.boxExists(boxName);
+
+    if (!boxExists) {
+      // Fetch messages from API
+      await _fetchMessagesFromAPI(boxName);
+    } else {
+      // Load messages from Hive
+      final loadedMessages = await _chatStorageService
+          .getCustomerMessages(boxName, page: _currentPage);
+      final newLoadedMessages = _removeDuplicates(loadedMessages);
+      setState(() {
+        messages = newLoadedMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
+      });
+    }
+  }
+
+  Future<void> _fetchMessagesFromAPI(String boxName) async {
+    try {
+      final List<MessageModel> fetchedMessages =
+          await _chatRepository.fetchCustomerMessages(
+        customerEmail: widget.customerEmail!,
+        page: _currentPage,
+      );
+
+      if (fetchedMessages.isEmpty) {
+        // No more messages to load
+        _currentPage--;
+        return;
+      }
+
+      // Convert MessageModel to ChatMessageModel
+      final chatMessages = fetchedMessages.map((messageJson) {
+        return ChatMessageModel(
+          message: messageJson.message ?? '',
+          timestamp: DateTime.parse(
+              messageJson.timestamp ?? DateTime.now().toIso8601String()),
+          sender: messageJson.senderId!,
+          type: messageJson.type,
+          mediaUrl: messageJson.mediaUrl,
+          form: messageJson.form != null && messageJson.form!.isNotEmpty
+              ? Map<String, dynamic>.from(messageJson.form![0])
+              : null,
+        );
+      }).toList();
+
+      final newChatMessages = _removeDuplicates(chatMessages);
+      if (newChatMessages.isNotEmpty) {
+        // Save all messages at once
+        await _chatStorageService.saveMessages(newChatMessages, boxName);
+        setState(() {
+          messages.addAll(newChatMessages);
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        });
+        _fetchedPages.add(_currentPage);
+      }
+    } catch (e) {
+      // Handle errors properly
+      debugPrint("Error fetching messages from API: $e");
+      // You can show a snackbar or alert dialog to inform the user about the error
+    }
+  }
+
+  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
+    return messages.where((message) {
+      final messageId =
+          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+      if (_loadedMessageIds.contains(messageId)) {
+        return false;
+      } else {
+        _loadedMessageIds.add(messageId);
+        return true;
+      }
+    }).toList();
+  }
+
+  void _handleScroll() {
+    if (_scrollController.position.atEdge) {
+      if (_scrollController.position.pixels == 0) {
+        // User has scrolled to the top
+        _loadMoreMessages();
+      }
+    }
+  }
+
+  Future<void> _loadMoreMessages() async {
+    if (_isFetching || _isLoadingMore) return;
+    _isLoadingMore = true;
+    setState(() {});
+
+    _currentPage++;
+    final boxName = widget.customerEmail!;
+    if (_fetchedPages.contains(_currentPage)) {
+      // Page already fetched, do nothing
+      _isLoadingMore = false;
+      setState(() {});
+      return;
+    }
+
+    final loadedMessages = await _chatStorageService
+        .getCustomerMessages(boxName, page: _currentPage);
+
+    if (loadedMessages.isEmpty) {
+      // Fetch more messages from API
+      await _fetchMessagesFromAPI(boxName);
+      final newLoadedMessages = await _chatStorageService
+          .getCustomerMessages(boxName, page: _currentPage);
+      final uniqueMessages = _removeDuplicates(newLoadedMessages);
+      setState(() {
+        messages.insertAll(0, uniqueMessages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      });
+      _fetchedPages.add(_currentPage);
+    } else {
+      final uniqueMessages = _removeDuplicates(loadedMessages);
+      setState(() {
+        messages.insertAll(0, uniqueMessages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      });
+      _fetchedPages.add(_currentPage);
+    }
+
+    _isLoadingMore = false;
+    setState(() {});
   }
 
   Future<void> _initializeRecorder() async {
@@ -97,6 +221,19 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   @override
+  void initState() {
+    _fetchUserRole();
+    super.initState();
+    _socketService = SocketService(widget.navigatorKey);
+    WidgetsBinding.instance.addObserver(this);
+    _socketService.toggleChatPageOpen(true);
+    _socketService.onReceiveMessage(_handleIncomingMessage);
+    _loadPreviousMessages();
+    _initializeRecorder();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
@@ -107,6 +244,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     compositionController.dispose();
     _recorder.closeRecorder();
     _timer?.cancel();
+    _scrollController.removeListener(_handleScroll);
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -121,18 +259,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  Future<void> _loadMessages() async {
-    final emailFromHive = LocalDbHelper.getProfile()?.email;
-    if (emailFromHive != null && emailFromHive == widget.customerEmail) {
-      final loadedMessages =
-          await _chatStorageService.getMessages(emailFromHive);
-      setState(() {
-        messages = loadedMessages;
-        _scrollToBottom();
-      });
-    }
-  }
-
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("Recived Message: ${data.toString()}");
     final currentTime = DateTime.now().toIso8601String();
@@ -144,11 +270,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       mediaUrl: data["mediaUrl"],
       form: data["form"],
     );
-    setState(() {
-      messages.add(message);
-      _scrollToBottom();
-    });
-    _chatStorageService.saveMessage(message, widget.customerEmail!);
+
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
+      });
+
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(message, widget.customerEmail!);
+      _loadedMessageIds.add(messageId);
+    }
   }
 
   void _sendMessage({
@@ -168,23 +303,44 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       mediaUrl: mediaUrl,
       form: form,
     );
-    setState(() {
-      messages.add(message);
-      _scrollToBottom();
-    });
-    final String? name = LocalDbHelper.getProfile()?.name;
 
-    _socketService.sendMessage(
-      message: messageText,
-      senderEmail: widget.customerEmail!,
-      senderName: name!,
-      type: type,
-      mediaUrl: mediaUrl,
-      form: form,
-    );
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
+      });
 
-    _chatStorageService.saveMessage(message, widget.customerEmail!);
+      final String? name = LocalDbHelper.getProfile()?.name;
+
+      _socketService.sendMessage(
+        message: messageText,
+        senderEmail: widget.customerEmail!,
+        senderName: name!,
+        type: type,
+        mediaUrl: mediaUrl,
+        form: form,
+      );
+
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(message, widget.customerEmail!);
+      _loadedMessageIds.add(messageId);
+    }
     _chatController.clear();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _startRecording() async {
@@ -213,18 +369,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
     setState(() {
       _isRecording = false;
-    });
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
     });
   }
 
@@ -510,6 +654,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                           },
                         ),
                 ),
+                if (_isLoadingMore)
+                  Center(
+                    child: CircularProgressIndicator(),
+                  ),
                 ChatInputField(
                   controller: _chatController,
                   onSend: () => _sendMessage(messageText: _chatController.text),

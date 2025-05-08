@@ -24,7 +24,7 @@ class CustomerDetailsDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDetailRow('Name', customer['name']),
+          _buildDetailRow('Name', customer['name'] ?? ""),
           _buildDetailRow('Email', customer['email']),
           _buildDetailRow('Role', customer['role']),
           _buildDetailRow(

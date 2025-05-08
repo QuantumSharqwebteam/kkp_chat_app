@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 
@@ -17,15 +18,9 @@ class ManageCustomerListItem extends StatelessWidget {
       elevation: 5,
       child: ListTile(
         tileColor: Colors.white,
-        leading: CircleAvatar(
-          backgroundImage: customer['profileUrl'] != null &&
-                  customer['profileUrl'].isNotEmpty
-              ? NetworkImage(customer['profileUrl'])
-              : AssetImage(ImageConstants.profileAvatar)
-                  as ImageProvider, // Replace with your placeholder image path
-        ),
+        leading: Initicon(text: customer['name'] ?? ""),
         title: Text(
-          customer['name'],
+          customer['name'] ?? "",
           style: AppTextStyles.black14_600,
         ),
         subtitle: Text(

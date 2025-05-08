@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/data/models/product_model.dart';
 
 class ProductService {
-  final String _baseUrl = "https://kkp-chat.onrender.com/product";
+  final String _baseUrl = "${dotenv.env["BASE_URL"]}/product";
 
   final http.Client client;
 

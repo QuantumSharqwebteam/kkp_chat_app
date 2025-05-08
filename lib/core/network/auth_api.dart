@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
@@ -8,7 +9,7 @@ import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 
 class AuthApi {
-  static const baseUrl = 'https://kkp-chat.onrender.com/';
+  static var baseUrl = '${dotenv.env["BASE_URL"]}/';
   final http.Client client;
 
   AuthApi({http.Client? client}) : client = client ?? http.Client();
@@ -383,7 +384,7 @@ class AuthApi {
 
   // to assign agent in the assigned agent list who are eligible to get assgigned for chat with customer
   Future<Map<String, dynamic>> assignAgent({required String email}) async {
-    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/assignAgent");
+    final Uri url = Uri.parse("${baseUrl}user/assignAgent");
     final body = {
       "agentNames": [email]
     };
@@ -405,7 +406,7 @@ class AuthApi {
   }
 
   Future<bool> removeAssignedAgent({required String email}) async {
-    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/removeAgent");
+    final Uri url = Uri.parse("${baseUrl}user/removeAgent");
     final body = {
       "agentNames": [email]
     };

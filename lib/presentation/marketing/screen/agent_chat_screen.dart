@@ -71,6 +71,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   int _recordedSeconds = 0;
   Timer? _timer;
   String? userRole;
+  int _currentPage = 1;
+  bool _isFetching = false;
+  Set<int> _fetchedPages = Set(); // Keep track of fetched pages
+  bool _isLoadingMore = false; // Show loading indicator when loading more
+  final Set<String> _loadedMessageIds = Set();
 
   @override
   void initState() {
@@ -80,12 +85,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
-    _loadPreviousMessages();
+    _loadPreviousMessages(context);
 
     // Scroll to bottom when the chat page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
+
+    _scrollController.addListener(_handleScroll);
   }
 
   @override
@@ -95,8 +102,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _scrollController.dispose();
     _recorder.closeRecorder();
     _timer?.cancel();
-    _socketService.toggleChatPageOpen(false);
+    _scrollController.removeListener(_handleScroll);
     super.dispose();
+  }
+
+  @override
+  void deactivate() {
+    _socketService.toggleChatPageOpen(false);
+    super.deactivate();
   }
 
   @override
@@ -125,17 +138,45 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     await Permission.microphone.request();
   }
 
-  Future<void> _loadPreviousMessages() async {
+  Future<void> _loadPreviousMessages(context) async {
     final boxName = '${widget.agentName}${widget.customerName}';
     bool boxExists = await Hive.boxExists(boxName);
 
     if (!boxExists) {
       // Fetch messages from API
+      await _fetchMessagesFromAPI(boxName, context);
+    } else {
+      // Load messages from Hive
+      final loadedMessages =
+          await _chatStorageService.getMessages(boxName, page: _currentPage);
+      final newLoadedMessages = _removeDuplicates(loadedMessages);
+      setState(() {
+        messages = newLoadedMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false;
+        // Scroll to bottom after loading messages
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      });
+    }
+  }
+
+  Future<void> _fetchMessagesFromAPI(String boxName, context) async {
+    try {
       final List<MessageModel> fetchedMessages =
-          await _chatRepository.fetchPreviousChats(
-        widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
-        widget.customerEmail,
+          await _chatRepository.fetchAgentMessages(
+        agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
+        customerEmail: widget.customerEmail,
+        page: _currentPage,
+        limit: 20,
       );
+
+      if (fetchedMessages.isEmpty) {
+        // No more messages to load
+        _currentPage--;
+        return;
+      }
 
       // Convert MessageModel to ChatMessageModel
       final chatMessages = fetchedMessages.map((messageJson) {
@@ -152,20 +193,92 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         );
       }).toList();
 
-      // Save all messages at once
-      await _chatStorageService.saveMessages(chatMessages, boxName);
+      final newChatMessages = _removeDuplicates(chatMessages);
+      if (newChatMessages.isNotEmpty) {
+        // Save all messages at once
+        await _chatStorageService.saveMessages(newChatMessages, boxName);
+        setState(() {
+          messages = newChatMessages;
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _isLoading = false;
+          // Scroll to bottom after loading messages
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
+        });
+        _fetchedPages.add(_currentPage);
+      }
+    } catch (e) {
+      // Handle errors properly
+      debugPrint("Error fetching messages from API: $e");
+      // You can show a snackbar or alert dialog to inform the user about the error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to load messages: $e")),
+      );
+    }
+  }
+
+  void _handleScroll() {
+    if (_scrollController.position.atEdge) {
+      if (_scrollController.position.pixels == 0) {
+        // User has scrolled to the top
+        _loadMoreMessages(context);
+      }
+    }
+  }
+
+  Future<void> _loadMoreMessages(context) async {
+    if (_isFetching || _isLoadingMore) return;
+    _isLoadingMore = true;
+    setState(() {});
+
+    _currentPage++;
+    final boxName = '${widget.agentName}${widget.customerName}';
+    if (_fetchedPages.contains(_currentPage)) {
+      // Page already fetched, do nothing
+      _isLoadingMore = false;
+      setState(() {});
+      return;
     }
 
-    // Load messages from Hive
-    final loadedMessages = await _chatStorageService.getMessages(boxName);
-    setState(() {
-      messages = loadedMessages;
-      _isLoading = false;
-      // Scroll to bottom after loading messages
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
+    final loadedMessages =
+        await _chatStorageService.getMessages(boxName, page: _currentPage);
+
+    if (loadedMessages.isEmpty) {
+      // Fetch more messages from API
+      await _fetchMessagesFromAPI(boxName, context);
+      final newLoadedMessages =
+          await _chatStorageService.getMessages(boxName, page: _currentPage);
+      final uniqueMessages = _removeDuplicates(newLoadedMessages);
+      setState(() {
+        messages.insertAll(0, uniqueMessages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       });
-    });
+      _fetchedPages.add(_currentPage);
+    } else {
+      final uniqueMessages = _removeDuplicates(loadedMessages);
+      setState(() {
+        messages.insertAll(0, uniqueMessages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      });
+      _fetchedPages.add(_currentPage);
+    }
+
+    _isLoadingMore = false;
+    setState(() {});
+  }
+
+  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
+    return messages.where((message) {
+      final messageId =
+          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+      if (_loadedMessageIds.contains(messageId)) {
+        return false;
+      } else {
+        _loadedMessageIds.add(messageId);
+        return true;
+      }
+    }).toList();
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
@@ -179,14 +292,20 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: data["form"],
     );
 
-    setState(() {
-      messages.add(message);
-      _scrollToBottom();
-    });
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
+      });
 
-    // Save the message to Hive only if it's not already saved
-    _chatStorageService.saveMessage(
-        message, '${widget.agentName}${widget.customerName}');
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(
+          message, '${widget.agentName}${widget.customerName}');
+      _loadedMessageIds.add(messageId);
+    }
   }
 
   void _sendMessage({
@@ -207,24 +326,30 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: form,
     );
 
-    setState(() {
-      messages.add(message);
-      _scrollToBottom();
-    });
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
+      });
 
-    _socketService.sendMessage(
-      targetEmail: widget.customerEmail,
-      message: messageText,
-      senderEmail: widget.agentEmail!,
-      senderName: widget.agentName!,
-      type: type,
-      mediaUrl: mediaUrl,
-      form: form,
-    );
+      _socketService.sendMessage(
+        targetEmail: widget.customerEmail,
+        message: messageText,
+        senderEmail: widget.agentEmail!,
+        senderName: widget.agentName!,
+        type: type,
+        mediaUrl: mediaUrl,
+        form: form,
+      );
 
-    // Save the message to Hive only if it's not already saved
-    _chatStorageService.saveMessage(
-        message, '${widget.agentName}${widget.customerName}');
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(
+          message, '${widget.agentName}${widget.customerName}');
+      _loadedMessageIds.add(messageId);
+    }
     _chatController.clear();
   }
 
@@ -286,6 +411,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           type: "media",
           mediaUrl: imageFile.path,
         ));
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
 
@@ -302,6 +428,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               type: "media",
               mediaUrl: imageUrl,
             );
+            messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           });
         }
 
@@ -373,173 +500,178 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          elevation: 10,
-          shadowColor: AppColors.shadowColor,
-          surfaceTintColor: Colors.white10,
-          title: Row(
-            children: [
-              Initicon(text: widget.customerName ?? ""),
-              const SizedBox(width: 5),
-              Text(
-                widget.customerName!,
-                style: AppTextStyles.black12_700,
-              ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return TransferAgentScreen(
-                        customerEmailId: widget.customerEmail,
-                      );
-                    },
-                  ),
-                );
-              },
-              icon: const Icon(Icons.swap_horizontal_circle_outlined,
-                  color: Colors.black),
-            ),
-            IconButton(
-              onPressed: () {
-                final channelName =
-                    sha256.convert(utf8.encode(widget.agentEmail!)).toString();
-
-                final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
-                debugPrint("Generated UID for agent (caller): $uid");
-
-                _socketService.sendAgoraCall(
-                  targetId: widget.customerEmail,
-                  channelName: channelName,
-                  callerId: widget.agentEmail!,
-                  callerName: widget.agentName!,
-                );
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AgoraAudioCallScreen(
-                      isCaller: true,
-                      channelName: channelName,
-                      uid: uid,
-                      remoteUserId: widget.customerEmail,
-                      remoteUserName: widget.customerName!,
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.call_outlined, color: Colors.black),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        elevation: 10,
+        shadowColor: AppColors.shadowColor,
+        surfaceTintColor: Colors.white10,
+        title: Row(
+          children: [
+            Initicon(text: widget.customerName ?? ""),
+            const SizedBox(width: 5),
+            Text(
+              widget.customerName!,
+              style: AppTextStyles.black12_700,
             ),
           ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(20.0),
-              bottomRight: Radius.circular(20.0),
-            ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return TransferAgentScreen(
+                      customerEmailId: widget.customerEmail,
+                    );
+                  },
+                ),
+              );
+            },
+            icon: const Icon(Icons.swap_horizontal_circle_outlined,
+                color: Colors.black),
+          ),
+          IconButton(
+            onPressed: () {
+              final channelName =
+                  sha256.convert(utf8.encode(widget.agentEmail!)).toString();
+
+              final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
+              debugPrint("Generated UID for agent (caller): $uid");
+
+              _socketService.sendAgoraCall(
+                targetId: widget.customerEmail,
+                channelName: channelName,
+                callerId: widget.agentEmail!,
+                callerName: widget.agentName!,
+              );
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AgoraAudioCallScreen(
+                    isCaller: true,
+                    channelName: channelName,
+                    uid: uid,
+                    remoteUserId: widget.customerEmail,
+                    remoteUserName: widget.customerName!,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.call_outlined, color: Colors.black),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(20.0),
+            bottomRight: Radius.circular(20.0),
           ),
         ),
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  child: _isLoading
-                      ? Center(child: CircularProgressIndicator())
-                      : messages.isEmpty
-                          ? NoChatConversation()
-                          : ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.all(10),
-                              itemCount: messages.length,
-                              itemBuilder: (context, index) {
-                                final msg = messages[index];
-                                if (msg.type == 'media') {
-                                  return ImageMessageBubble(
-                                    imageUrl: msg.mediaUrl!,
-                                    isMe: msg.sender == widget.agentEmail,
-                                    timestamp: formatTimestamp(
-                                        msg.timestamp.toIso8601String()),
-                                  );
-                                } else if (msg.type == 'form') {
-                                  return FormMessageBubble(
-                                    formData: msg.form!,
-                                    isMe: msg.sender == widget.agentEmail,
-                                    timestamp: formatTimestamp(
-                                        msg.timestamp.toIso8601String()),
-                                    userRole: userRole!,
-                                    onRateUpdated: _handleRateUpdated,
-                                    onStatusUpdated: _handleStatusUpdated,
-                                    onFormUpdateStart: () {
-                                      setState(() {
-                                        _isFormUpdating = true;
-                                      });
-                                    },
-                                    onFormUpdateEnd: () {
-                                      setState(() {
-                                        _isFormUpdating = false;
-                                      });
-                                    },
-                                  );
-                                } else if (msg.type == 'document') {
-                                  return DocumentMessageBubble(
-                                    documentUrl: msg.mediaUrl!,
-                                    isMe: msg.sender == widget.agentEmail,
-                                    timestamp: formatTimestamp(
-                                        msg.timestamp.toIso8601String()),
-                                  );
-                                } else if (msg.type == 'voice') {
-                                  return VoiceMessageBubble(
-                                    voiceUrl: msg.mediaUrl!,
-                                    isMe: msg.sender == widget.agentEmail,
-                                    timestamp: formatTimestamp(
-                                        msg.timestamp.toIso8601String()),
-                                  );
-                                } else if (msg.type == 'call') {
-                                  return CallMessageBubble(
-                                    isMe: msg.sender == widget.agentEmail,
-                                    timestamp: formatTimestamp(
-                                        msg.timestamp.toIso8601String()),
-                                    callStatus: msg.callStatus ?? "",
-                                    callDuration: msg.callDuration ?? '',
-                                  );
-                                } else if (msg.message == 'Fill details') {
-                                  return FillFormButton(
-                                    onSubmit: () {
-                                      // Agent not allowed to fill the form
-                                    },
-                                  );
-                                }
-                                return MessageBubble(
-                                  text: msg.message,
+      ),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Expanded(
+                child: _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : messages.isEmpty
+                        ? NoChatConversation()
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(10),
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final msg = messages[index];
+                              if (msg.type == 'media') {
+                                return ImageMessageBubble(
+                                  imageUrl: msg.mediaUrl!,
                                   isMe: msg.sender == widget.agentEmail,
                                   timestamp: formatTimestamp(
                                       msg.timestamp.toIso8601String()),
-                                  image: msg.sender == widget.agentEmail
-                                      ? widget.agentName ?? ""
-                                      : widget.customerName ?? "",
                                 );
-                              },
-                            ),
+                              } else if (msg.type == 'form') {
+                                return FormMessageBubble(
+                                  formData: msg.form!,
+                                  isMe: msg.sender == widget.agentEmail,
+                                  timestamp: formatTimestamp(
+                                      msg.timestamp.toIso8601String()),
+                                  userRole: userRole!,
+                                  onRateUpdated: _handleRateUpdated,
+                                  onStatusUpdated: _handleStatusUpdated,
+                                  onFormUpdateStart: () {
+                                    setState(() {
+                                      _isFormUpdating = true;
+                                    });
+                                  },
+                                  onFormUpdateEnd: () {
+                                    setState(() {
+                                      _isFormUpdating = false;
+                                    });
+                                  },
+                                );
+                              } else if (msg.type == 'document') {
+                                return DocumentMessageBubble(
+                                  documentUrl: msg.mediaUrl!,
+                                  isMe: msg.sender == widget.agentEmail,
+                                  timestamp: formatTimestamp(
+                                      msg.timestamp.toIso8601String()),
+                                );
+                              } else if (msg.type == 'voice') {
+                                return VoiceMessageBubble(
+                                  voiceUrl: msg.mediaUrl!,
+                                  isMe: msg.sender == widget.agentEmail,
+                                  timestamp: formatTimestamp(
+                                      msg.timestamp.toIso8601String()),
+                                );
+                              } else if (msg.type == 'call') {
+                                return CallMessageBubble(
+                                  isMe: msg.sender == widget.agentEmail,
+                                  timestamp: formatTimestamp(
+                                      msg.timestamp.toIso8601String()),
+                                  callStatus: msg.callStatus ?? "",
+                                  callDuration: msg.callDuration ?? '',
+                                );
+                              } else if (msg.message == 'Fill details') {
+                                return FillFormButton(
+                                  onSubmit: () {
+                                    // Agent not allowed to fill the form
+                                  },
+                                );
+                              }
+                              return MessageBubble(
+                                text: msg.message,
+                                isMe: msg.sender == widget.agentEmail,
+                                timestamp: formatTimestamp(
+                                    msg.timestamp.toIso8601String()),
+                                image: msg.sender == widget.agentEmail
+                                    ? widget.agentName ?? ""
+                                    : widget.customerName ?? "",
+                              );
+                            },
+                          ),
+              ),
+              if (_isLoadingMore)
+                Center(
+                  child: CircularProgressIndicator(),
                 ),
-                ChatInputField(
-                  controller: _chatController,
-                  onSend: () => _sendMessage(messageText: _chatController.text),
-                  onSendImage: _pickAndSendImage,
-                  onSendForm: sendFormButton,
-                  onSendDocument: _pickAndSendDocument,
-                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
-                  isRecording: _isRecording,
-                  recordedSeconds: _recordedSeconds,
-                ),
-              ],
-            ),
-            if (_isFormUpdating) FullScreenLoader(),
-          ],
-        ));
+              ChatInputField(
+                controller: _chatController,
+                onSend: () => _sendMessage(messageText: _chatController.text),
+                onSendImage: _pickAndSendImage,
+                onSendForm: sendFormButton,
+                onSendDocument: _pickAndSendDocument,
+                onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                isRecording: _isRecording,
+                recordedSeconds: _recordedSeconds,
+              ),
+            ],
+          ),
+          if (_isFormUpdating) FullScreenLoader(),
+        ],
+      ),
+    );
   }
 }

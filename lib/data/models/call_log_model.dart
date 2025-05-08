@@ -33,4 +33,17 @@ class CallLogModel {
       id: json['_id'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'senderId': senderId,
+      'senderName': senderName,
+      'receiverId': receiverId,
+      'receiverName': receiverName,
+      'callStatus': callStatus,
+      'callDuration': callDuration,
+      'timestamp': timestamp.toIso8601String(),
+      '_id': id,
+    };
+  }
 }

@@ -6,6 +6,24 @@ class ChatStorageService {
     return await Hive.openBox(boxName);
   }
 
+  Future<List<ChatMessageModel>> getCustomerMessages(String boxName,
+      {int page = 1, int limit = 20}) async {
+    final box = await _openBox(boxName);
+    final allMessages = box.values
+        .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
+        .toList()
+      ..sort(
+          (a, b) => b.timestamp.compareTo(a.timestamp)); // Sort by newest first
+
+    final startIndex = (page - 1) * limit;
+    final endIndex = startIndex + limit;
+    if (startIndex >= allMessages.length) {
+      return []; // Return an empty list if startIndex is out of range
+    }
+    return allMessages.sublist(startIndex,
+        endIndex > allMessages.length ? allMessages.length : endIndex);
+  }
+
   Future<void> saveMessage(ChatMessageModel message, String boxName) async {
     final box = await _openBox(boxName);
     final messageMap = message.toMap();
@@ -20,16 +38,19 @@ class ChatStorageService {
         messagesMap.map((message) => MapEntry(message['timestamp'], message))));
   }
 
-  Future<List<ChatMessageModel>> getMessages(String boxName) async {
+  Future<List<ChatMessageModel>> getMessages(String boxName,
+      {int page = 1, int limit = 20}) async {
     final box = await _openBox(boxName);
-    return box.values
+    final allMessages = box.values
         .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
         .toList()
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-  }
+      ..sort(
+          (a, b) => b.timestamp.compareTo(a.timestamp)); // Sort by newest first
 
-  Stream<List<ChatMessageModel>> watchMessages(String boxName) async* {
-    final box = await _openBox(boxName);
-    yield* box.watch().asyncMap((_) => getMessages(boxName));
+    final startIndex = (page - 1) * limit;
+    if (startIndex >= allMessages.length) {
+      return []; // Return an empty list if startIndex is out of range
+    }
+    return allMessages.sublist(startIndex); // Fetch all remaining messages
   }
 }

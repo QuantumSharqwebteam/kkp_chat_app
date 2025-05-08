@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
@@ -7,7 +8,7 @@ import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 
 class ChatService {
-  final String baseUrl = "https://kkp-chat.onrender.com";
+  final String? baseUrl = dotenv.env["BASE_URL"];
 
   final http.Client client;
 
@@ -369,6 +370,57 @@ class ChatService {
       }
     } catch (e) {
       throw Exception("Error fetching call logs: $e");
+    }
+  }
+
+  Future<List<MessageModel>> fetchAgentMessages({
+    required String agentEmail,
+    required String customerEmail,
+    required int page,
+    int limit = 20,
+  }) async {
+    final url = Uri.parse(
+        "$baseUrl/chat/getAgentMessages/$customerEmail/$agentEmail?page=$page&limit=$limit");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final List<dynamic> messagesJson = json['messages'];
+        return messagesJson
+            .map((msg) => MessageModel.fromJson(msg, agentEmail))
+            .toList();
+      } else {
+        throw Exception("Failed to load agent messages: ${response.body}");
+      }
+    } catch (e) {
+      throw Exception("Error fetching agent messages: $e");
+    }
+  }
+
+  Future<List<MessageModel>> fetchCustomerMessages({
+    required String customerEmail,
+    required int page,
+    int limit = 20,
+  }) async {
+    final url = Uri.parse(
+        "$baseUrl/chat/getUserMessages/$customerEmail?page=$page&limit=$limit");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final List<dynamic> messagesJson = json['messages'];
+        return messagesJson
+            .map((msg) => MessageModel.fromJson(msg, customerEmail))
+            .toList();
+      } else {
+        throw Exception("Failed to load agent messages: ${response.body}");
+      }
+    } catch (e) {
+      throw Exception("Error fetching agent messages: $e");
     }
   }
 }

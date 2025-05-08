@@ -29,11 +29,22 @@ class _ManageCustomersState extends State<ManageCustomers>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    fetchCustomers();
-    fetchCallLogs();
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (_tabController.indexIsChanging) {
+      if (_tabController.index == 0 && customers.isEmpty) {
+        fetchCustomers();
+      } else if (_tabController.index == 1 && callLogs.isEmpty) {
+        fetchCallLogs();
+      }
+    }
   }
 
   Future<void> fetchCustomers() async {
+    if (customers.isNotEmpty) return;
+
     final role = await LocalDbHelper.getUserType();
     final email = LocalDbHelper.getEmail();
     List<dynamic> fetchedCustomers;
@@ -56,14 +67,28 @@ class _ManageCustomersState extends State<ManageCustomers>
   }
 
   Future<void> fetchCallLogs() async {
+    if (callLogs.isNotEmpty) return;
+
     final email = LocalDbHelper.getEmail();
     try {
-      final fetchedLogs =
-          await _chatRepo.fetchCallLogs(email!); // Adjust this method if needed
+      // Retrieve call logs from Hive first
+      final cachedLogs = await LocalDbHelper.getCallLogs();
+      if (cachedLogs.isNotEmpty) {
+        setState(() {
+          callLogs = cachedLogs;
+          isCallLoading = false;
+        });
+      }
+
+      // Fetch call logs from the API
+      final fetchedLogs = await _chatRepo.fetchCallLogs(email!);
       setState(() {
         callLogs = fetchedLogs;
         isCallLoading = false;
       });
+
+      // Save the fetched logs to Hive
+      await LocalDbHelper.saveCallLogs(fetchedLogs);
     } catch (e) {
       debugPrint('Error fetching call logs: $e');
       setState(() {
@@ -190,5 +215,11 @@ class _ManageCustomersState extends State<ManageCustomers>
         );
       }).toList(),
     );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }
