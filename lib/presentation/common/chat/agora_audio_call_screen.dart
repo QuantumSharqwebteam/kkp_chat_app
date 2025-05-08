@@ -100,7 +100,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("No answer. Call ended.")),
           );
-          _updateCallData("missed");
+          _updateCallData("not answered");
           _endCall();
         }
       });
@@ -118,7 +118,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   Future<void> _updateCallData(String callStatus,
       {String? callDuration}) async {
     if (widget.messageId == null) {
-      debugPrint("⚠️⚠️⚠️ Message ID is null. Cannot update call data.");
+      debugPrint("❌ Message ID is null. Cannot update call data.");
       return;
     }
 
@@ -173,6 +173,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       },
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
+        _updateCallData("not answered");
       },
       onError: (ErrorCodeType code, String message) {
         debugPrint("⚠️Error joinning channel Agora error: $code - $message");

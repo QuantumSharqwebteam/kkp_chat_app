@@ -29,6 +29,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:uuid/uuid.dart';
 
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
@@ -74,10 +75,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   Timer? _timer;
   String? userRole;
   int _currentPage = 1;
-  final bool _isFetching = false;
-  final Set<int> _fetchedPages = {}; // Keep track of fetched pages
+  bool _isFetching = false;
+  Set<int> _fetchedPages = Set(); // Keep track of fetched pages
   bool _isLoadingMore = false; // Show loading indicator when loading more
-  final Set<String> _loadedMessageIds = {};
+  Set<String> _loadedMessageIds = Set();
 
   Future<void> _loadPreviousMessages() async {
     final boxName = widget.customerEmail!;
@@ -562,11 +563,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 final uid =
                     Utils().generateIntUidFromEmail(widget.customerEmail!);
                 debugPrint("Generated UID for agent (caller): $uid");
+
+                final callId = Uuid().v4();
                 // Send call data over socket to notify customer
                 _socketService.sendAgoraCall(
                   channelName: channelName,
                   callerId: widget.customerEmail!,
                   callerName: widget.customerName!,
+                  callId: callId,
                 );
 
                 // Navigate agent to call screen
@@ -579,6 +583,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                       uid: uid,
                       //  remoteUserId: widget.agentEmail!,
                       remoteUserName: widget.agentName!,
+                      messageId: callId,
                     ),
                   ),
                 );
