@@ -74,10 +74,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   Timer? _timer;
   String? userRole;
   int _currentPage = 1;
-  bool _isFetching = false;
-  Set<int> _fetchedPages = Set(); // Keep track of fetched pages
+  final bool _isFetching = false;
+  final Set<int> _fetchedPages = {}; // Keep track of fetched pages
   bool _isLoadingMore = false; // Show loading indicator when loading more
-  final Set<String> _loadedMessageIds = Set();
+  final Set<String> _loadedMessageIds = {};
 
   Future<void> _loadPreviousMessages() async {
     final boxName = widget.customerEmail!;
