@@ -1,142 +1,214 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 
-class NotificationsScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> notifications = [
-    {
-      'name': 'Ramesh Mehra',
-      'message': 'send final stocks',
-      'time': '2hr ago',
-      'image': 'assets/images/user1.png',
-      'hasAction': false,
-    },
-    {
-      'name': 'Rakesh R.S',
-      'message': 'send final units and so out of stock',
-      'time': '4hr ago',
-      'image': 'assets/images/user2.png',
-      'hasAction': false,
-    },
-    {
-      'name': 'Ronita Jain',
-      'message': 'to join this group',
-      'time': '4hr ago',
-      'image': 'assets/images/user3.png',
-      'hasAction': true,
-    },
-    {
-      'name': 'Ronit Moh',
-      'message': 'send final units',
-      'time': '4hr ago',
-      'image': 'assets/images/user4.png',
-      'hasAction': false,
-    },
-  ];
+import 'package:kkpchatapp/data/models/notification_model.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 
-  NotificationsScreen({super.key});
+class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  List<NotificationModel> _notifications = [];
+  final AuthRepository _authRepo = AuthRepository();
+  bool _isLoading = false; // Loading flag to track API progress
+
+  @override
+  void initState() {
+    super.initState();
+    fetchNotifications();
+  }
+
+  Future<void> fetchNotifications() async {
+    setState(() {
+      _isLoading = true; // Start loading when API is hit
+    });
+
+    try {
+      final notifications = await _authRepo.getParsedNotifications();
+      setState(() {
+        _notifications = notifications;
+      });
+    } catch (e) {
+      debugPrint('Failed to load notifications: $e');
+    } finally {
+      setState(() {
+        _isLoading = false; // Stop loading once the API call is complete
+      });
+    }
+  }
+
+  Future<void> markAsRead(String id) async {
+    setState(() {
+      _isLoading = true; // Start loading when API is hit
+    });
+
+    try {
+      await _authRepo.updateNotificationRead(id);
+      fetchNotifications(); // Refresh the notification list
+    } catch (e) {
+      debugPrint('Failed to mark notification as read: $e');
+    } finally {
+      setState(() {
+        _isLoading = false; // Stop loading once the API call is complete
+      });
+    }
+  }
+
+  Map<String, List<NotificationModel>> groupNotificationsByDate() {
+    Map<String, List<NotificationModel>> grouped = {
+      'Today': [],
+      'Yesterday': [],
+      'Earlier': [],
+    };
+    final now = DateTime.now();
+
+    for (final notif in _notifications) {
+      final date = notif.timestamp ?? DateTime.now();
+      final diff = now.difference(date);
+
+      if (diff.inDays == 0 && now.day == date.day) {
+        grouped['Today']!.add(notif);
+      } else if (diff.inDays == 1 ||
+          (diff.inHours < 48 && now.day - date.day == 1)) {
+        grouped['Yesterday']!.add(notif);
+      } else {
+        grouped['Earlier']!.add(notif);
+      }
+    }
+
+    return grouped;
+  }
+
+  String getFormattedTime(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} mins';
+    } else if (difference.inHours < 24 && now.day == date.day) {
+      return DateFormat('hh:mm a').format(date);
+    } else {
+      return 'Yesterday at ${DateFormat('HH:mm').format(date)}';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final grouped = groupNotificationsByDate();
+
     return Scaffold(
       appBar: AppBar(
+        title: const Text("Notifications"),
         backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          "Notifications",
-        ),
+        elevation: 1,
         actions: [
           TextButton(
-            onPressed: () {},
-            child: Text(
+            onPressed: () async {
+              setState(() {
+                _isLoading = true; // Start loading for all notifications
+              });
+              for (var n in _notifications.where((n) => !(n.viewed ?? false))) {
+                await markAsRead(n.id ?? '');
+              }
+              setState(() {
+                _isLoading =
+                    false; // Stop loading once all notifications are marked
+              });
+            },
+            child: const Text(
               "Mark all read",
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.blue,
-                decoration: TextDecoration.underline,
-                decorationColor: AppColors.blue,
-                decorationThickness: 3,
-              ),
+              style: TextStyle(color: Colors.blue),
             ),
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(child: _buildNotificationList()),
-          // _buildFooter(),
+          _notifications.isEmpty
+              ? const Center(child: Text(""))
+              : ListView(
+                  children: grouped.entries
+                      .where((e) => e.value.isNotEmpty)
+                      .map((entry) => _buildGroup(entry.key, entry.value))
+                      .toList(),
+                ),
+          if (_isLoading) const FullScreenLoader(),
         ],
       ),
     );
   }
 
-  Widget _buildNotificationList() {
-    return ListView.separated(
-      itemCount: notifications.length,
-      physics: AlwaysScrollableScrollPhysics(),
-      separatorBuilder: (context, index) =>
-          Divider(thickness: 1, color: Colors.grey.shade300),
-      itemBuilder: (context, index) {
-        final notification = notifications[index];
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundImage: AssetImage(notification['image']),
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    RichText(
-                      text: TextSpan(
-                        text: notification['name'],
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontSize: 14),
-                        children: [
-                          TextSpan(
-                            text: " ${notification['message']}",
-                            style: TextStyle(fontWeight: FontWeight.normal),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(notification['time'],
-                        style: TextStyle(fontSize: 12, color: Colors.grey)),
-                  ],
-                ),
-              ),
-            ],
+  Widget _buildGroup(String label, List<NotificationModel> list) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.maxFinite,
+          color: AppColors.blue00ABE9.withValues(alpha: 0.07),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          margin: EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+            label,
+            style: AppTextStyles.grey12_600.copyWith(fontSize: 14),
           ),
-        );
-      },
+        ),
+        ...list.map((n) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+              child: _buildNotificationTile(n),
+            )),
+      ],
     );
   }
 
-  // Widget _buildFooter() {
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(vertical: 20),
-  //     child: RichText(
-  //       textAlign: TextAlign.center,
-  //       text: TextSpan(
-  //         style: AppTextStyles.black10_600
-  //             .copyWith(color: Color(0xff121927), fontWeight: FontWeight.w500),
-  //         children: [
-  //           const TextSpan(text: "By using KKP chat application, you agree\n"),
-  //           TextSpan(
-  //               text: "to the Terms and Privacy Policy",
-  //               style: AppTextStyles.black10_600
-  //                   .copyWith(fontWeight: FontWeight.bold)),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
+  Widget _buildNotificationTile(NotificationModel n) {
+    final date = n.timestamp ?? DateTime.now();
+    final displayTime = getFormattedTime(date);
+
+    return ListTile(
+      leading: Initicon(
+        text: n.senderName ?? '',
+        size: 40,
+        backgroundColor: Colors.grey.shade300,
+      ),
+      title: RichText(
+        text: TextSpan(
+          text: n.senderName ?? '',
+          style: AppTextStyles.black14_600,
+          children: [
+            TextSpan(
+              text: ' ${n.body}',
+              style: AppTextStyles.black12_400,
+            ),
+          ],
+        ),
+      ),
+      subtitle: Text(
+        displayTime,
+        style: AppTextStyles.grey12_600,
+      ),
+      trailing: !(n.viewed ?? false)
+          ? TextButton(
+              onPressed: () => markAsRead(n.id ?? ''),
+              child: const Text(
+                "Mark as read",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            )
+          : null,
+    );
+  }
 }

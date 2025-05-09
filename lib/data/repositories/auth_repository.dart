@@ -1,5 +1,6 @@
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/notification_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class AuthRepository {
@@ -76,5 +77,19 @@ class AuthRepository {
   // to fetch list of users by role = "User", agnet , admin , "agnetHead"
   Future<List<dynamic>> fetchUsersByRole(String role) async {
     return _authApi.getUsersByRole(role: role);
+  }
+
+  Future<List<NotificationModel>> getParsedNotifications() async {
+    final response = await _authApi.getNotifications();
+    final List<dynamic> notificationsJson = response['notifications'] ?? [];
+    return notificationsJson
+        .map((json) => NotificationModel.fromJson(json))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> updateNotificationRead(
+      String notificationId) async {
+    return await _authApi.updateNotificationRead(
+        notificationId: notificationId);
   }
 }

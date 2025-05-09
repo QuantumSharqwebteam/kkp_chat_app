@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_notification_page.dart';
 
 class CustomAppBar extends StatefulWidget {
   const CustomAppBar({
@@ -40,9 +40,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
         padding: const EdgeInsets.only(bottom: 14),
         child: IconButton(
           onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) {
-              return CustomerNotificationPage();
-            }));
+            Navigator.pushNamed(context, CustomerRoutes.customerNotification);
           },
           icon: const Icon(
             Icons.notifications_active_outlined,

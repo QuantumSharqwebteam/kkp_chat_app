@@ -534,4 +534,57 @@ class AuthApi {
       throw Exception('Delete request failed: $e');
     }
   }
+
+  /// get user notifications
+  Future<Map<String, dynamic>> getNotifications() async {
+    final endPoint = "user/getNotification";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper
+        .getToken(); // Assuming you have a method to get the token
+
+    try {
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to get notifications: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint("Error getting notifications: $e");
+      throw Exception(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotificationRead(
+      {required String notificationId}) async {
+    final endPoint = "user/updateNotification/$notificationId";
+    final url = Uri.parse('$baseUrl$endPoint');
+    final token = await LocalDbHelper.getToken();
+
+    try {
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to mark notification as viewed');
+      }
+    } catch (e) {
+      debugPrint("Error updating notification: $e");
+      throw Exception(e);
+    }
+  }
 }
