@@ -14,19 +14,6 @@ class ChatRepository {
   }
 
   /// Fetch agent messages with pagination
-  Future<List<MessageModel>> fetchAgentMessages({
-    required String agentEmail,
-    required String customerEmail,
-    required int page,
-    int limit = 20,
-  }) async {
-    return await chatService.fetchAgentMessages(
-      agentEmail: agentEmail,
-      customerEmail: customerEmail,
-      page: page,
-      limit: limit,
-    );
-  }
 
   /// Get the list of assigned customers to that agent
   Future<List<Map<String, dynamic>>> fetchAssignedCustomerList(
@@ -50,8 +37,9 @@ class ChatRepository {
   }
 
   // Fetch form data for a specific agent
-  Future<List<FormDataModel>> fetchFormDataForAgent(String agentEmail) async {
-    return await chatService.getFormDataByAgent(email: agentEmail);
+  Future<List<FormDataModel>> fetchFormDataForEnquiery(
+      String agentEmail) async {
+    return await chatService.getFormDataForEnquiery(email: agentEmail);
   }
 
   // Get Agora token which is required for making a call for that channel name
@@ -84,14 +72,28 @@ class ChatRepository {
     return await chatService.getCallLogs(email);
   }
 
+  Future<List<MessageModel>> fetchAgentMessages({
+    required String agentEmail,
+    required String customerEmail,
+    int limit = 20,
+    String? before,
+  }) async {
+    return await chatService.fetchAgentMessages(
+      agentEmail: agentEmail,
+      customerEmail: customerEmail,
+      before: before,
+      limit: limit,
+    );
+  }
+
   Future<List<MessageModel>> fetchCustomerMessages({
     required String customerEmail,
-    required int page,
     int limit = 20,
+    String? before,
   }) async {
     return await chatService.fetchCustomerMessages(
       customerEmail: customerEmail,
-      page: page,
+      before: before,
       limit: limit,
     );
   }

@@ -1,16 +1,12 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-
-//import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 
@@ -71,11 +67,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   Future<void> fetchInquiries() async {
     final role = await LocalDbHelper.getUserType();
-    final agentEmail = LocalDbHelper.getEmail();
+    final currentUserEmail = LocalDbHelper.getProfile()?.email;
     List<FormDataModel> data = [];
     try {
-      if (role == "2" || role == "3") {
-        data = await _chatRepository.fetchFormDataForAgent(agentEmail!);
+      if (role == "2" || role == "3" || role == "0") {
+        data =
+            await _chatRepository.fetchFormDataForEnquiery(currentUserEmail!);
       } else if (role == "1") {
         data = await _chatRepository.fetchFormData();
       }

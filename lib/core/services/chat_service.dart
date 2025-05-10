@@ -212,7 +212,7 @@ class ChatService {
     }
   }
 
-  Future<List<FormDataModel>> getFormDataByAgent(
+  Future<List<FormDataModel>> getFormDataForEnquiery(
       {required String email}) async {
     final url = Uri.parse('$baseUrl/chat/getFormData?email=$email');
     final response = await client.get(url);
@@ -376,11 +376,11 @@ class ChatService {
   Future<List<MessageModel>> fetchAgentMessages({
     required String agentEmail,
     required String customerEmail,
-    required int page,
     int limit = 20,
+    String? before,
   }) async {
     final url = Uri.parse(
-        "$baseUrl/chat/getAgentMessages/$customerEmail/$agentEmail?page=$page&limit=$limit");
+        "$baseUrl/chat/getAgentMessages/$customerEmail/$agentEmail?limit=$limit${before != null ? '&before=$before' : ''}");
 
     try {
       final response = await client.get(url);
@@ -401,11 +401,11 @@ class ChatService {
 
   Future<List<MessageModel>> fetchCustomerMessages({
     required String customerEmail,
-    required int page,
     int limit = 20,
+    String? before,
   }) async {
     final url = Uri.parse(
-        "$baseUrl/chat/getUserMessages/$customerEmail?page=$page&limit=$limit");
+        "$baseUrl/chat/getUserMessages/$customerEmail?limit=$limit${before != null ? '&before=$before' : ''}");
 
     try {
       final response = await client.get(url);
@@ -417,10 +417,10 @@ class ChatService {
             .map((msg) => MessageModel.fromJson(msg, customerEmail))
             .toList();
       } else {
-        throw Exception("Failed to load agent messages: ${response.body}");
+        throw Exception("Failed to load messages: ${response.body}");
       }
     } catch (e) {
-      throw Exception("Error fetching agent messages: $e");
+      throw Exception("Error fetching messages: $e");
     }
   }
 }

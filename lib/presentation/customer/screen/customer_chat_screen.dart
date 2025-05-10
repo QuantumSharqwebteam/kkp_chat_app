@@ -73,10 +73,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   int _recordedSeconds = 0;
   Timer? _timer;
   String? userRole;
-  int _currentPage = 1;
   bool _isFetching = false;
-  Set<int> _fetchedPages = Set(); // Keep track of fetched pages
-  bool _isLoadingMore = false; // Show loading indicator when loading more
+  bool _isLoadingMore = false;
+  bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = Set();
 
   Future<void> _loadPreviousMessages() async {
@@ -88,28 +87,32 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       await _fetchMessagesFromAPI(boxName);
     } else {
       // Load messages from Hive
-      final loadedMessages = await _chatStorageService
-          .getCustomerMessages(boxName, page: _currentPage);
+      final loadedMessages =
+          await _chatStorageService.getCustomerMessages(boxName);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
       setState(() {
         messages = newLoadedMessages;
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom();
       });
     }
   }
 
   Future<void> _fetchMessagesFromAPI(String boxName) async {
     try {
+      String? before;
+      if (messages.isNotEmpty) {
+        before = messages.first.timestamp.toIso8601String();
+      }
+
       final List<MessageModel> fetchedMessages =
           await _chatRepository.fetchCustomerMessages(
         customerEmail: widget.customerEmail!,
-        page: _currentPage,
+        limit: 20,
+        before: before,
       );
 
       if (fetchedMessages.isEmpty) {
         // No more messages to load
-        _currentPage--;
         return;
       }
 
@@ -133,10 +136,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         // Save all messages at once
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
-          messages.addAll(newChatMessages);
+          messages.insertAll(0, newChatMessages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         });
-        _fetchedPages.add(_currentPage);
       }
     } catch (e) {
       // Handle errors properly
@@ -167,42 +169,31 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
+  void _checkIfAtBottom() {
+    if (_scrollController.position.atEdge) {
+      bool isBottom = _scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent;
+      if (isBottom != _isAtBottom) {
+        setState(() {
+          _isAtBottom = isBottom;
+        });
+      }
+    } else {
+      if (_isAtBottom) {
+        setState(() {
+          _isAtBottom = false;
+        });
+      }
+    }
+  }
+
   Future<void> _loadMoreMessages() async {
     if (_isFetching || _isLoadingMore) return;
     _isLoadingMore = true;
     setState(() {});
 
-    _currentPage++;
     final boxName = widget.customerEmail!;
-    if (_fetchedPages.contains(_currentPage)) {
-      // Page already fetched, do nothing
-      _isLoadingMore = false;
-      setState(() {});
-      return;
-    }
-
-    final loadedMessages = await _chatStorageService
-        .getCustomerMessages(boxName, page: _currentPage);
-
-    if (loadedMessages.isEmpty) {
-      // Fetch more messages from API
-      await _fetchMessagesFromAPI(boxName);
-      final newLoadedMessages = await _chatStorageService
-          .getCustomerMessages(boxName, page: _currentPage);
-      final uniqueMessages = _removeDuplicates(newLoadedMessages);
-      setState(() {
-        messages.insertAll(0, uniqueMessages);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      });
-      _fetchedPages.add(_currentPage);
-    } else {
-      final uniqueMessages = _removeDuplicates(loadedMessages);
-      setState(() {
-        messages.insertAll(0, uniqueMessages);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      });
-      _fetchedPages.add(_currentPage);
-    }
+    await _fetchMessagesFromAPI(boxName);
 
     _isLoadingMore = false;
     setState(() {});
@@ -231,6 +222,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _loadPreviousMessages();
     _initializeRecorder();
     _scrollController.addListener(_handleScroll);
+    _scrollController.addListener(_checkIfAtBottom);
   }
 
   @override
@@ -245,6 +237,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _recorder.closeRecorder();
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
+    _scrollController.removeListener(_checkIfAtBottom);
     _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
@@ -260,7 +253,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    debugPrint("Recived Message: ${data.toString()}");
+    debugPrint("Received Message: ${data.toString()}");
     final currentTime = DateTime.now().toIso8601String();
     final message = ChatMessageModel(
       message: data["message"],
@@ -277,7 +270,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       setState(() {
         messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom();
+        _scrollToBottom(); // Scroll to bottom only when a new message is received
       });
 
       // Save the message to Hive only if it's not already saved
@@ -310,7 +303,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       setState(() {
         messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom();
+        _scrollToBottom(); // Scroll to bottom only when a new message is sent
       });
 
       final String? name = LocalDbHelper.getProfile()?.name;
@@ -633,7 +626,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                               );
                             } else if (msg.type == 'voice') {
                               return VoiceMessageBubble(
-                                // Add this line
                                 voiceUrl: msg.mediaUrl!,
                                 isMe: msg.sender == widget.customerEmail,
                                 timestamp: formatTimestamp(msg.timestamp),
@@ -664,15 +656,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   onSendImage: _pickAndSendImage,
                   onSendForm: _showFormOverlay,
                   onSendDocument: _pickAndSendDocument,
-                  onSendVoice: _isRecording
-                      ? _stopRecording
-                      : _startRecording, // Update this line
+                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
                   isRecording: _isRecording,
-                  recordedSeconds: _recordedSeconds, // Update this line
+                  recordedSeconds: _recordedSeconds,
                 ),
               ],
             ),
-            if (isFormUpdating) FullScreenLoader()
+            if (isFormUpdating) FullScreenLoader(),
+            if (!_isAtBottom)
+              Positioned(
+                bottom: 80, // Adjust the position as needed
+                right: 16, // Adjust the position as needed
+                child: FloatingActionButton(
+                  onPressed: _scrollToBottom,
+                  mini: true,
+                  backgroundColor: AppColors.blue0056FB.withAlpha(50),
+                  child: Icon(Icons.arrow_downward_rounded),
+                ),
+              ),
           ],
         ),
       ),

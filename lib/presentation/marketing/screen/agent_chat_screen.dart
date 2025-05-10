@@ -76,12 +76,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Set<int> _fetchedPages = Set(); // Keep track of fetched pages
   bool _isLoadingMore = false; // Show loading indicator when loading more
   final Set<String> _loadedMessageIds = Set();
+  bool _isAtBottom = true; // Track if the user is at the bottom of the list
 
   @override
   void initState() {
     _fetchUserRole();
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _socketService.toggleChatPageOpen(true);
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
@@ -93,6 +93,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     });
 
     _scrollController.addListener(_handleScroll);
+    _scrollController.addListener(_checkIfAtBottom);
   }
 
   @override
@@ -103,6 +104,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _recorder.closeRecorder();
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
+    _scrollController.removeListener(_checkIfAtBottom);
+    _socketService.toggleChatPageOpen(false);
     super.dispose();
   }
 
@@ -154,27 +157,27 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         messages = newLoadedMessages;
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
-        // Scroll to bottom after loading messages
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToBottom();
-        });
       });
     }
   }
 
   Future<void> _fetchMessagesFromAPI(String boxName, context) async {
     try {
+      String? before;
+      if (messages.isNotEmpty) {
+        before = messages.first.timestamp.toIso8601String();
+      }
+
       final List<MessageModel> fetchedMessages =
           await _chatRepository.fetchAgentMessages(
         agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
         customerEmail: widget.customerEmail,
-        page: _currentPage,
         limit: 20,
+        before: before,
       );
 
       if (fetchedMessages.isEmpty) {
         // No more messages to load
-        _currentPage--;
         return;
       }
 
@@ -198,15 +201,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         // Save all messages at once
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
-          messages = newChatMessages;
+          messages.insertAll(0, newChatMessages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           _isLoading = false;
-          // Scroll to bottom after loading messages
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
         });
-        _fetchedPages.add(_currentPage);
       }
     } catch (e) {
       // Handle errors properly
@@ -223,6 +221,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       if (_scrollController.position.pixels == 0) {
         // User has scrolled to the top
         _loadMoreMessages(context);
+      }
+    }
+  }
+
+  void _checkIfAtBottom() {
+    if (_scrollController.position.atEdge) {
+      bool isBottom = _scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent;
+      if (isBottom != _isAtBottom) {
+        setState(() {
+          _isAtBottom = isBottom;
+        });
+      }
+    } else {
+      if (_isAtBottom) {
+        setState(() {
+          _isAtBottom = false;
+        });
       }
     }
   }
@@ -670,6 +686,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             ],
           ),
           if (_isFormUpdating) FullScreenLoader(),
+          if (!_isAtBottom)
+            Positioned(
+              bottom: 80, // Adjust the position as needed
+              right: 16, // Adjust the position as needed
+              child: FloatingActionButton(
+                onPressed: _scrollToBottom,
+                mini: true,
+                child: Icon(Icons.arrow_downward_rounded),
+              ),
+            ),
         ],
       ),
     );

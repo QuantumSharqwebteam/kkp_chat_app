@@ -6,6 +6,7 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
@@ -128,10 +129,12 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               title: 'Your Orders',
               numberOfTiles: 1,
               leadingIcons: [Icons.shopping_cart_outlined],
-              titles: ['Order Enquirer'],
+              titles: ['Order Enquiries'],
               onTaps: [
                 () {
-                  Navigator.pushNamed(context, CustomerRoutes.orderEnquiries);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CustomerInquiriesPage();
+                  }));
                 }
               ],
             ),

@@ -7,7 +7,7 @@ class ChatStorageService {
   }
 
   Future<List<ChatMessageModel>> getCustomerMessages(String boxName,
-      {int page = 1, int limit = 20}) async {
+      {int limit = 20, String? before}) async {
     final box = await _openBox(boxName);
     final allMessages = box.values
         .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
@@ -15,13 +15,15 @@ class ChatStorageService {
       ..sort(
           (a, b) => b.timestamp.compareTo(a.timestamp)); // Sort by newest first
 
-    final startIndex = (page - 1) * limit;
-    final endIndex = startIndex + limit;
-    if (startIndex >= allMessages.length) {
-      return []; // Return an empty list if startIndex is out of range
+    if (before != null) {
+      final beforeDate = DateTime.parse(before);
+      return allMessages
+          .where((message) => message.timestamp.isBefore(beforeDate))
+          .take(limit)
+          .toList();
+    } else {
+      return allMessages.take(limit).toList();
     }
-    return allMessages.sublist(startIndex,
-        endIndex > allMessages.length ? allMessages.length : endIndex);
   }
 
   Future<void> saveMessage(ChatMessageModel message, String boxName) async {
