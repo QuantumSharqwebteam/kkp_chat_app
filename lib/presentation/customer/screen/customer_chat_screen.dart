@@ -77,7 +77,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isFetching = false;
   bool _isLoadingMore = false;
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
-  final Set<String> _loadedMessageIds = Set();
+  final Set<String> _loadedMessageIds = {};
 
   Future<void> _loadPreviousMessages() async {
     final boxName = widget.customerEmail!;
@@ -91,11 +91,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final loadedMessages =
           await _chatStorageService.getCustomerMessages(boxName);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
-      setState(() {
-        messages = newLoadedMessages;
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      });
+
+      messages = newLoadedMessages;
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     }
+
+    // Scroll to bottom after loading messages
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   Future<void> _fetchMessagesFromAPI(String boxName) async {
