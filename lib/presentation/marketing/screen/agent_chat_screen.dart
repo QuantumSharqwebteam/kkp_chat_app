@@ -211,9 +211,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
       // You can show a snackbar or alert dialog to inform the user about the error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to load messages: $e")),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Failed to load messages: $e")),
+      // );
     }
   }
 
@@ -349,7 +349,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       setState(() {
         messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom();
       });
 
       _socketService.sendMessage(
@@ -367,17 +366,21 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           message, '${widget.agentName}${widget.customerName}');
       _loadedMessageIds.add(messageId);
     }
+    _scrollToBottom();
+
     _chatController.clear();
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _startRecording() async {

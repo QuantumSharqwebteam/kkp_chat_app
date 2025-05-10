@@ -24,11 +24,11 @@ class MessageBubble extends StatelessWidget {
       mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (!isMe)
-          Initicon(
-            text: image ?? "",
-            size: 30,
-          ),
+        // if (!isMe)
+        //   Initicon(
+        //     text: image ?? "",
+        //     size: 30,
+        //   ),
         Stack(
           children: [
             Container(

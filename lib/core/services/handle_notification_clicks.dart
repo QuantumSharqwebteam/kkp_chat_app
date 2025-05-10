@@ -120,8 +120,9 @@ Future<void> handlePushNotificationClickForAgent(
   void triggerNavigation() {
     ChatStorageService chatStorageService = ChatStorageService();
     final Map<String, dynamic> notiData = notificationData;
-    final boxName =
-        LocalDbHelper.getProfile()!.email! + notificationData['senderId'];
+    // final boxName =
+    //     LocalDbHelper.getProfile()!.email! + notificationData['senderId'];
+    final boxName = notificationData['targetId'] + notificationData['senderId'];
 
     ChatMessageModel pushMessage = ChatMessageModel(
       message: notiData['message'],

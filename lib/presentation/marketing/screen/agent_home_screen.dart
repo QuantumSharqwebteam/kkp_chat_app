@@ -194,40 +194,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  // // Direct Messages Section
-  // Widget _buildDirectMessages() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text(
-  //         "Direct Messages",
-  //         style: AppTextStyles.black16_500,
-  //       ),
-  //       const SizedBox(height: 10),
-  //       SizedBox(
-  //         height: 100,
-  //         child: ListView.builder(
-  //           scrollDirection: Axis.horizontal,
-  //           itemCount: users.length,
-  //           itemBuilder: (context, index) {
-  //             final user = users[index];
-  //             return Padding(
-  //               padding: const EdgeInsets.symmetric(horizontal: 10),
-  //               child: DirectMessagesListItem(
-  //                 name: user['name'],
-  //                 image: user['image'],
-  //                 status: user['status'],
-  //                 unread: user['unread'],
-  //                 typing: user['typing'],
-  //               ),
-  //             );
-  //           },
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   // Recent Messages List
   Widget _buildCustomerInquiriesList() {
     return RefreshIndicator(
