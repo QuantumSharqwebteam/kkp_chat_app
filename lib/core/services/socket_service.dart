@@ -285,6 +285,7 @@ class SocketService {
     // required String token,
     required String callerId,
     required String callerName,
+    required String callId,
   }) {
     if (_isConnected) {
       final payload = {
@@ -293,6 +294,7 @@ class SocketService {
         // 'token': token,
         'callerId': callerId,
         'callerName': callerName,
+        'callId': callId,
       };
       if (targetId != null) {
         payload['targetId'] = targetId;

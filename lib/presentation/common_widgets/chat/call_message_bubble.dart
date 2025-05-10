@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 
 class CallMessageBubble extends StatelessWidget {
   final bool isMe;
   final String timestamp;
-  final String callStatus;
+  final String callStatus; // "missed", "answered", "not_answered"
   final String callDuration;
 
   const CallMessageBubble({
@@ -16,54 +18,66 @@ class CallMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    IconData iconData;
+    Color iconColor;
+    String statusText;
+
+    switch (callStatus) {
+      case 'answered':
+        iconData = Icons.call;
+        iconColor = Colors.green;
+        statusText = 'Call ended';
+        break;
+      case 'not_answered':
+        iconData = Icons.call_end;
+        iconColor = Colors.orange;
+        statusText = 'Not answered';
+        break;
+      case 'missed':
+      default:
+        iconData = Icons.call_missed;
+        iconColor = Colors.red;
+        statusText = 'Call missed';
+        break;
+    }
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: IntrinsicWidth(
         child: Container(
-          margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          padding: EdgeInsets.all(12),
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isMe ? Colors.blue : Colors.grey,
-            borderRadius: BorderRadius.circular(12),
+            color: isMe
+                ? AppColors.senderMessageBubbleColor
+                : AppColors.recieverMessageBubble,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+              bottomLeft: isMe ? Radius.circular(16) : Radius.circular(0),
+              bottomRight: isMe ? Radius.circular(0) : Radius.circular(16),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(
-                    callStatus == 'answered'
-                        ? Icons.call_end
-                        : Icons.call_missed,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    callStatus == 'answered' ? 'Call ended' : 'Call missed',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Icon(iconData, color: iconColor, size: 20),
+                  const SizedBox(width: 8),
+                  Text(statusText,
+                      style: AppTextStyles.black14_600
+                          .copyWith(color: isMe ? Colors.white : Colors.black)),
                 ],
               ),
               if (callStatus == 'answered') ...[
-                SizedBox(height: 4),
-                Text(
-                  callDuration,
-                  style: TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
+                const SizedBox(height: 4),
+                Text(callDuration, style: AppTextStyles.grey5C5C5C_18_700),
               ],
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 timestamp,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 10,
-                ),
+                style: AppTextStyles.greyAAAAAA_10_400,
               ),
             ],
           ),

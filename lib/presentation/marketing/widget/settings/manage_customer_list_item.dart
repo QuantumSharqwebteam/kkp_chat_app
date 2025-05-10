@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 
 class ManageCustomerListItem extends StatelessWidget {
   final Map<String, dynamic> customer;

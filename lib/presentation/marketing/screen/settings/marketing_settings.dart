@@ -8,7 +8,6 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/colored_divider.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/settings/manage_customers.dart';
@@ -25,7 +24,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
   final SocketService _socketService = SocketService(navigatorKey);
   @override
   Widget build(BuildContext context) {
-    final searchController = TextEditingController();
+    // final searchController = TextEditingController();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,

@@ -3,7 +3,6 @@ import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_host.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_notification_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_profile_setup_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_settings_page.dart';
@@ -13,6 +12,7 @@ import 'package:kkpchatapp/presentation/customer/screen/settings/notification_se
 import 'package:kkpchatapp/presentation/customer/screen/settings/order_enquiries.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/marketings_notifications_page.dart';
 
 import '../../data/models/product_model.dart';
 
@@ -54,8 +54,7 @@ Route<dynamic> generateCustomerRoute(RouteSettings settings) {
               ));
 
     case CustomerRoutes.customerNotification:
-      return MaterialPageRoute(
-          builder: (context) => CustomerNotificationPage());
+      return MaterialPageRoute(builder: (context) => NotificationsScreen());
 
     case CustomerRoutes.customerProductDescriptionPage:
       final product = settings.arguments as Product?;
