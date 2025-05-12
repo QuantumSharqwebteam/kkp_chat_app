@@ -384,20 +384,20 @@ class SocketService {
 
     // Check if the user is a customer
     if (await LocalDbHelper.getUserType() == "0") {
-      final customerEmail = LocalDbHelper.getEmail();
+      final customerEmail = LocalDbHelper.getProfile()?.email;
       if (customerEmail != null) {
         final message = ChatMessageModel(
           message: data["message"],
           timestamp: DateTime.parse(DateTime.now().toIso8601String()),
           sender: data["senderId"],
           type: data["type"] ?? "text",
-          mediaUrl: data["mediaUrl"],
-          form: data["form"],
+          mediaUrl: data["mediaUrl"] ?? "",
+          form: data["form"] ?? {},
         );
         chatStorageService.saveMessage(message, customerEmail);
       }
     } else {
-      final agentEmail = LocalDbHelper.getEmail();
+      final agentEmail = LocalDbHelper.getProfile()?.email;
       if (agentEmail != null) {
         String boxName = agentEmail + data['senderId'];
         final message = ChatMessageModel(
@@ -405,8 +405,8 @@ class SocketService {
           timestamp: DateTime.parse(DateTime.now().toIso8601String()),
           sender: data["senderId"],
           type: data["type"] ?? "text",
-          mediaUrl: data["mediaUrl"],
-          form: data["form"],
+          mediaUrl: data["mediaUrl"] ?? "",
+          form: data["form"] ?? {},
         );
         chatStorageService.saveMessage(message, boxName);
       }
@@ -436,6 +436,7 @@ class SocketService {
     flutterLocalNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse:
             (NotificationResponse notificationResponse) async {
+      debugPrint("Notification Response for LOCAL  $notificationResponse");
       _handleNotificationTap(notificationResponse);
     });
 
