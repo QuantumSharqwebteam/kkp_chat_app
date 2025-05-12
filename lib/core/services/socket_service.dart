@@ -482,9 +482,9 @@ class SocketService {
           jsonDecode(response.payload!);
 
       if ("0" == await LocalDbHelper.getUserType()) {
-        handlePushNotificationClickForCustomer(navigatorKey, notificationData);
+        handleNotificationClickForCustomer(navigatorKey, notificationData);
       } else {
-        handlePushNotificationClickForAgent(navigatorKey, notificationData);
+        handleNotificationClickForAgent(navigatorKey, notificationData);
       }
     }
   }
