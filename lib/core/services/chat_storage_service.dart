@@ -55,14 +55,4 @@ class ChatStorageService {
     }
     return allMessages.sublist(startIndex); // Fetch all remaining messages
   }
-
-  Future<void> clearMessages(String boxName) async {
-    final box = await _openBox(boxName);
-    await box.clear();
-  }
-
-  Future<void> deleteMessage(String boxName, String messageId) async {
-    final box = await _openBox(boxName);
-    await box.delete(messageId);
-  }
 }

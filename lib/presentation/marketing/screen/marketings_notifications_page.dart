@@ -3,6 +3,7 @@ import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+
 import 'package:kkpchatapp/data/models/notification_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
@@ -11,10 +12,10 @@ class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _MarketingNotificationPageState();
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _MarketingNotificationPageState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen> {
   List<NotificationModel> _notifications = [];
   final AuthRepository _authRepo = AuthRepository();
   bool _isLoading = false; // Loading flag to track API progress
@@ -134,7 +135,7 @@ class _MarketingNotificationPageState extends State<NotificationsScreen> {
       body: Stack(
         children: [
           _notifications.isEmpty
-              ? const Center(child: Text("No notifications"))
+              ? const Center(child: Text(""))
               : ListView(
                   children: grouped.entries
                       .where((e) => e.value.isNotEmpty)

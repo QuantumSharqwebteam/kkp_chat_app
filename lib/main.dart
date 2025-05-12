@@ -2,7 +2,6 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
@@ -19,7 +18,20 @@ bool isAppInitialized = false;
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Handle background message here if needed
+  // Check if the app is initialized
+  // if (!isAppInitialized) {
+  //   debugPrint("App is not initialized. Skipping background message handling.");
+  //   return;
+  // } else {
+  //   debugPrint("📩 [Terminated] Notification: ${message.data}");
+  //   // Handle background message here if needed
+  //   if ("0" == await LocalDbHelper.getUserType()) {
+  //     handlePushNotificationClickForCustomer(navigatorKey, message.data);
+  //   }
+  //   if ("0" != await LocalDbHelper.getUserType()) {
+  //     handlePushNotificationClickForAgent(navigatorKey, message.data);
+  //   }
+  // }
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -43,34 +55,6 @@ void main() async {
     Hive.openBox('feedBox'),
     dotenv.load(fileName: "keys.env"),
   ]);
-
-  FlutterForegroundTask.init(
-    androidNotificationOptions: AndroidNotificationOptions(
-      id: 0, // Optional: specify a notification ID
-      channelId: 'notification_channel_id',
-      channelName: 'Foreground Notification',
-      channelDescription:
-          'This notification appears when the foreground service is running.',
-      channelImportance: NotificationChannelImportance.LOW,
-      priority: NotificationPriority.LOW,
-      enableVibration: false,
-      playSound: false,
-      showWhen: false,
-      showBadge: false,
-      onlyAlertOnce: false,
-      visibility: NotificationVisibility.VISIBILITY_PUBLIC,
-    ),
-    iosNotificationOptions: const IOSNotificationOptions(
-      showNotification: true,
-      playSound: false,
-    ),
-    foregroundTaskOptions: ForegroundTaskOptions(
-      eventAction: ForegroundTaskEventAction.repeat(5000),
-      autoRunOnBoot: true,
-      allowWakeLock: true,
-      allowWifiLock: true,
-    ),
-  );
 
   // Set the global flag to true after initialization
   // isAppInitialized = true;
