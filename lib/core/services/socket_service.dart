@@ -79,24 +79,16 @@ class SocketService {
       if (isChatPageOpen && _onMessageReceived != null) {
         _onMessageReceived!(data);
       } else if (!isChatPageOpen && _onMessageReceived != null) {
-        // trigger foreground notification upon clicking it will open chat page
+        // Trigger foreground notification upon clicking it will open chat page
         _chatNotification(data);
       } else {
         return;
       }
     });
 
-    // for agora
+    // For agora
     _socket.on('incomingCall', (data) {
       debugPrint('📥 Agora incomingCall: $data');
-
-      // Expected `data` structure:
-      // {
-      //   "channelName": "test123",
-      //   "token": "agora_temp_token",
-      //   "callerName": "Agent Smith",
-      //   "callerId": "agent@example.com"
-      // }
 
       if (_onIncomingCall != null) {
         _onIncomingCall!(data);
@@ -106,7 +98,7 @@ class SocketService {
     });
 
     _socket.on('callAnswered', (data) {
-      debugPrint('📥 callAnswered: $data'); // ✅
+      debugPrint('📥 callAnswered: $data');
       if (_onCallAnswered != null) {
         _onCallAnswered!(data);
       }
@@ -119,9 +111,8 @@ class SocketService {
 
     _socket.on('signalCandidate', (data) {
       debugPrint('📥 signalCandidate: $data');
-      // Check if the callback is assigned, then invoke it
       if (_onSignalCandidate != null) {
-        _onSignalCandidate!(data); // Callback is executed here
+        _onSignalCandidate!(data);
       }
     });
 
@@ -220,7 +211,7 @@ class SocketService {
   }
 
   void onSignalCandidate(Function(Map<String, dynamic>) callback) {
-    _onSignalCandidate = callback; // Assign the callback to the variable
+    _onSignalCandidate = callback;
   }
 
   void _attemptReconnect(String userName, String userEmail, String role) {
@@ -280,18 +271,15 @@ class SocketService {
   }
 
   void sendAgoraCall({
-    String? targetId, // email or userId of the customer
+    String? targetId,
     required String channelName,
-    // required String token,
     required String callerId,
     required String callerName,
     required String callId,
   }) {
     if (_isConnected) {
       final payload = {
-        // 'targetId': targetId,
         'channelName': channelName,
-        // 'token': token,
         'callerId': callerId,
         'callerName': callerName,
         'callId': callId,
@@ -312,7 +300,7 @@ class SocketService {
     required String senderId,
     required String senderName,
   }) {
-    debugPrint("📞 Sending offer: $signalData"); // ✅ ADDED
+    debugPrint("📞 Sending offer: $signalData");
 
     if (_isConnected) {
       _socket.emit('initiateCall', {
@@ -331,7 +319,7 @@ class SocketService {
     required dynamic signalData,
   }) {
     if (_isConnected) {
-      debugPrint("✅ Sending answer: $signalData"); // ✅ ADDED
+      debugPrint("✅ Sending answer: $signalData");
       _socket.emit('answerCall', {
         'to': to,
         'signalData': signalData,
@@ -345,7 +333,7 @@ class SocketService {
     required String targetId,
   }) {
     if (_isConnected) {
-      debugPrint("❌ Sending terminate call to $targetId"); // ✅ ADDED
+      debugPrint("❌ Sending terminate call to $targetId");
       _socket.emit('terminateCall', {
         'targetId': targetId,
       });
@@ -359,7 +347,7 @@ class SocketService {
     required dynamic candidate,
   }) {
     if (_isConnected) {
-      debugPrint("🧊 Sending ICE candidate: $candidate"); // ✅ ADDED
+      debugPrint("🧊 Sending ICE candidate: $candidate");
       _socket.emit('signalCandidate', {
         'to': to,
         'candidate': candidate,
@@ -392,15 +380,12 @@ class SocketService {
   }
 
   Future<void> _chatNotification(Map<String, dynamic> data) async {
-    debugPrint('🔔 Foreground Push Notification@@@@@@@@@@: $data');
+    debugPrint('🔔 Foreground Push Notification: $data');
 
     // Check if the user is a customer
     if (await LocalDbHelper.getUserType() == "0") {
-      // Get the customer's email
       final customerEmail = LocalDbHelper.getEmail();
-
       if (customerEmail != null) {
-        // Save the message to Hive local storage
         final message = ChatMessageModel(
           message: data["message"],
           timestamp: DateTime.parse(DateTime.now().toIso8601String()),
@@ -409,18 +394,12 @@ class SocketService {
           mediaUrl: data["mediaUrl"],
           form: data["form"],
         );
-
         chatStorageService.saveMessage(message, customerEmail);
       }
-    }
-
-    if (await LocalDbHelper.getUserType() != "0") {
-      // Get the customer's email
+    } else {
       final agentEmail = LocalDbHelper.getEmail();
-
       if (agentEmail != null) {
         String boxName = agentEmail + data['senderId'];
-        // Save the message to Hive local storage
         final message = ChatMessageModel(
           message: data["message"],
           timestamp: DateTime.parse(DateTime.now().toIso8601String()),
@@ -429,7 +408,6 @@ class SocketService {
           mediaUrl: data["mediaUrl"],
           form: data["form"],
         );
-
         chatStorageService.saveMessage(message, boxName);
       }
     }
@@ -483,9 +461,9 @@ class SocketService {
     final int notificationId = title.hashCode;
 
     flutterLocalNotificationsPlugin.show(
-      notificationId, // Notification ID
-      title, // Notification title
-      data['message'], // Notification body
+      notificationId,
+      title,
+      data['message'],
       platformChannelSpecifics,
       payload: jsonEncode(data),
     );
@@ -495,7 +473,6 @@ class SocketService {
     isChatPageOpen = toggle;
   }
 
-  // Handle notification tap
   Future<void> _handleNotificationTap(NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
 

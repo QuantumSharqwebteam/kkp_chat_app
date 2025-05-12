@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
+import 'package:kkpchatapp/data/models/notification_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class LocalDbHelper {
@@ -174,5 +175,20 @@ class LocalDbHelper {
         await box.add(jsonEncode(log.toJson()));
       }
     }
+  }
+
+  static Future<void> saveNotification(NotificationModel notification) async {
+    final box = await Hive.openBox<NotificationModel>('notifications');
+    await box.put(notification.id, notification);
+  }
+
+  static Future<List<NotificationModel>> getNotifications() async {
+    final box = await Hive.openBox<NotificationModel>('notifications');
+    return box.values.toList();
+  }
+
+  static Future<void> clearNotifications() async {
+    final box = await Hive.openBox<NotificationModel>('notifications');
+    await box.clear();
   }
 }
