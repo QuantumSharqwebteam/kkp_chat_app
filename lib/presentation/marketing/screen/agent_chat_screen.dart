@@ -420,49 +420,62 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     if (pickedFile != null) {
       final File imageFile = File(pickedFile.path);
-
-      final String tempId = DateTime.now().millisecondsSinceEpoch.toString();
-
-      setState(() {
-        messages.add(ChatMessageModel(
-          message: "image",
-          timestamp: DateTime.now(),
-          sender: widget.agentEmail!,
-          type: "media",
-          mediaUrl: imageFile.path,
-        ));
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom();
-      });
-
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
-
       if (imageUrl != null) {
-        final int index = messages.indexWhere((msg) => msg.message == tempId);
-        if (index != -1) {
-          setState(() {
-            messages[index] = ChatMessageModel(
-              message: "image",
-              timestamp: messages[index].timestamp,
-              sender: widget.agentEmail!,
-              type: "media",
-              mediaUrl: imageUrl,
-            );
-            messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-          });
-        }
-
-        _socketService.sendMessage(
-          targetEmail: widget.customerEmail,
-          message: "image",
-          senderEmail: widget.agentEmail!,
-          senderName: widget.agentName!,
-          type: "media",
-          mediaUrl: imageUrl,
-        );
+        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
   }
+  // Future<void> _pickAndSendImage() async {
+  //   final ImagePicker picker = ImagePicker();
+  //   final XFile? pickedFile =
+  //       await picker.pickImage(source: ImageSource.gallery);
+
+  //   if (pickedFile != null) {
+  //     final File imageFile = File(pickedFile.path);
+
+  //     final String tempId = DateTime.now().millisecondsSinceEpoch.toString();
+
+  //     setState(() {
+  //       messages.add(ChatMessageModel(
+  //         message: "image",
+  //         timestamp: DateTime.now(),
+  //         sender: widget.agentEmail!,
+  //         type: "media",
+  //         mediaUrl: imageFile.path,
+  //       ));
+  //       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  //       _scrollToBottom();
+  //     });
+
+  //     final imageUrl = await _s3uploadService.uploadFile(imageFile);
+
+  //     if (imageUrl != null) {
+  //       final int index = messages.indexWhere((msg) => msg.message == tempId);
+  //       if (index != -1) {
+  //         setState(() {
+  //           messages[index] = ChatMessageModel(
+  //             message: "image",
+  //             timestamp: messages[index].timestamp,
+  //             sender: widget.agentEmail!,
+  //             type: "media",
+  //             mediaUrl: imageUrl,
+  //           );
+  //           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+  //         });
+  //       }
+
+  //       _socketService.sendMessage(
+  //         targetEmail: widget.customerEmail,
+  //         message: "image",
+  //         senderEmail: widget.agentEmail!,
+  //         senderName: widget.agentName!,
+  //         type: "media",
+  //         mediaUrl: imageUrl,
+  //       );
+  //     }
+  //   }
+  // }
 
   Future<void> _pickAndSendDocument() async {
     final FilePickerResult? result = await FilePicker.platform.pickFiles(
