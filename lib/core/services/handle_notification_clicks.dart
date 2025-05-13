@@ -9,7 +9,6 @@ import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart'
 
 /// Handles notification click for customers.
 Future<void> handleNotificationClickForCustomer(
-    BuildContext context,
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
   final customerEmail = LocalDbHelper.getProfile()?.email;
@@ -18,7 +17,7 @@ Future<void> handleNotificationClickForCustomer(
     MaterialPageRoute(
       builder: (_) => CustomerChatScreen(
         agentName: "Agent",
-        customerEmail: customerEmail,
+        customerEmail: notificationData['targetId'],
         navigatorKey: navigatorKey,
       ),
     ),
@@ -91,7 +90,6 @@ Future<void> handlePushNotificationClickForCustomer(
 
 /// Handles notification click for agents.
 Future<void> handleNotificationClickForAgent(
-    BuildContext context,
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
   final customerEmail = notificationData['senderId'];
@@ -101,7 +99,7 @@ Future<void> handleNotificationClickForAgent(
       builder: (_) => AgentChatScreen(
         customerName: customerName,
         customerEmail: customerEmail,
-        agentEmail: LocalDbHelper.getProfile()?.email,
+        agentEmail: notificationData['targetId'],
         agentName: LocalDbHelper.getProfile()?.name,
         navigatorKey: navigatorKey,
       ),

@@ -397,7 +397,7 @@ class SocketService {
     // Check if the user is a customer
     if (await LocalDbHelper.getUserType() == "0") {
       // Get the customer's email
-      final customerEmail = LocalDbHelper.getEmail();
+      final customerEmail = LocalDbHelper.getProfile()?.email;
 
       if (customerEmail != null) {
         // Save the message to Hive local storage
@@ -416,7 +416,7 @@ class SocketService {
 
     if (await LocalDbHelper.getUserType() != "0") {
       // Get the customer's email
-      final agentEmail = LocalDbHelper.getEmail();
+      final agentEmail = LocalDbHelper.getProfile()?.email;
 
       if (agentEmail != null) {
         String boxName = agentEmail + data['senderId'];
@@ -504,9 +504,9 @@ class SocketService {
           jsonDecode(response.payload!);
 
       if ("0" == await LocalDbHelper.getUserType()) {
-        handlePushNotificationClickForCustomer(navigatorKey, notificationData);
+        handleNotificationClickForCustomer(navigatorKey, notificationData);
       } else {
-        handlePushNotificationClickForAgent(navigatorKey, notificationData);
+        handleNotificationClickForAgent(navigatorKey, notificationData);
       }
     }
   }
