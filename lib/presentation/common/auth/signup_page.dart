@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/utils/helper_functions.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -33,13 +34,6 @@ class _SignupPageState extends State<SignupPage> {
   String? repassError;
   DateTime? _lastPressed;
 
-  // Method to validate email format
-  bool _isValidEmail(String email) {
-    final emailRegex =
-        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    return emailRegex.hasMatch(email);
-  }
-
   Future<void> _signup(context) async {
     setState(() {
       _isLoading = true;
@@ -63,7 +57,7 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
-    if (!_isValidEmail(_email.text.trim())) {
+    if (!HelperFunctions().isValidEmail(_email.text.trim())) {
       setState(() {
         emailError = "Please enter a valid email address";
         _isLoading = false;

@@ -7,10 +7,12 @@ import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/logic/auth/login_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
 // Global flag to indicate if the app is initialized
@@ -65,7 +67,9 @@ void main() async {
   RemoteMessage? initialMessage =
       await FirebaseMessaging.instance.getInitialMessage();
 
-  runApp(MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage));
+  runApp(
+    MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -94,33 +98,38 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: widget.navigatorKey,
-      title: 'KKP Chat App',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      initialRoute: "/splash",
-      routes: {
-        "/splash": (context) => const Splash(),
-        "/login": (context) => LoginPage(),
-      },
-      onGenerateRoute: (settings) {
-        if (CustomerRoutes.allRoutes.contains(settings.name)) {
-          return generateCustomerRoute(settings);
-        } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
-          return generateMarketingRoute(settings);
-        } else {
-          return null;
-        }
-      },
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => LoginProvider()),
       ],
-      supportedLocales: const [
-        Locale('en', 'US'),
-      ],
+      child: MaterialApp(
+        navigatorKey: widget.navigatorKey,
+        title: 'KKP Chat App',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        initialRoute: "/splash",
+        routes: {
+          "/splash": (context) => const Splash(),
+          "/login": (context) => LoginPage(),
+        },
+        onGenerateRoute: (settings) {
+          if (CustomerRoutes.allRoutes.contains(settings.name)) {
+            return generateCustomerRoute(settings);
+          } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
+            return generateMarketingRoute(settings);
+          } else {
+            return null;
+          }
+        },
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en', 'US'),
+        ],
+      ),
     );
   }
 }
