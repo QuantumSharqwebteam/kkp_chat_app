@@ -412,9 +412,7 @@ class SocketService {
 
         chatStorageService.saveMessage(message, customerEmail);
       }
-    }
-
-    if (await LocalDbHelper.getUserType() != "0") {
+    } else {
       // Get the customer's email
       final agentEmail = LocalDbHelper.getProfile()?.email;
 
