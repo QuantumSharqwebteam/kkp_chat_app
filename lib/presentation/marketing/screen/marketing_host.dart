@@ -142,6 +142,7 @@ class _MarketingHostState extends State<MarketingHost> {
   void _navigateToChat({
     required String? customername,
     required String customeremail,
+    String? targetId,
   }) {
     Navigator.push(
         widget.navigatorKey.currentContext!,
@@ -149,7 +150,7 @@ class _MarketingHostState extends State<MarketingHost> {
           builder: (_) => AgentChatScreen(
             customerName: customername,
             customerEmail: customeremail,
-            agentEmail: LocalDbHelper.getEmail(),
+            agentEmail: LocalDbHelper.getProfile()?.email ?? targetId,
             navigatorKey: widget.navigatorKey,
           ),
         ));
@@ -160,7 +161,9 @@ class _MarketingHostState extends State<MarketingHost> {
     debugPrint('Incoming message: $data');
 
     _navigateToChat(
-        customeremail: data["senderEmail"], customername: data["senderName"]);
+        customeremail: data["senderId"],
+        customername: data["senderName"],
+        targetId: data['targetId']);
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {
