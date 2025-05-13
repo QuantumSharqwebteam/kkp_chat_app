@@ -387,6 +387,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+//   void _scrollToBottom({bool animated = true}) {
+//   if (!_scrollController.hasClients) return;
+
+//   final scrollTo = _scrollController.position.maxScrollExtent;
+
+//   WidgetsBinding.instance.addPostFrameCallback((_) {
+//     if (animated) {
+//       _scrollController.animateTo(
+//         scrollTo,
+//         duration: const Duration(milliseconds: 300),
+//         curve: Curves.easeOut,
+//       );
+//     } else {
+//       _scrollController.jumpTo(scrollTo);
+//     }
+//   });
+// }
+
   Future<void> _startRecording() async {
     await _recorder.startRecorder(toFile: 'voice_message.aac');
     setState(() {
