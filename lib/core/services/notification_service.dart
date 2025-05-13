@@ -33,7 +33,7 @@ class NotificationService with WidgetsBindingObserver {
       bool isGranted = await _requestPermission(context);
       if (isGranted) {
         await _checkAndUpdateFCMToken();
-        _setupForegroundNotification();
+        // _setupForegroundNotification();
         _setupBackgroundNotification();
         _setupTerminatedNotification();
 
@@ -127,38 +127,38 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Setup foreground notifications (when the app is in the foreground)
-  static void _setupForegroundNotification() {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      debugPrint("📩 Foreground Notification: ${message.notification?.body}");
+  // static void _setupForegroundNotification() {
+  //   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+  //     debugPrint("📩 Foreground Notification: ${message.notification?.body}");
 
-      if (_appLifecycleState == AppLifecycleState.resumed) {
-        // App is in the foreground, do not show local notification
-        return;
-      }
+  //     if (_appLifecycleState == AppLifecycleState.resumed) {
+  //       // App is in the foreground, do not show local notification
+  //       return;
+  //     }
 
-      if (message.notification != null) {
-        const AndroidNotificationDetails androidNotificationDetails =
-            AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription: 'This channel is for important notifications',
-          importance: Importance.high,
-          priority: Priority.high,
-        );
+  //     if (message.notification != null) {
+  //       const AndroidNotificationDetails androidNotificationDetails =
+  //           AndroidNotificationDetails(
+  //         'high_importance_channel',
+  //         'High Importance Notifications',
+  //         channelDescription: 'This channel is for important notifications',
+  //         importance: Importance.high,
+  //         priority: Priority.high,
+  //       );
 
-        const NotificationDetails notificationDetails =
-            NotificationDetails(android: androidNotificationDetails);
+  //       const NotificationDetails notificationDetails =
+  //           NotificationDetails(android: androidNotificationDetails);
 
-        await _localNotificationsPlugin.show(
-          message.notification.hashCode,
-          message.notification?.title,
-          message.notification?.body,
-          notificationDetails,
-          payload: jsonEncode(message.data),
-        );
-      }
-    });
-  }
+  //       await _localNotificationsPlugin.show(
+  //         message.notification.hashCode,
+  //         message.notification?.title,
+  //         message.notification?.body,
+  //         notificationDetails,
+  //         payload: jsonEncode(message.data),
+  //       );
+  //     }
+  //   });
+  // }
 
   // Initialize local notifications plugin
   static Future<void> _initializeLocalNotifications() async {
