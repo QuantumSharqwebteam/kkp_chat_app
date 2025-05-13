@@ -84,20 +84,28 @@ class LoginProvider with ChangeNotifier {
 
           if (value['role'].toString() == "0") {
             //customer
-            Navigator.pushReplacementNamed(
-                context, CustomerRoutes.customerHost);
+            if (context.mounted) {
+              Navigator.pushReplacementNamed(
+                  context, CustomerRoutes.customerHost);
+            }
           } else if (value['role'].toString() == "1") {
             //admin
-            Navigator.pushReplacementNamed(
-                context, MarketingRoutes.marketingHostScreen);
+            if (context.mounted) {
+              Navigator.pushReplacementNamed(
+                  context, MarketingRoutes.marketingHostScreen);
+            }
           } else if (value['role'].toString() == "2") {
             //agent
-            Navigator.pushReplacementNamed(
-                context, MarketingRoutes.marketingHostScreen);
+            if (context.mounted) {
+              Navigator.pushReplacementNamed(
+                  context, MarketingRoutes.marketingHostScreen);
+            }
           } else if (value['role'].toString() == "3") {
             //agent head
-            Navigator.pushReplacementNamed(
-                context, MarketingRoutes.marketingHostScreen);
+            if (context.mounted) {
+              Navigator.pushReplacementNamed(
+                  context, MarketingRoutes.marketingHostScreen);
+            }
           } else {
             // Invalid user type
             LocalDbHelper.removeEmail();
@@ -105,30 +113,36 @@ class LoginProvider with ChangeNotifier {
             LocalDbHelper.removeProfile();
             LocalDbHelper.removeToken();
             LocalDbHelper.removeUserType();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Invalid Credentials"),
-              ),
-            );
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Invalid Credentials"),
+                ),
+              );
+            }
           }
         } else if (value['message'] == "Invalid password") {
           setPasswordError("Wrong password");
         } else if (value['message'] == "Invalid email") {
           setEmailError("Invalid Email");
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("${value['status']} : ${value['message']}"),
-            ),
-          );
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("${value['status']} : ${value['message']}"),
+              ),
+            );
+          }
         }
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: $e"),
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: $e"),
+          ),
+        );
+      }
       debugPrint("Error: $e");
     } finally {
       setIsLoading(false);

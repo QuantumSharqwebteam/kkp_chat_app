@@ -1,17 +1,14 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/utils/helper_functions.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/logic/auth/signup_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-import 'package:kkpchatapp/presentation/common/auth/verification_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
+import 'package:provider/provider.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -21,165 +18,14 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-  AuthRepository auth = AuthRepository();
-  final AuthRepository _authRepository = AuthRepository();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _repass = TextEditingController();
-  bool _isLoading = false;
-  String? nameError;
-  String? emailError;
-  String? passError;
-  String? repassError;
-  DateTime? _lastPressed;
-
-  Future<void> _signup(context) async {
-    setState(() {
-      _isLoading = true;
-      nameError =
-          emailError = passError = repassError = null; // Clear previous errors
-    });
-
-    if (_name.text.trim().isEmpty) {
-      setState(() {
-        nameError = "Name can't be Empty";
-        _isLoading = false;
-      });
-      return;
-    }
-
-    if (_email.text.trim().isEmpty) {
-      setState(() {
-        emailError = "Email can't be Empty";
-        _isLoading = false;
-      });
-      return;
-    }
-
-    if (!HelperFunctions().isValidEmail(_email.text.trim())) {
-      setState(() {
-        emailError = "Please enter a valid email address";
-        _isLoading = false;
-      });
-      return;
-    }
-
-    if (_pass.text.trim().isEmpty) {
-      setState(() {
-        passError = "Password can't be Empty";
-        _isLoading = false;
-      });
-      return;
-    }
-
-    if (_repass.text.trim().isEmpty) {
-      setState(() {
-        repassError = "Re-enter Password can't be Empty";
-        _isLoading = false;
-      });
-      return;
-    }
-
-    if (_pass.text != _repass.text) {
-      setState(() {
-        passError = repassError = "Password doesn't match";
-        _isLoading = false;
-      });
-      return;
-    }
-
-    try {
-      final response = await _authRepository.signup(
-        email: _email.text,
-        password: _pass.text,
-      );
-
-      if (response['message'] == "User signed up successfully") {
-        try {
-          await LocalDbHelper.saveToken(response['token'].toString());
-          await LocalDbHelper.saveUserType("0");
-          await _saveUser(context, _name.text);
-
-          final result = await auth.sendOtp(email: _email.text);
-          if (result['message'] == "OTP sent") {
-            if (context.mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) {
-                    return VerificationPage(
-                      email: _email.text,
-                      isNewAccount: true,
-                      name: _name.text,
-                    );
-                  },
-                ),
-              );
-            }
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(result['message'] + ' Try again later')));
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
-              return LoginPage();
-            }));
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.toString()),
-          ));
-          return;
-        }
-      } else if (response['status'] == 400) {
-        setState(() {
-          emailError = "Email already exists.";
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        Utils().showSuccessDialog(context, "Error: ${e.toString()}", false);
-      }
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _saveUser(context, String name) async {
-    try {
-      final response = await auth.updateUserDetails(
-          name: name,
-          address: null,
-          customerType: null,
-          gstNo: null,
-          number: null,
-          panNo: null);
-
-      if (response['message'] == "Item updated successfully") {
-        await LocalDbHelper.saveName(response['data']['name'].toString());
-        if (kDebugMode) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(response['message'])));
-        }
-      } else {
-        if (kDebugMode) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(response['message'])));
-        }
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
-      return;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    bool isAndroid12orAbove =
-        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+    final signupProvider = Provider.of<SignupProvider>(context);
 
     Widget content = GestureDetector(
       onTap: () {
@@ -248,10 +94,11 @@ class _SignupPageState extends State<SignupPage> {
                       SizedBox(height: 5),
                       CustomTextField(
                         controller: _name,
-                        errorText: nameError,
+                        errorText: signupProvider.nameError,
                         maxLines: 1,
                         keyboardType: TextInputType.name,
                         hintText: 'Enter your full name',
+                        onChanged: (value) => signupProvider.setName(value),
                       ),
                     ],
                   ),
@@ -270,11 +117,12 @@ class _SignupPageState extends State<SignupPage> {
                       ),
                       SizedBox(height: 5),
                       CustomTextField(
-                        errorText: emailError,
+                        errorText: signupProvider.emailError,
                         controller: _email,
                         maxLines: 1,
                         keyboardType: TextInputType.emailAddress,
                         hintText: 'Enter your Email',
+                        onChanged: (value) => signupProvider.setEmail(value),
                       ),
                     ],
                   ),
@@ -294,12 +142,13 @@ class _SignupPageState extends State<SignupPage> {
                       SizedBox(height: 5),
                       CustomTextField(
                         controller: _pass,
-                        errorText: passError,
+                        errorText: signupProvider.passwordError,
                         helperText: 'Must be at least 8 characters',
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
                         hintText: 'Create a Password',
+                        onChanged: (value) => signupProvider.setPassword(value),
                       ),
                     ],
                   ),
@@ -319,7 +168,7 @@ class _SignupPageState extends State<SignupPage> {
                       SizedBox(height: 5),
                       CustomTextField(
                         controller: _repass,
-                        errorText: repassError,
+                        errorText: signupProvider.rePasswordError,
                         helperText: 'Must be at least 8 characters',
                         borderRadius: 10,
                         height: 45,
@@ -327,16 +176,18 @@ class _SignupPageState extends State<SignupPage> {
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
                         hintText: 'Confirm Password',
+                        onChanged: (value) =>
+                            signupProvider.setRePassword(value),
                       ),
                     ],
                   ),
                   SizedBox(height: 20),
-                  _isLoading
-                      ? CircularProgressIndicator()
+                  signupProvider.isLoading
+                      ? CupertinoActivityIndicator(radius: 20)
                       : CustomButton(
                           text: 'Create Account',
                           onPressed: () {
-                            _signup(context);
+                            signupProvider.signup(context);
                           },
                         ),
                   const SizedBox(height: 20),
@@ -370,39 +221,6 @@ class _SignupPageState extends State<SignupPage> {
       ),
     );
 
-    return isAndroid12orAbove
-        ? PopScope(
-            child: content,
-            onPopInvoked: (_) {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Press back again to exit'),
-                ));
-              } else {
-                Navigator.pop(context);
-              }
-            },
-          )
-        : WillPopScope(
-            child: content,
-            onWillPop: () async {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                return false;
-              }
-              return true;
-            },
-          );
+    return BackPressHandler(child: content);
   }
 }

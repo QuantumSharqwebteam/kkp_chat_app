@@ -21,8 +21,8 @@ class _SplashState extends State<Splash> {
   Future<void> _checkLogin(context) async {
     String? token = await LocalDbHelper.getToken();
     final String? userType = await LocalDbHelper.getUserType();
-    final int? lastRefreshTime = await LocalDbHelper.getLastRefreshTime();
-    final int currentTime = DateTime.now().millisecondsSinceEpoch;
+    // final int? lastRefreshTime = await LocalDbHelper.getLastRefreshTime();
+    // final int currentTime = DateTime.now().millisecondsSinceEpoch;
 
     // // Check if 24 hours have passed since the last refresh
     // if (lastRefreshTime != null &&
@@ -76,16 +76,16 @@ class _SplashState extends State<Splash> {
     }
   }
 
-  void _scheduleNextRefresh(int durationMillis, context) {
-    _refreshTokenTimer?.cancel(); // Cancel any existing timer
-    _refreshTokenTimer =
-        Timer(Duration(milliseconds: durationMillis), () async {
-      String? token = await LocalDbHelper.getToken();
-      _refreshToken(token, context);
-      _scheduleNextRefresh(
-          24 * 60 * 60 * 1000, context); // Schedule the next refresh
-    });
-  }
+  // void _scheduleNextRefresh(int durationMillis, context) {
+  //   _refreshTokenTimer?.cancel(); // Cancel any existing timer
+  //   _refreshTokenTimer =
+  //       Timer(Duration(milliseconds: durationMillis), () async {
+  //     String? token = await LocalDbHelper.getToken();
+  //     _refreshToken(token, context);
+  //     _scheduleNextRefresh(
+  //         24 * 60 * 60 * 1000, context); // Schedule the next refresh
+  //   });
+  // }
 
   @override
   void initState() {

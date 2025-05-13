@@ -1,14 +1,14 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/logic/auth/verification_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/new_pass_page.dart';
 import 'package:kkpchatapp/presentation/common/auth/signup_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:pinput/pinput.dart';
+import 'package:provider/provider.dart';
 
 class VerificationPage extends StatefulWidget {
   const VerificationPage({
@@ -27,110 +27,10 @@ class VerificationPage extends StatefulWidget {
 
 class _VerificationPageState extends State<VerificationPage> {
   final _otp = TextEditingController();
-  AuthRepository auth = AuthRepository();
-  bool _isVerifyLoading = false;
-  bool _isResendEnabled = true;
-  int _timerCount = 60;
-  Timer? _timer;
-  bool _isOtpError = false; // State variable to track OTP error
-  DateTime? _lastPressed;
-  String? errorText;
-
-  Future<bool> _verifyOtp(context) async {
-    setState(() {
-      _isVerifyLoading = true;
-      _isOtpError = false; // Reset error state on new attempt
-    });
-
-    if (_otp.text.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Please enter the OTP')));
-      setState(() {
-        errorText = 'Please enter the OTP';
-        _isVerifyLoading = false;
-        _isOtpError = true; // Set error state if OTP is empty
-      });
-      return false;
-    }
-
-    if (_otp.text.length != 6) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('OTP must be 6 digits long')));
-      setState(() {
-        errorText = "OTP must be 6 digits long";
-        _isVerifyLoading = false;
-        _isOtpError = true; // Set error state if OTP length is incorrect
-      });
-      return false;
-    }
-
-    try {
-      final response =
-          await auth.verifyOtp(email: widget.email, otp: int.parse(_otp.text));
-
-      if (response['message'] == "OTP Verified Successfully!") {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
-        return true;
-      } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
-        setState(() {
-          errorText = response['message'];
-          _isOtpError = true; // Set error state if OTP verification fails
-        });
-        return false;
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("$e"),
-        ),
-      );
-      setState(() {
-        errorText = e.toString();
-        _isOtpError = true; // Set error state if there's an exception
-      });
-      return false;
-    } finally {
-      setState(() {
-        _isVerifyLoading = false;
-      });
-    }
-  }
-
-  void _startTimer() {
-    _timerCount = 90;
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_timerCount > 0) {
-          _timerCount--;
-        } else {
-          _isResendEnabled = true;
-          _timer?.cancel();
-        }
-      });
-    });
-  }
-
-  void _resendOtp() async {
-    await auth.sendOtp(email: widget.email);
-    setState(() {
-      _isResendEnabled = false;
-    });
-    _startTimer();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    bool isAndroid12orAbove =
-        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+    final verificationProvider = Provider.of<VerificationProvider>(context);
 
     Widget content = GestureDetector(
       onTap: () {
@@ -160,9 +60,10 @@ class _VerificationPageState extends State<VerificationPage> {
                     // pinput
                     Center(
                       child: Pinput(
-                        errorText: _isOtpError ? errorText : '',
-                        forceErrorState:
-                            _isOtpError, // Use the state variable here
+                        errorText: verificationProvider.isOtpError
+                            ? verificationProvider.errorText
+                            : '',
+                        forceErrorState: verificationProvider.isOtpError,
                         errorBuilder: (errorText, pin) {
                           return Padding(
                             padding: const EdgeInsets.only(top: 3),
@@ -226,6 +127,9 @@ class _VerificationPageState extends State<VerificationPage> {
                             border: Border.all(color: Colors.red),
                           ),
                         ),
+                        onChanged: (value) {
+                          verificationProvider.setOtp(value);
+                        },
                       ),
                     ),
                     SizedBox(height: 40),
@@ -246,12 +150,14 @@ class _VerificationPageState extends State<VerificationPage> {
                           textColor: Colors.black,
                           fontSize: 12,
                         ),
-                        _isVerifyLoading
+                        verificationProvider.isVerifyLoading
                             ? Center(child: CircularProgressIndicator())
                             : CustomButton(
                                 text: 'Verify',
                                 onPressed: () async {
-                                  if (await _verifyOtp(context) == true) {
+                                  if (await verificationProvider.verifyOtp(
+                                          context, widget.email) ==
+                                      true) {
                                     if (widget.isNewAccount == true) {
                                       if (context.mounted) {
                                         Navigator.pushReplacementNamed(context,
@@ -296,14 +202,17 @@ class _VerificationPageState extends State<VerificationPage> {
                         children: [
                           WidgetSpan(
                             child: InkWell(
-                              onTap: _isResendEnabled ? _resendOtp : null,
+                              onTap: verificationProvider.isResendEnabled
+                                  ? () => verificationProvider
+                                      .resendOtp(widget.email)
+                                  : null,
                               child: Text(
-                                _isResendEnabled
+                                verificationProvider.isResendEnabled
                                     ? 'Resend'
-                                    : 'Resend in $_timerCount seconds',
+                                    : 'Resend in ${verificationProvider.timerCount} seconds',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: _isResendEnabled
+                                  color: verificationProvider.isResendEnabled
                                       ? AppColors.blue
                                       : Colors.grey,
                                   fontWeight: FontWeight.w700,
@@ -328,39 +237,6 @@ class _VerificationPageState extends State<VerificationPage> {
       ),
     );
 
-    return isAndroid12orAbove
-        ? PopScope(
-            child: content,
-            onPopInvoked: (_) {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Press back again to exit'),
-                ));
-              } else {
-                Navigator.pop(context);
-              }
-            },
-          )
-        : WillPopScope(
-            child: content,
-            onWillPop: () async {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                return false;
-              }
-              return true;
-            },
-          );
+    return BackPressHandler(child: content);
   }
 }

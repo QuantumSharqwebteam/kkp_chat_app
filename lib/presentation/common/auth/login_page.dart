@@ -1,19 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:kkpchatapp/config/routes/customer_routes.dart';
-import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/utils/helper_functions.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/forgot_pass_page.dart';
 import 'package:kkpchatapp/presentation/common/auth/signup_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:provider/provider.dart';
@@ -28,14 +21,10 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
-  DateTime? _lastPressed;
 
   @override
   Widget build(BuildContext context) {
     final loginProvider = Provider.of<LoginProvider>(context);
-
-    bool isAndroid12orAbove =
-        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
 
     Widget content = GestureDetector(
       onTap: () {
@@ -203,43 +192,6 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
 
-    return isAndroid12orAbove
-        ? PopScope(
-            onPopInvoked: (_) {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                // Allow system navigation
-                Navigator.pop(context);
-              }
-            },
-            child: content,
-          )
-        : WillPopScope(
-            onWillPop: () async {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                return false; // Do not exit yet
-              }
-              return true; // Proceed to exit
-            },
-            child: content,
-          );
+    return BackPressHandler(child: content);
   }
 }

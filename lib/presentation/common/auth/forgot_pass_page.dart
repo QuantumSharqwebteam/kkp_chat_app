@@ -1,11 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/utils/helper_functions.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:kkpchatapp/presentation/common/auth/verification_page.dart';
+import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
+import 'package:provider/provider.dart';
 
 class ForgotPassPage extends StatefulWidget {
   const ForgotPassPage({super.key});
@@ -15,48 +15,11 @@ class ForgotPassPage extends StatefulWidget {
 }
 
 class _ForgotPassPageState extends State<ForgotPassPage> {
-  AuthRepository auth = AuthRepository();
   final _email = TextEditingController();
-  String? errorText;
-  bool _isloading = false;
-  DateTime? _lastPressed;
-
-  // Method to validate email format
-  bool _isValidEmail(String email) {
-    final emailRegex =
-        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-    return emailRegex.hasMatch(email);
-  }
-
-  Future<void> forgetPassword(context) async {
-    _isloading = true;
-
-    try {
-      final response = await auth.sendOtp(email: _email.text);
-      if (response['message'] == "OTP sent") {
-        _isloading = false;
-
-        Navigator.push(context, MaterialPageRoute(builder: (_) {
-          return VerificationPage(email: _email.text, isNewAccount: false);
-        }));
-      } else {
-        _isloading = false;
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
-      }
-    } catch (e) {
-      _isloading = false;
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    bool isAndroid12orAbove =
-        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+    final forgotPassProvider = Provider.of<ForgotPassProvider>(context);
 
     Widget content = GestureDetector(
       onTap: () {
@@ -103,36 +66,31 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
                         CustomTextField(
                           controller: _email,
                           maxLines: 1,
-                          errorText: errorText,
+                          errorText: forgotPassProvider.errorText,
                           keyboardType: TextInputType.emailAddress,
                           hintText: 'Enter your Email',
+                          onChanged: (value) =>
+                              forgotPassProvider.setEmail(value),
                         ),
                         SizedBox(height: 40),
-                        _isloading
+                        forgotPassProvider.isLoading
                             ? Center(
                                 child: CircularProgressIndicator(),
                               )
                             : CustomButton(
                                 text: 'Submit',
                                 onPressed: () {
-                                  setState(() {
-                                    if (_email.text.isEmpty) {
-                                      errorText = 'Email can\'t be empty';
-                                    } else if (!_isValidEmail(_email.text)) {
-                                      errorText =
-                                          'Please enter a valid email address';
-                                    } else {
-                                      errorText = null;
-                                      forgetPassword(context);
-                                      // Navigator.push(context,
-                                      //     MaterialPageRoute(builder: (_) {
-                                      //   return VerificationPage(
-                                      //     email: _email.text,
-                                      //     isNewAccount: false,
-                                      //   );
-                                      // }));
-                                    }
-                                  });
+                                  if (_email.text.isEmpty) {
+                                    forgotPassProvider
+                                        .setErrorText('Email can\'t be empty');
+                                  } else if (!HelperFunctions()
+                                      .isValidEmail(_email.text)) {
+                                    forgotPassProvider.setErrorText(
+                                        'Please enter a valid email address');
+                                  } else {
+                                    forgotPassProvider.setErrorText(null);
+                                    forgotPassProvider.forgetPassword(context);
+                                  }
                                 },
                               ),
                         SizedBox(height: 20),
@@ -167,43 +125,6 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
       ),
     );
 
-    return isAndroid12orAbove
-        ? PopScope(
-            onPopInvoked: (_) {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                // Allow system navigation
-                Navigator.pop(context);
-              }
-            },
-            child: content,
-          )
-        : WillPopScope(
-            onWillPop: () async {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                return false; // Do not exit yet
-              }
-              return true; // Proceed to exit
-            },
-            child: content,
-          );
+    return BackPressHandler(child: content);
   }
 }
