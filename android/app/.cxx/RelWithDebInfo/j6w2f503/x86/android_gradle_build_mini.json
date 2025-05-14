@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/home/msi/SRC/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/home/msi/Android/Sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/home/msi/FlutterProjects/kkpchatapp/android/app/.cxx/RelWithDebInfo/j6w2f503/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/home/msi/Android/Sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/home/msi/FlutterProjects/kkpchatapp/android/app/.cxx/RelWithDebInfo/j6w2f503/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

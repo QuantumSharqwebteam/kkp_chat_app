@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 
 class AppTextStyles {
   static const black22_600 = TextStyle(
     fontSize: 22,
     color: Colors.black,
     fontWeight: FontWeight.w600,
+  );
+  static const black24_700 = TextStyle(
+    fontSize: 22,
+    color: Colors.black,
+    fontWeight: FontWeight.w700,
   );
   static const black28_600 = TextStyle(
     fontSize: 28,
@@ -80,6 +85,11 @@ class AppTextStyles {
   static const grey5C5C5C_16_600 = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w600,
+    color: AppColors.grey5C5C5C,
+  );
+  static const grey5C5C5C_18_700 = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w700,
     color: AppColors.grey5C5C5C,
   );
   static const blue4A76CD_24_600 = TextStyle(

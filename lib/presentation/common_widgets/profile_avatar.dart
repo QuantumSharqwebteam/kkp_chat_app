@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 
 class ProfileAvatar extends StatelessWidget {
   final String image;
@@ -10,16 +11,16 @@ class ProfileAvatar extends StatelessWidget {
     super.key,
     required this.image,
     required this.isActive,
-    this.radius = 30,
+    this.radius = 50,
   });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        CircleAvatar(
-          radius: radius,
-          backgroundImage: AssetImage(image),
+        Initicon(
+          text: image,
+          size: radius,
         ),
         Positioned(
           bottom: 2,

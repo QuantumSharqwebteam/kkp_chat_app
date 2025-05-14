@@ -1,16 +1,15 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/data/models/agent.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_customer_list_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/filter_button.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/feed_list_card.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/filter_button.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 
 class FeedsScreen extends StatefulWidget {
   final String? loggedAgentEmail;
@@ -22,7 +21,7 @@ class FeedsScreen extends StatefulWidget {
 
 class _FeedsScreenState extends State<FeedsScreen> {
   final AuthApi _auth = AuthApi();
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   List<Agent> _agentsList = [];
   bool _isLoading = true;
   Set<String> pinnedAgentsSet = {};
@@ -192,7 +191,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
           name: agent.name,
           message: "Hi any update....",
           time: isOnline ? "Online" : lastSeen,
-          image: "assets/images/user1.png",
           isActive: isOnline,
           isPinned: pinnedAgentsSet.contains(agent.email),
           onPinTap: () => togglePinAgent(agent.email),
@@ -202,7 +200,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
               MaterialPageRoute(
                 builder: (context) => AgentCustomersListScreen(
                   agentName: agent.name,
-                  agentImage: ImageConstants.userImage,
                   agentEmail: agent.email,
                 ),
               ),

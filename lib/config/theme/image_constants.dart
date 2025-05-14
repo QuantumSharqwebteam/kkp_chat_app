@@ -4,7 +4,12 @@ class ImageConstants {
 
   //Image assets
   static const String userImage = "$imageBase/user1.png";
+  static const String agentImage = "$imageBase/user4.png";
   static const String noChat = "$imageBase/noChat.png";
+  static const String profileAvatar = "$imageBase/profile_avataar.png";
+  static const String poorConnection = "$imageBase/poorConn.png";
+  static const String noCustomerAssigned = "$imageBase/noAssigned.jpg";
+  static const String somethingWentWrong = "$imageBase/wrong.jpg";
 
   //Icons asstes
   static const String shirt = "$iconBase/shirt.png";

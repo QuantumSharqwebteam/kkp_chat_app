@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 
 class MessageBubble extends StatelessWidget {
   final String text;
   final bool isMe;
-  final String image;
+  final String? image;
   final String? timestamp;
 
   const MessageBubble({
@@ -23,7 +23,11 @@ class MessageBubble extends StatelessWidget {
       mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (!isMe) CircleAvatar(backgroundImage: AssetImage(image)),
+        // if (!isMe)
+        //   Initicon(
+        //     text: image ?? "",
+        //     size: 30,
+        //   ),
         Stack(
           children: [
             Container(
@@ -34,7 +38,9 @@ class MessageBubble extends StatelessWidget {
               constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.7),
               decoration: BoxDecoration(
-                color: isMe ? AppColors.blue00ABE9 : Color(0xffF2F2F2),
+                color: isMe
+                    ? AppColors.senderMessageBubbleColor
+                    : AppColors.recieverMessageBubble,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),

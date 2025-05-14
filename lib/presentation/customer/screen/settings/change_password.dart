@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_textfield.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
 class ChangePassword extends StatefulWidget {
   const ChangePassword({super.key});
@@ -20,16 +20,29 @@ class _ChangePasswordState extends State<ChangePassword> {
   final _newPass = TextEditingController();
   final _newRepass = TextEditingController();
   bool _isLoading = false;
+  String? currentPassErrorText;
+  String? newPassErrorText;
+  String? newRePassErrorText;
 
   void _changePassword(context) async {
     if (_newPass.text != _newRepass.text) {
-      Utils().showSuccessDialog(context, "New passwords do not match!", false);
+      setState(() {
+        newPassErrorText = newRePassErrorText = "Passwords don't match!";
+      });
       return;
     }
 
-    if (_currentPass.text == _newPass.text) {
-      Utils()
-          .showSuccessDialog(context, "New password must be different!", false);
+    if (_newPass.text == _newRepass.text) {
+      setState(() {
+        newPassErrorText = newRePassErrorText = null;
+      });
+    }
+
+    if (_currentPass.text.trim().isEmpty ||
+        _newPass.text.trim().isEmpty ||
+        _newRepass.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Fields can not be empty!")));
       return;
     }
 
@@ -38,7 +51,7 @@ class _ChangePasswordState extends State<ChangePassword> {
     });
 
     try {
-      var email = LocalDbHelper.getEmail();
+      final String? email = LocalDbHelper.getProfile()?.email;
 
       final response = await auth.updatePassword(
           currentPassword: _currentPass.text,
@@ -67,63 +80,84 @@ class _ChangePasswordState extends State<ChangePassword> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: AppColors.background,
-      ),
-      body: Center(
-        child: SizedBox(
-          width: Utils().width(context) * 0.9,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Password and Security',
-                style: AppTextStyles.black20_500,
-              ),
-              SizedBox(height: 16),
-              CustomTextField(
-                controller: _currentPass,
-                height: 50,
-                hintText: 'Current Password',
-              ),
-              SizedBox(height: 10),
-              CustomTextField(
-                controller: _newPass,
-                height: 50,
-                hintText: 'New Password',
-              ),
-              SizedBox(height: 10),
-              CustomTextField(
-                controller: _newRepass,
-                height: 50,
-                hintText: 'Retype New Password',
-              ),
-              SizedBox(height: 20),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'Forgot your password?',
-                  style: TextStyle(
-                    color: AppColors.blue,
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: WillPopScope(
+        onWillPop: () async {
+          if (_isLoading) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content:
+                      Text("Please wait while the password is being changed.")),
+            );
+            return false; // Prevent navigation
+          }
+          return true; // Allow navigation
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.background,
+            surfaceTintColor: AppColors.background,
+          ),
+          body: Center(
+            child: SizedBox(
+              width: Utils().width(context) * 0.9,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Password and Security',
+                    style: AppTextStyles.black20_500,
                   ),
-                ),
+                  SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _currentPass,
+                    errorText: currentPassErrorText,
+                    height: 50,
+                    hintText: 'Current Password',
+                  ),
+                  SizedBox(height: 10),
+                  CustomTextField(
+                    controller: _newPass,
+                    errorText: newPassErrorText,
+                    height: 50,
+                    hintText: 'New Password',
+                  ),
+                  SizedBox(height: 10),
+                  CustomTextField(
+                    controller: _newRepass,
+                    errorText: newRePassErrorText,
+                    height: 50,
+                    hintText: 'Retype New Password',
+                  ),
+                  SizedBox(height: 20),
+                  // TextButton(
+                  //   onPressed: () {},
+                  //   child: Text(
+                  //     'Forgot your password?',
+                  //     style: TextStyle(
+                  //       color: AppColors.blue,
+                  //     ),
+                  //   ),
+                  // ),
+                  Spacer(),
+                  _isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : CustomButton(
+                          text: 'Change Password',
+                          onPressed: () => _changePassword(context),
+                          borderRadius: 30,
+                          height: 50,
+                          borderColor: Colors.black,
+                          fontSize: 16,
+                          backgroundColor: AppColors.blue00ABE9,
+                        ),
+                  SizedBox(height: 20),
+                ],
               ),
-              Spacer(),
-              _isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : CustomButton(
-                      text: 'Change Password',
-                      onPressed: () => _changePassword(context),
-                      borderRadius: 30,
-                      height: 50,
-                      borderColor: Colors.black,
-                      fontSize: 16,
-                      backgroundColor: AppColors.blue00ABE9,
-                    ),
-              SizedBox(height: 20),
-            ],
+            ),
           ),
         ),
       ),

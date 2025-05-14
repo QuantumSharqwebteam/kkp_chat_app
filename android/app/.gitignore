@@ -1,1 +1,5 @@
-/.cxx/
+.cxx/Debug/
+**/configure_fingerprint.bin
+# Ignore CMake build artifacts
+android/app/.cxx/Debug/**/configure_fingerprint.bin
+

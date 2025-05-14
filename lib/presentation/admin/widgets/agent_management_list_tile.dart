@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/presentation/admin/widgets/agent_avatar.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/presentation/admin/widgets/agent_avatar.dart';
 
 class AgentManagementListTile extends StatelessWidget {
   final String title;

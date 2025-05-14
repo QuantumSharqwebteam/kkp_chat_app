@@ -1,16 +1,65 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:kkp_chat_app/data/models/address_model.dart';
-import 'package:kkp_chat_app/data/models/agent.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 
 class AuthApi {
-  static const baseUrl = 'https://kkp-chat.onrender.com/';
+  static var baseUrl = '${dotenv.env["BASE_URL"]}/';
   final http.Client client;
 
   AuthApi({http.Client? client}) : client = client ?? http.Client();
+
+  Future<Map<String, dynamic>> updateFCMToken(String fcmToken) async {
+    final endPoint = "user/updateUserDetails";
+    final url = Uri.parse('$baseUrl$endPoint');
+    final body = json.encode({
+      "token": fcmToken,
+    });
+    final token = await LocalDbHelper.getToken();
+    try {
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to update FCM token');
+      }
+    } catch (e) {
+      debugPrint("Error updating FCM token: $e");
+      throw Exception(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> refreshToken(String oldToken) async {
+    final endPoint = "user/getRefreshToken";
+    final url = Uri.parse("$baseUrl$endPoint");
+
+    try {
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $oldToken",
+        },
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      throw Exception(e);
+    }
+  }
+
   // login
   Future<Map<String, dynamic>> login(
       {required String email, required String password}) async {
@@ -29,6 +78,8 @@ class AuthApi {
           body: jsonEncode(body));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 400 || response.statusCode == 401) {
         return jsonDecode(response.body);
       } else {
         throw Exception('Failed to login: ${response.body}');
@@ -82,7 +133,7 @@ class AuthApi {
     const endPoint = 'user/updateUserDetails';
     final url = Uri.parse("$baseUrl$endPoint");
 
-    final token = LocalDbHelper.getToken();
+    final String? token = await LocalDbHelper.getToken();
 
     if (token == null) {
       throw Exception('Token not found. Please log in again.');
@@ -184,7 +235,7 @@ class AuthApi {
     try {
       // Retrieve token from SharedPreferences
 
-      final token = LocalDbHelper.getToken();
+      final token = await LocalDbHelper.getToken();
 
       if (token == null) {
         throw Exception('Token not found. Please log in again.');
@@ -239,7 +290,7 @@ class AuthApi {
   Future<Profile> getUserInfo() async {
     const endPoint = "user/getInfo";
     final url = Uri.parse('$baseUrl$endPoint');
-    final token = LocalDbHelper.getToken();
+    final token = await LocalDbHelper.getToken();
 
     try {
       final response = await http.get(url, headers: {
@@ -333,7 +384,7 @@ class AuthApi {
 
   // to assign agent in the assigned agent list who are eligible to get assgigned for chat with customer
   Future<Map<String, dynamic>> assignAgent({required String email}) async {
-    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/assignAgent");
+    final Uri url = Uri.parse("${baseUrl}user/assignAgent");
     final body = {
       "agentNames": [email]
     };
@@ -355,7 +406,7 @@ class AuthApi {
   }
 
   Future<bool> removeAssignedAgent({required String email}) async {
-    final Uri url = Uri.parse("https://kkp-chat.onrender.com/user/removeAgent");
+    final Uri url = Uri.parse("${baseUrl}user/removeAgent");
     final body = {
       "agentNames": [email]
     };
@@ -384,8 +435,8 @@ class AuthApi {
     }
   }
 
-  // to fetch list of users, admin , agent
-  Future<List<dynamic>> getUsersByRole(String role) async {
+  // to fetch list of users, admin , agent if role ="User " then all users list will be shown up
+  Future<List<dynamic>> getUsersByRole({required String role}) async {
     const endPoint = 'user/getByRole';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {"role": role};
@@ -407,6 +458,133 @@ class AuthApi {
       }
     } catch (e) {
       throw Exception('Error fetching users by role: $e');
+    }
+  }
+
+  // get users by agentId
+  Future<List<dynamic>> getUsersByAgentId({required String agentEmail}) async {
+    final endPoint = 'user/getUsersByAgentId/$agentEmail';
+    final url = Uri.parse("$baseUrl$endPoint");
+
+    try {
+      final response = await client.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        return responseData['message'] ?? [];
+      } else {
+        throw Exception('Failed to fetch users by agent ID: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching users by agent ID: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteUserAccount(
+      String email, String password) async {
+    final endPoint = "user/deleteUserAccount";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper.getToken();
+    final body = jsonEncode({"email": email, "password": password});
+    try {
+      final response = await client.delete(url,
+          headers: {
+            'Content-Type': 'application/json',
+            "Authorization": "Bearer $token",
+          },
+          body: body);
+
+      return json.decode(response.body);
+    } catch (e) {
+      throw Exception(e);
+    }
+  }
+
+  // to delete agent account
+  Future<Map<String, dynamic>> deleteAgent(String email) async {
+    final endPoint = "agent/delete";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper.getToken();
+
+    try {
+      final response = await client.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'email': email}),
+      );
+
+      final reponseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 &&
+          reponseData['message'] == "Agent deleted successfully") {
+        return reponseData;
+      } else {
+        throw Exception(
+            'Failed to delete agent: ${reponseData['message'] ?? response.body}');
+      }
+    } catch (e) {
+      throw Exception('Delete request failed: $e');
+    }
+  }
+
+  /// get user notifications
+  Future<Map<String, dynamic>> getNotifications() async {
+    final endPoint = "user/getNotification";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper
+        .getToken(); // Assuming you have a method to get the token
+
+    try {
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to get notifications: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint("Error getting notifications: $e");
+      throw Exception(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotificationRead(
+      {required String notificationId}) async {
+    final endPoint = "user/updateNotification/$notificationId";
+    final url = Uri.parse('$baseUrl$endPoint');
+    final token = await LocalDbHelper.getToken();
+
+    try {
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to mark notification as viewed');
+      }
+    } catch (e) {
+      debugPrint("Error updating notification: $e");
+      throw Exception(e);
     }
   }
 }

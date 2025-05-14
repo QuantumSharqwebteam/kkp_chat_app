@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'dart:async';
-import 'package:kkp_chat_app/config/routes/marketing_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/data/repositories/chat_reopsitory.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/feed_list_card.dart';
+import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
@@ -26,7 +28,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   final _chatRepo = ChatRepository();
   List<dynamic> _assignedCustomers = [];
   List<dynamic> _filteredCustomers = [];
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   StreamSubscription<List<String>>? _statusSubscription;
 
   @override
@@ -80,7 +82,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -120,9 +122,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                           stream: _socketService.statusStream,
                           builder: (context, snapshot) {
                             return _filteredCustomers.isEmpty
-                                ? Center(
-                                    child: Text("No Customers Assigned"),
-                                  )
+                                ? Center(child: NoCustomerAssignedWidget())
                                 : _buildCustomerInquiriesList();
                           },
                         ),
@@ -139,11 +139,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   Widget _buildProfileSection() {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 16),
-      leading: CircleAvatar(
-        radius: 26,
-        backgroundImage: AssetImage(ImageConstants.userImage),
-      ),
-      title: Text(widget.agentName ?? "user", style: AppTextStyles.black16_500),
+      leading: Initicon(text: widget.agentName!),
+      title: Text(widget.agentName ?? "", style: AppTextStyles.black16_500),
       subtitle:
           Text("Let's find latest messages", style: AppTextStyles.black12_400),
       trailing: Row(
@@ -157,7 +154,22 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             icon: const Icon(
               Icons.notifications_active_outlined,
               color: Colors.black,
-              size: 28,
+              size: 24,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              // Navigate to the CallHistoryPage or perform an action related to call logs
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CallHistoryScreen()),
+              );
+            },
+            icon: Icon(
+              Icons
+                  .call_outlined, // You can choose a different icon if preferred
+              color: Colors.black,
+              size: 24,
             ),
           ),
           IconButton(
@@ -182,78 +194,50 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  // // Direct Messages Section
-  // Widget _buildDirectMessages() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text(
-  //         "Direct Messages",
-  //         style: AppTextStyles.black16_500,
-  //       ),
-  //       const SizedBox(height: 10),
-  //       SizedBox(
-  //         height: 100,
-  //         child: ListView.builder(
-  //           scrollDirection: Axis.horizontal,
-  //           itemCount: users.length,
-  //           itemBuilder: (context, index) {
-  //             final user = users[index];
-  //             return Padding(
-  //               padding: const EdgeInsets.symmetric(horizontal: 10),
-  //               child: DirectMessagesListItem(
-  //                 name: user['name'],
-  //                 image: user['image'],
-  //                 status: user['status'],
-  //                 unread: user['unread'],
-  //                 typing: user['typing'],
-  //               ),
-  //             );
-  //           },
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   // Recent Messages List
   Widget _buildCustomerInquiriesList() {
-    return ListView.builder(
-      itemCount: _filteredCustomers.length,
-      physics: AlwaysScrollableScrollPhysics(),
-      itemBuilder: (context, index) {
-        final assignedCustomer = _filteredCustomers[index];
-        final isOnline = _socketService.isUserOnline(assignedCustomer["email"]);
-        final String lastSeen =
-            _socketService.getLastSeenTime(assignedCustomer["email"]);
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: FeedListCard(
-            name: assignedCustomer["name"],
-            message: "last message",
-            image: "assets/images/user3.png",
-            isActive: isOnline,
-            time: isOnline ? "Online" : lastSeen,
-            enableLongPress: false,
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AgentChatScreen(
-                    customerName: assignedCustomer["name"],
-                    customerEmail: assignedCustomer['email'],
-                    agentEmail: widget.agentEmail,
-                    agentName: widget.agentName,
-                  ),
-                ),
-              );
-              if (result == true) {
-                await _fetchAssignedCustomers();
-              }
-            },
-          ),
-        );
+    return RefreshIndicator(
+      onRefresh: () {
+        return _fetchAssignedCustomers();
       },
+      child: ListView.builder(
+        itemCount: _filteredCustomers.length,
+        physics: AlwaysScrollableScrollPhysics(),
+        itemBuilder: (context, index) {
+          final assignedCustomer = _filteredCustomers[index];
+          final isOnline =
+              _socketService.isUserOnline(assignedCustomer["email"]);
+          final String lastSeen =
+              _socketService.getLastSeenTime(assignedCustomer["email"]);
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: FeedListCard(
+              name: assignedCustomer["name"],
+              message: "last message",
+              isActive: isOnline,
+              time: isOnline ? "Online" : lastSeen,
+              enableLongPress: false,
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AgentChatScreen(
+                      navigatorKey: navigatorKey,
+                      customerName: assignedCustomer["name"],
+                      customerEmail: assignedCustomer['email'],
+                      agentEmail: widget.agentEmail,
+                      agentName: widget.agentName,
+                    ),
+                  ),
+                );
+                if (result == true) {
+                  await _fetchAssignedCustomers();
+                }
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

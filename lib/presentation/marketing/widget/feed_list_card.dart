@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/profile_avatar.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/presentation/common_widgets/profile_avatar.dart';
 
 class FeedListCard extends StatelessWidget {
   final String name;
   final String? message;
   final String? time;
-  final String? image;
   final bool? isActive;
   final bool isPinned;
   final VoidCallback onTap;
@@ -20,7 +19,6 @@ class FeedListCard extends StatelessWidget {
     required this.name,
     this.message,
     this.time,
-    this.image,
     this.isActive,
     this.isPinned = false,
     required this.onTap,
@@ -46,7 +44,7 @@ class FeedListCard extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: ProfileAvatar(
-          image: image ?? "",
+          image: name,
           isActive: isActive ?? true,
         ),
         title: Text(

@@ -90,7 +90,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     // Ensure the height increase is at most 20
     if (widget.errorText != null) {
-      effectiveHeight += 10;
+      effectiveHeight += 20;
     }
 
     return Column(

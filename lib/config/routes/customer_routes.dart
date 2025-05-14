@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_home_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_host.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_notification_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_profile_setup_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/about_settings_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/archive_settings_page.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/change_password.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/notification_settings.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/order_enquiries.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/settings/password_and_security.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_host.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_profile_setup_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/about_settings_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/archive_settings_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/change_password.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/notification_settings.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/order_enquiries.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/marketings_notifications_page.dart';
 
 import '../../data/models/product_model.dart';
 
@@ -47,58 +48,65 @@ class CustomerRoutes {
 Route<dynamic> generateCustomerRoute(RouteSettings settings) {
   switch (settings.name) {
     case CustomerRoutes.customerHost:
-      return MaterialPageRoute(builder: (_) => CustomerHost());
+      return MaterialPageRoute(
+          builder: (context) => CustomerHost(
+                navigatorKey: navigatorKey,
+              ));
 
     case CustomerRoutes.customerNotification:
-      return MaterialPageRoute(builder: (_) => CustomerNotificationPage());
+      return MaterialPageRoute(builder: (context) => NotificationsScreen());
 
     case CustomerRoutes.customerProductDescriptionPage:
       final product = settings.arguments as Product?;
       if (product == null) {
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(
+          builder: (context) => const Scaffold(
             body: Center(child: Text("Error: No product data provided")),
           ),
         );
       }
       return MaterialPageRoute(
-        builder: (_) => CustomerProductDescriptionPage(product: product),
+        builder: (context) => CustomerProductDescriptionPage(product: product),
       );
 
     case CustomerRoutes.customerProfileSetup:
       final args = settings.arguments as Map<String, dynamic>?;
       final profile = args?['profile'] as Profile?;
+      final name = args?['name'] as String?;
       return MaterialPageRoute(
-        builder: (_) => CustomerProfileSetupPage(
+        builder: (context) => CustomerProfileSetupPage(
           forUpdate: profile != null,
           profile: profile,
+          name: name,
         ),
       );
 
     case CustomerRoutes.passwordAndSecurity:
-      return MaterialPageRoute(builder: (_) => PasswordAndSecurity());
+      return MaterialPageRoute(builder: (context) => AccountAndSecurity());
 
     case CustomerRoutes.changePassword:
-      return MaterialPageRoute(builder: (_) => ChangePassword());
+      return MaterialPageRoute(builder: (context) => ChangePassword());
 
     case CustomerRoutes.archiveSettings:
-      return MaterialPageRoute(builder: (_) => ArchiveSettingsPage());
+      return MaterialPageRoute(builder: (context) => ArchiveSettingsPage());
 
     case CustomerRoutes.notificationSettings:
-      return MaterialPageRoute(builder: (_) => NotificationSettings());
+      return MaterialPageRoute(builder: (context) => NotificationSettings());
 
     case CustomerRoutes.orderEnquiries:
-      return MaterialPageRoute(builder: (_) => OrderEnquiries());
+      return MaterialPageRoute(builder: (context) => OrderEnquiries());
 
     case CustomerRoutes.aboutSettingPage:
-      return MaterialPageRoute(builder: (_) => AboutSettingsPage());
+      return MaterialPageRoute(builder: (context) => AboutSettingsPage());
 
     case CustomerRoutes.customerSupportChat:
       return MaterialPageRoute(
-        builder: (_) => CustomerChatScreen(),
+        builder: (context) => CustomerChatScreen(
+          navigatorKey: navigatorKey,
+        ),
       );
 
     default:
-      return MaterialPageRoute(builder: (_) => CustomerHomePage());
+      return MaterialPageRoute(builder: (context) => CustomerHomePage());
   }
 }

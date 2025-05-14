@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/colored_divider.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/settings/manage_customers.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/settings/track_inquries.dart';
-import 'package:kkp_chat_app/presentation/marketing/widget/marketing_settings_tile.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/colored_divider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/settings/manage_customers.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/marketing_settings_tile.dart';
 
 class MarketingSettingsPage extends StatefulWidget {
   const MarketingSettingsPage({super.key});
@@ -20,10 +21,10 @@ class MarketingSettingsPage extends StatefulWidget {
 }
 
 class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   @override
   Widget build(BuildContext context) {
-    final searchController = TextEditingController();
+    // final searchController = TextEditingController();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -41,11 +42,11 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               width: Utils().width(context),
               color: AppColors.background,
               padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: CustomSearchBar(
-                  width: Utils().width(context),
-                  enable: true,
-                  controller: searchController,
-                  hintText: 'Search'),
+              // child: CustomSearchBar(
+              //     width: Utils().width(context),
+              //     enable: true,
+              //     controller: searchController,
+              //     hintText: 'Search'),
             ),
 
             SettingsTile(
@@ -93,38 +94,38 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => TrackInquries(),
+                      builder: (context) => CustomerInquiriesPage(),
                     ),
                   );
                 }
               ],
             ),
-            MarketingSettingsTile(
-              title: "Notifications & Reports",
-              leadingIcon: Icons.notifications_none,
-              subTitles: [
-                "Manage Message Alerts",
-                "View Sales & Inquiry Reports"
-              ],
-              onTapActions: [
-                () {
-                  // Navigator.pushNamed(context, '/manageAlerts');
-                },
-                () {
-                  //  Navigator.pushNamed(context, '/viewReports');
-                }
-              ],
-            ),
-            MarketingSettingsTile(
-              title: "System Settings",
-              leadingIcon: Icons.settings_outlined,
-              subTitles: ["Security & Access Control"],
-              onTapActions: [
-                () {
-                  // Navigator.pushNamed(context, '/securitySettings');
-                }
-              ],
-            ),
+            // MarketingSettingsTile(
+            //   title: "Notifications & Reports",
+            //   leadingIcon: Icons.notifications_none,
+            //   subTitles: [
+            //     "Manage Message Alerts",
+            //     // "View Sales & Inquiry Reports"
+            //   ],
+            //   onTapActions: [
+            //     () {
+            //       // Navigator.pushNamed(context, '/manageAlerts');
+            //     },
+            //     // () {
+            //     //   //  Navigator.pushNamed(context, '/viewReports');
+            //     // }
+            //   ],
+            // ),
+            // MarketingSettingsTile(
+            //   title: "System Settings",
+            //   leadingIcon: Icons.settings_outlined,
+            //   subTitles: ["Security & Access Control"],
+            //   onTapActions: [
+            //     () {
+            //       // Navigator.pushNamed(context, '/securitySettings');
+            //     }
+            //   ],
+            // ),
 
             //More info and support sections tiles
             SizedBox(height: 10),
@@ -134,20 +135,19 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
             ),
             ColoredDivider(),
             SettingsTile(
-              numberOfTiles: 2,
-              leadingIcons: [
-                Icons.info_outline_rounded,
-                Icons.info_outline_rounded,
-              ],
+              numberOfTiles: 1,
+              leadingIcons: [Icons.info_outline_rounded],
               title: 'More info and support',
-              titles: ['Help', 'About'],
+              titles: ['About'],
               onTaps: [
-                () {},
                 () {
-                  Navigator.pushNamed(context, CustomerRoutes.aboutSettingPage);
-                }
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return AboutUsPage();
+                  }));
+                },
               ],
             ),
+            const SizedBox(height: 20),
             TextButton.icon(
               onPressed: () {
                 Utils().showDialogWithActions(

@@ -1,4 +1,4 @@
-import 'package:kkp_chat_app/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/address_model.dart';
 
 class Profile {
   String? id;

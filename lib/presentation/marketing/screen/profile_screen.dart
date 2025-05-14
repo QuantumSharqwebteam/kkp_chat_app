@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_button.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/profile_details_field.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/profile_details_field.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,7 +19,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final SocketService _socketService = SocketService();
+  final SocketService _socketService = SocketService(navigatorKey);
   late Profile? profile;
 
   @override
@@ -56,7 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             _buildProfileSection(profile?.profileUrl),
-            _buildStatsSection(),
+            // _buildStatsSection(),
             // _buildSettingsSection(context),
             const SizedBox(height: 10),
             _buildDetailsCard(),
@@ -75,16 +77,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       width: double.maxFinite,
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(width: 1, color: AppColors.dividerD9D9D9),
-        ),
-      ),
+          border: Border(
+            bottom: BorderSide(width: 1, color: AppColors.dividerD9D9D9),
+          ),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 4,
+              spreadRadius: 0,
+              color: AppColors.shadowColor,
+              offset: const Offset(0, 4),
+            )
+          ]),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 80,
-            backgroundImage: AssetImage("assets/images/user2.png"),
-            // foregroundImage: NetworkImage(url ?? ""),
+          Initicon(
+            text: profile!.name!,
+            size: 100,
           ),
           const SizedBox(height: 10),
           Text(
@@ -101,39 +110,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatsSection() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [
-        BoxShadow(
-          blurRadius: 4,
-          spreadRadius: 0,
-          color: AppColors.shadowColor,
-          offset: const Offset(0, 4),
-        )
-      ]),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildStatCard("128", "Total chats"),
-          Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
-          _buildStatCard("45", "Active Inquiries"),
-          Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
-          _buildStatCard("83", "Resolved"),
-        ],
-      ),
-    );
-  }
+  // Widget _buildStatsSection() {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+  //     decoration: BoxDecoration(color: Colors.white, boxShadow: [
+  //       BoxShadow(
+  //         blurRadius: 4,
+  //         spreadRadius: 0,
+  //         color: AppColors.shadowColor,
+  //         offset: const Offset(0, 4),
+  //       )
+  //     ]),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         _buildStatCard("128", "Total chats"),
+  //         Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
+  //         _buildStatCard("45", "Active Inquiries"),
+  //         Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
+  //         _buildStatCard("83", "Resolved"),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildStatCard(String value, String label) {
-    return Column(
-      children: [
-        Text(value, style: AppTextStyles.blue4A76CD_24_600),
-        Text(label,
-            style: AppTextStyles.grey5C5C5C_16_600.copyWith(fontSize: 12)),
-      ],
-    );
-  }
+  // Widget _buildStatCard(String value, String label) {
+  //   return Column(
+  //     children: [
+  //       Text(value, style: AppTextStyles.blue4A76CD_24_600),
+  //       Text(label,
+  //           style: AppTextStyles.grey5C5C5C_16_600.copyWith(fontSize: 12)),
+  //     ],
+  //   );
+  // }
 
   Widget _buildDetailsCard() {
     return Container(

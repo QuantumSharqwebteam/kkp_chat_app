@@ -1,17 +1,18 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/data/models/product_model.dart';
-import 'package:kkp_chat_app/data/models/profile_model.dart';
-import 'package:kkp_chat_app/data/repositories/auth_repository.dart';
-import 'package:kkp_chat_app/data/repositories/product_repository.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_grid.dart';
-import 'package:kkp_chat_app/presentation/customer/screen/customer_product_description_page.dart';
-import 'package:kkp_chat_app/presentation/customer/widget/custom_app_bar.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/products/product_item.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:kkpchatapp/presentation/customer/widget/custom_app_bar.dart';
+import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -26,7 +27,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   AuthRepository auth = AuthRepository();
   Profile? profileData;
   String? name;
-  String? profileImageUrl;
 
   @override
   void initState() {
@@ -37,18 +37,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   Future<void> _loadUserInfo() async {
     try {
-      profileData = await auth.getUserInfo();
-      if (mounted) {
+      await auth.getUserInfo().then((value) {
+        profileData = value;
         setState(() {
-          name = profileData?.name;
-          profileImageUrl = profileData!.profileUrl;
+          name = profileData!.name;
         });
-      }
+      });
     } catch (e) {
       if (kDebugMode) {
-        if (mounted) {
-          print(e.toString());
-        }
+        print(e.toString());
       }
     }
   }
@@ -56,12 +53,12 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size(double.infinity, 100),
         child: SafeArea(
             child: CustomAppBar(
-          name: name,
-          url: profileImageUrl,
+          name: profileData?.name,
         )),
       ),
       body: SafeArea(
@@ -85,8 +82,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _enquirySupport(onTap: () {
-                      Navigator.pushNamed(
-                          context, CustomerRoutes.customerSupportChat);
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return CustomerChatScreen(
+                          agentName: "Agent",
+                          customerName: name,
+                          customerEmail: profileData!.email,
+                          navigatorKey: navigatorKey,
+                        );
+                      }));
                     }),
                     const SizedBox(height: 20),
 

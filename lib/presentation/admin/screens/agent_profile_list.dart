@@ -1,11 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/config/theme/app_text_styles.dart';
-import 'package:kkp_chat_app/config/theme/image_constants.dart';
-import 'package:kkp_chat_app/core/network/auth_api.dart';
-import 'package:kkp_chat_app/data/models/agent.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_customer_list_screen.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:shimmer/shimmer.dart';
 // Import reusable shimmer list
 
@@ -20,6 +23,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
   final AuthApi _auth = AuthApi();
   List<Agent> _agentsList = [];
   bool _isLoading = true;
+  final authRepository = AuthRepository();
 
   @override
   void initState() {
@@ -103,6 +107,24 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     }
   }
 
+  void _deleteAgent(String email) async {
+    try {
+      final result = await authRepository.deleteAgentAccount(agentEmail: email);
+
+      if (mounted) {
+        Utils().showSuccessDialog(context, "${result['message']}", true);
+        _fetchAgents(); // Refresh agent list after deletion
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Error deleting agent: ${e.toString()}");
+      }
+      if (mounted) {
+        Utils().showSuccessDialog(context, "Try again later!", false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,7 +140,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHighlightedAgent(),
+            //  _buildHighlightedAgent(),
             const SizedBox(height: 20),
             _isLoading ? _buildShimmerStatsSection() : _buildStatsSection(),
             const SizedBox(height: 20),
@@ -136,34 +158,34 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     );
   }
 
-  Widget _buildHighlightedAgent() {
-    return Card(
-      surfaceTintColor: Colors.white,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 30,
-              backgroundImage: AssetImage("assets/images/user1.png"),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text("Arun",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text("Senior Admin",
-                    style: TextStyle(fontSize: 14, color: Colors.grey)),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget _buildHighlightedAgent() {
+  //   return Card(
+  //     surfaceTintColor: Colors.white,
+  //     color: Colors.white,
+  //     child: Padding(
+  //       padding: const EdgeInsets.all(18.0),
+  //       child: Row(
+  //         children: [
+  //           const CircleAvatar(
+  //             radius: 30,
+  //             backgroundImage: AssetImage("assets/images/user1.png"),
+  //           ),
+  //           const SizedBox(width: 10),
+  //           Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: const [
+  //               Text("Arun",
+  //                   style:
+  //                       TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+  //               Text("Senior Admin",
+  //                   style: TextStyle(fontSize: 14, color: Colors.grey)),
+  //             ],
+  //           )
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildStatsSection() {
     int totalAgents = _agentsList.length;
@@ -226,7 +248,6 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
               MaterialPageRoute(
                 builder: (context) => AgentCustomersListScreen(
                   agentName: agent.name,
-                  agentImage: ImageConstants.userImage,
                   agentEmail: agent.email, // Pass the agent's email
                 ),
               ),
@@ -237,8 +258,9 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
             color: Colors.white,
             elevation: 5,
             child: ListTile(
-              leading: const CircleAvatar(
-                backgroundImage: AssetImage("assets/images/user3.png"),
+              leading: Initicon(
+                text: agent.name,
+                size: 35,
               ),
               title: Text(agent.name, style: AppTextStyles.black16_600),
               subtitle: agent.role == 'AgentHead'
@@ -290,6 +312,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                         agent.email); // Replace with actual email
                   } else if (value == 'Delete') {
                     // Add delete logic here
+                    _deleteAgent(agent.email);
                   }
                 },
                 itemBuilder: (BuildContext context) {

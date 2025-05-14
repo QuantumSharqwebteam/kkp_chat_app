@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/presentation/admin/screens/add_agent.dart';
-import 'package:kkp_chat_app/presentation/admin/screens/admin_home.dart';
-import 'package:kkp_chat_app/presentation/admin/screens/agent_profile_list.dart';
-import 'package:kkp_chat_app/presentation/admin/screens/customer_inquries.dart';
-import 'package:kkp_chat_app/presentation/common/privacy_page.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/add_product_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_chat_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/agent_home_screen.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/marketing_host.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/marketing_product_descrption_page.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/settings/marketing_settings.dart';
-import 'package:kkp_chat_app/presentation/marketing/screen/marketings_notifications_page.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/admin/screens/add_agent.dart';
+import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
+import 'package:kkpchatapp/presentation/admin/screens/agent_profile_list.dart';
+import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
+import 'package:kkpchatapp/presentation/common/privacy_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/add_product_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/marketing_host.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_descrption_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/settings/marketing_settings.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/marketings_notifications_page.dart';
 
 import '../../data/models/product_model.dart';
 
@@ -56,7 +56,10 @@ class MarketingRoutes {
 Route<dynamic> generateMarketingRoute(RouteSettings settings) {
   switch (settings.name) {
     case MarketingRoutes.marketingHostScreen:
-      return MaterialPageRoute(builder: (_) => MarketingHost());
+      return MaterialPageRoute(
+          builder: (_) => MarketingHost(
+                navigatorKey: navigatorKey,
+              ));
 
     case MarketingRoutes.privacy:
       return MaterialPageRoute(builder: (_) => PrivacyPage());
@@ -103,9 +106,12 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
     case MarketingRoutes.marketingSettings:
       return MaterialPageRoute(builder: (_) => MarketingSettingsPage());
 
-    case MarketingRoutes.agentChatScreen:
-      // final args = settings.arguments;
-      return MaterialPageRoute(builder: (_) => AgentChatScreen());
+    // case MarketingRoutes.agentChatScreen:
+    //   // final args = settings.arguments;
+    //   return MaterialPageRoute(
+    //       builder: (_) => AgentChatScreen(
+    //             navigatorKey: navigatorKey,
+    //           ));
 
     default:
       return MaterialPageRoute(

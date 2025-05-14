@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 
 class MyVerticalDivider extends StatelessWidget {
   final double height;

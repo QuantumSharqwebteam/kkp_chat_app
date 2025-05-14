@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kkp_chat_app/config/routes/customer_routes.dart';
-import 'package:kkp_chat_app/config/theme/app_colors.dart';
-import 'package:kkp_chat_app/core/services/socket_service.dart';
-import 'package:kkp_chat_app/core/utils/utils.dart';
-import 'package:kkp_chat_app/data/local_storage/local_db_helper.dart';
-import 'package:kkp_chat_app/presentation/common/auth/login_page.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/custom_search_field.dart';
-import 'package:kkp_chat_app/presentation/common_widgets/settings_tile.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
@@ -19,19 +23,34 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
   @override
   Widget build(BuildContext context) {
     final searchController = TextEditingController();
-    final SocketService socketService = SocketService();
+    final SocketService socketService = SocketService(navigatorKey);
+
     void logOut() async {
-      await LocalDbHelper.removeToken();
-      await LocalDbHelper.removeUserType();
-      await LocalDbHelper.removeEmail();
-      await LocalDbHelper.removeName();
-      await LocalDbHelper.removeProfile();
-      socketService.dispose();
-      if (context.mounted) {
-        Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => LoginPage()),
-            (route) => false);
+      try {
+        // 1. Clear all persistent data
+        await Future.wait([
+          LocalDbHelper.removeToken(),
+          LocalDbHelper.removeUserType(),
+          LocalDbHelper.removeEmail(),
+          LocalDbHelper.removeName(),
+          LocalDbHelper.removeProfile(),
+          LocalDbHelper.clearFCMToken(),
+          NotificationService.deleteFCMToken(),
+        ]);
+
+        // 2. Dispose socket
+        socketService.dispose();
+
+        // 3. If still in UI, navigate:
+        if (context.mounted) {
+          Navigator.pop(context);
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            "/login", // ← the named route you defined
+            (Route<dynamic> route) => false, // ← clears everything
+          );
+        }
+      } catch (e) {
+        debugPrint("Error during logout: $e");
       }
     }
 
@@ -64,15 +83,16 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               leadingIcons: [Icons.shield_moon_outlined],
               onTaps: [
                 () {
-                  Navigator.pushNamed(
-                      context, CustomerRoutes.passwordAndSecurity);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return AccountAndSecurity();
+                  }));
                 }
               ],
               title: 'Your account',
-              titles: ['Password and Security'],
-              subtitles: ['Password, security, personal details,ad preference'],
+              titles: ['Account and Security'],
+              subtitles: ['Account managment, password change'],
               description:
-                  'Manage your connected experiance and account settings across devices',
+                  'Manage your data and security for  better experience',
             ),
             SizedBox(height: 10),
             Divider(
@@ -80,17 +100,20 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               thickness: 1,
             ),
             SettingsTile(
-              numberOfTiles: 2,
+              numberOfTiles: 1,
               leadingIcons: [
                 Icons.archive_outlined,
                 Icons.notifications_none_outlined
               ],
               title: 'How you use KKP',
-              titles: ['Archive', 'Notifications'],
+              titles: [
+                // 'Archive',
+                'Notifications',
+              ],
               onTaps: [
-                () {
-                  Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
-                },
+                // () {
+                //   Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
+                // },
                 () {
                   Navigator.pushNamed(
                       context, CustomerRoutes.notificationSettings);
@@ -106,10 +129,12 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               title: 'Your Orders',
               numberOfTiles: 1,
               leadingIcons: [Icons.shopping_cart_outlined],
-              titles: ['Order Enquirer'],
+              titles: ['Order Enquiries'],
               onTaps: [
                 () {
-                  Navigator.pushNamed(context, CustomerRoutes.orderEnquiries);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return CustomerInquiriesPage();
+                  }));
                 }
               ],
             ),
@@ -119,17 +144,22 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               thickness: 1,
             ),
             SettingsTile(
-              numberOfTiles: 2,
+              numberOfTiles: 1,
               leadingIcons: [
                 Icons.info_outline_rounded,
                 Icons.info_outline_rounded,
               ],
               title: 'More info and support',
-              titles: ['Help', 'About'],
+              titles: [
+                // 'Help',
+                'About',
+              ],
               onTaps: [
-                () {},
+                // () {},
                 () {
-                  Navigator.pushNamed(context, CustomerRoutes.aboutSettingPage);
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return AboutUsPage();
+                  }));
                 }
               ],
             ),
