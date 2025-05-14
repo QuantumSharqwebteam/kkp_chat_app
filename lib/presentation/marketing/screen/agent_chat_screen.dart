@@ -250,7 +250,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     setState(() {});
 
     _currentPage++;
-    final boxName = '${widget.agentName}${widget.customerName}';
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
     if (_fetchedPages.contains(_currentPage)) {
       // Page already fetched, do nothing
       _isLoadingMore = false;
@@ -320,7 +320,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(
-          message, '${widget.agentName}${widget.customerName}');
+          message, '${widget.agentEmail}${widget.customerEmail}');
       _loadedMessageIds.add(messageId);
     }
   }
@@ -363,7 +363,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(
-          message, '${widget.agentName}${widget.customerName}');
+          message, '${widget.agentEmail}${widget.customerEmail}');
       _loadedMessageIds.add(messageId);
     }
     _scrollToBottom();
@@ -372,38 +372,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _scrollToBottom() {
-    if (!_scrollController.hasClients) return;
-    final isNearBottom = _scrollController.offset >=
-        _scrollController.position.maxScrollExtent - 100;
-
-    if (isNearBottom) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 10),
           curve: Curves.easeOut,
         );
-      });
-    }
+      }
+    });
   }
-
-//   void _scrollToBottom({bool animated = true}) {
-//   if (!_scrollController.hasClients) return;
-
-//   final scrollTo = _scrollController.position.maxScrollExtent;
-
-//   WidgetsBinding.instance.addPostFrameCallback((_) {
-//     if (animated) {
-//       _scrollController.animateTo(
-//         scrollTo,
-//         duration: const Duration(milliseconds: 300),
-//         curve: Curves.easeOut,
-//       );
-//     } else {
-//       _scrollController.jumpTo(scrollTo);
-//     }
-//   });
-// }
 
   Future<void> _startRecording() async {
     await _recorder.startRecorder(toFile: 'voice_message.aac');

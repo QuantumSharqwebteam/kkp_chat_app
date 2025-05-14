@@ -20,16 +20,23 @@ class CallLogModel {
   });
 
   factory CallLogModel.fromJson(Map<String, dynamic> json) {
+    final rawTimestamp = json['timestamp'] ?? '';
+    DateTime utcTime;
+
+    try {
+      utcTime = DateTime.parse(rawTimestamp).toUtc(); // force parse as UTC
+    } catch (e) {
+      utcTime = DateTime.now().toUtc(); // fallback in case of error
+    }
+
     return CallLogModel(
       senderId: json['senderId'] ?? '',
       senderName: json['senderName'] ?? '',
       receiverId: json['receiverId'] ?? '',
       receiverName: json['receiverName'] ?? '',
       callStatus: json['callStatus'] ?? '',
-      callDuration: json.containsKey('callDuration')
-          ? json['callDuration'] as String?
-          : null,
-      timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
+      callDuration: json['callDuration'] as String?,
+      timestamp: utcTime.toLocal(), // convert to local time here
       id: json['_id'] ?? '',
     );
   }

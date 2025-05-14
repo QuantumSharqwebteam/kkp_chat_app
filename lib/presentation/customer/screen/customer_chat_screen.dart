@@ -16,6 +16,7 @@ import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -638,6 +639,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                 voiceUrl: msg.mediaUrl!,
                                 isMe: msg.sender == widget.customerEmail,
                                 timestamp: formatTimestamp(msg.timestamp),
+                              );
+                            } else if (msg.type == 'call') {
+                              return CallMessageBubble(
+                                isMe: msg.sender == widget.agentEmail,
+                                timestamp: formatTimestamp(
+                                    msg.timestamp.toIso8601String()),
+                                callStatus: msg.callStatus ?? "",
+                                callDuration: msg.callDuration ?? '',
                               );
                             } else if (msg.message == 'Fill details') {
                               return FillFormButton(

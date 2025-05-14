@@ -12,6 +12,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_products_page.dart';
@@ -240,15 +241,21 @@ class _CustomerHostState extends State<CustomerHost> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: CustomerNavBar(
-        selectedIndex: _selectedIndex,
-        onTabSelected: _onTabSelected,
+    Widget content = GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: CustomerNavBar(
+          selectedIndex: _selectedIndex,
+          onTabSelected: _onTabSelected,
+        ),
       ),
     );
+    return BackPressHandler(child: content);
   }
 }

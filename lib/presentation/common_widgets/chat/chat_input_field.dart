@@ -194,20 +194,15 @@ class _ChatInputFieldState extends State<ChatInputField>
 // Move this list outside the class since it doesn’t depend on state
 final List<Map<String, String>> attachmentItems = [
   {"image": ImageConstants.inquiry, "label": "Inquiry Form"},
-  {"image": ImageConstants.rate, "label": "Rate"},
-  {"image": ImageConstants.orderConfimm, "label": "Order Confirm"},
-  {"image": ImageConstants.orderDecline, "label": "Order Decline"},
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
-  // {"image": ImageConstants.video, "label": "Videos"},
 ];
 
 final List<Map<String, String>> attachmentItemsforCustomer = [
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
-  // {"image": ImageConstants.video, "label": "Videos"},
 ];
 
 final String? currentUser = LocalDbHelper.getProfile()?.role;

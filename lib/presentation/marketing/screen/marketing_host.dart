@@ -20,6 +20,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/marketing_nav_bar.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key, required this.navigatorKey});
@@ -238,15 +239,21 @@ class _MarketingHostState extends State<MarketingHost> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: MarketingNavBar(
-        selectedIndex: _selectedIndex,
-        onTabSelected: _onTabSelected,
+    Widget content = GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: MarketingNavBar(
+          selectedIndex: _selectedIndex,
+          onTabSelected: _onTabSelected,
+        ),
       ),
     );
+    return BackPressHandler(child: content);
   }
 }
