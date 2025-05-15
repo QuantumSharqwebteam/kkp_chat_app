@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
@@ -103,6 +105,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     });
   }
 
+  String _generateMessageId(ChatMessageModel message) {
+    // Normalize the timestamp to the nearest second
+    // Generate a hash of the message content and sender
+    final messageContent = '${message.sender}_${message.message}';
+    return sha256.convert(utf8.encode(messageContent)).toString();
+  }
+
   Future<void> _fetchMessagesFromAPI(String boxName) async {
     try {
       String? before;
@@ -116,6 +125,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         limit: 20,
         before: before,
       );
+
+      // Print fetched messages to check for duplicates
+      debugPrint("Fetched Messages: $fetchedMessages");
 
       if (fetchedMessages.isEmpty) {
         // No more messages to load
@@ -140,9 +152,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
         // Save all messages at once
-        await _chatStorageService.saveMessages(newChatMessages, boxName);
+        // await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
-          messages.insertAll(0, newChatMessages);
+          final newMessages = newChatMessages
+              .where((newMsg) => !messages.any((existingMsg) =>
+                  existingMsg.sender == newMsg.sender &&
+                  existingMsg.timestamp == newMsg.timestamp &&
+                  existingMsg.message == newMsg.message))
+              .toList();
+
+          messages.insertAll(0, newMessages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         });
       }
@@ -155,8 +174,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
     return messages.where((message) {
-      final messageId =
-          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+      final messageId = _generateMessageId(message);
+      debugPrint("Generated Message ID: $messageId"); // Print message ID
       if (_loadedMessageIds.contains(messageId)) {
         return false;
       } else {
@@ -270,8 +289,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: data["form"],
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    final messageId = _generateMessageId(message);
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
@@ -303,8 +321,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: form,
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    final messageId = _generateMessageId(message);
+    debugPrint("Sended message id: $messageId");
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);

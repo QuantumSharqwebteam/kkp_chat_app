@@ -262,7 +262,7 @@ Widget _enquirySupport({VoidCallback? onTap}) {
       title: Text('Product Enquirers', style: AppTextStyles.black16_600),
       subtitle: Text('How may I Help you?',
           overflow: TextOverflow.ellipsis, style: AppTextStyles.black12_400),
-      trailing: Text('2m', style: AppTextStyles.black12_700),
+      // trailing: Text('2m', style: AppTextStyles.black12_700),
     ),
   );
 }
