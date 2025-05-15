@@ -208,12 +208,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         });
       }
     } catch (e) {
-      // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
-      // You can show a snackbar or alert dialog to inform the user about the error
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text("Failed to load messages: $e")),
-      // );
     }
   }
 
@@ -369,6 +364,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _scrollToBottom();
 
     _chatController.clear();
+    FocusScope.of(context)
+        .unfocus(); // to close the opened keyboard after sending message
   }
 
   void _scrollToBottom() {

@@ -196,6 +196,19 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   // Recent Messages List
   Widget _buildCustomerInquiriesList() {
+    // Sort the list to show online users first
+    _filteredCustomers.sort((a, b) {
+      final isAOnline = _socketService.isUserOnline(a["email"]);
+      final isBOnline = _socketService.isUserOnline(b["email"]);
+      if (isAOnline && !isBOnline) {
+        return -1;
+      } else if (!isAOnline && isBOnline) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
     return RefreshIndicator(
       onRefresh: () {
         return _fetchAssignedCustomers();
