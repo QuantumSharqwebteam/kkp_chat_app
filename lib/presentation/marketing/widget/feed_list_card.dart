@@ -8,7 +8,6 @@ class FeedListCard extends StatelessWidget {
   final String name;
   final String? message;
   final String? time;
-  final String? image;
   final bool? isActive;
   final bool isPinned;
   final VoidCallback onTap;
@@ -20,7 +19,6 @@ class FeedListCard extends StatelessWidget {
     required this.name,
     this.message,
     this.time,
-    this.image,
     this.isActive,
     this.isPinned = false,
     required this.onTap,
@@ -46,7 +44,7 @@ class FeedListCard extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: ProfileAvatar(
-          image: image ?? "",
+          image: name,
           isActive: isActive ?? true,
         ),
         title: Text(

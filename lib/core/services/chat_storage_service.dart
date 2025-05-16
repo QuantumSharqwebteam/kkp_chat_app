@@ -6,22 +6,53 @@ class ChatStorageService {
     return await Hive.openBox(boxName);
   }
 
+  Future<List<ChatMessageModel>> getCustomerMessages(String boxName,
+      {int limit = 100, String? before}) async {
+    final box = await _openBox(boxName);
+    final allMessages = box.values
+        .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
+        .toList()
+      ..sort(
+          (a, b) => b.timestamp.compareTo(a.timestamp)); // Sort by newest first
+
+    if (before != null) {
+      final beforeDate = DateTime.parse(before);
+      return allMessages
+          .where((message) => message.timestamp.isBefore(beforeDate))
+          .take(limit)
+          .toList();
+    } else {
+      return allMessages.take(limit).toList();
+    }
+  }
+
   Future<void> saveMessage(ChatMessageModel message, String boxName) async {
     final box = await _openBox(boxName);
     final messageMap = message.toMap();
     await box.put(message.timestamp.toString(), messageMap);
   }
 
-  Future<List<ChatMessageModel>> getMessages(String boxName) async {
+  Future<void> saveMessages(
+      List<ChatMessageModel> messages, String boxName) async {
     final box = await _openBox(boxName);
-    return box.values
-        .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
-        .toList()
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final messagesMap = messages.map((message) => message.toMap()).toList();
+    await box.putAll(Map.fromEntries(
+        messagesMap.map((message) => MapEntry(message['timestamp'], message))));
   }
 
-  Stream<List<ChatMessageModel>> watchMessages(String boxName) async* {
+  Future<List<ChatMessageModel>> getMessages(String boxName,
+      {int page = 1, int limit = 20}) async {
     final box = await _openBox(boxName);
-    yield* box.watch().asyncMap((_) => getMessages(boxName));
+    final allMessages = box.values
+        .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
+        .toList()
+      ..sort(
+          (a, b) => b.timestamp.compareTo(a.timestamp)); // Sort by newest first
+
+    final startIndex = (page - 1) * limit;
+    if (startIndex >= allMessages.length) {
+      return []; // Return an empty list if startIndex is out of range
+    }
+    return allMessages.sublist(startIndex); // Fetch all remaining messages
   }
 }

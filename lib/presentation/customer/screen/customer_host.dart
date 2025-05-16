@@ -9,7 +9,10 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_products_page.dart';
@@ -31,6 +34,7 @@ class _CustomerHostState extends State<CustomerHost> {
 
   late final SocketService _socketService;
   AuthApi auth = AuthApi();
+  final chatRepository = ChatRepository();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   Profile? profile;
 
@@ -54,8 +58,15 @@ class _CustomerHostState extends State<CustomerHost> {
         _socketService.onIncomingCall(_handleIncomingCall);
         await _initializeNotificationService();
         _handleFirebaseNotificationTaps();
+
+        initCheck();
       }
     });
+  }
+
+  void initCheck() async {
+    // Set the global flag to true after initialization
+    isAppInitialized = true;
   }
 
   void _handleFirebaseNotificationTaps() {
@@ -63,17 +74,21 @@ class _CustomerHostState extends State<CustomerHost> {
       debugPrint(
           '🔔 Notification opened (background/terminated): ${message.data}');
 
-      final agentName = message.data['senderName'];
-      final customerEmail = profile!.email;
-      final customerImage = profile!.profileUrl ?? "";
+      if (isAppInitialized) {
+        final agentName = message.data['senderName'];
+        final customerEmail = profile!.email;
+        final customerImage = profile!.profileUrl ?? "";
 
-      final userType = await LocalDbHelper.getUserType();
-      if (userType == "0") {
-        _navigateToChat(
-          name: agentName,
-          email: customerEmail,
-          image: customerImage,
-        );
+        final userType = await LocalDbHelper.getUserType();
+        if (userType == "0") {
+          _navigateToChat(
+            name: agentName,
+            email: customerEmail,
+            image: customerImage,
+          );
+        }
+      } else {
+        debugPrint("App is not initialized. Skipping notification handling.");
       }
     });
   }
@@ -89,7 +104,6 @@ class _CustomerHostState extends State<CustomerHost> {
           builder: (_) => CustomerChatScreen(
             agentName: name,
             customerEmail: email,
-            customerImage: image,
             navigatorKey: widget.navigatorKey,
           ),
         ));
@@ -151,6 +165,7 @@ class _CustomerHostState extends State<CustomerHost> {
     final channelName = callData['channelName'];
     final callerName = callData['callerName'];
     final callerId = callData['callerId'];
+    final incomingCallId = callData["callId"];
     final uid = Utils().generateIntUidFromEmail(profile!.email!);
     final overlayState = Overlay.of(context);
 
@@ -184,6 +199,7 @@ class _CustomerHostState extends State<CustomerHost> {
                     uid: uid,
                     remoteUserId: callerId,
                     remoteUserName: callerName,
+                    messageId: incomingCallId,
                   ),
                 ),
               );
@@ -191,6 +207,7 @@ class _CustomerHostState extends State<CustomerHost> {
           },
           onReject: () async {
             await stopAndRemoveOverlay();
+            await chatRepository.updateCallData(incomingCallId, "missed");
             // Optionally emit reject event
           },
           audioPlayer: audioPlayer,
@@ -204,6 +221,7 @@ class _CustomerHostState extends State<CustomerHost> {
     // Auto-dismiss after 30 seconds
     timeoutTimer = Timer(const Duration(seconds: 30), () async {
       await stopAndRemoveOverlay();
+      await chatRepository.updateCallData(incomingCallId, "missed");
       // Optionally emit missed call
     });
   }
@@ -223,15 +241,21 @@ class _CustomerHostState extends State<CustomerHost> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: CustomerNavBar(
-        selectedIndex: _selectedIndex,
-        onTabSelected: _onTabSelected,
+    Widget content = GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: CustomerNavBar(
+          selectedIndex: _selectedIndex,
+          onTabSelected: _onTabSelected,
+        ),
       ),
     );
+    return BackPressHandler(child: content);
   }
 }

@@ -7,11 +7,13 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/chart_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile.dart';
-import 'package:kkpchatapp/presentation/admin/widgets/home_chart.dart';
+import 'package:kkpchatapp/presentation/admin/widgets/admin_home_chart.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/my_vertical_divider.dart';
 
@@ -24,9 +26,12 @@ class AdminHome extends StatefulWidget {
 
 class _AdminHomeState extends State<AdminHome> {
   final AuthApi _auth = AuthApi();
+  final _chatRepo = ChatRepository();
   final SocketService _socketService = SocketService(navigatorKey);
   List<Agent> _agentsList = [];
+  List<Map<String, dynamic>> trafficData = [];
   bool _isLoading = true;
+  String selectedChartType = 'messages';
 
   StreamSubscription<List<String>>? _statusSubscription;
 
@@ -34,6 +39,7 @@ class _AdminHomeState extends State<AdminHome> {
   void initState() {
     super.initState();
     _fetchAgents();
+    _fetchTrafficData();
     _statusSubscription = _socketService.statusStream.listen((_) {
       if (mounted) {
         setState(() {});
@@ -63,6 +69,20 @@ class _AdminHomeState extends State<AdminHome> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _fetchTrafficData() async {
+    try {
+      List<Map<String, dynamic>> fetchData =
+          await _chatRepo.fetchTrafficChartData();
+      if (mounted) {
+        setState(() {
+          trafficData = fetchData;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching traffic data: $e");
     }
   }
 
@@ -101,7 +121,6 @@ class _AdminHomeState extends State<AdminHome> {
           children: [
             _buildTrafficChart(),
             _buildTrafficStatsCard(),
-            _buildCategorySection(),
             _buildCustomerInquriesButton(),
             _buildAgentManagementSection()
           ],
@@ -116,23 +135,90 @@ class _AdminHomeState extends State<AdminHome> {
       surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Traffic on site",
+              "User Traffic Analytics",
               style: AppTextStyles.black16_600
-                  .copyWith(color: Colors.black.withValues(alpha: 0.60)),
+                  .copyWith(color: Colors.black.withAlpha(150)),
             ),
-            const Text(
-              "Visits\nJan - Mar 10,2025   *5,705 Total   +52%",
-              style: TextStyle(fontSize: 10, color: Colors.grey),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text:
+                        "${selectedChartType == 'messages' ? 'Messages' : 'Active Users'}\n"
+                        "${ChartUtils().getDateRange(trafficData)}   ",
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                  TextSpan(
+                    text:
+                        "*${ChartUtils().getTotalCount(selectedChartType == 'messages' ? 'totalMessages' : 'activeUsers', trafficData)} Total   ",
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                  TextSpan(
+                    text: ChartUtils().getPercentageChange(
+                        selectedChartType == 'messages'
+                            ? 'totalMessages'
+                            : 'activeUsers',
+                        trafficData),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: ChartUtils()
+                              .getPercentageChange(
+                                  selectedChartType == 'messages'
+                                      ? 'totalMessages'
+                                      : 'activeUsers',
+                                  trafficData)
+                              .contains('-')
+                          ? Colors.red
+                          : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Text("View: ", style: AppTextStyles.greyAAAAAA_10_400),
+                const SizedBox(width: 10),
+                DropdownButton<String>(
+                  value: selectedChartType,
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'messages',
+                        child: Text(
+                          "Messages",
+                          style: AppTextStyles.black10_500,
+                        )),
+                    DropdownMenuItem(
+                        value: 'users',
+                        child: Text(
+                          "Active Users",
+                          style: AppTextStyles.black10_500,
+                        )),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedChartType = value;
+                      });
+                    }
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             SizedBox(
               height: 210,
-              child: HomeChart(),
+              child: AdminHomeChart(
+                trafficData: trafficData,
+                dataType: selectedChartType,
+              ),
             ),
           ],
         ),
@@ -141,24 +227,38 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildTrafficStatsCard() {
+    final utils = ChartUtils();
+
+    final totalVisitors = utils.getTotalCount('activeUsers', trafficData);
+    final visitorsChange =
+        utils.getPercentageChange('activeUsers', trafficData);
+
+    final totalMessages = utils.getTotalCount('totalMessages', trafficData);
+    final messagesChange =
+        utils.getPercentageChange('totalMessages', trafficData);
+
     return Container(
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(width: 1, color: AppColors.greyD9D9D9)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(width: 1, color: AppColors.greyD9D9D9),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
-          spacing: 10,
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildStatItem(
-                "Visitors", "86K", "+52% mo/mo", AppColors.green22C55E),
+              "Visitors",
+              totalVisitors.toString(),
+              visitorsChange,
+            ),
             MyVerticalDivider(height: 80),
             _buildStatItem(
-                "Unique Visitors", "80K", "+58% mo/mo", AppColors.greyAAAAAA),
-            MyVerticalDivider(height: 80),
-            _buildStatItem(
-                "Page View", "224K", "+14% mo/mo", AppColors.greyAAAAAA),
+              "Messages",
+              totalMessages.toString(),
+              messagesChange,
+            ),
           ],
         ),
       ),
@@ -166,7 +266,10 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildStatItem(
-      String title, String value, String change, Color color) {
+    String title,
+    String value,
+    String change,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -174,93 +277,20 @@ class _AdminHomeState extends State<AdminHome> {
         const SizedBox(height: 4),
         Text(value, style: AppTextStyles.black16_600),
         const SizedBox(height: 4),
-        Text(change, style: TextStyle(fontSize: 12, color: color)),
-      ],
-    );
-  }
-
-  Widget _buildCategorySection() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        // Blue border
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: "Category ",
-                  style: AppTextStyles.black16_600.copyWith(
-                    color: AppColors.black60opac,
-                  ),
-                ),
-                TextSpan(
-                  text: "Search wise",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w300,
-                    color: AppColors.black60opac,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 3.5,
-            children: [
-              _categoryItem("Shirt", "12K", ImageConstants.shirt),
-              _categoryItem("Pant", "8K", ImageConstants.pant),
-              _categoryItem("T-Shirt", "10K", ImageConstants.tshirt),
-              _categoryItem("Jeans", "16K", ImageConstants.jeans),
-              _categoryItem("Hoodies", "22K", ImageConstants.hoodiies,
-                  highlight: true),
-              _categoryItem("Jacket", "18K", ImageConstants.jacket),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _categoryItem(String title, String count, String icon,
-      {bool highlight = false}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 14)),
-          Image.asset(
-            icon,
-            height: 21,
-            width: 21,
-          ),
-          Text(
-            count,
+        Text(change,
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: highlight ? Colors.green : Colors.black,
-            ),
-          ),
-        ],
-      ),
+              fontSize: 12,
+              color: ChartUtils()
+                      .getPercentageChange(
+                          selectedChartType == 'messages'
+                              ? 'totalMessages'
+                              : 'activeUsers',
+                          trafficData)
+                      .contains('-')
+                  ? Colors.red
+                  : Colors.green,
+            )),
+      ],
     );
   }
 

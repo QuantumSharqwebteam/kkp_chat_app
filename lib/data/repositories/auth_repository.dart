@@ -1,5 +1,7 @@
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/data/models/notification_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class AuthRepository {
@@ -66,5 +68,59 @@ class AuthRepository {
   Future<Map<String, dynamic>> deleteAgentAccount(
       {required String agentEmail}) async {
     return _authApi.deleteAgent(agentEmail);
+  }
+
+  // to fetch list of users by agnetId for that particular agent
+  Future<List<dynamic>> fetchUsersByAgentId(String agentEmail) async {
+    return _authApi.getUsersByAgentId(agentEmail: agentEmail);
+  }
+
+  // to fetch list of users by role = "User", agnet , admin , "agnetHead"
+  Future<List<dynamic>> fetchUsersByRole(String role) async {
+    return _authApi.getUsersByRole(role: role);
+  }
+
+  Future<List<NotificationModel>> getParsedNotifications() async {
+    final response = await _authApi.getNotifications();
+    final List<dynamic> notificationsJson = response['notifications'] ?? [];
+    return notificationsJson
+        .map((json) => NotificationModel.fromJson(json))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> updateNotificationRead(
+      String notificationId) async {
+    return await _authApi.updateNotificationRead(
+        notificationId: notificationId);
+  }
+
+  Future<Map<String, dynamic>> updateFCMToken(String fcmToken) async {
+    return _authApi.updateFCMToken(fcmToken);
+  }
+
+  Future<Map<String, dynamic>> refreshToken(String oldToken) async {
+    return _authApi.refreshToken(oldToken);
+  }
+
+  Future<List<Agent>> getAgent() async {
+    return _authApi.getAgent();
+  }
+
+  Future<Map<String, dynamic>> addAgent(
+      {required Map<String, dynamic> body}) async {
+    return _authApi.addAgent(body: body);
+  }
+
+  Future<Map<String, dynamic>> assignAgent({required String email}) async {
+    return _authApi.assignAgent(email: email);
+  }
+
+  Future<bool> removeAssignedAgent({required String email}) async {
+    return _authApi.removeAssignedAgent(email: email);
+  }
+
+  Future<Map<String, dynamic>> deleteUserAccount(
+      String email, String password) async {
+    return _authApi.deleteUserAccount(email, password);
   }
 }

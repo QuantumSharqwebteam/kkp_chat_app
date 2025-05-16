@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:hive/hive.dart';
+import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class LocalDbHelper {
@@ -8,6 +11,7 @@ class LocalDbHelper {
   static const String _email = 'email';
   static const String _profile = 'profile';
   static const String _fCMToken = "FCMTOKEN";
+  static const String _lastRefreshTime = 'lastRefreshTime';
 
   // feed
   static const String _pinnedAgentsKey = 'pinnedAgents';
@@ -72,7 +76,11 @@ class LocalDbHelper {
   }
 
   static Profile? getProfile() {
-    return Profile.fromMap(_box.get(_profile));
+    final profileMap = _box.get(_profile);
+    if (profileMap != null && profileMap is Map<String, dynamic>) {
+      return Profile.fromMap(profileMap);
+    }
+    return null;
   }
 
   static Future<void> removeProfile() async {
@@ -82,17 +90,12 @@ class LocalDbHelper {
   // Methods to handle last seen times
   static Future<void> updateLastSeenTime(String email) async {
     await _lastSeenBoxInstance.put(email, DateTime.now().toIso8601String());
-    // if (kDebugMode) {
-    //   debugPrint("📂 Hive last seen data: ${_lastSeenBoxInstance.toMap()}");
-    // }
   }
 
   static DateTime? getLastSeenTime(String email) {
     String? lastSeen = _lastSeenBoxInstance.get(email);
     if (lastSeen != null) {
       DateTime parsedDate = DateTime.parse(lastSeen);
-      // debugPrint(
-      //     "📅 Retrieved last seen time from Hive for $email: $parsedDate");
       return parsedDate;
     }
     return null;
@@ -126,5 +129,50 @@ class LocalDbHelper {
 
   static Future<void> clearFCMToken() async {
     await _box.delete(_fCMToken);
+  }
+
+  static Future<void> saveLastRefreshTime(int time) async {
+    await _box.put(_lastRefreshTime, time);
+  }
+
+  static Future<int?> getLastRefreshTime() async {
+    return _box.get(_lastRefreshTime);
+  }
+
+  static Future<void> saveCallLogs(List<CallLogModel> callLogs) async {
+    final email = getProfile()?.email;
+    if (email != null) {
+      final box = await Hive.openBox<String>('callLogs_$email');
+      await box.clear();
+      for (var log in callLogs) {
+        await box.add(jsonEncode(log.toJson()));
+      }
+    }
+  }
+
+  static Future<List<CallLogModel>> getCallLogs() async {
+    final email = getProfile()?.email;
+    if (email != null) {
+      final box = await Hive.openBox<String>('callLogs_$email');
+      return box.values
+          .map((log) => CallLogModel.fromJson(jsonDecode(log)))
+          .toList();
+    }
+    return [];
+  }
+
+  static Future<void> updateCallLogs(List<CallLogModel> newCallLogs) async {
+    final email = getProfile()?.email;
+    if (email != null) {
+      final box = await Hive.openBox<String>('callLogs_$email');
+      final existingLogs = box.values
+          .map((log) => CallLogModel.fromJson(jsonDecode(log)))
+          .toList();
+      final updatedLogs = [...existingLogs, ...newCallLogs];
+      await box.clear();
+      for (var log in updatedLogs) {
+        await box.add(jsonEncode(log.toJson()));
+      }
+    }
   }
 }

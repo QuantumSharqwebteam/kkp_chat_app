@@ -27,7 +27,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   AuthRepository auth = AuthRepository();
   Profile? profileData;
   String? name;
-  String? profileImageUrl;
 
   @override
   void initState() {
@@ -38,18 +37,15 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   Future<void> _loadUserInfo() async {
     try {
-      profileData = await auth.getUserInfo();
-      if (mounted) {
+      await auth.getUserInfo().then((value) {
+        profileData = value;
         setState(() {
-          name = profileData?.name;
-          profileImageUrl = profileData!.profileUrl;
+          name = profileData!.name;
         });
-      }
+      });
     } catch (e) {
       if (kDebugMode) {
-        if (mounted) {
-          print(e.toString());
-        }
+        print(e.toString());
       }
     }
   }
@@ -62,8 +58,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         preferredSize: const Size(double.infinity, 100),
         child: SafeArea(
             child: CustomAppBar(
-          name: name,
-          url: profileImageUrl,
+          name: profileData?.name,
         )),
       ),
       body: SafeArea(
@@ -93,7 +88,6 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           agentName: "Agent",
                           customerName: name,
                           customerEmail: profileData!.email,
-                          customerImage: profileImageUrl,
                           navigatorKey: navigatorKey,
                         );
                       }));
@@ -268,7 +262,7 @@ Widget _enquirySupport({VoidCallback? onTap}) {
       title: Text('Product Enquirers', style: AppTextStyles.black16_600),
       subtitle: Text('How may I Help you?',
           overflow: TextOverflow.ellipsis, style: AppTextStyles.black12_400),
-      trailing: Text('2m', style: AppTextStyles.black12_700),
+      // trailing: Text('2m', style: AppTextStyles.black12_700),
     ),
   );
 }

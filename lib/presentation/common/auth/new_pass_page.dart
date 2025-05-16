@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/logic/auth/new_pass_provider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
+import 'package:provider/provider.dart';
 
 class NewPassPage extends StatefulWidget {
   const NewPassPage({super.key, required this.email});
@@ -15,67 +15,12 @@ class NewPassPage extends StatefulWidget {
 }
 
 class _NewPassPageState extends State<NewPassPage> {
-  AuthRepository auth = AuthRepository();
   final _newpass = TextEditingController();
   final _repass = TextEditingController();
-  String? newpassError;
-  String? repassError;
-  bool _isloading = false;
-  DateTime? _lastPressed;
-
-  Future<void> _changepassword(context) async {
-    _isloading = true;
-
-    if (_newpass.text.trim().isEmpty) {
-      setState(() {
-        newpassError = "Field can't be empty";
-        _isloading = false;
-      });
-      return;
-    }
-    if (_repass.text.trim().isEmpty) {
-      setState(() {
-        repassError = "Field can't be empty";
-        _isloading = false;
-      });
-      return;
-    }
-    if (_newpass.text.trim() != _repass.text.trim()) {
-      setState(() {
-        newpassError = repassError = "Passwords doesn't match";
-        _isloading = false;
-      });
-      return;
-    }
-
-    try {
-      final response = await auth.forgotPassword(
-          password: _repass.text, email: widget.email);
-
-      if (response['message'] ==
-          'OTP Verified and New Password has been Set Successfully!') {
-        _isloading = false;
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Password Changed Successfully")));
-        Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return LoginPage();
-        }));
-      } else {
-        _isloading = false;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
-      }
-    } catch (e) {
-      _isloading = false;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    bool isAndroid12orAbove =
-        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+    final newPassProvider = Provider.of<NewPassProvider>(context);
 
     Widget content = GestureDetector(
       onTap: () {
@@ -102,7 +47,7 @@ class _NewPassPageState extends State<NewPassPage> {
                     ),
                     SizedBox(height: 10),
                     Text(
-                      'Your new passwordmust be diffrent from the previously used password',
+                      'Your new password must be different from the previously used password',
                       style: TextStyle(fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -125,6 +70,9 @@ class _NewPassPageState extends State<NewPassPage> {
                           isPassword: true,
                           keyboardType: TextInputType.emailAddress,
                           hintText: 'Enter Password',
+                          errorText: newPassProvider.newPassError,
+                          onChanged: (value) =>
+                              newPassProvider.setNewPassword(value),
                         ),
                         SizedBox(height: 10),
                         Padding(
@@ -142,14 +90,18 @@ class _NewPassPageState extends State<NewPassPage> {
                           isPassword: true,
                           keyboardType: TextInputType.emailAddress,
                           hintText: 'Re-enter Password',
+                          errorText: newPassProvider.rePassError,
+                          onChanged: (value) =>
+                              newPassProvider.setRePassword(value),
                         ),
                         SizedBox(height: 40),
-                        _isloading
+                        newPassProvider.isLoading
                             ? const CircularProgressIndicator()
                             : CustomButton(
                                 text: 'Reset Password',
                                 onPressed: () {
-                                  _changepassword(context);
+                                  newPassProvider.changePassword(
+                                      context, widget.email);
                                 },
                               ),
                         SizedBox(height: 20),
@@ -164,43 +116,6 @@ class _NewPassPageState extends State<NewPassPage> {
       ),
     );
 
-    return isAndroid12orAbove
-        ? PopScope(
-            onPopInvoked: (_) {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              } else {
-                // Allow system navigation
-                Navigator.pop(context);
-              }
-            },
-            child: content,
-          )
-        : WillPopScope(
-            onWillPop: () async {
-              DateTime now = DateTime.now();
-              if (_lastPressed == null ||
-                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
-                _lastPressed = now;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Press back again to exit"),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                return false; // Do not exit yet
-              }
-              return true; // Proceed to exit
-            },
-            child: content,
-          );
+    return BackPressHandler(child: content);
   }
 }

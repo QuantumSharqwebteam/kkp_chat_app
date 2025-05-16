@@ -7,46 +7,42 @@ import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
+import 'package:kkpchatapp/logic/auth/login_provider.dart';
+import 'package:kkpchatapp/logic/auth/new_pass_provider.dart';
+import 'package:kkpchatapp/logic/auth/signup_provider.dart';
+import 'package:kkpchatapp/logic/auth/verification_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'package:flutter_callkeep/flutter_callkeep.dart';
-import 'package:uuid/uuid.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+// Global flag to indicate if the app is initialized
+bool isAppInitialized = false;
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint("📩 [Background] Notification: ${message.notification?.title}");
-  await Firebase.initializeApp();
-  if (message.data['call'] != null) {
-    // Extract call information from notification payload
-    String channelName = message.data['channelName'];
-    String remoteUserId = message.data['remoteUserId'];
-    String remoteUserName = message.data['remoteUserName'];
-
-    // Generate a unique UUID for the call
-    String uuid = const Uuid().v4();
-
-    // Display incoming call notification
-    CallKeep.instance.displayIncomingCall(
-      CallEvent(
-        uuid: uuid, // Unique call UUID
-        handle: remoteUserId, // Handle of the caller (can be user ID or name)
-        callerName: remoteUserName,
-        hasVideo: false, // Since this is an audio call
-        extra: {
-          'channelName': channelName,
-          'remoteUserId': remoteUserId,
-          'remoteUserName': remoteUserName,
-        },
-      ),
-    );
-  }
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Check if the app is initialized
+  // if (!isAppInitialized) {
+  //   debugPrint("App is not initialized. Skipping background message handling.");
+  //   return;
+  // } else {
+  //   debugPrint("📩 [Terminated] Notification: ${message.data}");
+  //   // Handle background message here if needed
+  //   if ("0" == await LocalDbHelper.getUserType()) {
+  //     handlePushNotificationClickForCustomer(navigatorKey, message.data);
+  //   }
+  //   if ("0" != await LocalDbHelper.getUserType()) {
+  //     handlePushNotificationClickForAgent(navigatorKey, message.data);
+  //   }
+  // }
 }
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,81 +64,25 @@ void main() async {
     dotenv.load(fileName: "keys.env"),
   ]);
 
+  // Set the global flag to true after initialization
+  // isAppInitialized = true;
+
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  // Configure CallKeep settings for handling incoming calls
-  CallKeep.instance.configure(CallKeepConfig(
-    appName: 'KKP Chat App',
-    ios: CallKeepIosConfig(
-      // iconName: 'CallKitLogo',
-      handleType: CallKitHandleType.generic,
-      isVideoSupported: false,
-      maximumCallGroups: 2,
-      maximumCallsPerCallGroup: 1,
-      // audioSessionMode: AvAudioSessionMode.spokenAudio,
-      audioSessionActive: true,
-      audioSessionPreferredSampleRate: 44100.0,
-      audioSessionPreferredIOBufferDuration: 0.005,
-      supportsDTMF: true,
-      supportsHolding: true,
-      supportsGrouping: true,
-      supportsUngrouping: true,
-      ringtoneFileName: 'system_ringtone_default',
-    ),
-    android: CallKeepAndroidConfig(
-      //logo: 'mipmap/ic_launcher',
-      // notificationIcon: 'mipmap/ic_launcher',
-      showMissedCallNotification: true,
-      showCallBackAction: true,
-      ringtoneFileName: 'system_ringtone_default',
-      accentColor: '#0955fa',
-      // backgroundUrl: 'https://example.com/background.png',
-      incomingCallNotificationChannelName: 'Incoming Calls',
-      missedCallNotificationChannelName: 'Missed Calls',
-    ),
-  ));
+  // Handle terminated state
+  RemoteMessage? initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
 
-  // Register handler for incoming call events
-  CallKeep.instance.handler = CallEventHandler(
-    onCallAccepted: (CallEvent event) async {
-      // Extract necessary data to initialize the call screen
-      String channelName = event.extra?['channelName'];
-      String remoteUserId = event.extra?['remoteUserId'];
-      String remoteUserName = event.extra?['remoteUserName'];
-
-      // Generate a unique UUID for the call
-      int uid = const Uuid().v4().hashCode;
-
-      // Navigate to the Agora audio call screen
-      navigatorKey.currentState?.push(
-        MaterialPageRoute(
-          builder: (context) => AgoraAudioCallScreen(
-            isCaller: false, // Receiver side
-            channelName: channelName,
-            remoteUserId: remoteUserId,
-            remoteUserName: remoteUserName,
-            uid: uid,
-          ),
-        ),
-      );
-    },
-    onCallEnded: (CallEvent event) {
-      // Handle end of call logic here
-      debugPrint("Call ended: ${event.uuid}");
-    },
-    onCallDeclined: (CallEvent event) {
-      // Handle call declined logic here
-      debugPrint("Call declined: ${event.uuid}");
-    },
+  runApp(
+    MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
   );
-
-  runApp(MyApp(navigatorKey: navigatorKey));
 }
 
 class MyApp extends StatefulWidget {
   final GlobalKey<NavigatorState> navigatorKey;
+  final RemoteMessage? initialMessage;
 
-  const MyApp({super.key, required this.navigatorKey});
+  const MyApp({super.key, required this.navigatorKey, this.initialMessage});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -153,37 +93,53 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     NotificationService.init(context, widget.navigatorKey);
+
+    // Handle the initial message if the app was opened via a notification
+    if (widget.initialMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        NotificationService.handleNotificationClick(widget.initialMessage!);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: widget.navigatorKey,
-      title: 'KKP Chat App',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      initialRoute: "/splash",
-      routes: {
-        "/splash": (context) => const Splash(),
-        "/login": (context) => LoginPage(),
-      },
-      onGenerateRoute: (settings) {
-        if (CustomerRoutes.allRoutes.contains(settings.name)) {
-          return generateCustomerRoute(settings);
-        } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
-          return generateMarketingRoute(settings);
-        } else {
-          return null;
-        }
-      },
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => LoginProvider()),
+        ChangeNotifierProvider(create: (_) => SignupProvider()),
+        ChangeNotifierProvider(create: (_) => VerificationProvider()),
+        ChangeNotifierProvider(create: (_) => ForgotPassProvider()),
+        ChangeNotifierProvider(create: (_) => NewPassProvider()),
       ],
-      supportedLocales: const [
-        Locale('en', 'US'),
-      ],
+      child: MaterialApp(
+        navigatorKey: widget.navigatorKey,
+        title: 'KKP Chat App',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        initialRoute: "/splash",
+        routes: {
+          "/splash": (context) => const Splash(),
+          "/login": (context) => LoginPage(),
+        },
+        onGenerateRoute: (settings) {
+          if (CustomerRoutes.allRoutes.contains(settings.name)) {
+            return generateCustomerRoute(settings);
+          } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
+            return generateMarketingRoute(settings);
+          } else {
+            return null;
+          }
+        },
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en', 'US'),
+        ],
+      ),
     );
   }
 }

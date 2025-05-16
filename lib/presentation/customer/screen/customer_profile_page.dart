@@ -1,5 +1,5 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -82,23 +82,11 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(70),
-                  child: profileImageUrl != ""
-                      ? CachedNetworkImage(
-                          imageUrl: profileImageUrl!,
-                          width: 140,
-                          height: 140,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              CircularProgressIndicator(),
-                          errorWidget: (context, url, error) =>
-                              Icon(Icons.error),
-                        )
-                      : Image.asset(
-                          'assets/images/profile_avataar.png',
-                          width: 140,
-                          height: 140,
-                          fit: BoxFit.cover,
-                        ),
+                  child: Initicon(
+                    text: profile?.name ?? "",
+                    elevation: 10,
+                    size: 120,
+                  ),
                 ),
                 Text(
                   _name.text.isNotEmpty ? _name.text : 'No Name',

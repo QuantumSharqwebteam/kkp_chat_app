@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'dart:async';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
@@ -120,9 +122,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                           stream: _socketService.statusStream,
                           builder: (context, snapshot) {
                             return _filteredCustomers.isEmpty
-                                ? Center(
-                                    child: Text("No Customers Assigned"),
-                                  )
+                                ? Center(child: NoCustomerAssignedWidget())
                                 : _buildCustomerInquiriesList();
                           },
                         ),
@@ -139,11 +139,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   Widget _buildProfileSection() {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 16),
-      leading: CircleAvatar(
-        radius: 26,
-        backgroundImage: AssetImage(ImageConstants.userImage),
-      ),
-      title: Text(widget.agentName ?? "user", style: AppTextStyles.black16_500),
+      leading: Initicon(text: widget.agentName!),
+      title: Text(widget.agentName ?? "", style: AppTextStyles.black16_500),
       subtitle:
           Text("Let's find latest messages", style: AppTextStyles.black12_400),
       trailing: Row(
@@ -157,7 +154,22 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             icon: const Icon(
               Icons.notifications_active_outlined,
               color: Colors.black,
-              size: 28,
+              size: 24,
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              // Navigate to the CallHistoryPage or perform an action related to call logs
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CallHistoryScreen()),
+              );
+            },
+            icon: Icon(
+              Icons
+                  .call_outlined, // You can choose a different icon if preferred
+              color: Colors.black,
+              size: 24,
             ),
           ),
           IconButton(
@@ -182,42 +194,21 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  // // Direct Messages Section
-  // Widget _buildDirectMessages() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       const Text(
-  //         "Direct Messages",
-  //         style: AppTextStyles.black16_500,
-  //       ),
-  //       const SizedBox(height: 10),
-  //       SizedBox(
-  //         height: 100,
-  //         child: ListView.builder(
-  //           scrollDirection: Axis.horizontal,
-  //           itemCount: users.length,
-  //           itemBuilder: (context, index) {
-  //             final user = users[index];
-  //             return Padding(
-  //               padding: const EdgeInsets.symmetric(horizontal: 10),
-  //               child: DirectMessagesListItem(
-  //                 name: user['name'],
-  //                 image: user['image'],
-  //                 status: user['status'],
-  //                 unread: user['unread'],
-  //                 typing: user['typing'],
-  //               ),
-  //             );
-  //           },
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
-
   // Recent Messages List
   Widget _buildCustomerInquiriesList() {
+    // Sort the list to show online users first
+    _filteredCustomers.sort((a, b) {
+      final isAOnline = _socketService.isUserOnline(a["email"]);
+      final isBOnline = _socketService.isUserOnline(b["email"]);
+      if (isAOnline && !isBOnline) {
+        return -1;
+      } else if (!isAOnline && isBOnline) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
     return RefreshIndicator(
       onRefresh: () {
         return _fetchAssignedCustomers();
@@ -236,7 +227,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             child: FeedListCard(
               name: assignedCustomer["name"],
               message: "last message",
-              image: "assets/images/user3.png",
               isActive: isOnline,
               time: isOnline ? "Online" : lastSeen,
               enableLongPress: false,

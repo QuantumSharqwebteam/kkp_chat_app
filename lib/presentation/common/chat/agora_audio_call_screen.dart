@@ -19,6 +19,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
   final String? remoteUserId;
   final String remoteUserName;
   final int uid;
+  final String? messageId;
 
   const AgoraAudioCallScreen({
     super.key,
@@ -28,6 +29,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
     this.remoteUserId,
     required this.remoteUserName,
     required this.uid,
+    this.messageId,
   });
 
   @override
@@ -43,7 +45,6 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   Duration _callDuration = Duration.zero;
   Timer? _durationTimer;
   Timer? _callTimeoutTimer;
-  // bool _isRenewingToken = false;
   bool _isRinging = false;
   final ChatRepository chatRepository = ChatRepository();
   final AudioPlayer _ringingPlayer = AudioPlayer();
@@ -94,11 +95,12 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       }
 
       /// Timeout if remote user doesn’t join
-      _callTimeoutTimer = Timer(const Duration(seconds: 2000), () {
+      _callTimeoutTimer = Timer(const Duration(seconds: 40), () {
         if (_remoteUid == null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("No answer. Call ended.")),
           );
+          _updateCallData("not answered");
           _endCall();
         }
       });
@@ -110,6 +112,27 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         );
         Navigator.pop(context);
       }
+    }
+  }
+
+  Future<void> _updateCallData(String callStatus,
+      {String? callDuration}) async {
+    if (widget.messageId == null) {
+      debugPrint("❌ Message ID is null. Cannot update call data.");
+      return;
+    }
+
+    try {
+      await chatRepository.updateCallData(
+        widget.messageId!,
+        callStatus,
+        callDuration: callDuration,
+      );
+      debugPrint(
+          "✅ ✅ Call data updated successfully: $callStatus, Duration: $callDuration");
+    } catch (e) {
+      debugPrint("❌ Error updating call data: $e");
+      // Handle the error as needed, e.g., show a message to the user
     }
   }
 
@@ -134,23 +157,26 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
           _startCallTimer();
         }
         _callTimeoutTimer?.cancel();
+
+        // Update call status to answered
+        // _updateCallData('answered');
       },
       onUserOffline: (RtcConnection connection, int remoteUid,
           UserOfflineReasonType reason) {
         debugPrint("❌ Remote user $remoteUid left due to $reason");
         if (mounted) {
           setState(() => _remoteUid = null);
+          final totalCallDuration = _formatDuration(_callDuration);
+          _updateCallData("answered", callDuration: totalCallDuration);
           _endCall();
         }
       },
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
+        _updateCallData("not answered");
       },
       onError: (ErrorCodeType code, String message) {
         debugPrint("⚠️Error joinning channel Agora error: $code - $message");
-        // if (code == ErrorCodeType.errTokenExpired) {
-        // //  _handleTokenRenewal();
-        // }
       },
     ));
   }
@@ -184,6 +210,14 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     _callTimeoutTimer?.cancel();
     _engine.leaveChannel();
     _stopRinging(); //Stop ringing if still active
+    // if (_remoteUid == null) {
+    //   // Update call status to missed
+    //   _updateCallData('missed');
+    // } else {
+    //   // Update call status to answered and send call duration
+    //   final callDuration = _formatDuration(_callDuration);
+    //   _updateCallData('answered', callDuration: callDuration);
+    // }
     if (mounted) Navigator.pop(context);
   }
 
@@ -286,22 +320,6 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
                     onTap: _endCall,
                     iconData: Icons.call_end,
                   ),
-                  // IconButton(
-                  //   icon: Icon(_muted ? Icons.mic_off : Icons.mic,
-                  //       color: Colors.white),
-                  //   onPressed: _toggleMute,
-                  // ),
-                  // IconButton(
-                  //   icon: Icon(
-                  //     _isSpeakerOn ? Icons.volume_up : Icons.hearing,
-                  //     color: Colors.white,
-                  //   ),
-                  //   onPressed: _toggleSpeaker,
-                  // ),
-                  // IconButton(
-                  //   icon: const Icon(Icons.call_end, color: Colors.red),
-                  //   onPressed: _endCall,
-                  // ),
                 ],
               ),
             ),

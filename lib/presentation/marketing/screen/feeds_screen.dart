@@ -1,8 +1,6 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -193,7 +191,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
           name: agent.name,
           message: "Hi any update....",
           time: isOnline ? "Online" : lastSeen,
-          image: "assets/images/user1.png",
           isActive: isOnline,
           isPinned: pinnedAgentsSet.contains(agent.email),
           onPinTap: () => togglePinAgent(agent.email),
@@ -203,7 +200,6 @@ class _FeedsScreenState extends State<FeedsScreen> {
               MaterialPageRoute(
                 builder: (context) => AgentCustomersListScreen(
                   agentName: agent.name,
-                  agentImage: ImageConstants.userImage,
                   agentEmail: agent.email,
                 ),
               ),

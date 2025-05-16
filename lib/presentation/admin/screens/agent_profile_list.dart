@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
@@ -248,7 +248,6 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
               MaterialPageRoute(
                 builder: (context) => AgentCustomersListScreen(
                   agentName: agent.name,
-                  agentImage: ImageConstants.userImage,
                   agentEmail: agent.email, // Pass the agent's email
                 ),
               ),
@@ -259,8 +258,9 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
             color: Colors.white,
             elevation: 5,
             child: ListTile(
-              leading: const CircleAvatar(
-                backgroundImage: AssetImage("assets/images/user3.png"),
+              leading: Initicon(
+                text: agent.name,
+                size: 35,
               ),
               title: Text(agent.name, style: AppTextStyles.black16_600),
               subtitle: agent.role == 'AgentHead'

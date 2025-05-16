@@ -1,14 +1,12 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
-
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-
-import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 
@@ -48,6 +46,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   int visibleItemCount = 10;
   final int itemsPerPage = 10;
 
+  // Map to track the expanded state of each inquiry card
+  Map<String, bool> expandedStates = {};
+
   @override
   void initState() {
     super.initState();
@@ -65,10 +66,18 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   Future<void> fetchInquiries() async {
+    final role = await LocalDbHelper.getUserType();
+    final currentUserEmail = LocalDbHelper.getProfile()?.email;
+    List<FormDataModel> data = [];
     try {
-      final data = await _chatRepository.fetchFormData();
+      if (role == "2" || role == "3" || role == "0") {
+        data =
+            await _chatRepository.fetchFormDataForEnquiery(currentUserEmail!);
+      } else if (role == "1") {
+        data = await _chatRepository.fetchFormData();
+      }
+
       setState(() {
-        isLoading = false;
         allInquiries = data;
         _applyFilters();
       });
@@ -113,7 +122,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           item.weave.toLowerCase().contains(search) ||
           item.composition.toLowerCase().contains(search) ||
           item.rate.toLowerCase().contains(search) ||
-          item.quantity.toLowerCase().contains(search);
+          item.quantity.toLowerCase().contains(search) ||
+          item.status.toLowerCase().contains(search);
 
       bool matchDate = true;
       final date = item.parsedDate;
@@ -148,6 +158,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     });
   }
 
+  void toggleExpandedState(String inquiryId) {
+    setState(() {
+      expandedStates[inquiryId] = !(expandedStates[inquiryId] ?? false);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,7 +182,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             : Column(
                 children: [
                   _buildSearchRow(),
-                  if (showFilters) _buildFilters(),
+                  const SizedBox(height: 20),
+                  //  if (showFilters) _buildFilters(),
                   Expanded(child: _buildInquiryList()),
                 ],
               ),
@@ -207,46 +224,46 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     );
   }
 
-  Widget _buildFilters() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          CustomDropDown(
-            value: selectedAgent,
-            items: agents,
-            onChanged: (value) {
-              setState(() => selectedAgent = value!);
-              _applyFilters();
-            },
-          ),
-          const SizedBox(width: 10),
-          CustomDropDown(
-            value: selectedDateRange,
-            items: dateRanges,
-            onChanged: (value) {
-              setState(() => selectedDateRange = value!);
-              _applyFilters();
-            },
-          ),
-          const SizedBox(width: 10),
-          CustomDropDown(
-            value: selectedQuality,
-            items: qualities,
-            onChanged: (value) {
-              setState(() => selectedQuality = value!);
-              _applyFilters();
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildFilters() {
+  //   return SingleChildScrollView(
+  //     scrollDirection: Axis.horizontal,
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.start,
+  //       children: [
+  //         // CustomDropDown(
+  //         //   value: selectedAgent,
+  //         //   items: agents,
+  //         //   onChanged: (value) {
+  //         //     setState(() => selectedAgent = value!);
+  //         //     _applyFilters();
+  //         //   },
+  //         // ),
+  //         // const SizedBox(width: 10),
+  //         CustomDropDown(
+  //           value: selectedDateRange,
+  //           items: dateRanges,
+  //           onChanged: (value) {
+  //             setState(() => selectedDateRange = value!);
+  //             _applyFilters();
+  //           },
+  //         ),
+  //         const SizedBox(width: 10),
+  //         CustomDropDown(
+  //           value: selectedQuality,
+  //           items: qualities,
+  //           onChanged: (value) {
+  //             setState(() => selectedQuality = value!);
+  //             _applyFilters();
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildInquiryList() {
     if (filteredInquiries.isEmpty) {
-      return const Center(child: Text("No inquiries found."));
+      return const Center(child: Text("No related inquiries found."));
     }
 
     final visibleItems = filteredInquiries.take(visibleItemCount).toList();
@@ -277,9 +294,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       color: Colors.white,
       surfaceTintColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 2),
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -290,10 +307,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        ImageConstants.userImage,
-                        height: 40,
-                        width: 40,
+                      child: Initicon(
+                        text: inquiry.agentName,
+                        size: 35,
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -308,12 +324,31 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                   children: [
                     Text(inquiry.dateOnly, style: AppTextStyles.black12_400),
                     Text(inquiry.timeOnly, style: AppTextStyles.black12_400),
+                    Text(
+                      inquiry.status,
+                      style: AppTextStyles.black12_400.copyWith(
+                        color: inquiry.status == "Confirmed"
+                            ? AppColors.activeGreen
+                            : inquiry.status == "Declined"
+                                ? AppColors.inActiveRed
+                                : AppColors.helperOrange,
+                      ),
+                    ),
                   ],
+                ),
+                InkWell(
+                  onTap: () => toggleExpandedState(inquiry.id),
+                  child: Icon(
+                    expandedStates[inquiry.id] ?? false
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 20,
+                  ),
                 ),
               ],
             ),
-            const Divider(),
-            _buildInquiryDetails(inquiry),
+            if (expandedStates[inquiry.id] ?? false)
+              _buildInquiryDetails(inquiry),
           ],
         ),
       ),
@@ -324,6 +359,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Divider(),
         _buildDetailRow('Quality', inquiry.quality),
         _buildDetailRow('Weave', inquiry.weave),
         _buildDetailRow('Quantity', inquiry.quantity),
@@ -339,8 +375,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: AppTextStyles.black14_400,
+          ),
+          Text(value, style: AppTextStyles.black14_600),
         ],
       ),
     );
