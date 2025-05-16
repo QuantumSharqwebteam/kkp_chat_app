@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:isolate';
+import 'dart:ui';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +10,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
+import 'package:kkpchatapp/core/services/background_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
@@ -18,32 +23,20 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+// Import the background service
 
 // Global flag to indicate if the app is initialized
 bool isAppInitialized = false;
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Check if the app is initialized
-  // if (!isAppInitialized) {
-  //   debugPrint("App is not initialized. Skipping background message handling.");
-  //   return;
-  // } else {
-  //   debugPrint("📩 [Terminated] Notification: ${message.data}");
-  //   // Handle background message here if needed
-  //   if ("0" == await LocalDbHelper.getUserType()) {
-  //     handlePushNotificationClickForCustomer(navigatorKey, message.data);
-  //   }
-  //   if ("0" != await LocalDbHelper.getUserType()) {
-  //     handlePushNotificationClickForAgent(navigatorKey, message.data);
-  //   }
-  // }
 }
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerMainIsolatePort();
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -62,8 +55,8 @@ void main() async {
     dotenv.load(fileName: "keys.env"),
   ]);
 
-  // Set the global flag to true after initialization
-  // isAppInitialized = true;
+  // Initialize the background service
+  initializeService();
 
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
@@ -74,6 +67,14 @@ void main() async {
   runApp(
     MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
   );
+}
+
+void registerMainIsolatePort() {
+  final ReceivePort receivePort = ReceivePort();
+  IsolateNameServer.registerPortWithName(receivePort.sendPort, 'main_isolate');
+  receivePort.listen((message) {
+    // Handle any messages from background isolate if needed
+  });
 }
 
 class MyApp extends StatefulWidget {
@@ -97,6 +98,11 @@ class _MyAppState extends State<MyApp> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         NotificationService.handleNotificationClick(widget.initialMessage!);
       });
+    }
+
+    if (Platform.isAndroid) {
+      const platform = MethodChannel("flutter.io/foreground_service");
+      platform.invokeMethod("disableBatteryOptimizations");
     }
   }
 

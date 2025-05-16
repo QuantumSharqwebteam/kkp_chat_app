@@ -18,7 +18,7 @@ class LocalDbHelper {
   static const String _lastSeenMapKey = 'lastSeenMap';
 
   static Box<dynamic> get _box => Hive.box('CREDENTIALS');
-  // for storing user last seen time or when he/ she came online
+  // for storing user last seen time or when they came online
   static Box<dynamic> get _lastSeenBoxInstance => Hive.box("lastSeenTimeBox");
 
   static Box<dynamic> get _feedBox => Hive.box('feedBox');
@@ -81,6 +81,13 @@ class LocalDbHelper {
       return Profile.fromMap(profileMap);
     }
     return null;
+  }
+
+  static Future<Profile?> getProfileFuture() async {
+    final profileMap = _box.get(_profile);
+    // if (profileMap != null && profileMap is Map<String, dynamic>) {
+    return Profile.fromMap(profileMap);
+    // }
   }
 
   static Future<void> removeProfile() async {
