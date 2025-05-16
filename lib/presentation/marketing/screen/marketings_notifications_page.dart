@@ -175,6 +175,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final displayTime = getFormattedTime(date);
 
     return ListTile(
+      onTap: () {
+        markAsRead(n.id ?? '');
+      },
       leading: Initicon(
         text: n.senderName ?? '',
         size: 40,
@@ -197,15 +200,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         style: AppTextStyles.grey12_600,
       ),
       trailing: !(n.viewed ?? false)
-          ? TextButton(
-              onPressed: () => markAsRead(n.id ?? ''),
-              child: const Text(
-                "Mark as read",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.blue,
-                  decoration: TextDecoration.underline,
-                ),
+          ? const Text(
+              "Mark as read",
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.blue,
+                decoration: TextDecoration.underline,
               ),
             )
           : null,
