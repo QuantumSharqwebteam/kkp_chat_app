@@ -247,6 +247,10 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   time: isOnline ? "Online" : lastSeen,
                   enableLongPress: false,
                   onTap: () async {
+                    final boxNameWithCount =
+                        '${widget.agentEmail}${assignedCustomer["email"]}count';
+                    final box = await Hive.openBox<int>(boxNameWithCount);
+                    await box.put('count', 0);
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(

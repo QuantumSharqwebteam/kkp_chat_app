@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/config/theme/app_colors.dart';
+//import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
+// import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+// import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
 class FormMessageBubble extends StatefulWidget {
   final Map<String, dynamic> formData;
@@ -40,54 +40,54 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   final chatRepository = ChatRepository();
   final rateController = TextEditingController();
 
-  Future<void> _updateFormRate(BuildContext context, String newRate) async {
-    if (widget.onFormUpdateStart != null) {
-      widget
-          .onFormUpdateStart!(); // Notify the parent to start the loading indicator
-    }
+  // Future<void> _updateFormRate(BuildContext context, String newRate) async {
+  //   if (widget.onFormUpdateStart != null) {
+  //     widget
+  //         .onFormUpdateStart!(); // Notify the parent to start the loading indicator
+  //   }
 
-    final formData = widget.formData;
-    final id = widget.formData['_id']?.toString();
-    if (id == null) {
-      debugPrint(
-          "No form id is found to update: $id in the ${formData.toString()}");
-      return;
-    }
+  //   final formData = widget.formData;
+  //   final id = widget.formData['_id']?.toString();
+  //   if (id == null) {
+  //     debugPrint(
+  //         "No form id is found to update: $id in the ${formData.toString()}");
+  //     return;
+  //   }
 
-    try {
-      await chatRepository.updateInquiryFormRate(id, newRate);
-      if (context.mounted) {
-        Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
-        await Future.delayed(Duration(seconds: 2), () {
-          if (context.mounted) {
-            Navigator.pop(context);
-          }
-        });
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
-      }
-      // Call the callback function with the updated form data
-      if (widget.onRateUpdated != null) {
-        final updatedFormData = Map<String, dynamic>.from(widget.formData);
-        updatedFormData['rate'] = newRate;
-        widget.onRateUpdated!(updatedFormData);
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error updating rate of the form: $e');
-      }
-      if (context.mounted) {
-        Utils()
-            .showSuccessDialog(context, "Cannot Update, send new form!", false);
-      }
-    } finally {
-      if (widget.onFormUpdateEnd != null) {
-        widget
-            .onFormUpdateEnd!(); // Notify the parent to end the loading indicator
-      }
-    }
-  }
+  //   try {
+  //     await chatRepository.updateInquiryFormRate(id, newRate);
+  //     if (context.mounted) {
+  //       Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
+  //       await Future.delayed(Duration(seconds: 2), () {
+  //         if (context.mounted) {
+  //           Navigator.pop(context);
+  //         }
+  //       });
+  //       if (context.mounted) {
+  //         Navigator.pop(context);
+  //       }
+  //     }
+  //     // Call the callback function with the updated form data
+  //     if (widget.onRateUpdated != null) {
+  //       final updatedFormData = Map<String, dynamic>.from(widget.formData);
+  //       updatedFormData['rate'] = newRate;
+  //       widget.onRateUpdated!(updatedFormData);
+  //     }
+  //   } catch (e) {
+  //     if (kDebugMode) {
+  //       debugPrint('Error updating rate of the form: $e');
+  //     }
+  //     if (context.mounted) {
+  //       Utils()
+  //           .showSuccessDialog(context, "Cannot Update, send new form!", false);
+  //     }
+  //   } finally {
+  //     if (widget.onFormUpdateEnd != null) {
+  //       widget
+  //           .onFormUpdateEnd!(); // Notify the parent to end the loading indicator
+  //     }
+  //   }
+  // }
 
   Future<void> _updateFormStatus(BuildContext context, String status) async {
     if (widget.onFormUpdateStart != null) {
@@ -113,8 +113,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
       }
       // Call the callback function with the status and S.No
       if (widget.onStatusUpdated != null) {
-        final sNo = widget.formData["S.No"] ?? "";
-        widget.onStatusUpdated!(status, sNo);
+        final formId = widget.formData["_id"] ?? "";
+        widget.onStatusUpdated!(status, formId);
       }
     } catch (e) {
       if (kDebugMode) {
@@ -187,6 +187,9 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                   ),
                 ),
               //  _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
+              if (widget.formData.containsKey("rate"))
+                _buildTextRow("Form Id:", widget.formData["_id"] ?? ""),
+
               _buildTextRow("Quality", widget.formData["quality"] ?? ""),
               _buildTextRow("Weave", widget.formData["weave"] ?? ""),
               _buildTextRow(

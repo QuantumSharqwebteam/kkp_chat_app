@@ -467,10 +467,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
   }
 
-  void _handleStatusUpdated(String status, String sNo) {
+  void _handleStatusUpdated(String status, String id) {
     final messageText = status == 'Confirmed'
-        ? "Your order is confirmed with S.No: $sNo"
-        : "Your order is declined with S.No: $sNo";
+        ? "Your order is confirmed with form Id: $id"
+        : "Your order is declined with form Id: $id";
     _sendMessage(
       messageText: messageText,
       type: 'text',

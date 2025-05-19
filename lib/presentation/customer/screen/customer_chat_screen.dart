@@ -31,6 +31,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
@@ -545,10 +546,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         TextEditingController(text: formData['rate']?.toString() ?? '');
 
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Update Rate for Form ID: ${formData['_id']}'),
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          title: Text(
+            'Update Rate for Form ID: ${formData['_id']}',
+            style: AppTextStyles.black12_700,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -556,22 +563,23 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               Text('Quantity: ${formData['quantity']}'),
               Text('Weave: ${formData['weave']}'),
               Text('Composition: ${formData['composition']}'),
-              TextField(
+              CustomTextField(
                 controller: rateController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Rate'),
+                hintText: "Enter final rate",
               ),
             ],
           ),
           actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
+            CustomButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              text: "cancel",
+              backgroundColor: Colors.white,
             ),
-            TextButton(
-              child: Text('Submit'),
+            CustomButton(
+              width: Utils().width(context) * 0.5,
               onPressed: () {
                 final newRate = rateController.text;
                 if (newRate.isNotEmpty) {
@@ -579,6 +587,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   Navigator.of(context).pop();
                 }
               },
+              text: "Submit",
+              backgroundColor: AppColors.blue00ABE9,
             ),
           ],
         );
@@ -601,20 +611,26 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     try {
       await _chatRepository.updateInquiryFormRate(id, newRate);
       debugPrint("Rate updated suceesfully");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Rate is updated: $newRate")));
+      }
 
-      Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
-      await Future.delayed(Duration(seconds: 2), () {
-        if (context.mounted) {
-          Navigator.pop(context);
-        }
-      });
+      // Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
+      // await Future.delayed(Duration(seconds: 2), () {
+      //   if (context.mounted) {
+      //     Navigator.pop(context);
+      //   }
+      // });
 
-      Navigator.pop(context);
+      // Navigator.pop(context);
 
       // Call the callback function with the updated form data
       final updatedFormData = Map<String, dynamic>.from(formData);
       updatedFormData['rate'] = newRate;
       //_handleRateUpdated(updatedFormData);
+      _sendMessage(
+          messageText: "Rate updated for form with Id : ${formData["_id"]}");
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating rate of the form: $e');
