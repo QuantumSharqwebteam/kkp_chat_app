@@ -38,7 +38,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   final chatRepository = ChatRepository();
   final rateController = TextEditingController();
 
-  Future<void> _updateFormRate(BuildContext context) async {
+  Future<void> _updateFormRate(BuildContext context, String newRate) async {
     if (widget.onFormUpdateStart != null) {
       widget
           .onFormUpdateStart!(); // Notify the parent to start the loading indicator
@@ -46,15 +46,16 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
 
     final formData = widget.formData;
     final id = widget.formData['_id']?.toString();
-    final rate = rateController.text;
     if (id == null) {
       debugPrint(
-          "No form id is found to update  : $id in the ${formData.toString()} ");
+          "No form id is found to update: $id in the ${formData.toString()}");
+      return;
     }
+
     try {
-      await chatRepository.updateInquiryFormRate(id!, rate);
+      await chatRepository.updateInquiryFormRate(id, newRate);
       if (context.mounted) {
-        Utils().showSuccessDialog(context, "Rate is updated :$rate", true);
+        Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
         await Future.delayed(Duration(seconds: 2), () {
           if (context.mounted) {
             Navigator.pop(context);
@@ -67,16 +68,16 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
       // Call the callback function with the updated form data
       if (widget.onRateUpdated != null) {
         final updatedFormData = Map<String, dynamic>.from(widget.formData);
-        updatedFormData['rate'] = rate;
+        updatedFormData['rate'] = newRate;
         widget.onRateUpdated!(updatedFormData);
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error updating rate of the form : $e');
+        debugPrint('Error updating rate of the form: $e');
       }
       if (context.mounted) {
-        Utils().showSuccessDialog(
-            context, "Cannot Update , send new form!", false);
+        Utils()
+            .showSuccessDialog(context, "Cannot Update, send new form!", false);
       }
     } finally {
       if (widget.onFormUpdateEnd != null) {
@@ -152,33 +153,38 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: PopupMenuButton<String>(
-                  onSelected: (value) {
-                    _handleMenuSelection(context, value);
-                  },
-                  itemBuilder: (BuildContext context) {
-                    List<String> options = ['update_rate'];
-                    if (widget.userRole == "2" || widget.userRole == "3") {
-                      options.addAll(['confirm', 'decline']);
-                    }
-                    return options.map((String choice) {
-                      return PopupMenuItem<String>(
-                        value: choice,
-                        child: Text(
-                          choice == 'update_rate'
-                              ? 'Update Rate'
-                              : choice == 'confirm'
-                                  ? 'Confirm'
-                                  : 'Decline',
-                        ),
-                      );
-                    }).toList();
-                  },
+              if (widget.userRole == "2" || widget.userRole == "3")
+                Align(
+                  alignment: Alignment.topRight,
+                  child: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      _handleMenuSelection(context, value);
+                    },
+                    itemBuilder: (BuildContext context) {
+                      List<String> options = [
+                        'Ask for rate update',
+                        'confirm',
+                        'decline'
+                      ];
+                      // if (widget.userRole == "2" || widget.userRole == "3") {
+                      //   options.addAll(['confirm', 'decline']);
+                      // }
+                      return options.map((String choice) {
+                        return PopupMenuItem<String>(
+                          value: choice,
+                          child: Text(
+                            choice == 'Ask for rate update'
+                                ? 'Ask for rate update'
+                                : choice == 'confirm'
+                                    ? 'Confirm'
+                                    : 'Decline',
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
                 ),
-              ),
-              _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
+              //  _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
               _buildTextRow("Quality", widget.formData["quality"] ?? ""),
               _buildTextRow("Weave", widget.formData["weave"] ?? ""),
               _buildTextRow(
@@ -204,8 +210,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   }
 
   void _handleMenuSelection(BuildContext context, String value) {
-    if (value == 'update_rate') {
-      _showRateDialog(context);
+    if (value == 'Ask for rate update') {
+      _showUpdateRateDialog(context);
     } else if (value == 'confirm') {
       _updateFormStatus(context, 'Confirmed');
     } else if (value == 'decline') {
@@ -213,44 +219,46 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     }
   }
 
-  void _showRateDialog(BuildContext context) {
+  void _showUpdateRateDialog(BuildContext context) {
+    final formData = widget.formData;
+    final rateController =
+        TextEditingController(text: formData['rate']?.toString() ?? '');
+
     showDialog(
-      barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          elevation: 10,
-          title: Text(
-            'Update Rate',
-            style: AppTextStyles.black14_600,
-          ),
+          title: Text('Update Rate for Form ID: ${formData['_id']}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CustomTextField(
+              Text('Quality: ${formData['quality']}'),
+              Text('Quantity: ${formData['quantity']}'),
+              Text('Weave: ${formData['weave']}'),
+              Text('Composition: ${formData['composition']}'),
+              TextField(
                 controller: rateController,
                 keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Rate'),
               ),
             ],
           ),
           actions: <Widget>[
-            CustomButton(
-              text: 'Cancel',
-              backgroundColor: Colors.white,
-              width: 90,
-              fontSize: 11,
-              textColor: AppColors.blue0056FB,
+            TextButton(
+              child: Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-            CustomButton(
-              onPressed: () => _updateFormRate(context),
-              text: 'Update',
-              fontSize: 12,
-              width: 100,
+            TextButton(
+              child: Text('Submit'),
+              onPressed: () {
+                final newRate = rateController.text;
+                if (newRate.isNotEmpty) {
+                  _updateFormRate(context, newRate);
+                  Navigator.of(context).pop();
+                }
+              },
             ),
           ],
         );

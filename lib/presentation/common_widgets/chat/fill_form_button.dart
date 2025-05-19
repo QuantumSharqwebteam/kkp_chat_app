@@ -5,7 +5,8 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 
 class FillFormButton extends StatelessWidget {
   final void Function()? onSubmit;
-  const FillFormButton({super.key, required this.onSubmit});
+  final String? buttonText;
+  const FillFormButton({super.key, required this.onSubmit, this.buttonText});
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +42,7 @@ class FillFormButton extends StatelessWidget {
               textColor: Colors.white,
               padding: EdgeInsets.all(6),
               fontSize: 14,
-              text: "Fill product Details",
+              text: buttonText ?? "",
             ),
           ),
         ],

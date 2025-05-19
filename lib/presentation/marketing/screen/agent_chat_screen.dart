@@ -445,6 +445,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _sendMessage(messageText: "Fill details");
   }
 
+  void sendFormToUpdateRate() {
+    _sendMessage(messageText: "Update form rate");
+  }
+
   void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
     _sendMessage(
       messageText: "Form rate updated",
@@ -620,8 +624,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                 );
                               } else if (msg.message == 'Fill details') {
                                 return FillFormButton(
+                                  buttonText: "Fill product details",
                                   onSubmit: () {
                                     // Agent not allowed to fill the form
+                                  },
+                                );
+                              } else if (msg.message == "Update form rate") {
+                                return FillFormButton(
+                                  buttonText: "Update Form",
+                                  onSubmit: () {
+                                    // only show the widget for history not to do anything agent side
                                   },
                                 );
                               }

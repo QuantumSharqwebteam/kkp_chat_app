@@ -152,7 +152,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
         // Save all messages at once
-        // await _chatStorageService.saveMessages(newChatMessages, boxName);
+        await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
           final newMessages = newChatMessages
               .where((newMsg) => !messages.any((existingMsg) =>
@@ -289,18 +289,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: data["form"],
     );
 
-    final messageId = _generateMessageId(message);
-    if (!_loadedMessageIds.contains(messageId)) {
-      setState(() {
-        messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom(); // Scroll to bottom only when a new message is received
-      });
+    //  final messageId = _generateMessageId(message);
+    //if (!_loadedMessageIds.contains(messageId)) {
+    setState(() {
+      messages.add(message);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _scrollToBottom(); // Scroll to bottom only when a new message is received
+    });
 
-      // Save the message to Hive only if it's not already saved
-      _chatStorageService.saveMessage(message, widget.customerEmail!);
-      _loadedMessageIds.add(messageId);
-    }
+    // Save the message to Hive only if it's not already saved
+    _chatStorageService.saveMessage(message, widget.customerEmail!);
+    //  _loadedMessageIds.add(messageId);
+    // }
   }
 
   void _sendMessage({
@@ -321,30 +321,30 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: form,
     );
 
-    final messageId = _generateMessageId(message);
-    debugPrint("Sended message id: $messageId");
-    if (!_loadedMessageIds.contains(messageId)) {
-      setState(() {
-        messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom(); // Scroll to bottom only when a new message is sent
-      });
+    //  final messageId = _generateMessageId(message);
+    //debugPrint("Sended message id: $messageId");
+    //if (!_loadedMessageIds.contains(messageId)) {
+    setState(() {
+      messages.add(message);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _scrollToBottom(); // Scroll to bottom only when a new message is sent
+    });
 
-      final String? name = LocalDbHelper.getProfile()?.name;
+    final String? name = LocalDbHelper.getProfile()?.name;
 
-      _socketService.sendMessage(
-        message: messageText,
-        senderEmail: widget.customerEmail!,
-        senderName: name!,
-        type: type,
-        mediaUrl: mediaUrl,
-        form: form,
-      );
+    _socketService.sendMessage(
+      message: messageText,
+      senderEmail: widget.customerEmail!,
+      senderName: name!,
+      type: type,
+      mediaUrl: mediaUrl,
+      form: form,
+    );
 
-      // Save the message to Hive only if it's not already saved
-      _chatStorageService.saveMessage(message, widget.customerEmail!);
-      _loadedMessageIds.add(messageId);
-    }
+    // Save the message to Hive only if it's not already saved
+    _chatStorageService.saveMessage(message, widget.customerEmail!);
+    //   _loadedMessageIds.add(messageId);
+    // }
     _chatController.clear();
   }
 
@@ -436,20 +436,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 Text("Please fill in the form details",
                     style: AppTextStyles.black16_600),
                 const SizedBox(height: 10),
-                TextFormField(
-                  decoration: InputDecoration(
-                      labelText: "S.No",
-                      hintText: "fill here '01' for first form",
-                      hintStyle: AppTextStyles.grey12_600
-                          .copyWith(color: AppColors.greyAAAAAA)),
-                  controller: sNoController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'S.No';
-                    }
-                    return null;
-                  },
-                ),
+                // TextFormField(
+                //   decoration: InputDecoration(
+                //       labelText: "S.No",
+                //       hintText: "fill here '01' for first form",
+                //       hintStyle: AppTextStyles.grey12_600
+                //           .copyWith(color: AppColors.greyAAAAAA)),
+                //   controller: sNoController,
+                //   validator: (value) {
+                //     if (value == null || value.isEmpty) {
+                //       return 'S.No';
+                //     }
+                //     return null;
+                //   },
+                // ),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
                   controller: qualityController,
@@ -490,27 +490,27 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     return null;
                   },
                 ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Rate"),
-                  controller: rateController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please set Rate';
-                    }
-                    return null;
-                  },
-                ),
+                // TextFormField(
+                //   decoration: InputDecoration(labelText: "Rate"),
+                //   controller: rateController,
+                //   validator: (value) {
+                //     if (value == null || value.isEmpty) {
+                //       return 'Please set Rate';
+                //     }
+                //     return null;
+                //   },
+                // ),
                 const SizedBox(height: 20),
                 CustomButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final formData = {
-                        "S.No": sNoController.text,
+                        // "S.No": sNoController.text,
                         "quality": qualityController.text,
                         "quantity": quantityController.text,
                         "weave": weaveController.text,
                         "composition": compositionController.text,
-                        "rate": rateController.text,
+                        //"rate": rateController.text,
                       };
                       _sendMessage(
                           messageText: "product", type: 'form', form: formData);

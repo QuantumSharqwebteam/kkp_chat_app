@@ -44,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
         body: Center(
-          heightFactor: 1.2,
+          heightFactor: 1.5,
           child: SizedBox(
             width: Utils().width(context) * 0.8,
             child: SingleChildScrollView(
