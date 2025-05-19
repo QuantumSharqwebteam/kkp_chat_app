@@ -17,6 +17,7 @@ class FormMessageBubble extends StatefulWidget {
   final VoidCallback?
       onFormUpdateStart; // Callback to start the loading indicator
   final VoidCallback? onFormUpdateEnd; // Callback to end the loading indicator
+  final Function(Map<String, dynamic>)? onAskForRateUpdate;
 
   const FormMessageBubble({
     super.key,
@@ -28,6 +29,7 @@ class FormMessageBubble extends StatefulWidget {
     this.onStatusUpdated,
     this.onFormUpdateStart,
     this.onFormUpdateEnd,
+    this.onAskForRateUpdate,
   });
 
   @override
@@ -210,8 +212,9 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   }
 
   void _handleMenuSelection(BuildContext context, String value) {
+    final formData = widget.formData;
     if (value == 'Ask for rate update') {
-      _showUpdateRateDialog(context);
+      widget.onAskForRateUpdate?.call(formData);
     } else if (value == 'confirm') {
       _updateFormStatus(context, 'Confirmed');
     } else if (value == 'decline') {
@@ -219,52 +222,52 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     }
   }
 
-  void _showUpdateRateDialog(BuildContext context) {
-    final formData = widget.formData;
-    final rateController =
-        TextEditingController(text: formData['rate']?.toString() ?? '');
+  // void _showUpdateRateDialog(BuildContext context) {
+  //   final formData = widget.formData;
+  //   final rateController =
+  //       TextEditingController(text: formData['rate']?.toString() ?? '');
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Update Rate for Form ID: ${formData['_id']}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Quality: ${formData['quality']}'),
-              Text('Quantity: ${formData['quantity']}'),
-              Text('Weave: ${formData['weave']}'),
-              Text('Composition: ${formData['composition']}'),
-              TextField(
-                controller: rateController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Rate'),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Submit'),
-              onPressed: () {
-                final newRate = rateController.text;
-                if (newRate.isNotEmpty) {
-                  _updateFormRate(context, newRate);
-                  Navigator.of(context).pop();
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         title: Text('Update Rate for Form ID: ${formData['_id']}'),
+  //         content: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             Text('Quality: ${formData['quality']}'),
+  //             Text('Quantity: ${formData['quantity']}'),
+  //             Text('Weave: ${formData['weave']}'),
+  //             Text('Composition: ${formData['composition']}'),
+  //             TextField(
+  //               controller: rateController,
+  //               keyboardType: TextInputType.number,
+  //               decoration: InputDecoration(labelText: 'Rate'),
+  //             ),
+  //           ],
+  //         ),
+  //         actions: <Widget>[
+  //           TextButton(
+  //             child: Text('Cancel'),
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //           ),
+  //           TextButton(
+  //             child: Text('Submit'),
+  //             onPressed: () {
+  //               final newRate = rateController.text;
+  //               if (newRate.isNotEmpty) {
+  //                 _updateFormRate(context, newRate);
+  //                 Navigator.of(context).pop();
+  //               }
+  //             },
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   Widget _buildTextRow(String label, String value) {
     return Padding(
