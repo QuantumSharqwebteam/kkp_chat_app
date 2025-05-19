@@ -455,7 +455,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void sendFormToUpdateRate(Map<String, dynamic> formData) {
     _sendMessage(
       messageText: "Update form rate",
-      type: 'form',
       form: formData,
     );
   }

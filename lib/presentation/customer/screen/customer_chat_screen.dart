@@ -520,7 +520,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                         "quantity": quantityController.text,
                         "weave": weaveController.text,
                         "composition": compositionController.text,
-                        //"rate": rateController.text,
+                        "rate": 0,
                       };
                       _sendMessage(
                           messageText: "product", type: 'form', form: formData);
@@ -588,6 +588,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   Future<void> _updateFormRate(BuildContext context,
       Map<String, dynamic> formData, String newRate) async {
+    setState(() {
+      isFormUpdating = true;
+    });
     final id = formData['_id']?.toString();
     if (id == null) {
       debugPrint(
@@ -597,6 +600,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     try {
       await _chatRepository.updateInquiryFormRate(id, newRate);
+      debugPrint("Rate updated suceesfully");
       if (context.mounted) {
         Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
         await Future.delayed(Duration(seconds: 2), () {
@@ -611,25 +615,29 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       // Call the callback function with the updated form data
       final updatedFormData = Map<String, dynamic>.from(formData);
       updatedFormData['rate'] = newRate;
-      _handleRateUpdated(updatedFormData);
+      //_handleRateUpdated(updatedFormData);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating rate of the form: $e');
       }
-      if (context.mounted) {
-        Utils()
-            .showSuccessDialog(context, "Cannot Update, send new form!", false);
-      }
+      // if (context.mounted) {
+      //   Utils()
+      //       .showSuccessDialog(context, "Cannot Update, send new form!", false);
+      // }
+    } finally {
+      setState(() {
+        isFormUpdating = false;
+      });
     }
   }
 
-  void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
-    _sendMessage(
-      messageText: "Form rate updated",
-      type: 'form',
-      form: updatedFormData,
-    );
-  }
+  // void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
+  //   _sendMessage(
+  //     messageText: "Form rate updated",
+  //     type: 'form',
+  //     form: updatedFormData,
+  //   );
+  // }
 
   String formatTimestamp(dynamic timestamp) {
     if (timestamp == null) {
@@ -727,17 +735,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                 timestamp: formatTimestamp(
                                     msg.timestamp.toIso8601String()),
                                 userRole: userRole!,
-                                onRateUpdated: _handleRateUpdated,
-                                onFormUpdateStart: () {
-                                  setState(() {
-                                    isFormUpdating = true;
-                                  });
-                                },
-                                onFormUpdateEnd: () {
-                                  setState(() {
-                                    isFormUpdating = false;
-                                  });
-                                },
+                                //onRateUpdated: _handleRateUpdated,
+                                // onFormUpdateStart: () {
+                                //   setState(() {
+                                //     isFormUpdating = true;
+                                //   });
+                                // },
+                                // onFormUpdateEnd: () {
+                                //   setState(() {
+                                //     isFormUpdating = false;
+                                //   });
+                                // },
                               );
                             } else if (msg.type == 'document') {
                               return DocumentMessageBubble(
@@ -761,6 +769,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                               );
                             } else if (msg.message == 'Fill details') {
                               return FillFormButton(
+                                buttonText: "Fill product details",
                                 onSubmit: _showFormOverlay,
                               );
                             } else if (msg.message == "Update form rate") {
