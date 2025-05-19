@@ -23,6 +23,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/form_update_alert_dialog.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
@@ -31,7 +32,6 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
@@ -542,55 +542,30 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void openFormDialogToUpdateRate(Map<String, dynamic> formData) {
-    final rateController =
-        TextEditingController(text: formData['rate']?.toString() ?? '');
+    final rateController = TextEditingController();
 
     showDialog(
       barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          title: Text(
-            'Update Rate for Form ID: ${formData['_id']}',
-            style: AppTextStyles.black12_700,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Quality: ${formData['quality']}'),
-              Text('Quantity: ${formData['quantity']}'),
-              Text('Weave: ${formData['weave']}'),
-              Text('Composition: ${formData['composition']}'),
-              CustomTextField(
-                controller: rateController,
-                keyboardType: TextInputType.number,
-                hintText: "Enter final rate",
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            CustomButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              text: "cancel",
-              backgroundColor: Colors.white,
-            ),
-            CustomButton(
-              width: Utils().width(context) * 0.5,
-              onPressed: () {
-                final newRate = rateController.text;
-                if (newRate.isNotEmpty) {
-                  _updateFormRate(context, formData, newRate);
-                  Navigator.of(context).pop();
-                }
-              },
-              text: "Submit",
-              backgroundColor: AppColors.blue00ABE9,
-            ),
-          ],
+        return FormUpdateAlertDialog(
+          //   'Update Rate for Form ID: ${formData['_id']}',
+          formId: formData["_id"],
+          quality: formData['quality'],
+          quantity: formData['quantity'],
+          weave: formData['weave'],
+          composition: formData['composition'],
+          rateController: rateController,
+          onCancel: () {
+            Navigator.of(context).pop();
+          },
+          onSubmit: () {
+            final newRate = rateController.text;
+            if (newRate.isNotEmpty) {
+              _updateFormRate(context, formData, newRate);
+              Navigator.of(context).pop();
+            }
+          },
         );
       },
     );

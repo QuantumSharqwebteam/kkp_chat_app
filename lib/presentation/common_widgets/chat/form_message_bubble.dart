@@ -187,7 +187,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                   ),
                 ),
               //  _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
-              if (widget.formData.containsKey("rate"))
+              if (widget.formData.containsKey("_id"))
                 _buildTextRow("Form Id:", widget.formData["_id"] ?? ""),
 
               _buildTextRow("Quality", widget.formData["quality"] ?? ""),
