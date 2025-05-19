@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:hive/hive.dart';
@@ -539,6 +540,89 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
   }
 
+  void openFormDialogToUpdateRate(Map<String, dynamic> formData) {
+    final rateController =
+        TextEditingController(text: formData['rate']?.toString() ?? '');
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Update Rate for Form ID: ${formData['_id']}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Quality: ${formData['quality']}'),
+              Text('Quantity: ${formData['quantity']}'),
+              Text('Weave: ${formData['weave']}'),
+              Text('Composition: ${formData['composition']}'),
+              TextField(
+                controller: rateController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Rate'),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Submit'),
+              onPressed: () {
+                final newRate = rateController.text;
+                if (newRate.isNotEmpty) {
+                  _updateFormRate(context, formData, newRate);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _updateFormRate(BuildContext context,
+      Map<String, dynamic> formData, String newRate) async {
+    final id = formData['_id']?.toString();
+    if (id == null) {
+      debugPrint(
+          "No form id is found to update: $id in the ${formData.toString()}");
+      return;
+    }
+
+    try {
+      await _chatRepository.updateInquiryFormRate(id, newRate);
+      if (context.mounted) {
+        Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
+        await Future.delayed(Duration(seconds: 2), () {
+          if (context.mounted) {
+            Navigator.pop(context);
+          }
+        });
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      }
+      // Call the callback function with the updated form data
+      final updatedFormData = Map<String, dynamic>.from(formData);
+      updatedFormData['rate'] = newRate;
+      _handleRateUpdated(updatedFormData);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error updating rate of the form: $e');
+      }
+      if (context.mounted) {
+        Utils()
+            .showSuccessDialog(context, "Cannot Update, send new form!", false);
+      }
+    }
+  }
+
   void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
     _sendMessage(
       messageText: "Form rate updated",
@@ -678,6 +762,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                             } else if (msg.message == 'Fill details') {
                               return FillFormButton(
                                 onSubmit: _showFormOverlay,
+                              );
+                            } else if (msg.message == "Update form rate") {
+                              return FillFormButton(
+                                buttonText: "Update Form",
+                                onSubmit: () {
+                                  openFormDialogToUpdateRate(msg.form!);
+                                },
                               );
                             }
                             return MessageBubble(

@@ -452,8 +452,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _sendMessage(messageText: "Fill details");
   }
 
-  void sendFormToUpdateRate() {
-    _sendMessage(messageText: "Update form rate");
+  void sendFormToUpdateRate(Map<String, dynamic> formData) {
+    _sendMessage(
+      messageText: "Update form rate",
+      type: 'form',
+      form: formData,
+    );
   }
 
   void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
@@ -606,6 +610,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                       _isFormUpdating = false;
                                     });
                                   },
+                                  onAskForRateUpdate: sendFormToUpdateRate,
                                 );
                               } else if (msg.type == 'document') {
                                 return DocumentMessageBubble(
