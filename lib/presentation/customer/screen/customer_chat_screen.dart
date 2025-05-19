@@ -601,17 +601,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     try {
       await _chatRepository.updateInquiryFormRate(id, newRate);
       debugPrint("Rate updated suceesfully");
-      if (context.mounted) {
-        Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
-        await Future.delayed(Duration(seconds: 2), () {
-          if (context.mounted) {
-            Navigator.pop(context);
-          }
-        });
+
+      Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
+      await Future.delayed(Duration(seconds: 2), () {
         if (context.mounted) {
           Navigator.pop(context);
         }
-      }
+      });
+
+      Navigator.pop(context);
+
       // Call the callback function with the updated form data
       final updatedFormData = Map<String, dynamic>.from(formData);
       updatedFormData['rate'] = newRate;
