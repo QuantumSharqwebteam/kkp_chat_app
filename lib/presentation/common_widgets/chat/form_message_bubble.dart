@@ -193,7 +193,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                   "Quantity", widget.formData["quantity"]?.toString() ?? ""),
               _buildTextRow(
                   "Composition", widget.formData["composition"] ?? ""),
-              if (widget.formData.containsKey("rate"))
+              if (widget.formData.containsKey("rate") &&
+                  widget.formData["rate"] != 0)
                 _buildTextRow(
                     "Rate", widget.formData["rate"]?.toString() ?? ""),
               const SizedBox(height: 8),
