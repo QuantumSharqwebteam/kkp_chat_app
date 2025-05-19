@@ -22,6 +22,7 @@ import 'firebase_options.dart';
 // Global flag to indicate if the app is initialized
 bool isAppInitialized = false;
 
+@pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Check if the app is initialized

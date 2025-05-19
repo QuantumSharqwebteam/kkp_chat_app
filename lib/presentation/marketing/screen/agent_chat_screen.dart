@@ -95,6 +95,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
+    _resetMessageCount();
+  }
+
+  Future<void> _resetMessageCount() async {
+    final boxNameWithCount = '${widget.agentEmail}${widget.customerEmail}count';
+    final box = await Hive.openBox<int>(boxNameWithCount);
+    await box.put('count', 0);
   }
 
   @override

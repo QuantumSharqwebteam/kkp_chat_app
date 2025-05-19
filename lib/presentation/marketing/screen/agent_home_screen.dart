@@ -12,6 +12,7 @@ import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
+import 'package:hive/hive.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
@@ -40,6 +41,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
         setState(() {}); // Forces a rebuild to reflect the new online status
       }
     });
+    _socketService.onMessageReceived((data) {},
+        refreshCallback: _fetchAssignedCustomers);
   }
 
   @override
@@ -56,6 +59,16 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     try {
       final fetchedCustomerList =
           await _chatRepo.fetchAssignedCustomerList(widget.agentEmail!);
+
+      // Fetch notification count for each user
+      for (var customer in fetchedCustomerList) {
+        final boxNameWithCount =
+            '${widget.agentEmail}${customer["email"]}count';
+        final box = await Hive.openBox<int>(boxNameWithCount);
+        final count = box.get('count', defaultValue: 0);
+        customer['notificationCount'] = count;
+      }
+
       setState(() {
         _assignedCustomers = fetchedCustomerList;
         _filteredCustomers = fetchedCustomerList;
@@ -108,8 +121,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildSearchBar(),
-                                  // const SizedBox(height: 20),
-                                  // _buildDirectMessages(),
                                   const SizedBox(height: 20),
                                   Text("Customer Inquiries",
                                       style: AppTextStyles.black16_500)
@@ -222,31 +233,57 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               _socketService.isUserOnline(assignedCustomer["email"]);
           final String lastSeen =
               _socketService.getLastSeenTime(assignedCustomer["email"]);
+          final int notificationCount =
+              assignedCustomer['notificationCount'] ?? 0;
+
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: FeedListCard(
-              name: assignedCustomer["name"],
-              message: "last message",
-              isActive: isOnline,
-              time: isOnline ? "Online" : lastSeen,
-              enableLongPress: false,
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AgentChatScreen(
-                      navigatorKey: navigatorKey,
-                      customerName: assignedCustomer["name"],
-                      customerEmail: assignedCustomer['email'],
-                      agentEmail: widget.agentEmail,
-                      agentName: widget.agentName,
+            child: Stack(
+              children: [
+                FeedListCard(
+                  name: assignedCustomer["name"],
+                  message: "last message",
+                  isActive: isOnline,
+                  time: isOnline ? "Online" : lastSeen,
+                  enableLongPress: false,
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AgentChatScreen(
+                          navigatorKey: navigatorKey,
+                          customerName: assignedCustomer["name"],
+                          customerEmail: assignedCustomer['email'],
+                          agentEmail: widget.agentEmail,
+                          agentName: widget.agentName,
+                        ),
+                      ),
+                    );
+                    if (result == true) {
+                      await _fetchAssignedCustomers();
+                    }
+                  },
+                ),
+                if (notificationCount > 0)
+                  Positioned(
+                    right: 10,
+                    top: 10,
+                    child: Container(
+                      padding: EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        notificationCount.toString(),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
-                );
-                if (result == true) {
-                  await _fetchAssignedCustomers();
-                }
-              },
+              ],
             ),
           );
         },
