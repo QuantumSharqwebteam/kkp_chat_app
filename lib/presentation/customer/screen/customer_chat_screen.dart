@@ -248,6 +248,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _initializeRecorder();
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
+
+    _resetMessageCount();
+  }
+
+  Future<void> _resetMessageCount() async {
+    final boxNameWithCount = '${widget.customerEmail}count';
+    final box = await Hive.openBox<int>(boxNameWithCount);
+    await box.put('count', 0);
   }
 
   @override
@@ -264,6 +272,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
     _socketService.toggleChatPageOpen(false);
+
     super.dispose();
   }
 

@@ -13,6 +13,7 @@ class FeedListCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onPinTap;
   final bool enableLongPress;
+  final int unreadCount;
 
   const FeedListCard({
     super.key,
@@ -24,6 +25,7 @@ class FeedListCard extends StatelessWidget {
     required this.onTap,
     this.onPinTap,
     this.enableLongPress = true,
+    this.unreadCount = 0,
   });
 
   String _getCurrentTime() {
@@ -60,12 +62,16 @@ class FeedListCard extends StatelessWidget {
                 children: [
                   Text(time ?? _getCurrentTime(),
                       style: AppTextStyles.black10_600),
-                  CircleAvatar(
-                    radius: 4,
-                    backgroundColor: isActive!
-                        ? AppColors.activeGreen
-                        : AppColors.inActiveRed,
-                  ),
+                  unreadCount > 0
+                      ? CircleAvatar(
+                          radius: 10,
+                          backgroundColor: AppColors.activeGreen,
+                          child: Text(
+                            "2",
+                            style: AppTextStyles.black12_400,
+                          ),
+                        )
+                      : SizedBox.shrink(),
                 ],
               ),
       ),

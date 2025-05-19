@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
@@ -30,8 +31,10 @@ class SocketService {
   Function(Map<String, dynamic>)? _onIncomingCall;
   Function(Map<String, dynamic>)? _onCallAnswered;
   Function(Map<String, dynamic>)? _onCallTerminated;
-  Function(Map<String, dynamic>)? _onSignalCandidate;
+
   bool isChatPageOpen = false;
+
+  Function? onMessageReceivedCallback;
 
   List<String> _roomMembers = [];
   StreamController<List<String>> _statusController =
@@ -44,6 +47,12 @@ class SocketService {
   FlutterLocalNotificationsPlugin? _notificationsPlugin;
 
   SocketService._internal();
+
+  void onMessageReceived(Function(Map<String, dynamic>) callback,
+      {Function? refreshCallback}) {
+    _onMessageReceived = callback;
+    onMessageReceivedCallback = refreshCallback;
+  }
 
   void initSocket(String userName, String userEmail, String role,
       {String? token}) {
@@ -295,9 +304,28 @@ class SocketService {
 
     if (userType == "0") {
       chatStorageService.saveMessage(message, data['targetId']);
+
+      // Store message count in Hive
+      final currentUserEmail = LocalDbHelper.getProfile()!.email;
+      final boxNameWithCount = "${currentUserEmail}count";
+      final box = await Hive.openBox<int>(boxNameWithCount);
+      int count = box.get('count', defaultValue: 0)! + 1;
+      await box.put('count', count);
+
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
     } else {
       final boxName = data['targetId'] + data['senderId'];
+      final boxNameWithCount = "${boxName}count";
+      final box = await Hive.openBox<int>(boxNameWithCount);
+      int count = box.get('count', defaultValue: 0)! + 1;
+      await box.put('count', count);
       chatStorageService.saveMessage(message, boxName);
+
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
     }
 
     if (_notificationsPlugin == null) {
