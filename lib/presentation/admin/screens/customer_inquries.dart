@@ -80,7 +80,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       } else if (role == "1") {
         data = await _chatRepository.fetchFormData();
       }
-      print(FormDataModel.formDataModelToListOfMaps(data));
 
       setState(() {
         allInquiries = data;
