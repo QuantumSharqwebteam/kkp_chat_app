@@ -2,15 +2,15 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:excel/excel.dart' hide Border;
 
 class CustomerInquiriesPage extends StatefulWidget {
@@ -30,6 +30,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   String selectedDateRange = 'Last 30 days';
   String selectedQuality = "Quality";
   bool isFetchingMore = false;
+  bool isDownloading = false;
 
   List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
   List<String> dateRanges = [
@@ -79,7 +80,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       } else if (role == "1") {
         data = await _chatRepository.fetchFormData();
       }
-      print(FormDataModel.formDataModelToListOfMaps(data));
 
       setState(() {
         allInquiries = data;
@@ -169,45 +169,32 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   Future<void> downloadAsExcel(List<FormDataModel> inquiries) async {
-    await Permission.storage.request();
+    setState(() {
+      isDownloading = true;
+    });
+
     try {
-      var status = await Permission.storage.status;
-      // if (!status.isGranted) {
-      //   final PermissionStatus permissionStatus =
-      //       await Permission.storage.request();
-      //   if (permissionStatus != PermissionStatus.granted) {
-      //     if (mounted) {
-      //       showDialog(
-      //         context: context,
-      //         builder: (context) => AlertDialog(
-      //           title: Text('Permission Required'),
-      //           content:
-      //               Text('Storage permission is required to save the file'),
-      //           actions: [
-      //             TextButton(
-      //               onPressed: () => Navigator.of(context).pop(),
-      //               child: Text('Cancel'),
-      //             ),
-      //             TextButton(
-      //               onPressed: () async {
-      //                 Navigator.of(context).pop();
-      //                 await openAppSettings();
-      //               },
-      //               child: Text('Settings'),
-      //             ),
-      //           ],
-      //         ),
-      //       );
-      //     }
-      //     return;
-      //   }
-      // }
+      // Check Android version
+      if (Platform.isAndroid) {
+        if (await _checkAndRequestPermissions() == false) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Storage permission denied. Cannot save file.'),
+              ),
+            );
+          }
+          setState(() {
+            isDownloading = false;
+          });
+          return;
+        }
+      }
 
-      var excel = Excel.createExcel();
-      Sheet sheetObject = excel['Sheet1'];
+      final excel = Excel.createExcel();
+      final sheet = excel['Sheet1'];
 
-      // Add headers
-      sheetObject.appendRow([
+      sheet.appendRow([
         TextCellValue('Date'),
         TextCellValue('Quality'),
         TextCellValue('Weave'),
@@ -221,9 +208,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         TextCellValue('Time'),
       ]);
 
-      // Add data
       for (var inquiry in inquiries) {
-        sheetObject.appendRow([
+        sheet.appendRow([
           TextCellValue(inquiry.dateOnly),
           TextCellValue(inquiry.quality),
           TextCellValue(inquiry.weave),
@@ -238,38 +224,63 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         ]);
       }
 
-      // Save the file
-      var fileBytes = excel.save();
-      var directory = Directory('/storage/emulated/0/Download');
-      if (await directory.exists()) {
-        var file = File('${directory.path}/inquiries.xlsx');
-        await file.writeAsBytes(fileBytes!);
+      final bytes = excel.save();
+      final formattedDate =
+          DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+
+      final dir = Directory('/storage/emulated/0/Download');
+      if (await dir.exists()) {
+        final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
+        await file.writeAsBytes(bytes!);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('File downloaded to ${directory.path}'),
-            ),
+            SnackBar(content: Text('File saved to ${file.path}')),
           );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error finding download folder'),
-            ),
+            const SnackBar(content: Text('Download directory not found')),
           );
         }
       }
     } catch (e) {
-      debugPrint('Error downloading Excel file: $e');
+      debugPrint('Excel download error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error downloading file'),
-          ),
+          const SnackBar(content: Text('Failed to download file')),
         );
       }
+    } finally {
+      setState(() {
+        isDownloading = false;
+      });
     }
+  }
+
+  Future<bool> _checkAndRequestPermissions() async {
+    if (Platform.isAndroid) {
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      final sdkInt = androidInfo.version.sdkInt;
+
+      if (sdkInt >= 30) {
+        // Android 11+ needs MANAGE_EXTERNAL_STORAGE
+        if (await Permission.manageExternalStorage.isGranted) {
+          return true;
+        }
+        final result = await Permission.manageExternalStorage.request();
+        return result.isGranted;
+      } else {
+        // Android <11 needs basic storage permission
+        if (await Permission.storage.isGranted) {
+          return true;
+        }
+        final result = await Permission.storage.request();
+        return result.isGranted;
+      }
+    }
+    // On iOS or other platforms, you may adjust logic if needed
+    return true;
   }
 
   @override
@@ -282,6 +293,36 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              onTap: isDownloading
+                  ? null
+                  : () async {
+                      await downloadAsExcel(filteredInquiries);
+                    },
+              child: isDownloading
+                  ? const SizedBox(
+                      width: 35,
+                      height: 35,
+                      child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  : Container(
+                      width: 35,
+                      height: 35,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(width: 1, color: AppColors.greyB2BACD),
+                      ),
+                      child: const Icon(Icons.download),
+                    ),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -300,45 +341,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         ),
                       ),
                       const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: toggleShowFilters,
-                        child: Container(
-                          width: 50,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                width: 1, color: AppColors.greyB2BACD),
-                          ),
-                          child: CustomImage(
-                            imagePath: ImageConstants.filterIcon,
-                            height: 25,
-                            width: 25,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: () async {
-                          await downloadAsExcel(filteredInquiries);
-                        },
-                        child: Container(
-                          width: 50,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                width: 1, color: AppColors.greyB2BACD),
-                          ),
-                          child: const Icon(Icons.download),
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  //  if (showFilters) _buildFilters(),
                   Expanded(child: _buildInquiryList()),
                 ],
               ),
