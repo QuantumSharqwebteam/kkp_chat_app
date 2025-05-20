@@ -35,6 +35,37 @@ class FormDataModel {
     }
   }
 
+  Map<String, dynamic> toMap() {
+    return {
+      'date': date,
+      'quality': quality,
+      'weave': weave,
+      'quantity': quantity,
+      'composition': composition,
+      'rate': rate,
+      'agentName': agentName,
+      'customerName': customerName,
+      'status': status,
+      '_id': id,
+    };
+  }
+
+  Map<String, dynamic> toSingleMap() {
+    return {
+      'Date': dateOnly,
+      'Quality': quality,
+      'Weave': weave,
+      'Quantity': quantity,
+      'Composition': composition,
+      'Rate': rate,
+      'Agent Name': agentName,
+      'Customer Name': customerName,
+      'Status': status,
+      'ID': id,
+      'Time': timeOnly,
+    };
+  }
+
   factory FormDataModel.fromJson(Map<String, dynamic> json) {
     return FormDataModel(
       date: json['date'] ?? '',
@@ -48,6 +79,11 @@ class FormDataModel {
       status: json['status'] ?? '',
       id: json['_id'] ?? '',
     );
+  }
+
+  static List<Map<String, dynamic>> formDataModelToListOfMaps(
+      List<FormDataModel> models) {
+    return models.map((model) => model.toSingleMap()).toList();
   }
 
   String _formatDate(DateTime date) {

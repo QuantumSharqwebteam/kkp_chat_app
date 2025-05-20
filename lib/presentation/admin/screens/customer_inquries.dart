@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
@@ -9,6 +10,8 @@ import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:excel/excel.dart' hide Border;
 
 class CustomerInquiriesPage extends StatefulWidget {
   const CustomerInquiriesPage({super.key});
@@ -76,6 +79,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       } else if (role == "1") {
         data = await _chatRepository.fetchFormData();
       }
+      print(FormDataModel.formDataModelToListOfMaps(data));
 
       setState(() {
         allInquiries = data;
@@ -164,6 +168,110 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     });
   }
 
+  Future<void> downloadAsExcel(List<FormDataModel> inquiries) async {
+    await Permission.storage.request();
+    try {
+      var status = await Permission.storage.status;
+      // if (!status.isGranted) {
+      //   final PermissionStatus permissionStatus =
+      //       await Permission.storage.request();
+      //   if (permissionStatus != PermissionStatus.granted) {
+      //     if (mounted) {
+      //       showDialog(
+      //         context: context,
+      //         builder: (context) => AlertDialog(
+      //           title: Text('Permission Required'),
+      //           content:
+      //               Text('Storage permission is required to save the file'),
+      //           actions: [
+      //             TextButton(
+      //               onPressed: () => Navigator.of(context).pop(),
+      //               child: Text('Cancel'),
+      //             ),
+      //             TextButton(
+      //               onPressed: () async {
+      //                 Navigator.of(context).pop();
+      //                 await openAppSettings();
+      //               },
+      //               child: Text('Settings'),
+      //             ),
+      //           ],
+      //         ),
+      //       );
+      //     }
+      //     return;
+      //   }
+      // }
+
+      var excel = Excel.createExcel();
+      Sheet sheetObject = excel['Sheet1'];
+
+      // Add headers
+      sheetObject.appendRow([
+        TextCellValue('Date'),
+        TextCellValue('Quality'),
+        TextCellValue('Weave'),
+        TextCellValue('Quantity'),
+        TextCellValue('Composition'),
+        TextCellValue('Rate'),
+        TextCellValue('Agent Name'),
+        TextCellValue('Customer Name'),
+        TextCellValue('Status'),
+        TextCellValue('ID'),
+        TextCellValue('Time'),
+      ]);
+
+      // Add data
+      for (var inquiry in inquiries) {
+        sheetObject.appendRow([
+          TextCellValue(inquiry.dateOnly),
+          TextCellValue(inquiry.quality),
+          TextCellValue(inquiry.weave),
+          TextCellValue(inquiry.quantity),
+          TextCellValue(inquiry.composition),
+          TextCellValue(inquiry.rate),
+          TextCellValue(inquiry.agentName),
+          TextCellValue(inquiry.customerName),
+          TextCellValue(inquiry.status),
+          TextCellValue(inquiry.id),
+          TextCellValue(inquiry.timeOnly),
+        ]);
+      }
+
+      // Save the file
+      var fileBytes = excel.save();
+      var directory = Directory('/storage/emulated/0/Download');
+      if (await directory.exists()) {
+        var file = File('${directory.path}/inquiries.xlsx');
+        await file.writeAsBytes(fileBytes!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File downloaded to ${directory.path}'),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error finding download folder'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error downloading Excel file: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error downloading file'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -181,7 +289,54 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  _buildSearchRow(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomSearchBar(
+                          enable: true,
+                          controller: _searchController,
+                          hintText: "Search by anything...",
+                          onChanged: (value) => _applyFilters(),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: toggleShowFilters,
+                        child: Container(
+                          width: 50,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                width: 1, color: AppColors.greyB2BACD),
+                          ),
+                          child: CustomImage(
+                            imagePath: ImageConstants.filterIcon,
+                            height: 25,
+                            width: 25,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () async {
+                          await downloadAsExcel(filteredInquiries);
+                        },
+                        child: Container(
+                          width: 50,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                width: 1, color: AppColors.greyB2BACD),
+                          ),
+                          child: const Icon(Icons.download),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
                   //  if (showFilters) _buildFilters(),
                   Expanded(child: _buildInquiryList()),
@@ -190,76 +345,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       ),
     );
   }
-
-  Widget _buildSearchRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: CustomSearchBar(
-            enable: true,
-            controller: _searchController,
-            hintText: "Search by anything...",
-            onChanged: (value) => _applyFilters(),
-          ),
-        ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: toggleShowFilters,
-          child: Container(
-            width: 50,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(width: 1, color: AppColors.greyB2BACD),
-            ),
-            child: CustomImage(
-              imagePath: ImageConstants.filterIcon,
-              height: 25,
-              width: 25,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Widget _buildFilters() {
-  //   return SingleChildScrollView(
-  //     scrollDirection: Axis.horizontal,
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.start,
-  //       children: [
-  //         // CustomDropDown(
-  //         //   value: selectedAgent,
-  //         //   items: agents,
-  //         //   onChanged: (value) {
-  //         //     setState(() => selectedAgent = value!);
-  //         //     _applyFilters();
-  //         //   },
-  //         // ),
-  //         // const SizedBox(width: 10),
-  //         CustomDropDown(
-  //           value: selectedDateRange,
-  //           items: dateRanges,
-  //           onChanged: (value) {
-  //             setState(() => selectedDateRange = value!);
-  //             _applyFilters();
-  //           },
-  //         ),
-  //         const SizedBox(width: 10),
-  //         CustomDropDown(
-  //           value: selectedQuality,
-  //           items: qualities,
-  //           onChanged: (value) {
-  //             setState(() => selectedQuality = value!);
-  //             _applyFilters();
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildInquiryList() {
     if (filteredInquiries.isEmpty) {
