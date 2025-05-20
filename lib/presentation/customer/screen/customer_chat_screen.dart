@@ -605,7 +605,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       updatedFormData['rate'] = newRate;
       //_handleRateUpdated(updatedFormData);
       _sendMessage(
-          messageText: "Rate updated for form with Id : ${formData["_id"]}");
+          messageText:
+              "Rate updated as $newRate for form with Id : ${formData["_id"]}");
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating rate of the form: $e');

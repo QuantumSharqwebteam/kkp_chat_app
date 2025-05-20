@@ -134,75 +134,104 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
       crossAxisAlignment:
           widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        Container(
-          margin:
-              const EdgeInsets.only(top: 20, bottom: 4, left: 10, right: 40),
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.6,
-          ),
-          decoration: BoxDecoration(
-            color:
-                widget.isMe ? const Color(0xFF00ABE9) : const Color(0xFFF2F2F2),
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: widget.isMe ? const Radius.circular(16) : Radius.zero,
-              bottomRight:
-                  widget.isMe ? Radius.zero : const Radius.circular(16),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.userRole == "2" || widget.userRole == "3")
-                Align(
-                  alignment: Alignment.topRight,
-                  child: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      _handleMenuSelection(context, value);
-                    },
-                    itemBuilder: (BuildContext context) {
-                      List<String> options = [
-                        'Ask for rate update',
-                        'confirm',
-                        'decline'
-                      ];
-                      // if (widget.userRole == "2" || widget.userRole == "3") {
-                      //   options.addAll(['confirm', 'decline']);
-                      // }
-                      return options.map((String choice) {
-                        return PopupMenuItem<String>(
-                          value: choice,
-                          child: Text(
-                            choice == 'Ask for rate update'
-                                ? 'Ask for rate update'
-                                : choice == 'confirm'
-                                    ? 'Confirm'
-                                    : 'Decline',
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
+        Stack(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(
+                  top: 20, bottom: 4, left: 10, right: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.65,
+              ),
+              decoration: BoxDecoration(
+                color: widget.isMe
+                    ? const Color(0xFF00ABE9)
+                    : const Color(0xFFF2F2F2),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft:
+                      widget.isMe ? const Radius.circular(16) : Radius.zero,
+                  bottomRight:
+                      widget.isMe ? Radius.zero : const Radius.circular(16),
                 ),
-              //  _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
-              if (widget.formData.containsKey("_id"))
-                _buildTextRow("Form Id:", widget.formData["_id"] ?? ""),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.formData.containsKey("_id"))
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Id:  ',
+                            style: AppTextStyles.black14_600.copyWith(
+                              color: widget.isMe ? Colors.white : null,
+                            ),
+                          ),
+                          TextSpan(
+                            text: widget.formData["_id"],
+                            style: AppTextStyles.grey12_600.copyWith(
+                              color: widget.isMe ? Colors.white : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-              _buildTextRow("Quality", widget.formData["quality"] ?? ""),
-              _buildTextRow("Weave", widget.formData["weave"] ?? ""),
-              _buildTextRow(
-                  "Quantity", widget.formData["quantity"]?.toString() ?? ""),
-              _buildTextRow(
-                  "Composition", widget.formData["composition"] ?? ""),
-              if (widget.formData.containsKey("rate") &&
-                  widget.formData["rate"] != 0)
-                _buildTextRow(
-                    "Rate", widget.formData["rate"]?.toString() ?? ""),
-              const SizedBox(height: 8),
-            ],
-          ),
+                  const SizedBox(height: 15),
+                  //  _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
+                  // if (widget.formData.containsKey("_id"))
+                  //   _buildTextRow("Form Id:", widget.formData["_id"] ?? ""),
+
+                  _buildTextRow("Quality", widget.formData["quality"] ?? ""),
+                  _buildTextRow("Weave", widget.formData["weave"] ?? ""),
+                  _buildTextRow("Quantity",
+                      widget.formData["quantity"]?.toString() ?? ""),
+                  _buildTextRow(
+                      "Composition", widget.formData["composition"] ?? ""),
+                  if (widget.formData.containsKey("rate") &&
+                      widget.formData["rate"] != 0)
+                    _buildTextRow(
+                        "Rate", widget.formData["rate"]?.toString() ?? ""),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            if (widget.userRole == "2" || widget.userRole == "3")
+              Positioned(
+                top: 15,
+                right: 30,
+                child: PopupMenuButton<String>(
+                  // icon: Icon(Icons.menu_outlined),
+                  onSelected: (value) {
+                    _handleMenuSelection(context, value);
+                  },
+                  itemBuilder: (BuildContext context) {
+                    List<String> options = [
+                      'Ask for rate update',
+                      'confirm',
+                      'decline'
+                    ];
+                    // if (widget.userRole == "2" || widget.userRole == "3") {
+                    //   options.addAll(['confirm', 'decline']);
+                    // }
+                    return options.map((String choice) {
+                      return PopupMenuItem<String>(
+                        value: choice,
+                        child: Text(
+                          choice == 'Ask for rate update'
+                              ? 'Ask for rate update'
+                              : choice == 'confirm'
+                                  ? 'Confirm'
+                                  : 'Decline',
+                        ),
+                      );
+                    }).toList();
+                  },
+                ),
+              ),
+          ],
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10.0),
