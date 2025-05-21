@@ -403,16 +403,42 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     });
   }
 
+  void _addTemporaryMessage(String messageText) {
+    final currentTime = DateTime.now();
+    final temporaryMessage = ChatMessageModel(
+      message: messageText,
+      timestamp: currentTime,
+      sender: widget.agentEmail!,
+    );
+
+    setState(() {
+      messages.add(temporaryMessage);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    });
+
+    _scrollToBottom();
+  }
+
   Future<void> _pickAndSendImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile =
         await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
+      // Add a temporary message
+      _addTemporaryMessage("Sending image...");
+
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
+        // Remove the temporary message
+        setState(() {
+          messages
+              .removeWhere((message) => message.message == "Sending image...");
+        });
+
+        // Send the actual message
+        _sendMessage(messageText: "image", type: 'image', mediaUrl: imageUrl);
       }
     }
   }
@@ -423,9 +449,19 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         await picker.pickImage(source: ImageSource.camera);
 
     if (pickedFile != null) {
+      // Add a temporary message
+      _addTemporaryMessage("Sending image...");
+
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
+        // Remove the temporary message
+        setState(() {
+          messages
+              .removeWhere((message) => message.message == "Sending image...");
+        });
+
+        // Send the actual message
         _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
@@ -438,10 +474,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
 
     if (result != null) {
+      // Add a temporary message
+      _addTemporaryMessage(
+        "Sending document...",
+      );
+
       final PlatformFile file = result.files.first;
       final File documentFile = File(file.path!);
       final documentUrl = await _s3uploadService.uploadDocument(documentFile);
       if (documentUrl != null) {
+        // Remove the temporary message
+        setState(() {
+          messages.removeWhere(
+              (message) => message.message == "Sending document...");
+        });
+
+        // Send the actual message
         _sendMessage(
             messageText: "document", type: 'document', mediaUrl: documentUrl);
       }
