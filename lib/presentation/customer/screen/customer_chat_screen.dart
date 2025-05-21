@@ -110,7 +110,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   String _generateMessageId(ChatMessageModel message) {
     // Normalize the timestamp to the nearest second
     // Generate a hash of the message content and sender
-    final messageContent = '${message.sender}_${message.message}';
+    final messageContent =
+        '${message.sender}_${message.message}_${message.timestamp}';
     return sha256.convert(utf8.encode(messageContent)).toString();
   }
 
@@ -124,7 +125,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final List<MessageModel> fetchedMessages =
           await _chatRepository.fetchCustomerMessages(
         customerEmail: widget.customerEmail!,
-        limit: 20,
+        limit: 100,
         before: before,
       );
 
@@ -300,18 +301,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: data["form"],
     );
 
-    //  final messageId = _generateMessageId(message);
-    //if (!_loadedMessageIds.contains(messageId)) {
-    setState(() {
-      messages.add(message);
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      _scrollToBottom(); // Scroll to bottom only when a new message is received
-    });
+    final messageId = _generateMessageId(message);
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom(); // Scroll to bottom only when a new message is received
+      });
 
-    // Save the message to Hive only if it's not already saved
-    _chatStorageService.saveMessage(message, widget.customerEmail!);
-    //  _loadedMessageIds.add(messageId);
-    // }
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(message, widget.customerEmail!);
+      _loadedMessageIds.add(messageId);
+    }
   }
 
   void _sendMessage({
@@ -332,30 +333,30 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: form,
     );
 
-    //  final messageId = _generateMessageId(message);
+    final messageId = _generateMessageId(message);
     //debugPrint("Sended message id: $messageId");
-    //if (!_loadedMessageIds.contains(messageId)) {
-    setState(() {
-      messages.add(message);
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      _scrollToBottom(); // Scroll to bottom only when a new message is sent
-    });
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom(); // Scroll to bottom only when a new message is sent
+      });
 
-    final String? name = LocalDbHelper.getProfile()?.name;
+      final String? name = LocalDbHelper.getProfile()?.name;
 
-    _socketService.sendMessage(
-      message: messageText,
-      senderEmail: widget.customerEmail!,
-      senderName: name!,
-      type: type,
-      mediaUrl: mediaUrl,
-      form: form,
-    );
+      _socketService.sendMessage(
+        message: messageText,
+        senderEmail: widget.customerEmail!,
+        senderName: name!,
+        type: type,
+        mediaUrl: mediaUrl,
+        form: form,
+      );
 
-    // Save the message to Hive only if it's not already saved
-    _chatStorageService.saveMessage(message, widget.customerEmail!);
-    //   _loadedMessageIds.add(messageId);
-    // }
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(message, widget.customerEmail!);
+      _loadedMessageIds.add(messageId);
+    }
     _chatController.clear();
   }
 

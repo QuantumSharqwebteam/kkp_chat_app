@@ -90,7 +90,7 @@ class FormDataModel {
     return "${_monthName(date.month)} ${date.day}, ${date.year}";
   }
 
-  String _formatTime(DateTime date) {
+ String _formatTime(DateTime date) {
     final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
     final minute = date.minute.toString().padLeft(2, '0');
     final period = date.hour >= 12 ? 'pm' : 'am';
