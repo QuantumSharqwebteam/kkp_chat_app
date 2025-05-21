@@ -345,34 +345,34 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: form,
     );
 
+    // Add directly without checking for deduplication
+    setState(() {
+      messages.add(message);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    });
+
+    _socketService.sendMessage(
+      targetEmail: widget.customerEmail,
+      message: messageText,
+      senderEmail: widget.agentEmail!,
+      senderName: widget.agentName!,
+      type: type,
+      mediaUrl: mediaUrl,
+      form: form,
+    );
+
+    // Save the message to Hive
+    _chatStorageService.saveMessage(
+        message, '${widget.agentEmail}${widget.customerEmail}');
+
+    // Add to _loadedMessageIds to avoid duplicate on receive/load
     final messageId =
         '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-    if (!_loadedMessageIds.contains(messageId)) {
-      setState(() {
-        messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      });
+    _loadedMessageIds.add(messageId);
 
-      _socketService.sendMessage(
-        targetEmail: widget.customerEmail,
-        message: messageText,
-        senderEmail: widget.agentEmail!,
-        senderName: widget.agentName!,
-        type: type,
-        mediaUrl: mediaUrl,
-        form: form,
-      );
-
-      // Save the message to Hive only if it's not already saved
-      _chatStorageService.saveMessage(
-          message, '${widget.agentEmail}${widget.customerEmail}');
-      _loadedMessageIds.add(messageId);
-    }
     _scrollToBottom();
-
     _chatController.clear();
-    FocusScope.of(context)
-        .unfocus(); // to close the opened keyboard after sending message
+    //FocusScope.of(context).unfocus();
   }
 
   void _scrollToBottom() {
