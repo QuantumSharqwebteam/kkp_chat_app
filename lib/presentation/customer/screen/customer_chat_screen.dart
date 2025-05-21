@@ -417,6 +417,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
+  Future<void> _pickAndSendImageByCamera() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      final File imageFile = File(pickedFile.path);
+      final imageUrl = await _s3uploadService.uploadFile(imageFile);
+      if (imageUrl != null) {
+        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
+      }
+    }
+  }
+
   Future<void> _pickAndSendDocument() async {
     final FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -783,6 +797,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   controller: _chatController,
                   onSend: () => _sendMessage(messageText: _chatController.text),
                   onSendImage: _pickAndSendImage,
+                  onSendImageByCamera: _pickAndSendImageByCamera,
                   onSendForm: _showFormOverlay,
                   onSendDocument: _pickAndSendDocument,
                   onSendVoice: _isRecording ? _stopRecording : _startRecording,

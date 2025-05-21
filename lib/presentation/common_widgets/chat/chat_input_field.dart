@@ -9,6 +9,7 @@ class ChatInputField extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final VoidCallback onSendImage;
+  final VoidCallback onSendImageByCamera;
   final VoidCallback onSendForm;
   final VoidCallback onSendDocument;
   final VoidCallback onSendVoice;
@@ -24,7 +25,8 @@ class ChatInputField extends StatefulWidget {
     required this.onSendDocument,
     required this.onSendVoice,
     required this.isRecording,
-    required this.recordedSeconds, // Add this line
+    required this.recordedSeconds,
+    required this.onSendImageByCamera, // Add this line
   });
 
   @override
@@ -91,7 +93,7 @@ class _ChatInputFieldState extends State<ChatInputField>
                 } else if (selectedItem == "Inquiry Form") {
                   widget.onSendForm();
                 } else if (selectedItem == "Camera") {
-                  widget.onSendImage();
+                  widget.onSendImageByCamera();
                 } else if (selectedItem == "Documents") {
                   widget.onSendDocument();
                 }
@@ -122,9 +124,8 @@ class _ChatInputFieldState extends State<ChatInputField>
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.camera_alt),
-                    onPressed: widget.onSendImage,
-                  ),
+                      icon: const Icon(Icons.camera_alt),
+                      onPressed: widget.onSendImageByCamera),
                   const SizedBox(
                     width: 10,
                   ),

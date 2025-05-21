@@ -7,12 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
@@ -78,6 +78,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   bool _isLoadingMore = false; // Show loading indicator when loading more
   final Set<String> _loadedMessageIds = {};
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
+  bool _isViewOnlyMode = false;
 
   @override
   void initState() {
@@ -87,6 +88,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
     _loadPreviousMessages(context);
+    _checkViewOnlyMode();
 
     // Scroll to bottom when the chat page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -137,6 +139,40 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+  Future<void> _checkViewOnlyMode() async {
+    final currentUserEmail = LocalDbHelper.getProfile()!.email!;
+    if (widget.agentEmail != currentUserEmail) {
+      setState(() {
+        _isViewOnlyMode = true;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showViewOnlyModeAlert();
+      });
+    }
+  }
+
+  void _showViewOnlyModeAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          title: Text("View-Only Mode"),
+          content: Text("You are in view-only mode and cannot send messages."),
+          actions: <Widget>[
+            TextButton(
+              child: Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _fetchUserRole() async {
     final role = await LocalDbHelper.getUserType();
     setState(() {
@@ -176,11 +212,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         before = messages.first.timestamp.toIso8601String();
       }
 
+      int limit = _isViewOnlyMode ? 100 : 20;
       final List<MessageModel> fetchedMessages =
           await _chatRepository.fetchAgentMessages(
         agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
         customerEmail: widget.customerEmail,
-        limit: 20,
+        limit: limit,
         before: before,
       );
 
@@ -301,29 +338,32 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    final currentTime = DateTime.now();
-    final message = ChatMessageModel(
-      message: data["message"],
-      timestamp: currentTime,
-      sender: data["senderId"],
-      type: data["type"] ?? "text",
-      mediaUrl: data["mediaUrl"],
-      form: data["form"],
-    );
+    // Check if the message sender is the customer
+    if (data["senderId"] == widget.customerEmail) {
+      final currentTime = DateTime.now();
+      final message = ChatMessageModel(
+        message: data["message"],
+        timestamp: currentTime,
+        sender: data["senderId"],
+        type: data["type"] ?? "text",
+        mediaUrl: data["mediaUrl"],
+        form: data["form"],
+      );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-    if (!_loadedMessageIds.contains(messageId)) {
-      setState(() {
-        messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom();
-      });
+      final messageId =
+          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+      if (!_loadedMessageIds.contains(messageId)) {
+        setState(() {
+          messages.add(message);
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _scrollToBottom();
+        });
 
-      // Save the message to Hive only if it's not already saved
-      _chatStorageService.saveMessage(
-          message, '${widget.agentEmail}${widget.customerEmail}');
-      _loadedMessageIds.add(messageId);
+        // Save the message to Hive only if it's not already saved
+        _chatStorageService.saveMessage(
+            message, '${widget.agentEmail}${widget.customerEmail}');
+        _loadedMessageIds.add(messageId);
+      }
     }
   }
 
@@ -372,7 +412,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     _scrollToBottom();
     _chatController.clear();
-    //FocusScope.of(context).unfocus();
   }
 
   void _scrollToBottom() {
@@ -431,6 +470,20 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+  Future<void> _pickAndSendImageByCamera() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile =
+        await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      final File imageFile = File(pickedFile.path);
+      final imageUrl = await _s3uploadService.uploadFile(imageFile);
+      if (imageUrl != null) {
+        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
+      }
+    }
+  }
+
   Future<void> _pickAndSendDocument() async {
     final FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -475,20 +528,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       messageText: messageText,
       type: 'text',
     );
-  }
-
-  String formatTimestamp(String? timestamp) {
-    if (timestamp == null || timestamp.isEmpty) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
-    }
-    try {
-      final dateTime = DateTime.parse(timestamp).toLocal();
-      return DateFormat('hh:mm a').format(dateTime);
-    } catch (e) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
-    }
   }
 
   @override
@@ -594,14 +633,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                 return ImageMessageBubble(
                                   imageUrl: msg.mediaUrl!,
                                   isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
+                                  timestamp: ChatUtils().formatTimestamp(
                                       msg.timestamp.toIso8601String()),
                                 );
                               } else if (msg.type == 'form') {
                                 return FormMessageBubble(
                                   formData: msg.form!,
                                   isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
+                                  timestamp: ChatUtils().formatTimestamp(
                                       msg.timestamp.toIso8601String()),
                                   userRole: userRole!,
                                   onRateUpdated: _handleRateUpdated,
@@ -622,20 +661,20 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                 return DocumentMessageBubble(
                                   documentUrl: msg.mediaUrl!,
                                   isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
+                                  timestamp: ChatUtils().formatTimestamp(
                                       msg.timestamp.toIso8601String()),
                                 );
                               } else if (msg.type == 'voice') {
                                 return VoiceMessageBubble(
                                   voiceUrl: msg.mediaUrl!,
                                   isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
+                                  timestamp: ChatUtils().formatTimestamp(
                                       msg.timestamp.toIso8601String()),
                                 );
                               } else if (msg.type == 'call') {
                                 return CallMessageBubble(
                                   isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
+                                  timestamp: ChatUtils().formatTimestamp(
                                       msg.timestamp.toIso8601String()),
                                   callStatus: msg.callStatus ?? "",
                                   callDuration: msg.callDuration ?? '',
@@ -658,7 +697,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                               return MessageBubble(
                                 text: msg.message,
                                 isMe: msg.sender == widget.agentEmail,
-                                timestamp: formatTimestamp(
+                                timestamp: ChatUtils().formatTimestamp(
                                     msg.timestamp.toIso8601String()),
                                 image: msg.sender == widget.agentEmail
                                     ? widget.agentName ?? ""
@@ -667,16 +706,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             },
                           ),
               ),
-              ChatInputField(
-                controller: _chatController,
-                onSend: () => _sendMessage(messageText: _chatController.text),
-                onSendImage: _pickAndSendImage,
-                onSendForm: sendFormButton,
-                onSendDocument: _pickAndSendDocument,
-                onSendVoice: _isRecording ? _stopRecording : _startRecording,
-                isRecording: _isRecording,
-                recordedSeconds: _recordedSeconds,
-              ),
+              if (!_isViewOnlyMode)
+                ChatInputField(
+                  controller: _chatController,
+                  onSend: () => _sendMessage(messageText: _chatController.text),
+                  onSendImage: _pickAndSendImage,
+                  onSendForm: sendFormButton,
+                  onSendDocument: _pickAndSendDocument,
+                  onSendImageByCamera: _pickAndSendImageByCamera,
+                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                  isRecording: _isRecording,
+                  recordedSeconds: _recordedSeconds,
+                ),
             ],
           ),
           if (_isFormUpdating) FullScreenLoader(),
