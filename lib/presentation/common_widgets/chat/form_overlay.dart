@@ -9,14 +9,14 @@ class FormOverlay extends StatelessWidget {
   final VoidCallback onSubmit;
 
   const FormOverlay({
-    Key? key,
+    super.key,
     required this.formKey,
     required this.qualityController,
     required this.quantityController,
     required this.weaveController,
     required this.compositionController,
     required this.onSubmit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,8 @@ class FormOverlay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Please fill in the form details", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            Text("Please fill in the form details",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
             TextFormField(
               decoration: InputDecoration(labelText: "Quality"),

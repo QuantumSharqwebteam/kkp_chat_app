@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
@@ -156,10 +157,15 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
   final TextEditingController password = TextEditingController();
   String? emailError;
   String? passwordError;
+  bool isLoading = false; // Add this variable to track loading state
 
   final AuthApi authApi = AuthApi();
 
   Future<void> deleteAccount(context) async {
+    setState(() {
+      isLoading = true; // Set loading to true when API call starts
+    });
+
     try {
       await authApi
           .deleteUserAccount(email.text, password.text)
@@ -181,6 +187,10 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
     } catch (e) {
       widget.scaffoldMessenger
           .showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() {
+        isLoading = false; // Set loading to false when API call ends
+      });
     }
   }
 
@@ -231,30 +241,35 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
               isPassword: true,
             ),
             SizedBox(height: 20),
-            CustomButton(
-              text: "Confirm Delete",
-              onPressed: () {
-                setState(() {
-                  if (email.text.isEmpty) {
-                    emailError = "Email is required";
-                  } else {
-                    emailError = null;
-                  }
-                  if (password.text.isEmpty) {
-                    passwordError = "Password is required";
-                  } else {
-                    passwordError = null;
-                  }
-                });
+            isLoading
+                ? CupertinoActivityIndicator(radius: 20)
+                : CustomButton(
+                    text: isLoading
+                        ? ""
+                        : "Confirm Delete", // Show empty text if loading
+                    onPressed: () {
+                      setState(() {
+                        if (email.text.isEmpty) {
+                          emailError = "Email is required";
+                        } else {
+                          emailError = null;
+                        }
+                        if (password.text.isEmpty) {
+                          passwordError = "Password is required";
+                        } else {
+                          passwordError = null;
+                        }
+                      });
 
-                if (emailError == null && passwordError == null) {
-                  deleteAccount(context);
-                }
-              },
-              width: Utils().width(context) * 0.8,
-              backgroundColor: Colors.red.shade100,
-              textColor: Colors.red,
-            ),
+                      if (emailError == null && passwordError == null) {
+                        deleteAccount(context);
+                      }
+                    },
+                    width: Utils().width(context) * 0.8,
+                    backgroundColor: Colors.red.shade100,
+                    textColor: Colors.red,
+                    // Show CircularProgressIndicator if loading
+                  ),
           ],
         ),
       ),

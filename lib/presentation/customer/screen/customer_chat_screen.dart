@@ -79,7 +79,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   int _recordedSeconds = 0;
   Timer? _timer;
   String? userRole;
-  bool _isFetching = false;
+  final bool _isFetching = false;
   bool _isLoadingMore = false;
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = {};

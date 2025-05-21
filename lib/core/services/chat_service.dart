@@ -219,7 +219,6 @@ class ChatService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print(response.body);
 
       List<FormDataModel> formList = (data['formData'] as List)
           .map((item) => FormDataModel.fromJson(item))
@@ -249,18 +248,22 @@ class ChatService {
         final data = jsonDecode(response.body);
 
         if (data["status"] == 200 && data["token"] != null) {
-          debugPrint("✅ Agora token generated:${data["token"]}");
+          if (kDebugMode) {
+            debugPrint("✅ Agora token generated:${data["token"]}");
+          }
           return data["token"];
         } else {
-          debugPrint("❌ Token not present in response: $data");
+          //   debugPrint("❌ Token not present in response: $data");
           return null;
         }
       } else {
-        debugPrint("❌ Failed to fetch token: ${response.statusCode}");
+        //  debugPrint("❌ Failed to fetch token: ${response.statusCode}");
         return null;
       }
     } catch (e) {
-      debugPrint("❌ Exception in getAgoraToken: $e");
+      if (kDebugMode) {
+        debugPrint("❌ Exception in getAgoraToken: $e");
+      }
       return null;
     }
   }
@@ -298,7 +301,9 @@ class ChatService {
       );
 
       if (response.statusCode != 200) {
-        debugPrint('Failed to update form status: ${response.body}');
+        if (kDebugMode) {
+          debugPrint('Failed to update form status: ${response.body}');
+        }
         throw Exception('Failed to update form status: ${response.body}');
       }
     } catch (e) {
@@ -320,7 +325,9 @@ class ChatService {
       final responseBody = jsonDecode(response.body);
 
       if (responseBody['status'] != 200) {
-        debugPrint("Failed to update form rate: ${response.body}");
+        if (kDebugMode) {
+          debugPrint("Failed to update form rate: ${response.body}");
+        }
         throw Exception('Failed to update form rate: ${response.body}');
       }
       // No need to throw an exception if the status is 200
@@ -345,13 +352,19 @@ class ChatService {
       );
 
       if (response.statusCode == 200) {
-        debugPrint(
-            '✅ Call data updated successfully:${response.statusCode} with status marked as:$callStatus');
+        if (kDebugMode) {
+          debugPrint(
+              '✅ Call data updated successfully:${response.statusCode} with status marked as:$callStatus');
+        }
       } else {
-        debugPrint('Failed to update call data: ${response.body}');
+        if (kDebugMode) {
+          debugPrint('Failed to update call data: ${response.body}');
+        } else {}
       }
     } catch (e) {
-      debugPrint("❌ Error updating call data: $e ");
+      if (kDebugMode) {
+        debugPrint("❌ Error updating call data: $e ");
+      }
     }
   }
 
@@ -413,7 +426,6 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-        print(response.body.toString());
         final List<dynamic> messagesJson = json['messages'];
         return messagesJson
             .map((msg) => MessageModel.fromJson(msg, customerEmail))

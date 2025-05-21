@@ -73,10 +73,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Timer? _timer;
   String? userRole;
   int _currentPage = 1;
-  bool _isFetching = false;
-  Set<int> _fetchedPages = Set(); // Keep track of fetched pages
+  final bool _isFetching = false;
+  final Set<int> _fetchedPages = {}; // Keep track of fetched pages
   bool _isLoadingMore = false; // Show loading indicator when loading more
-  final Set<String> _loadedMessageIds = Set();
+  final Set<String> _loadedMessageIds = {};
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
 
   @override

@@ -11,7 +11,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart'
 Future<void> handleNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
-  final customerEmail = LocalDbHelper.getProfile()?.email;
+//  final customerEmail = LocalDbHelper.getProfile()?.email;
 
   navigatorKey.currentState?.push(
     MaterialPageRoute(

@@ -18,7 +18,7 @@ class NotificationService with WidgetsBindingObserver {
   static bool _notificationClicked = false;
   static GlobalKey<NavigatorState>? navigatorKey;
   static Function(String?, String?, String?)? onNotificationTap;
-  static AppLifecycleState? _appLifecycleState;
+  static AppLifecycleState? appLifecycleState;
 
   // Initialize notification service
   static Future<void> init(
@@ -51,7 +51,7 @@ class NotificationService with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _appLifecycleState = state;
+    appLifecycleState = state;
     super.didChangeAppLifecycleState(state);
   }
 
