@@ -5,9 +5,12 @@ import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -26,20 +29,20 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   final _chatRepository = ChatRepository();
 
   bool showFilters = false;
-  String selectedAgent = 'All Agents';
+  // String selectedAgent = 'All Agents';
   String selectedDateRange = 'Last 30 days';
-  String selectedQuality = "Quality";
+  String selectedStatus = "All";
   bool isFetchingMore = false;
   bool isDownloading = false;
 
-  List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
+  // List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
   List<String> dateRanges = [
     'Today',
     'Last Week',
     'Last Month',
     'Last 30 days'
   ];
-  List<String> qualities = ["Quality", "Standard", "Premium"];
+  List<String> status = ["All", "Confirmed", "Processed", "Declined"];
 
   List<FormDataModel> allInquiries = [];
   List<FormDataModel> filteredInquiries = [];
@@ -126,11 +129,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     final now = DateTime.now();
 
     filteredInquiries = allInquiries.where((item) {
-      final matchAgent =
-          selectedAgent == 'All Agents' || item.agentName == selectedAgent;
+      // final matchAgent =
+      //     selectedAgent == 'All Agents' || item.agentName == selectedAgent;
 
-      final matchQuality = selectedQuality == 'Quality' ||
-          item.quality.contains(selectedQuality);
+      final matchQuality =
+          selectedStatus == 'All' || item.status.contains(selectedStatus);
 
       final matchSearch = item.customerName.toLowerCase().contains(search) ||
           item.agentName.toLowerCase().contains(search) ||
@@ -164,7 +167,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         }
       }
 
-      return matchAgent && matchQuality && matchSearch && matchDate;
+      return matchQuality && matchSearch && matchDate;
     }).toList();
 
     visibleItemCount = min(itemsPerPage, filteredInquiries.length);
@@ -356,12 +359,71 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         ),
                       ),
                       const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: toggleShowFilters,
+                        child: Container(
+                          width: 50,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                                width: 1, color: AppColors.greyB2BACD),
+                          ),
+                          child: CustomImage(
+                            imagePath: ImageConstants.filterIcon,
+                            height: 25,
+                            width: 25,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
+                  if (showFilters) _buildFilters(),
                   Expanded(child: _buildInquiryList()),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            // CustomDropDown(
+            //   value: selectedAgent,
+            //   items: agents,
+            //   onChanged: (value) {
+            //     setState(() => selectedAgent = value!);
+            //     _applyFilters();
+            //   },
+            // ),
+            // const SizedBox(width: 10),
+            CustomDropDown(
+              value: selectedDateRange,
+              items: dateRanges,
+              onChanged: (value) {
+                setState(() => selectedDateRange = value!);
+                _applyFilters();
+              },
+            ),
+            const SizedBox(width: 10),
+            CustomDropDown(
+              value: selectedStatus,
+              items: status,
+              onChanged: (value) {
+                setState(() => selectedStatus = value!);
+                _applyFilters();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
