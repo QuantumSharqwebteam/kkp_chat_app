@@ -109,6 +109,18 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     }
   }
 
+  String _getFormattedDate(String rawDate) {
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) return '';
+    return DateFormat('MMMM d, yyyy').format(parsed); // e.g., "May 21, 2025"
+  }
+
+  String _getFormattedTime(String rawDate) {
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) return '';
+    return DateFormat('h:mm a').format(parsed); // e.g., "3:45 PM"
+  }
+
   void _applyFilters() {
     String search = _searchController.text.toLowerCase();
     final now = DateTime.now();
@@ -130,23 +142,26 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           item.status.toLowerCase().contains(search);
 
       bool matchDate = true;
-      final date = item.parsedDate;
+      final date = DateTime.tryParse(item.date);
 
-      switch (selectedDateRange) {
-        case 'Today':
-          matchDate = date?.day == now.day &&
-              date?.month == now.month &&
-              date?.year == now.year;
-          break;
-        case 'Last Week':
-          matchDate = date!.isAfter(now.subtract(const Duration(days: 7)));
-          break;
-        case 'Last Month':
-          matchDate = date!.isAfter(DateTime(now.year, now.month - 1, now.day));
-          break;
-        case 'Last 30 days':
-          matchDate = date!.isAfter(now.subtract(const Duration(days: 30)));
-          break;
+      if (date != null) {
+        switch (selectedDateRange) {
+          case 'Today':
+            matchDate = date.day == now.day &&
+                date.month == now.month &&
+                date.year == now.year;
+            break;
+          case 'Last Week':
+            matchDate = date.isAfter(now.subtract(const Duration(days: 7)));
+            break;
+          case 'Last Month':
+            matchDate =
+                date.isAfter(DateTime(now.year, now.month - 1, now.day));
+            break;
+          case 'Last 30 days':
+            matchDate = date.isAfter(now.subtract(const Duration(days: 30)));
+            break;
+        }
       }
 
       return matchAgent && matchQuality && matchSearch && matchDate;
@@ -210,7 +225,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
       for (var inquiry in inquiries) {
         sheet.appendRow([
-          TextCellValue(inquiry.dateOnly),
+          TextCellValue(_getFormattedDate(inquiry.date)),
           TextCellValue(inquiry.quality),
           TextCellValue(inquiry.weave),
           TextCellValue(inquiry.quantity),
@@ -220,7 +235,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           TextCellValue(inquiry.customerName),
           TextCellValue(inquiry.status),
           TextCellValue(inquiry.id),
-          TextCellValue(inquiry.timeOnly),
+          TextCellValue(_getFormattedTime(inquiry.date)),
         ]);
       }
 
@@ -412,8 +427,10 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(inquiry.dateOnly, style: AppTextStyles.black12_400),
-                    Text(inquiry.timeOnly, style: AppTextStyles.black12_400),
+                    Text(_getFormattedDate(inquiry.date),
+                        style: AppTextStyles.black12_400),
+                    Text(_getFormattedTime(inquiry.date),
+                        style: AppTextStyles.black12_400),
                     Text(
                       inquiry.status,
                       style: AppTextStyles.black12_400.copyWith(
