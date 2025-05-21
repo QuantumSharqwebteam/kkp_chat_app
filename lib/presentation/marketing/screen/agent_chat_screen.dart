@@ -572,6 +572,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         children: [
           Column(
             children: [
+              if (_isLoadingMore)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 15.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
               Expanded(
                 child: _isLoading
                     ? Center(child: CircularProgressIndicator())
@@ -660,10 +667,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             },
                           ),
               ),
-              if (_isLoadingMore)
-                Center(
-                  child: CircularProgressIndicator(),
-                ),
               ChatInputField(
                 controller: _chatController,
                 onSend: () => _sendMessage(messageText: _chatController.text),

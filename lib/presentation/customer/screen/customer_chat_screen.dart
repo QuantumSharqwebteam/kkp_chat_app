@@ -594,15 +594,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             .showSnackBar(SnackBar(content: Text("Rate is updated: $newRate")));
       }
 
-      // Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
-      // await Future.delayed(Duration(seconds: 2), () {
-      //   if (context.mounted) {
-      //     Navigator.pop(context);
-      //   }
-      // });
-
-      // Navigator.pop(context);
-
       // Call the callback function with the updated form data
       final updatedFormData = Map<String, dynamic>.from(formData);
       updatedFormData['rate'] = newRate;
@@ -614,10 +605,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       if (kDebugMode) {
         debugPrint('Error updating rate of the form: $e');
       }
-      // if (context.mounted) {
-      //   Utils()
-      //       .showSuccessDialog(context, "Cannot Update, send new form!", false);
-      // }
     } finally {
       setState(() {
         isFormUpdating = false;
@@ -707,6 +694,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           children: [
             Column(
               children: [
+                if (_isLoadingMore)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 15.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
                 Expanded(
                   child: messages.isEmpty
                       ? NoChatConversation()
@@ -785,10 +779,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                           },
                         ),
                 ),
-                if (_isLoadingMore)
-                  Center(
-                    child: CircularProgressIndicator(),
-                  ),
                 ChatInputField(
                   controller: _chatController,
                   onSend: () => _sendMessage(messageText: _chatController.text),
