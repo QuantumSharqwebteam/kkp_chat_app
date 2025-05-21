@@ -438,7 +438,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         });
 
         // Send the actual message
-        _sendMessage(messageText: "image", type: 'image', mediaUrl: imageUrl);
+        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
   }
