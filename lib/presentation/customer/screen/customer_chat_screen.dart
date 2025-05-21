@@ -111,7 +111,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     // Normalize the timestamp to the nearest second
     // Generate a hash of the message content and sender
     final messageContent =
-        '${message.sender}_${message.message}_${message.timestamp}';
+        '${message.sender}_${message.message}_${message.mediaUrl}_${jsonEncode(message.form ?? {})}';
+
     return sha256.convert(utf8.encode(messageContent)).toString();
   }
 
@@ -178,7 +179,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
     return messages.where((message) {
       final messageId = _generateMessageId(message);
-      debugPrint("Generated Message ID: $messageId"); // Print message ID
+      // Print message ID
       if (_loadedMessageIds.contains(messageId)) {
         return false;
       } else {
@@ -335,28 +336,29 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     final messageId = _generateMessageId(message);
     //debugPrint("Sended message id: $messageId");
+    setState(() {
+      messages.add(message);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      _scrollToBottom();
+    });
+
+    final String? name = LocalDbHelper.getProfile()?.name;
+
+    _socketService.sendMessage(
+      message: messageText,
+      senderEmail: widget.customerEmail!,
+      senderName: name!,
+      type: type,
+      mediaUrl: mediaUrl,
+      form: form,
+    );
+
+// Only avoid storing duplicate messages, not sending
     if (!_loadedMessageIds.contains(messageId)) {
-      setState(() {
-        messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom(); // Scroll to bottom only when a new message is sent
-      });
-
-      final String? name = LocalDbHelper.getProfile()?.name;
-
-      _socketService.sendMessage(
-        message: messageText,
-        senderEmail: widget.customerEmail!,
-        senderName: name!,
-        type: type,
-        mediaUrl: mediaUrl,
-        form: form,
-      );
-
-      // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(message, widget.customerEmail!);
       _loadedMessageIds.add(messageId);
     }
+
     _chatController.clear();
   }
 
