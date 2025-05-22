@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -33,7 +34,6 @@ class NotificationService with WidgetsBindingObserver {
       bool isGranted = await _requestPermission(context);
       if (isGranted) {
         await _checkAndUpdateFCMToken();
-        // _setupForegroundNotification();
         _setupBackgroundNotification();
         _setupTerminatedNotification();
 
@@ -114,14 +114,23 @@ class NotificationService with WidgetsBindingObserver {
         await FirebaseMessaging.instance.getInitialMessage();
 
     if (message != null) {
-      debugPrint("🚀 App Opened via Notification: ${message.toMap()['data']}");
+      debugPrint("🚀 full message data: ${message.toMap()}");
+      debugPrint(
+          "🚀@@ App Opened via Notification: ${message.toMap()['data']}");
 
-      if ("0" == await LocalDbHelper.getUserType()) {
-        handlePushNotificationClickForCustomer(
-            navigatorKey!, message.toMap()['data']);
+      final data = message.toMap()['data'];
+
+      // Check if the notification data contains a call
+      if (data != null && data['call'] == "true") {
+        // Handle the incoming call
+        handleIncomingCall(navigatorKey!, data);
       } else {
-        handlePushNotificationClickForAgent(
-            navigatorKey!, message.toMap()['data']);
+        // Handle regular notification click
+        if ("0" == await LocalDbHelper.getUserType()) {
+          handlePushNotificationClickForCustomer(navigatorKey!, data);
+        } else {
+          handlePushNotificationClickForAgent(navigatorKey!, data);
+        }
       }
     }
   }

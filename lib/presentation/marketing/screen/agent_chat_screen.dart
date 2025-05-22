@@ -78,7 +78,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   bool _isLoadingMore = false; // Show loading indicator when loading more
   final Set<String> _loadedMessageIds = {};
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
-  bool _isViewOnlyMode = false;
+  //bool _isViewOnlyMode = false;
 
   @override
   void initState() {
@@ -88,7 +88,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
     _loadPreviousMessages(context);
-    _checkViewOnlyMode();
+    // _checkViewOnlyMode();
 
     // Scroll to bottom when the chat page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -116,6 +116,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
     _socketService.toggleChatPageOpen(false);
+
     super.dispose();
   }
 
@@ -139,39 +140,40 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
-  Future<void> _checkViewOnlyMode() async {
-    final currentUserEmail = LocalDbHelper.getProfile()!.email!;
-    if (widget.agentEmail != currentUserEmail) {
-      setState(() {
-        _isViewOnlyMode = true;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showViewOnlyModeAlert();
-      });
-    }
-  }
+  // Future<void> _checkViewOnlyMode() async {
+  //   Profile currentUser = await LocalDbHelper.getProfileFuture();
+  //   final currentUserEmail = currentUser!.email;
+  //   if (widget.agentEmail != currentUserEmail) {
+  //     setState(() {
+  //       _isViewOnlyMode = true;
+  //     });
+  //     WidgetsBinding.instance.addPostFrameCallback((_) {
+  //       _showViewOnlyModeAlert();
+  //     });
+  //   }
+  // }
 
-  void _showViewOnlyModeAlert() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.white,
-          title: Text("View-Only Mode"),
-          content: Text("You are in view-only mode and cannot send messages."),
-          actions: <Widget>[
-            TextButton(
-              child: Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // void _showViewOnlyModeAlert() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return AlertDialog(
+  //         backgroundColor: Colors.white,
+  //         surfaceTintColor: Colors.white,
+  //         title: Text("View-Only Mode"),
+  //         content: Text("You are in view-only mode and cannot send messages."),
+  //         actions: <Widget>[
+  //           TextButton(
+  //             child: Text("OK"),
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   Future<void> _fetchUserRole() async {
     final role = await LocalDbHelper.getUserType();
@@ -212,12 +214,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         before = messages.first.timestamp.toIso8601String();
       }
 
-      int limit = _isViewOnlyMode ? 100 : 20;
+      // int limit = _isViewOnlyMode ? 100 : 20;
       final List<MessageModel> fetchedMessages =
           await _chatRepository.fetchAgentMessages(
         agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
         customerEmail: widget.customerEmail,
-        limit: limit,
+        limit: 20,
         before: before,
       );
 
@@ -754,18 +756,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             },
                           ),
               ),
-              if (!_isViewOnlyMode)
-                ChatInputField(
-                  controller: _chatController,
-                  onSend: () => _sendMessage(messageText: _chatController.text),
-                  onSendImage: _pickAndSendImage,
-                  onSendForm: sendFormButton,
-                  onSendDocument: _pickAndSendDocument,
-                  onSendImageByCamera: _pickAndSendImageByCamera,
-                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
-                  isRecording: _isRecording,
-                  recordedSeconds: _recordedSeconds,
-                ),
+              // if (!_isViewOnlyMode)
+              ChatInputField(
+                controller: _chatController,
+                onSend: () => _sendMessage(messageText: _chatController.text),
+                onSendImage: _pickAndSendImage,
+                onSendForm: sendFormButton,
+                onSendDocument: _pickAndSendDocument,
+                onSendImageByCamera: _pickAndSendImageByCamera,
+                onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                isRecording: _isRecording,
+                recordedSeconds: _recordedSeconds,
+              ),
             ],
           ),
           if (_isFormUpdating) FullScreenLoader(),
