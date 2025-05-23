@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
-import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
@@ -12,7 +12,8 @@ import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
-import 'package:hive/hive.dart';
+
+import 'package:provider/provider.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
@@ -25,75 +26,44 @@ class AgentHomeScreen extends StatefulWidget {
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
   final _searchController = TextEditingController();
-  bool _isLoading = true;
-  final _chatRepo = ChatRepository();
-  List<dynamic> _assignedCustomers = [];
-  List<dynamic> _filteredCustomers = [];
   final SocketService _socketService = SocketService(navigatorKey);
   StreamSubscription<List<String>>? _statusSubscription;
 
   @override
   void initState() {
     super.initState();
-    _fetchAssignedCustomers();
-    _statusSubscription = _socketService.statusStream.listen((_) {
-      if (mounted) {
-        setState(() {}); // Forces a rebuild to reflect the new online status
-      }
+    final provider =
+        Provider.of<AgentHomeScreenProvider>(context, listen: false);
+    // Fetch customer data via global provider
+    Future.microtask(() {
+      provider.fetchCustomers(widget.agentEmail!);
     });
-    _socketService.onMessageReceived((data) {},
-        refreshCallback: _fetchAssignedCustomers);
+
+    _statusSubscription = _socketService.statusStream.listen((_) {
+      if (mounted) setState(() {});
+    });
+
+    _socketService.onMessageReceived((data) {
+      final provider =
+          Provider.of<AgentHomeScreenProvider>(context, listen: false);
+      provider.fetchCustomers(widget.agentEmail!);
+    });
   }
 
   @override
   void dispose() {
     _statusSubscription?.cancel();
+    _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _fetchAssignedCustomers() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final fetchedCustomerList =
-          await _chatRepo.fetchAssignedCustomerList(widget.agentEmail!);
-
-      // Fetch notification count for each user
-      for (var customer in fetchedCustomerList) {
-        final boxNameWithCount =
-            '${widget.agentEmail}${customer["email"]}count';
-        final box = await Hive.openBox<int>(boxNameWithCount);
-        final count = box.get('count', defaultValue: 0);
-        customer['notificationCount'] = count;
-      }
-
-      setState(() {
-        _assignedCustomers = fetchedCustomerList;
-        _filteredCustomers = fetchedCustomerList;
-      });
-    } catch (e) {
-      debugPrint("Error loading customer list: ${e.toString()}");
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _onSearchChanged(String query) {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredCustomers = _assignedCustomers.where((customer) {
-        final name = customer["name"].toLowerCase();
-        return name.contains(query);
-      }).toList();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AgentHomeScreenProvider>(context);
+    final customers =
+        provider.filteredCustomers; // Use filtered list from provider
+    final isLoading = provider.isLoading;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -111,7 +81,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     topRight: Radius.circular(15),
                   ),
                 ),
-                child: _isLoading
+                child: isLoading
                     ? ShimmerList(itemCount: 8)
                     : NestedScrollView(
                         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -132,9 +102,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                         body: StreamBuilder<List<String>>(
                           stream: _socketService.statusStream,
                           builder: (context, snapshot) {
-                            return _filteredCustomers.isEmpty
+                            return customers.isEmpty
                                 ? Center(child: NoCustomerAssignedWidget())
-                                : _buildCustomerInquiriesList();
+                                : _buildCustomerInquiriesList(customers);
                           },
                         ),
                       ),
@@ -146,11 +116,10 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  // Profile Section
   Widget _buildProfileSection() {
     return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 16),
-      leading: Initicon(text: widget.agentName!),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      leading: Initicon(text: widget.agentName ?? ""),
       title: Text(widget.agentName ?? "", style: AppTextStyles.black16_500),
       subtitle:
           Text("Let's find latest messages", style: AppTextStyles.black12_400),
@@ -162,125 +131,113 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               Navigator.pushNamed(
                   context, MarketingRoutes.marketingNotifications);
             },
-            icon: const Icon(
-              Icons.notifications_active_outlined,
-              color: Colors.black,
-              size: 24,
-            ),
+            icon: const Icon(Icons.notifications_active_outlined,
+                color: Colors.black),
           ),
           IconButton(
             onPressed: () {
-              // Navigate to the CallHistoryPage or perform an action related to call logs
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CallHistoryScreen()),
-              );
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => CallHistoryScreen()));
             },
-            icon: Icon(
-              Icons
-                  .call_outlined, // You can choose a different icon if preferred
-              color: Colors.black,
-              size: 24,
-            ),
+            icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
           IconButton(
-              onPressed: () {
-                Navigator.pushNamed(context, MarketingRoutes.marketingSettings);
-              },
-              icon: Icon(
-                Icons.settings_outlined,
-              ))
+            onPressed: () {
+              Navigator.pushNamed(context, MarketingRoutes.marketingSettings);
+            },
+            icon: const Icon(Icons.settings_outlined),
+          ),
         ],
       ),
     );
   }
 
-  // Search Bar
   Widget _buildSearchBar() {
     return CustomSearchBar(
       enable: true,
       controller: _searchController,
       hintText: "search",
-      onChanged: _onSearchChanged,
+      onChanged: (query) {
+        // Delegate search query to provider
+        Provider.of<AgentHomeScreenProvider>(context, listen: false)
+            .updateSearchQuery(query);
+      },
     );
   }
 
-  // Recent Messages List
-  Widget _buildCustomerInquiriesList() {
-    // Sort the list to show online users first
-    _filteredCustomers.sort((a, b) {
+  Widget _buildCustomerInquiriesList(List<dynamic> customers) {
+    customers.sort((a, b) {
       final isAOnline = _socketService.isUserOnline(a["email"]);
       final isBOnline = _socketService.isUserOnline(b["email"]);
-      if (isAOnline && !isBOnline) {
-        return -1;
-      } else if (!isAOnline && isBOnline) {
-        return 1;
-      } else {
-        return 0;
-      }
+      if (isAOnline && !isBOnline) return -1;
+      if (!isAOnline && isBOnline) return 1;
+      return 0;
     });
 
     return RefreshIndicator(
       onRefresh: () {
-        return _fetchAssignedCustomers();
+        final provider =
+            Provider.of<AgentHomeScreenProvider>(context, listen: false);
+        return provider.fetchCustomers(widget.agentEmail!);
       },
       child: ListView.builder(
-        itemCount: _filteredCustomers.length,
-        physics: AlwaysScrollableScrollPhysics(),
+        itemCount: customers.length,
+        physics: const AlwaysScrollableScrollPhysics(),
         itemBuilder: (context, index) {
-          final assignedCustomer = _filteredCustomers[index];
-          final isOnline =
-              _socketService.isUserOnline(assignedCustomer["email"]);
-          final String lastSeen =
-              _socketService.getLastSeenTime(assignedCustomer["email"]);
-          final int notificationCount =
-              assignedCustomer['notificationCount'] ?? 0;
+          final customer = customers[index];
+          final isOnline = _socketService.isUserOnline(customer["email"]);
+          final lastSeen = _socketService.getLastSeenTime(customer["email"]);
+          final count = context
+              .watch<AgentHomeScreenProvider>()
+              .getCount(customer["email"]);
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Stack(
               children: [
                 FeedListCard(
-                  name: assignedCustomer["name"],
+                  name: customer["name"],
                   message: "last message",
                   isActive: isOnline,
                   time: isOnline ? "Online" : lastSeen,
                   enableLongPress: false,
                   onTap: () async {
-                    final boxNameWithCount =
-                        '${widget.agentEmail}${assignedCustomer["email"]}count';
-                    final box = await Hive.openBox<int>(boxNameWithCount);
-                    await box.put('count', 0);
+                    final provider = Provider.of<AgentHomeScreenProvider>(
+                        context,
+                        listen: false);
+                    provider.resetCount(widget.agentEmail!, customer["email"]);
+
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AgentChatScreen(
+                        builder: (_) => AgentChatScreen(
                           navigatorKey: navigatorKey,
-                          customerName: assignedCustomer["name"],
-                          customerEmail: assignedCustomer['email'],
+                          customerName: customer["name"],
+                          customerEmail: customer["email"],
                           agentEmail: widget.agentEmail,
                           agentName: widget.agentName,
                         ),
                       ),
                     );
+
                     if (result == true) {
-                      await _fetchAssignedCustomers();
+                      provider.fetchCustomers(widget.agentEmail!);
                     }
                   },
                 ),
-                if (notificationCount > 0)
+                if (count > 0)
                   Positioned(
                     right: 10,
                     top: 10,
                     child: Container(
-                      padding: EdgeInsets.all(6),
-                      decoration: BoxDecoration(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
-                        notificationCount.toString(),
-                        style: TextStyle(
+                        count.toString(),
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                         ),

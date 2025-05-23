@@ -7,6 +7,10 @@ import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
+import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
+import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
 import 'package:kkpchatapp/logic/auth/new_pass_provider.dart';
@@ -110,6 +114,14 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => VerificationProvider()),
         ChangeNotifierProvider(create: (_) => ForgotPassProvider()),
         ChangeNotifierProvider(create: (_) => NewPassProvider()),
+        ChangeNotifierProvider(create: (_) => AgentHomeScreenProvider()),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider()..fetchNotifications(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              MarketingProductProvider(ProductRepository())..fetchProducts(),
+        ),
       ],
       child: MaterialApp(
         navigatorKey: widget.navigatorKey,
