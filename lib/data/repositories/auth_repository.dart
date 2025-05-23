@@ -48,8 +48,8 @@ class AuthRepository {
     return _authApi.sendOtp(email: email);
   }
 
-  Future<Profile> getUserInfo() {
-    return _authApi.getUserInfo();
+  Future<dynamic> getUserInfo() async {
+    return await _authApi.getUserInfo();
   }
 
   Future<Map<String, dynamic>> verifyOtp(

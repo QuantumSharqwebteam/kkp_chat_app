@@ -12,6 +12,7 @@ import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
@@ -95,20 +96,30 @@ class _MarketingHostState extends State<MarketingHost> {
       }
 
       // Load user profile
-      Profile? profile = await auth.getUserInfo();
-      await LocalDbHelper.saveProfile(profile).whenComplete(() {
-        debugPrint(
-            'Loaded profile: $profile'); // Debug print to check loaded profile
-      });
+      final Map<String, dynamic> userData = await auth.getUserInfo();
+      if (userData['message'] ==
+          "Session expired due to login on another device") {
+        if (mounted) {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (context) {
+            return LoginPage();
+          }));
+        }
+      } else {
+        Profile? profile = Profile.fromJson(userData['message']);
+        await LocalDbHelper.saveProfile(profile).whenComplete(() {
+          debugPrint(
+              'Loaded profile: $profile'); // Debug print to check loaded profile
+        });
 
-      setState(() {
-        agentName = profile.name ?? "";
-        agentEmail = profile.email ?? ""; // Ensure email is also set
-        debugPrint(
-            'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
-      });
-
-      await _updateScreens();
+        setState(() {
+          agentName = profile.name ?? "";
+          agentEmail = profile.email ?? ""; // Ensure email is also set
+          debugPrint(
+              'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
+        });
+        await _updateScreens();
+      }
     } catch (error) {
       debugPrint('Error in _loadUserData: $error');
     }

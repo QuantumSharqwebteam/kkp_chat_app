@@ -8,6 +8,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
@@ -41,11 +42,22 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   }
 
   Future<void> _loadUserInfo() async {
-    profile = await auth.getUserInfo();
-    if (profile != null) {
-      LocalDbHelper.saveProfile(profile!);
-      profileImageUrl = profile?.profileUrl;
-      _updateProfileFields(profile!);
+    final Map<String, dynamic> userData = await auth.getUserInfo();
+    if (userData['message'] ==
+        "Session expired due to login on another device") {
+      if (mounted) {
+        Navigator.of(context)
+            .pushReplacement(MaterialPageRoute(builder: (context) {
+          return LoginPage();
+        }));
+      }
+    } else {
+      profile = Profile.fromJson(userData['message']);
+      if (profile != null) {
+        LocalDbHelper.saveProfile(profile!);
+        profileImageUrl = profile?.profileUrl;
+        _updateProfileFields(profile!);
+      }
     }
   }
 

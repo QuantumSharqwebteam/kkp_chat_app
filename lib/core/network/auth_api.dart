@@ -287,7 +287,7 @@ class AuthApi {
   }
 
   // get particular user profile detaiils api admin , agent , customer
-  Future<Profile> getUserInfo() async {
+  Future<dynamic> getUserInfo() async {
     const endPoint = "user/getInfo";
     final url = Uri.parse('$baseUrl$endPoint');
     final token = await LocalDbHelper.getToken();
@@ -297,16 +297,13 @@ class AuthApi {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token"
       });
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Parse the JSON response into a Profile object
-        final jsonResponse = jsonDecode(response.body);
-        return Profile.fromJson(jsonResponse['message']);
-      } else {
-        // Handle error response
-        throw Exception('Failed to load user info: ${response.body}');
-      }
+
+      // Parse the JSON response into a Profile object
+      final jsonResponse = jsonDecode(response.body);
+      // return Profile.fromJson(jsonResponse['message']);
+      return jsonResponse;
     } catch (e) {
-      throw Exception('Error fetching user info: $e');
+      throw Exception(e);
     }
   }
 

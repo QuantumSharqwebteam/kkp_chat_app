@@ -11,6 +11,7 @@ import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
@@ -128,7 +129,17 @@ class _CustomerHostState extends State<CustomerHost> {
 
   Future<void> _loadCurrentUserData() async {
     try {
-      profile = await auth.getUserInfo();
+      final Map<String, dynamic> userData = await auth.getUserInfo();
+      if (userData['message'] ==
+          "Session expired due to login on another device") {
+        if (mounted) {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (context) {
+            return LoginPage();
+          }));
+        }
+      }
+      profile = Profile.fromJson(userData['message']);
       if (profile != null) {
         await LocalDbHelper.saveProfile(profile!);
       } else {
