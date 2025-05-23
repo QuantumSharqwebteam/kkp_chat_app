@@ -11,11 +11,13 @@ import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
 import 'package:kkpchatapp/logic/auth/new_pass_provider.dart';
 import 'package:kkpchatapp/logic/auth/signup_provider.dart';
 import 'package:kkpchatapp/logic/auth/verification_provider.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -122,6 +124,9 @@ class _MyAppState extends State<MyApp> {
           create: (_) =>
               MarketingProductProvider(ProductRepository())..fetchProducts(),
         ),
+        ChangeNotifierProvider(
+            create: (_) => CustomerHomeProvider(
+                SocketService(navigatorKey), navigatorKey)),
       ],
       child: MaterialApp(
         navigatorKey: widget.navigatorKey,
