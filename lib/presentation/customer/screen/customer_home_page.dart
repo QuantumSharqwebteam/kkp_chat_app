@@ -1,21 +1,11 @@
-import 'dart:async';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/config/theme/app_colors.dart';
-import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/services/socket_service.dart';
-import 'package:kkpchatapp/data/models/product_model.dart';
-import 'package:kkpchatapp/data/models/profile_model.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:kkpchatapp/data/repositories/product_repository.dart';
-import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:provider/provider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkpchatapp/presentation/customer/widget/custom_app_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
-import 'package:hive/hive.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -25,61 +15,21 @@ class CustomerHomePage extends StatefulWidget {
 }
 
 class _CustomerHomePageState extends State<CustomerHomePage> {
-  final ProductRepository _productRepository = ProductRepository();
-  late Future<List<Product>> _productsFuture;
-  AuthRepository auth = AuthRepository();
-  Profile? profileData;
-  String? name;
-  int _notificationCount = 0;
-  final SocketService _socketService = SocketService(navigatorKey);
+  late CustomerHomeProvider _provider;
+  bool _initialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    _productsFuture = _productRepository.getProducts();
-    _loadUserInfo();
-    _socketService.onMessageReceived((data) {}, refreshCallback: () {
-      _fetchNotificationCount(); // Wrap the function call in a lambda
-    });
-    // Fetch the notification count
-  }
-
-  Future<void> _fetchNotificationCount() async {
-    final currentUserEmail = profileData?.email;
-    if (currentUserEmail != null) {
-      final boxNameWithCount = '${currentUserEmail}count';
-      final box = await Hive.openBox<int>(boxNameWithCount);
-      setState(() {
-        _notificationCount = box.get('count', defaultValue: 0) ?? 0;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _provider = Provider.of<CustomerHomeProvider>(context);
+    if (!_initialized) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _provider.loadUserInfo();
+        _provider.fetchProducts();
+        _provider.initSocketService();
       });
+      _initialized = true;
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  Future<void> _loadUserInfo() async {
-    try {
-      await auth.getUserInfo().then((value) {
-        profileData = value;
-        setState(() {
-          name = profileData!.name;
-        });
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print(e.toString());
-      }
-    }
-  }
-
-  Future<void> _resetMessageCount() async {
-    final email = profileData?.email;
-    final boxNameWithCount = '${email}count';
-    final box = await Hive.openBox<int>(boxNameWithCount);
-    await box.put('count', 0);
   }
 
   @override
@@ -89,15 +39,14 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       appBar: PreferredSize(
         preferredSize: const Size(double.infinity, 100),
         child: SafeArea(
-            child: CustomAppBar(
-          name: profileData?.name,
-        )),
+          child: CustomAppBar(
+            name: _provider.profileData?.name,
+          ),
+        ),
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () {
-            return _fetchNotificationCount();
-          },
+          onRefresh: _provider.fetchNotificationCount,
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -117,122 +66,97 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _enquirySupport(onTap: () async {
-                        await _resetMessageCount();
-                        await _fetchNotificationCount();
-                        if (context.mounted) {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) {
-                            return CustomerChatScreen(
-                              agentName: "Agent",
-                              customerName: name,
-                              customerEmail: profileData!.email,
-                              navigatorKey: navigatorKey,
-                            );
-                          }));
-                        }
-                      }),
-                      const SizedBox(height: 20),
-
-                      //new products list
-                      Text('New Products', style: AppTextStyles.black18_600),
-
-                      FutureBuilder<List<Product>>(
-                        future: _productsFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return ShimmerGrid();
-                          } else if (snapshot.hasError) {
-                            return Center(
-                                child: Text("Error: ${snapshot.error}"));
-                          } else if (!snapshot.hasData ||
-                              snapshot.data!.isEmpty) {
-                            return const Center(
-                                child: Text("No products available"));
-                          }
-
-                          final products = snapshot.data!;
-                          final newProducts = products.length >= 2
-                              ? products.sublist(0, 2)
-                              : products;
-                          final previousProducts = products.length >= 2
-                              ? products.sublist(
-                                  products.length - 2, products.length)
-                              : products;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              GridView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 15),
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 10,
-                                  mainAxisSpacing: 10,
-                                  mainAxisExtent: 250,
-                                ),
-                                itemCount: newProducts.length,
-                                itemBuilder: (context, index) {
-                                  final product = newProducts[index];
-                                  return ProductItem(
-                                    product: product,
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              CustomerProductDescriptionPage(
-                                                  product: product),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 20),
-                              //previous products lists
-                              Text('Previous Products',
-                                  style: AppTextStyles.black18_600),
-
-                              GridView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 5, vertical: 15),
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 10,
-                                  mainAxisSpacing: 10,
-                                  mainAxisExtent: 250,
-                                ),
-                                itemCount: previousProducts.length,
-                                itemBuilder: (context, index) {
-                                  final product = previousProducts[index];
-                                  return ProductItem(
-                                    product: product,
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              CustomerProductDescriptionPage(
-                                                  product: product),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            ],
-                          );
+                      _enquirySupport(
+                        onTap: () async {
+                          await _provider.resetMessageCount();
+                          await _provider.fetchNotificationCount();
+                          _provider.navigateToChat();
                         },
+                        notificationCount: _provider.notificationCount,
                       ),
+                      const SizedBox(height: 20),
+                      Text('New Products',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      _provider.isLoading
+                          ? ShimmerGrid()
+                          : _provider.newProducts != null &&
+                                  _provider.previousProducts != null
+                              ? Column(
+                                  children: [
+                                    GridView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 15),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                        mainAxisExtent: 250,
+                                      ),
+                                      itemCount: _provider.newProducts!.length,
+                                      itemBuilder: (context, index) {
+                                        final product =
+                                            _provider.newProducts![index];
+                                        return ProductItem(
+                                          product: product,
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    CustomerProductDescriptionPage(
+                                                        product: product),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text('Previous Products',
+                                        style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold)),
+                                    GridView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 15),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                        mainAxisExtent: 250,
+                                      ),
+                                      itemCount:
+                                          _provider.previousProducts!.length,
+                                      itemBuilder: (context, index) {
+                                        final product =
+                                            _provider.previousProducts![index];
+                                        return ProductItem(
+                                          product: product,
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    CustomerProductDescriptionPage(
+                                                        product: product),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                )
+                              : Center(child: Text("No products available")),
                     ],
                   ),
                 ),
@@ -267,7 +191,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     );
   }
 
-  Widget _enquirySupport({VoidCallback? onTap}) {
+  Widget _enquirySupport({VoidCallback? onTap, int? notificationCount}) {
     return Card(
       color: Colors.white,
       elevation: 5,
@@ -293,16 +217,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 width: 12,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(50),
-                  color: AppColors.activeGreen,
+                  color: Colors.green,
                 ),
               ),
             ),
           ),
         ]),
-        title: Text('Product Enquirers', style: AppTextStyles.black16_600),
-        subtitle: Text('How may I Help you?',
-            overflow: TextOverflow.ellipsis, style: AppTextStyles.black12_400),
-        trailing: _notificationCount > 0
+        title: Text('Product Enquirers',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        subtitle: Text('How may I Help you?', style: TextStyle(fontSize: 12)),
+        trailing: notificationCount != null && notificationCount > 0
             ? Container(
                 padding: EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -310,7 +234,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                   shape: BoxShape.circle,
                 ),
                 child: Text(
-                  _notificationCount.toString(),
+                  notificationCount.toString(),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -132,6 +133,7 @@ class _CustomerHostState extends State<CustomerHost> {
       final Map<String, dynamic> userData = await auth.getUserInfo();
       if (userData['message'] ==
           "Session expired due to login on another device") {
+        Hive.deleteFromDisk();
         if (mounted) {
           Navigator.of(context)
               .pushReplacement(MaterialPageRoute(builder: (context) {
