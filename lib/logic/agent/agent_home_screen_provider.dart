@@ -50,7 +50,7 @@ class AgentHomeScreenProvider with ChangeNotifier {
   Future<void> _loadNotificationCounts(
       String agentEmail, List<dynamic> customers) async {
     for (var customer in customers) {
-      final boxName = '${agentEmail}${customer["email"]}count';
+      final boxName = '$agentEmail${customer["email"]}count';
       final box = await Hive.openBox<int>(boxName);
       _notificationCounts[customer["email"]] =
           box.get('count', defaultValue: 0)!;
@@ -59,10 +59,20 @@ class AgentHomeScreenProvider with ChangeNotifier {
   }
 
   Future<void> resetCount(String agentEmail, String customerEmail) async {
-    final boxName = '${agentEmail}${customerEmail}count';
+    final boxName = '$agentEmail${customerEmail}count';
     final box = await Hive.openBox<int>(boxName);
     await box.put('count', 0);
     _notificationCounts[customerEmail] = 0;
+    notifyListeners();
+  }
+
+  Future<void> incrementCount(String agentEmail, String customerEmail) async {
+    final boxName = '$agentEmail${customerEmail}count';
+    final box = await Hive.openBox<int>(boxName);
+    int currentCount = box.get('count', defaultValue: 0)!;
+    int newCount = currentCount + 1;
+    await box.put('count', newCount);
+    _notificationCounts[customerEmail] = newCount;
     notifyListeners();
   }
 }

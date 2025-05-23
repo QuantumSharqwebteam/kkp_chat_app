@@ -2,7 +2,6 @@ import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/models/notification_model.dart';
-import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class AuthRepository {
   final AuthApi _authApi;

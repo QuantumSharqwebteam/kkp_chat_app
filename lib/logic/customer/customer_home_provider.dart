@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
@@ -49,7 +50,9 @@ class CustomerHomeProvider with ChangeNotifier {
       box.put('profile', _profileData!.toJson());
       notifyListeners();
     } catch (e) {
-      print(e.toString());
+      if (kDebugMode) {
+        print(e.toString());
+      }
     }
   }
 
@@ -69,7 +72,9 @@ class CustomerHomeProvider with ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      print(e.toString());
+      if (kDebugMode) {
+        print(e.toString());
+      }
     } finally {
       _isLoading = false;
       notifyListeners();

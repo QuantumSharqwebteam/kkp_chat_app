@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/chat_utils.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:audioplayers/audioplayers.dart';
 
@@ -105,7 +106,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         builder: (_) => AgoraAudioCallScreen(
                           isCaller: false,
                           channelName: widget.channelName,
-                          uid: ChatUtils().generateUniqueUId(),
+                          uid: Utils()
+                              .generateIntUidFromEmail("agent@gmail.com"),
                           remoteUserId: widget.remoteUserId,
                           remoteUserName: widget.callerName,
                           messageId: widget.notificationId,

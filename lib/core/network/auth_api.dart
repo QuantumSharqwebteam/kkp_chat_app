@@ -5,7 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
-import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 
 class AuthApi {

@@ -100,7 +100,9 @@ class MarketingProductScreen extends StatelessWidget {
 
             if (result == true) {
               // refresh product list
-              context.read<MarketingProductProvider>().fetchProducts();
+              if (context.mounted) {
+                context.read<MarketingProductProvider>().fetchProducts();
+              }
             }
           },
         );
@@ -119,7 +121,9 @@ class MarketingProductScreen extends StatelessWidget {
           final result = await Navigator.pushNamed(
               context, MarketingRoutes.addProductScreen);
           if (result == true) {
-            context.read<MarketingProductProvider>().fetchProducts();
+            if (context.mounted) {
+              context.read<MarketingProductProvider>().fetchProducts();
+            }
           }
         },
         backgroundColor: Colors.white,
