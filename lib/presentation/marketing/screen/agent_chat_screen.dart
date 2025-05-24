@@ -73,10 +73,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Timer? _timer;
   String? userRole;
   int _currentPage = 1;
-  final bool _isFetching = false;
-  final Set<int> _fetchedPages = {}; // Keep track of fetched pages
+  bool _isFetching = false;
+  Set<int> _fetchedPages = {}; // Keep track of fetched pages
   bool _isLoadingMore = false; // Show loading indicator when loading more
-  final Set<String> _loadedMessageIds = {};
+  Set<String> _loadedMessageIds = {};
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   //bool _isViewOnlyMode = false;
 
@@ -187,34 +187,55 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     await Permission.microphone.request();
   }
 
+  String generateMessageId(ChatMessageModel message) {
+    final formString = message.form != null ? message.form.toString() : '';
+    final mediaUrl = message.mediaUrl ?? '';
+    return '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}_$mediaUrl\_$formString';
+  }
+
   Future<void> _loadPreviousMessages(context) async {
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
     bool boxExists = await Hive.boxExists(boxName);
 
     if (!boxExists) {
-      // Fetch messages from API
-      await _fetchMessagesFromAPI(boxName, context);
+      // Fetch messages from API, get new unique messages, save, then update UI
+      List<ChatMessageModel> fetchedMessages =
+          await _fetchMessagesFromAPI(boxName, context);
+      if (fetchedMessages.isNotEmpty) {
+        await _chatStorageService.saveMessages(fetchedMessages, boxName);
+      }
+      setState(() {
+        messages = fetchedMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false;
+      });
     } else {
       // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getMessages(boxName, page: _currentPage);
-      final newLoadedMessages = _removeDuplicates(loadedMessages);
+
+      // Clear _loadedMessageIds before repopulating to avoid stale state
+      _loadedMessageIds.clear();
+      final uniqueMessages =
+          _removeDuplicates(loadedMessages); // populates _loadedMessageIds
+
       setState(() {
-        messages = newLoadedMessages;
+        messages = uniqueMessages;
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _fetchMessagesFromAPI(String boxName, context) async {
+  // Modify to return new unique messages but not setState inside here
+  Future<List<ChatMessageModel>> _fetchMessagesFromAPI(
+      String boxName, context) async {
     try {
       String? before;
       if (messages.isNotEmpty) {
         before = messages.first.timestamp.toIso8601String();
       }
 
-      // int limit = _isViewOnlyMode ? 100 : 20;
       final List<MessageModel> fetchedMessages =
           await _chatRepository.fetchAgentMessages(
         agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
@@ -224,11 +245,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       );
 
       if (fetchedMessages.isEmpty) {
-        // No more messages to load
-        return;
+        return [];
       }
 
-      // Convert MessageModel to ChatMessageModel
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
@@ -243,18 +262,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         );
       }).toList();
 
-      final newChatMessages = _removeDuplicates(chatMessages);
-      if (newChatMessages.isNotEmpty) {
-        // Save all messages at once
-        await _chatStorageService.saveMessages(newChatMessages, boxName);
-        setState(() {
-          messages.insertAll(0, newChatMessages);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-          _isLoading = false;
-        });
-      }
+      final newChatMessages =
+          _removeDuplicates(chatMessages); // Updates _loadedMessageIds
+      return newChatMessages;
     } catch (e) {
       debugPrint("Error fetching messages from API: $e");
+      return [];
     }
   }
 
@@ -288,72 +301,84 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Future<void> _loadMoreMessages(context) async {
     if (_isFetching || _isLoadingMore) return;
     _isLoadingMore = true;
+    _isFetching = true;
     setState(() {});
 
     _currentPage++;
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
+
     if (_fetchedPages.contains(_currentPage)) {
-      // Page already fetched, do nothing
       _isLoadingMore = false;
+      _isFetching = false;
       setState(() {});
       return;
     }
 
+    // First try to get from Hive:
     final loadedMessages =
         await _chatStorageService.getMessages(boxName, page: _currentPage);
 
     if (loadedMessages.isEmpty) {
-      // Fetch more messages from API
-      await _fetchMessagesFromAPI(boxName, context);
-      final newLoadedMessages =
-          await _chatStorageService.getMessages(boxName, page: _currentPage);
-      final uniqueMessages = _removeDuplicates(newLoadedMessages);
-      setState(() {
-        messages.insertAll(0, uniqueMessages);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      });
-      _fetchedPages.add(_currentPage);
+      // Fetch from API:
+      final newMessages = await _fetchMessagesFromAPI(boxName, context);
+
+      if (newMessages.isNotEmpty) {
+        // Save messages only once
+        await _chatStorageService.saveMessages(newMessages, boxName);
+
+        setState(() {
+          messages.insertAll(0, newMessages);
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        });
+      }
     } else {
+      // Hive has messages:
       final uniqueMessages = _removeDuplicates(loadedMessages);
-      setState(() {
-        messages.insertAll(0, uniqueMessages);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      });
-      _fetchedPages.add(_currentPage);
+
+      if (uniqueMessages.isNotEmpty) {
+        setState(() {
+          messages.insertAll(0, uniqueMessages);
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        });
+      }
     }
 
+    _fetchedPages.add(_currentPage);
     _isLoadingMore = false;
+    _isFetching = false;
     setState(() {});
   }
 
-  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
-    return messages.where((message) {
-      final messageId =
-          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-      if (_loadedMessageIds.contains(messageId)) {
-        return false;
-      } else {
+  // This stays the same but resets _loadedMessageIds properly
+  List<ChatMessageModel> _removeDuplicates(
+      List<ChatMessageModel> incomingMessages) {
+    List<ChatMessageModel> uniqueMessages = [];
+    for (var message in incomingMessages) {
+      final messageId = generateMessageId(message);
+      if (!_loadedMessageIds.contains(messageId)) {
         _loadedMessageIds.add(messageId);
-        return true;
+        uniqueMessages.add(message);
       }
-    }).toList();
+    }
+    return uniqueMessages;
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    // Check if the message sender is the customer
     if (data["senderId"] == widget.customerEmail) {
-      final currentTime = DateTime.now();
+      // final currentTime = DateTime.now();
+      final timestampStr = data["timestamp"] as String?;
+      final timestamp =
+          timestampStr != null ? DateTime.parse(timestampStr) : DateTime.now();
       final message = ChatMessageModel(
         message: data["message"],
-        timestamp: currentTime,
+        timestamp: timestamp,
         sender: data["senderId"],
         type: data["type"] ?? "text",
         mediaUrl: data["mediaUrl"],
         form: data["form"],
       );
 
-      final messageId =
-          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+      final messageId = generateMessageId(message);
       if (!_loadedMessageIds.contains(messageId)) {
         setState(() {
           messages.add(message);
@@ -361,7 +386,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           _scrollToBottom();
         });
 
-        // Save the message to Hive only if it's not already saved
         _chatStorageService.saveMessage(
             message, '${widget.agentEmail}${widget.customerEmail}');
         _loadedMessageIds.add(messageId);
@@ -387,7 +411,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: form,
     );
 
-    // Add directly without checking for deduplication
+    // Add to UI immediately
     setState(() {
       messages.add(message);
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -403,13 +427,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: form,
     );
 
-    // Save the message to Hive
     _chatStorageService.saveMessage(
         message, '${widget.agentEmail}${widget.customerEmail}');
 
-    // Add to _loadedMessageIds to avoid duplicate on receive/load
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    // Add to loaded ids immediately to prevent duplicates
+    final messageId = generateMessageId(message);
     _loadedMessageIds.add(messageId);
 
     _scrollToBottom();

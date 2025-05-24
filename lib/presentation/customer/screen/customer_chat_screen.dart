@@ -108,11 +108,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   String _generateMessageId(ChatMessageModel message) {
-    // Normalize the timestamp to the nearest second
-    // Generate a hash of the message content and sender
     final messageContent =
-        '${message.sender}_${message.message}_${message.mediaUrl}_${jsonEncode(message.form ?? {})}';
-
+        '${message.sender}_${message.message}_${message.mediaUrl}_${jsonEncode(message.form ?? {})}_${message.timestamp.toIso8601String()}';
     return sha256.convert(utf8.encode(messageContent)).toString();
   }
 
@@ -408,7 +405,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     final temporaryMessage = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
-      sender: widget.agentEmail!,
+      sender: "",
     );
 
     setState(() {
