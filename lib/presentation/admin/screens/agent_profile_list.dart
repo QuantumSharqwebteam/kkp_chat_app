@@ -132,6 +132,9 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         Utils().showSuccessDialog(context, "${result['message']}", true);
         _fetchAgents(); // Refresh agent list after deletion
       }
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) Navigator.pop(context);
+      });
     } catch (e) {
       if (kDebugMode) {
         debugPrint("Error deleting agent: ${e.toString()}");

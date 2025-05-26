@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
@@ -62,6 +63,10 @@ class _AddAgentState extends State<AddAgent> {
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) Navigator.pop(context);
         });
+        fullNameController.clear();
+        emailController.clear();
+        phoneController.clear();
+        passwordController.clear();
       } else if (response["status"] == 400 || response["status"] == 401) {
         if (mounted) {
           Utils().showSuccessDialog(context, "${response["message"]}", false);
@@ -118,6 +123,15 @@ class _AddAgentState extends State<AddAgent> {
   }
 
   @override
+  void dispose() {
+    fullNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -132,7 +146,8 @@ class _AddAgentState extends State<AddAgent> {
           ? FullScreenLoader()
           : SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 40),
                 child: Card(
                   color: Colors.white,
                   elevation: 10,
@@ -143,29 +158,36 @@ class _AddAgentState extends State<AddAgent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       spacing: 5,
                       children: [
-                        // Profile Upload Section
-                        Center(
-                          child: Stack(
-                            alignment: Alignment.bottomRight,
-                            children: [
-                              CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.grey.shade300,
-                                child: const Icon(Icons.person,
-                                    size: 50, color: Colors.white),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.blue,
-                                ),
-                                child: const Icon(Icons.camera_alt,
-                                    color: Colors.white),
-                              ),
-                            ],
-                          ),
+                        Text(
+                          "***Only one Agent head will be there (do not make more than one head)***",
+                          style: AppTextStyles.grey12_600,
                         ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        // Profile Upload Section
+                        // Center(
+                        //   child: Stack(
+                        //     alignment: Alignment.bottomRight,
+                        //     children: [
+                        //       // CircleAvatar(
+                        //       //   radius: 50,
+                        //       //   backgroundColor: Colors.grey.shade300,
+                        //       //   child: const Icon(Icons.person,
+                        //       //       size: 50, color: Colors.white),
+                        //       // ),
+                        //       Container(
+                        //         padding: const EdgeInsets.all(5),
+                        //         decoration: BoxDecoration(
+                        //           shape: BoxShape.circle,
+                        //           color: Colors.blue,
+                        //         ),
+                        //         child: const Icon(Icons.camera_alt,
+                        //             color: Colors.white),
+                        //       ),
+                        //     ],
+                        //   ),
+                        // ),
 
                         // Input Fields
                         Text("Full Name"),
@@ -187,6 +209,7 @@ class _AddAgentState extends State<AddAgent> {
                           hintText: 'Enter phone number',
                           keyboardType: TextInputType.phone,
                           prefixIcon: const Icon(Icons.phone),
+                          maxLength: 10,
                         ),
 
                         Text("Password"),
