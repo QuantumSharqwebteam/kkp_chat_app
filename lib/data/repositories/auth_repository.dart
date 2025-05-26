@@ -94,15 +94,19 @@ class AuthRepository {
   }
 
   Future<Map<String, dynamic>> updateFCMToken(String fcmToken) async {
-    return _authApi.updateFCMToken(fcmToken);
+    return await _authApi.updateFCMToken(fcmToken);
   }
 
   Future<Map<String, dynamic>> refreshToken(String oldToken) async {
-    return _authApi.refreshToken(oldToken);
+    return await _authApi.refreshToken(oldToken);
   }
 
   Future<List<Agent>> getAgent() async {
-    return _authApi.getAgent();
+    return await _authApi.getAgent();
+  }
+
+  Future<List<String>> fetchAssignedAgentList() async {
+    return await _authApi.fetchAssignedAgentList();
   }
 
   Future<Map<String, dynamic>> addAgent(

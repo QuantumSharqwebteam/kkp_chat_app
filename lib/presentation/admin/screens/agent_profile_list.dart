@@ -8,7 +8,6 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:shimmer/shimmer.dart';
 // Import reusable shimmer list
 
@@ -24,11 +23,25 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
   List<Agent> _agentsList = [];
   bool _isLoading = true;
   final authRepository = AuthRepository();
+  List<String> _assignedAgentEmails = [];
 
   @override
   void initState() {
     super.initState();
     _fetchAgents();
+    _fetchAssignedAgentList();
+  }
+
+  Future<void> _fetchAssignedAgentList() async {
+    try {
+      List<String> assignedAgents =
+          await authRepository.fetchAssignedAgentList();
+      setState(() {
+        _assignedAgentEmails = assignedAgents;
+      });
+    } catch (e) {
+      debugPrint("Error fetching assigned agent list: $e");
+    }
   }
 
   Future<void> _fetchAgents() async {
@@ -64,6 +77,8 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                     "✅ ${result['message']} for getting transfered customers")),
           );
         }
+
+        _fetchAssignedAgentList();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -91,6 +106,8 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
             SnackBar(content: Text("✅ Agent removed from list")),
           );
         }
+
+        _fetchAssignedAgentList();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -140,7 +157,6 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            //  _buildHighlightedAgent(),
             const SizedBox(height: 20),
             _isLoading ? _buildShimmerStatsSection() : _buildStatsSection(),
             const SizedBox(height: 20),
@@ -158,49 +174,19 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     );
   }
 
-  // Widget _buildHighlightedAgent() {
-  //   return Card(
-  //     surfaceTintColor: Colors.white,
-  //     color: Colors.white,
-  //     child: Padding(
-  //       padding: const EdgeInsets.all(18.0),
-  //       child: Row(
-  //         children: [
-  //           const CircleAvatar(
-  //             radius: 30,
-  //             backgroundImage: AssetImage("assets/images/user1.png"),
-  //           ),
-  //           const SizedBox(width: 10),
-  //           Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: const [
-  //               Text("Arun",
-  //                   style:
-  //                       TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-  //               Text("Senior Admin",
-  //                   style: TextStyle(fontSize: 14, color: Colors.grey)),
-  //             ],
-  //           )
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
   Widget _buildStatsSection() {
     int totalAgents = _agentsList.length;
-    DateTime now = DateTime.now();
-    DateTime last7Days = now.subtract(const Duration(days: 7));
-
-    int newAgents = _agentsList
-        .where((agent) => DateTime.parse(agent.createdAt).isAfter(last7Days))
+    int assignedAgents = _agentsList
+        .where((agent) => _assignedAgentEmails.contains(agent.email))
         .length;
 
     return Row(
       children: [
         Expanded(child: _buildStatCard("Total Agents", totalAgents.toString())),
         const SizedBox(width: 10),
-        Expanded(child: _buildStatCard("New Agents", newAgents.toString())),
+        Expanded(
+            child:
+                _buildStatCard("Assigned Agents", assignedAgents.toString())),
       ],
     );
   }
@@ -232,6 +218,131 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     );
   }
 
+  void _showAgentDetailDialog(BuildContext context, Agent agent) {
+    bool isAssigned = _assignedAgentEmails.contains(agent.email);
+    DateTime createdAtDate = DateTime.parse(agent.createdAt);
+    String formattedDate =
+        "${createdAtDate.day}/${createdAtDate.month}/${createdAtDate.year}";
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          surfaceTintColor: Colors.white,
+          backgroundColor: Colors.white,
+          title: Text(
+            agent.name,
+            style: AppTextStyles.black14_600,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Email: ',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    TextSpan(
+                      text: agent.email,
+                      style: AppTextStyles.black12_400,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Role: ',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    TextSpan(
+                      text: agent.role,
+                      style: AppTextStyles.black12_400,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'mobile: ',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    TextSpan(
+                      text: agent.mobile.toString(),
+                      style: AppTextStyles.black12_400,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Created At: ',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    TextSpan(
+                      text: formattedDate,
+                      style: AppTextStyles.black12_400,
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Status: ',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    TextSpan(
+                      text: isAssigned ? "Assigned" : "Not Assigned",
+                      style: TextStyle(
+                        color: isAssigned ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                isAssigned
+                    ? "**This agent is eligible to chat with customers."
+                    : "**This agent is not eligible to chat with customers.",
+                style: AppTextStyles.black14_400,
+              ),
+              // Add more details as needed
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildAgentList() {
     if (_agentsList.isEmpty) {
       return const Center(child: Text("No agents found"));
@@ -241,17 +352,11 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
       itemCount: _agentsList.length,
       itemBuilder: (context, index) {
         final agent = _agentsList[index];
+        bool isAssigned = _assignedAgentEmails.contains(agent.email);
+
         return GestureDetector(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AgentCustomersListScreen(
-                  agentName: agent.name,
-                  agentEmail: agent.email, // Pass the agent's email
-                ),
-              ),
-            );
+            _showAgentDetailDialog(context, agent);
           },
           child: Card(
             surfaceTintColor: Colors.white,
@@ -263,41 +368,58 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                 size: 35,
               ),
               title: Text(agent.name, style: AppTextStyles.black16_600),
-              subtitle: agent.role == 'AgentHead'
-                  ? Row(
-                      children: [
-                        Text(
-                          "🔰${agent.role}",
-                          style: AppTextStyles.black14_400.copyWith(
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Head',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  agent.role == 'AgentHead'
+                      ? Row(
+                          children: [
+                            Text(
+                              "🔰${agent.role}",
+                              style: AppTextStyles.black14_400.copyWith(
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Head',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          agent.role,
+                          style: AppTextStyles.black14_400.copyWith(
+                            color: AppColors.black60opac,
                           ),
                         ),
-                      ],
-                    )
-                  : Text(
-                      agent.role,
-                      style: AppTextStyles.black14_400.copyWith(
-                        color: AppColors.black60opac,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      isAssigned ? "Assigned" : "Not Assigned",
+                      style: TextStyle(
+                        color: isAssigned
+                            ? AppColors.activeGreen
+                            : AppColors.inActiveRed,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                  ),
+                ],
+              ),
               trailing: PopupMenuButton<String>(
                 splashRadius: 20,
                 borderRadius: BorderRadius.circular(20),
@@ -310,7 +432,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   } else if (value == 'Remove from Assigned list') {
                     removeAgentFromList(
                         agent.email); // Replace with actual email
-                  } else if (value == 'Delete') {
+                  } else if (value == 'Delete Agent Profile') {
                     // Add delete logic here
                     _deleteAgent(agent.email);
                   }
@@ -319,7 +441,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   return [
                     'Add agent to assign list',
                     'Remove from Assigned list',
-                    'Delete'
+                    'Delete Agent Profile'
                   ].map((String choice) {
                     return PopupMenuItem<String>(
                       value: choice,

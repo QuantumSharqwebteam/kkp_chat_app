@@ -352,6 +352,27 @@ class AuthApi {
     }
   }
 
+  // Fetch assigned agent list
+  // Fetch assigned agent list
+  Future<List<String>> fetchAssignedAgentList() async {
+    const endPoint = 'user/getAssignedAgent';
+    final url = Uri.parse("$baseUrl$endPoint");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        final responseBody = json.decode(response.body);
+        // Extract and return the list of assigned agents
+        return List<String>.from(responseBody['assignedAgents']);
+      } else {
+        throw Exception('Failed to fetch assigned agent list');
+      }
+    } catch (e) {
+      throw Exception("Error fetching assigned agent list: $e");
+    }
+  }
+
   // create new  Agent / add new agent
   Future<Map<String, dynamic>> addAgent(
       {required Map<String, dynamic> body}) async {
@@ -395,7 +416,6 @@ class AuthApi {
       final jsonResponse = jsonDecode(response.body);
       return jsonResponse;
     } catch (e) {
-      debugPrint("❌ Error assigning agent: $e");
       throw Exception(
           "Failed to add agent in the Assigned agent list:${e.toString()}");
     }
@@ -422,11 +442,9 @@ class AuthApi {
         debugPrint("✅ ${jsonResponse["message"]}");
         return true;
       } else {
-        debugPrint("⚠️ ${jsonResponse["message"]}");
         return false;
       }
     } catch (e) {
-      debugPrint("❌ Error: $e");
       return false;
     }
   }
