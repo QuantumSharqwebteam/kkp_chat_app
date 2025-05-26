@@ -97,15 +97,12 @@ class SocketService {
     //   }
     // });
     _socket.on('receiveMessage', (data) {
-      debugPrint(data.toString());
+      final String senderId = data['senderId'] ?? '';
+      final String targetId = data['targetId'] ?? '';
 
-      final String senderId = data['senderId'];
-
-      // If chat page is open and it's the correct chat, deliver message
       if (isChatPageOpen &&
-          activeCustomerId == senderId &&
-          _onMessageReceived != null) {
-        _onMessageReceived!(data);
+          (activeCustomerId == senderId || activeCustomerId == targetId)) {
+        _onMessageReceived?.call(data);
       } else {
         _chatNotification(data);
       }

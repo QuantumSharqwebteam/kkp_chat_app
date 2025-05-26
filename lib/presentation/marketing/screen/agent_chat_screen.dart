@@ -200,9 +200,49 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   String generateMessageId(ChatMessageModel message) {
-    final formString = message.form != null ? message.form.toString() : '';
+    final normalizedMessage =
+        message.message.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+    String formString = '';
+    if (message.form != null) {
+      final filteredForm = Map<String, dynamic>.from(message.form!);
+      filteredForm.remove('_id');
+      final sortedForm = _sortMap(filteredForm);
+      formString = jsonEncode(sortedForm);
+    }
+
     final mediaUrl = message.mediaUrl ?? '';
-    return '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}_$mediaUrl\_$formString';
+
+    final generatedId =
+        // ignore: unnecessary_string_escapes
+        '${message.sender}_$normalizedMessage\_$mediaUrl\_$formString';
+
+    // print('Generated Message ID: $generatedId');
+    return generatedId;
+  }
+
+  Map<String, dynamic> _sortMap(Map<String, dynamic> map) {
+    final sortedKeys = map.keys.toList()..sort();
+    final sortedMap = <String, dynamic>{};
+    for (var key in sortedKeys) {
+      var value = map[key];
+      if (value is Map<String, dynamic>) {
+        value = _sortMap(value);
+      } else if (value is List) {
+        value = value.map((e) {
+          if (e is Map<String, dynamic>) return _sortMap(e);
+          return e;
+        }).toList();
+      } else {
+        if (value is num) {
+          value = value.toString();
+        } else {
+          value = value?.toString() ?? '';
+        }
+      }
+      sortedMap[key] = value;
+    }
+    return sortedMap;
   }
 
   Future<void> _loadPreviousMessages(context) async {
@@ -210,7 +250,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     bool boxExists = await Hive.boxExists(boxName);
 
     if (!boxExists) {
-      // Fetch messages from API, get new unique messages, save, then update UI
       List<ChatMessageModel> fetchedMessages =
           await _fetchMessagesFromAPI(boxName, context);
       if (fetchedMessages.isNotEmpty) {
@@ -222,17 +261,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         _isLoading = false;
       });
     } else {
-      // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getMessages(boxName, page: _currentPage);
-
-      // Clear _loadedMessageIds before repopulating to avoid stale state
       _loadedMessageIds.clear();
-      final uniqueMessages =
-          _removeDuplicates(loadedMessages); // populates _loadedMessageIds
-
+      for (var msg in loadedMessages) {
+        _loadedMessageIds.add(generateMessageId(msg));
+      }
       setState(() {
-        messages = uniqueMessages;
+        messages = loadedMessages;
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });

@@ -83,6 +83,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isLoadingMore = false;
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = {};
+  final Set<String> _receivedMessageIds = {};
 
   Future<void> _loadPreviousMessages() async {
     final boxName = widget.customerEmail!;
@@ -95,7 +96,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getCustomerMessages(boxName);
-      final newLoadedMessages = _removeDuplicates(loadedMessages);
+      final newLoadedMessages =
+          _removeDuplicates(loadedMessages, _loadedMessageIds);
 
       messages = newLoadedMessages;
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -109,7 +111,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   String _generateMessageId(ChatMessageModel message) {
     final messageContent =
-        '${message.sender}_${message.message}_${message.mediaUrl}_${jsonEncode(message.form ?? {})}_${message.timestamp.toIso8601String()}';
+        '${message.sender}_${message.message}_${message.mediaUrl}_${jsonEncode(message.form ?? {})}';
     return sha256.convert(utf8.encode(messageContent)).toString();
   }
 
@@ -127,15 +129,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         before: before,
       );
 
-      // Print fetched messages to check for duplicates
-      debugPrint("Fetched Messages: $fetchedMessages");
-
       if (fetchedMessages.isEmpty) {
-        // No more messages to load
         return;
       }
 
-      // Convert MessageModel to ChatMessageModel
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
@@ -150,9 +147,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         );
       }).toList();
 
-      final newChatMessages = _removeDuplicates(chatMessages);
+      final newChatMessages =
+          _removeDuplicates(chatMessages, _loadedMessageIds);
       if (newChatMessages.isNotEmpty) {
-        // Save all messages at once
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
           final newMessages = newChatMessages
@@ -167,20 +164,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         });
       }
     } catch (e) {
-      // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
-      // You can show a snackbar or alert dialog to inform the user about the error
     }
   }
 
-  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
+  List<ChatMessageModel> _removeDuplicates(
+      List<ChatMessageModel> messages, Set<String> messageIds) {
     return messages.where((message) {
       final messageId = _generateMessageId(message);
-      // Print message ID
-      if (_loadedMessageIds.contains(messageId)) {
+      if (messageIds.contains(messageId)) {
         return false;
       } else {
-        _loadedMessageIds.add(messageId);
+        messageIds.add(messageId);
         return true;
       }
     }).toList();
@@ -243,7 +238,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     super.initState();
     _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
-    _socketService.toggleChatPageOpen(true);
+    _socketService.setChatPageState(
+      isOpen: true,
+      customerId: widget.customerEmail, // This is targetId in incoming message
+    );
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _loadPreviousMessages();
     _initializeRecorder();
@@ -281,9 +279,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _socketService.toggleChatPageOpen(false);
+      _socketService.setChatPageState(isOpen: false);
     } else if (state == AppLifecycleState.resumed) {
-      _socketService.toggleChatPageOpen(true);
+      _socketService.setChatPageState(
+        isOpen: true,
+        customerId:
+            widget.customerEmail, // This is targetId in incoming message
+      );
     }
   }
 
@@ -300,16 +302,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
 
     final messageId = _generateMessageId(message);
-    if (!_loadedMessageIds.contains(messageId)) {
+    if (!_receivedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom(); // Scroll to bottom only when a new message is received
+        _scrollToBottom();
       });
 
-      // Save the message to Hive only if it's not already saved
+      // Save the message to Hive
       _chatStorageService.saveMessage(message, widget.customerEmail!);
-      _loadedMessageIds.add(messageId);
+      _receivedMessageIds.add(messageId);
     }
   }
 
@@ -332,7 +334,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
 
     final messageId = _generateMessageId(message);
-    //debugPrint("Sended message id: $messageId");
     setState(() {
       messages.add(message);
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -350,7 +351,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: form,
     );
 
-// Only avoid storing duplicate messages, not sending
+    // Only avoid storing duplicate messages, not sending
     if (!_loadedMessageIds.contains(messageId)) {
       _chatStorageService.saveMessage(message, widget.customerEmail!);
       _loadedMessageIds.add(messageId);
