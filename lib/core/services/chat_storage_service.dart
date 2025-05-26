@@ -7,7 +7,7 @@ class ChatStorageService {
   }
 
   Future<List<ChatMessageModel>> getCustomerMessages(String boxName,
-      {int limit = 100, String? before}) async {
+      {int limit = 20, String? before}) async {
     final box = await _openBox(boxName);
     final allMessages = box.values
         .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:crypto/crypto.dart';
+import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +83,55 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isLoadingMore = false;
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = {};
-  final Set<String> _receivedMessageIds = {};
+
+  String generateMessageId(ChatMessageModel message, {bool isLocal = false}) {
+    final normalizedMessage =
+        message.message.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+    String formString = '';
+    if (message.form != null) {
+      final filteredForm = Map<String, dynamic>.from(message.form!);
+      filteredForm.remove('_id');
+      final sortedForm = _sortMap(filteredForm);
+      formString = jsonEncode(sortedForm);
+    }
+
+    final mediaUrl = message.mediaUrl ?? '';
+
+    var baseId = '${message.sender}_$normalizedMessage\_$mediaUrl\_$formString';
+
+    if (isLocal) {
+      // Append a random number to guarantee uniqueness for locally sent messages
+      final random = Random();
+      baseId = '$baseId\_${random.nextInt(100000)}';
+    }
+
+    return baseId;
+  }
+
+  Map<String, dynamic> _sortMap(Map<String, dynamic> map) {
+    final sortedKeys = map.keys.toList()..sort();
+    final sortedMap = <String, dynamic>{};
+    for (var key in sortedKeys) {
+      var value = map[key];
+      if (value is Map<String, dynamic>) {
+        value = _sortMap(value);
+      } else if (value is List) {
+        value = value.map((e) {
+          if (e is Map<String, dynamic>) return _sortMap(e);
+          return e;
+        }).toList();
+      } else {
+        if (value is num) {
+          value = value.toString();
+        } else {
+          value = value?.toString() ?? '';
+        }
+      }
+      sortedMap[key] = value;
+    }
+    return sortedMap;
+  }
 
   Future<void> _loadPreviousMessages() async {
     final boxName = widget.customerEmail!;
@@ -96,8 +144,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getCustomerMessages(boxName);
-      final newLoadedMessages =
-          _removeDuplicates(loadedMessages, _loadedMessageIds);
+      final newLoadedMessages = _removeDuplicates(loadedMessages);
 
       messages = newLoadedMessages;
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -107,12 +154,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
-  }
-
-  String _generateMessageId(ChatMessageModel message) {
-    final messageContent =
-        '${message.sender}_${message.message}_${message.mediaUrl}_${jsonEncode(message.form ?? {})}';
-    return sha256.convert(utf8.encode(messageContent)).toString();
   }
 
   Future<void> _fetchMessagesFromAPI(String boxName) async {
@@ -125,14 +166,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final List<MessageModel> fetchedMessages =
           await _chatRepository.fetchCustomerMessages(
         customerEmail: widget.customerEmail!,
-        limit: 100,
+        limit: 20,
         before: before,
       );
 
       if (fetchedMessages.isEmpty) {
+        // No more messages to load
         return;
       }
 
+      // Convert MessageModel to ChatMessageModel
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
@@ -147,35 +190,30 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         );
       }).toList();
 
-      final newChatMessages =
-          _removeDuplicates(chatMessages, _loadedMessageIds);
+      final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
+        // Save all messages at once
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
-          final newMessages = newChatMessages
-              .where((newMsg) => !messages.any((existingMsg) =>
-                  existingMsg.sender == newMsg.sender &&
-                  existingMsg.timestamp == newMsg.timestamp &&
-                  existingMsg.message == newMsg.message))
-              .toList();
-
-          messages.insertAll(0, newMessages);
+          messages.insertAll(0, newChatMessages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         });
       }
     } catch (e) {
+      // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
+      // You can show a snackbar or alert dialog to inform the user about the error
     }
   }
 
-  List<ChatMessageModel> _removeDuplicates(
-      List<ChatMessageModel> messages, Set<String> messageIds) {
+  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
     return messages.where((message) {
-      final messageId = _generateMessageId(message);
-      if (messageIds.contains(messageId)) {
+      final messageId = generateMessageId(message);
+
+      if (_loadedMessageIds.contains(messageId)) {
         return false;
       } else {
-        messageIds.add(messageId);
+        _loadedMessageIds.add(messageId);
         return true;
       }
     }).toList();
@@ -290,28 +328,25 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    debugPrint("Received Message: ${data.toString()}");
     final currentTime = DateTime.now().toIso8601String();
     final message = ChatMessageModel(
       message: data["message"],
-      timestamp: DateTime.parse(currentTime),
+      timestamp: DateTime.parse(currentTime), // local timestamp
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
       form: data["form"],
     );
 
-    final messageId = _generateMessageId(message);
-    if (!_receivedMessageIds.contains(messageId)) {
+    final messageId = generateMessageId(message);
+    if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
-
-      // Save the message to Hive
       _chatStorageService.saveMessage(message, widget.customerEmail!);
-      _receivedMessageIds.add(messageId);
+      _loadedMessageIds.add(messageId);
     }
   }
 
@@ -326,37 +361,35 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     final currentTime = DateTime.now().toIso8601String();
     final message = ChatMessageModel(
       message: messageText,
-      timestamp: DateTime.parse(currentTime),
+      timestamp: DateTime.parse(currentTime), // local timestamp
       sender: widget.customerEmail!,
       type: type!,
       mediaUrl: mediaUrl,
       form: form,
     );
 
-    final messageId = _generateMessageId(message);
-    setState(() {
-      messages.add(message);
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      _scrollToBottom();
-    });
-
-    final String? name = LocalDbHelper.getProfile()?.name;
-
-    _socketService.sendMessage(
-      message: messageText,
-      senderEmail: widget.customerEmail!,
-      senderName: name!,
-      type: type,
-      mediaUrl: mediaUrl,
-      form: form,
-    );
-
-    // Only avoid storing duplicate messages, not sending
+    final messageId = generateMessageId(message);
     if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
+      });
+
+      final String? name = LocalDbHelper.getProfile()?.name;
+
+      _socketService.sendMessage(
+        message: messageText,
+        senderEmail: widget.customerEmail!,
+        senderName: name!,
+        type: type,
+        mediaUrl: mediaUrl,
+        form: form,
+      );
+
       _chatStorageService.saveMessage(message, widget.customerEmail!);
       _loadedMessageIds.add(messageId);
     }
-
     _chatController.clear();
   }
 
@@ -510,20 +543,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 Text("Please fill in the form details",
                     style: AppTextStyles.black16_600),
                 const SizedBox(height: 10),
-                // TextFormField(
-                //   decoration: InputDecoration(
-                //       labelText: "S.No",
-                //       hintText: "fill here '01' for first form",
-                //       hintStyle: AppTextStyles.grey12_600
-                //           .copyWith(color: AppColors.greyAAAAAA)),
-                //   controller: sNoController,
-                //   validator: (value) {
-                //     if (value == null || value.isEmpty) {
-                //       return 'S.No';
-                //     }
-                //     return null;
-                //   },
-                // ),
                 TextFormField(
                   decoration: InputDecoration(labelText: "Quality"),
                   controller: qualityController,
@@ -564,22 +583,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     return null;
                   },
                 ),
-                // TextFormField(
-                //   decoration: InputDecoration(labelText: "Rate"),
-                //   controller: rateController,
-                //   validator: (value) {
-                //     if (value == null || value.isEmpty) {
-                //       return 'Please set Rate';
-                //     }
-                //     return null;
-                //   },
-                // ),
                 const SizedBox(height: 20),
                 CustomButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final formData = {
-                        // "S.No": sNoController.text,
                         "quality": qualityController.text,
                         "quantity": quantityController.text,
                         "weave": weaveController.text,
@@ -612,7 +620,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       context: context,
       builder: (BuildContext context) {
         return FormUpdateAlertDialog(
-          //   'Update Rate for Form ID: ${formData['_id']}',
           formId: formData["_id"],
           quality: formData['quality'],
           quantity: formData['quantity'],
@@ -648,16 +655,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     try {
       await _chatRepository.updateInquiryFormRate(id, newRate);
-      debugPrint("Rate updated suceesfully");
+      debugPrint("Rate updated successfully");
       if (context.mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text("Rate is updated: $newRate")));
       }
 
-      // Call the callback function with the updated form data
       final updatedFormData = Map<String, dynamic>.from(formData);
       updatedFormData['rate'] = newRate;
-      //_handleRateUpdated(updatedFormData);
       _sendMessage(
           messageText:
               "Rate updated as $newRate for form with Id : ${formData["_id"]}");
@@ -671,14 +676,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       });
     }
   }
-
-  // void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
-  //   _sendMessage(
-  //     messageText: "Form rate updated",
-  //     type: 'form',
-  //     form: updatedFormData,
-  //   );
-  // }
 
   String formatTimestamp(dynamic timestamp) {
     if (timestamp == null) {
@@ -723,7 +720,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 debugPrint("Generated UID for agent (caller): $uid");
 
                 final callId = Uuid().v4();
-                // Send call data over socket to notify customer
                 _socketService.sendAgoraCall(
                   channelName: channelName,
                   callerId: widget.customerEmail!,
@@ -731,7 +727,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   callId: callId,
                 );
 
-                // Navigate agent to call screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -739,7 +734,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                       isCaller: true,
                       channelName: channelName,
                       uid: uid,
-                      //  remoteUserId: widget.agentEmail!,
                       remoteUserName: widget.agentName!,
                       messageId: callId,
                     ),
@@ -783,17 +777,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                 timestamp: formatTimestamp(
                                     msg.timestamp.toIso8601String()),
                                 userRole: userRole!,
-                                //onRateUpdated: _handleRateUpdated,
-                                // onFormUpdateStart: () {
-                                //   setState(() {
-                                //     isFormUpdating = true;
-                                //   });
-                                // },
-                                // onFormUpdateEnd: () {
-                                //   setState(() {
-                                //     isFormUpdating = false;
-                                //   });
-                                // },
                               );
                             } else if (msg.type == 'document') {
                               return DocumentMessageBubble(

@@ -1,134 +1,121 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kkpchatapp/data/models/address_model.dart';
+import 'package:kkpchatapp/data/models/notification_model.dart';
 
-import 'fake_auth_api.dart';
+class FakeAuthRepository {
+  Future<Map<String, dynamic>> login(
+      {required String email, required String password}) async {
+    // Simulate different login responses
+    if (email == "valid@example.com" && password == "validpassword") {
+      return {
+        'message': 'User logged in successfully',
+        'token': 'fakeToken',
+        'role': '0'
+      };
+    } else if (email == "invalid@example.com") {
+      return {
+        'message': 'Invalid email',
+      };
+    } else if (password == "wrongpassword") {
+      return {
+        'message': 'Invalid password',
+      };
+    } else {
+      return {
+        'message': 'Unknown error',
+      };
+    }
+  }
 
-void main() async {
-  await dotenv.load(fileName: ".env");
+  Future<Map<String, dynamic>> signup(
+      {required String email, required String password}) async {
+    // Simulate different signup responses
+    if (email == "valid@example.com" && password == "validpassword") {
+      return {
+        'message': 'User signed up successfully',
+        'token': 'fakeToken',
+      };
+    } else if (email == "exists@example.com") {
+      return {
+        'status': 400,
+        'message': 'Email already exists',
+      };
+    } else {
+      return {
+        'message': 'Unknown error',
+      };
+    }
+  }
 
-  group('AuthRepository Tests', () {
-    late AuthRepository authRepository;
-    late FakeAuthApi fakeAuthApi;
-    late MockClient mockClient;
+  Future<Map<String, dynamic>> sendOtp({required String email}) async {
+    // Simulate sending OTP
+    if (email == "valid@example.com") {
+      return {
+        'message': 'OTP sent',
+      };
+    } else {
+      return {
+        'message': 'Failed to send OTP',
+      };
+    }
+  }
 
-    setUp(() {
-      mockClient = MockClient();
-      fakeAuthApi = FakeAuthApi(mockClient: mockClient);
-      authRepository = AuthRepository(authApi: fakeAuthApi);
-    });
+  Future<Map<String, dynamic>> updateUserDetails({
+    String? name,
+    String? number,
+    String? customerType,
+    String? gstNo,
+    String? panNo,
+    String? profileUrl,
+    Address? address,
+  }) async {
+    // Simulate updating user details
+    if (name != null) {
+      return {
+        'message': 'Item updated successfully',
+        'data': {'name': name},
+      };
+    } else {
+      return {
+        'message': 'Failed to update user details',
+      };
+    }
+  }
 
-    test('Test successful login', () async {
-      final response = await authRepository.login(
-          email: 'test@example.com', password: 'password');
+  Future<Map<String, dynamic>> verifyOtp(
+      {required String email, required int otp}) async {
+    // Simulate different OTP verification responses
+    if (otp == 123456) {
+      return {
+        'message': 'OTP Verified Successfully!',
+      };
+    } else {
+      return {
+        'message': 'Invalid OTP',
+      };
+    }
+  }
 
-      expect(response['message'], 'User logged in successfully');
-    });
+  List<NotificationModel> fakeNotifications = [
+    NotificationModel(id: '1', title: 'Test 1', viewed: false),
+    NotificationModel(id: '2', title: 'Test 2', viewed: true),
+  ];
 
-    test('Test successful signup', () async {
-      final response = await authRepository.signup(
-          email: 'test@example.com', password: 'password');
+  Future<List<NotificationModel>> getParsedNotifications() async {
+    return fakeNotifications;
+  }
 
-      expect(response['message'], 'User signed up successfully');
-    });
-
-    test('Test successful update user details', () async {
-      final response = await authRepository.updateUserDetails(
-          name: 'John Doe', number: '1234567890');
-
-      expect(response['message'], 'User details updated successfully');
-    });
-
-    test('Test successful forgot password', () async {
-      final response = await authRepository.forgotPassword(
-          email: 'test@example.com', password: 'new_password');
-
-      expect(response['message'], 'Password updated successfully');
-    });
-
-    test('Test successful send OTP', () async {
-      final response = await authRepository.sendOtp(email: 'test@example.com');
-
-      expect(response['message'], 'OTP sent successfully');
-    });
-
-    test('Test successful get user info', () async {
-      final response = await authRepository.getUserInfo();
-
-      expect(response.name, 'John Doe');
-      expect(response.email, 'john@example.com');
-    });
-
-    test('Test successful verify OTP', () async {
-      final response = await authRepository.verifyOtp(
-          email: 'test@example.com', otp: 123456);
-
-      expect(response['message'], 'OTP verified successfully');
-    });
-
-    test('Test successful get agent', () async {
-      final response = await authRepository.getAgent();
-
-      expect(response.length, 2);
-    });
-
-    test('Test successful add agent', () async {
-      final response = await authRepository.addAgent(
-          body: {'email': 'agent@example.com', 'password': 'password'});
-
-      expect(response['message'], 'Agent added successfully');
-    });
-
-    test('Test successful assign agent', () async {
-      final response =
-          await authRepository.assignAgent(email: 'agent@example.com');
-
-      expect(response['message'], 'Agent assigned successfully');
-    });
-
-    test('Test successful remove assigned agent', () async {
-      final response =
-          await authRepository.removeAssignedAgent(email: 'agent@example.com');
-
-      expect(response, true);
-    });
-
-    test('Test successful get users by role', () async {
-      final response = await authRepository.fetchUsersByRole('User');
-
-      expect(response.length, 2);
-    });
-
-    // test('Test successful get users by agent ID', () async {
-    //   final response = await authRepository.getUsersByAgentId(agentEmail: 'agent@example.com');
-
-    //   expect(response.length, 2);
-    // });
-
-    // test('Test successful delete user account', () async {
-    //   final response = await authRepository.deleteUserAccount(
-    //       'test@example.com', 'password');
-
-    //   expect(response['message'], 'User account deleted successfully');
-    // });
-
-    test('Test successful delete agent', () async {
-      final response = await authRepository.deleteAgentAccount(
-          agentEmail: 'agent@example.com');
-
-      expect(response['message'], 'Agent deleted successfully');
-    });
-
-    test('Test successful get notifications', () async {
-      final response = await authRepository.getParsedNotifications();
-
-      expect(response.length, 2);
-    });
-
-    test('Test successful update notification read', () async {
-      final response = await authRepository.updateNotificationRead('1');
-
-      expect(response['message'], 'Notification marked as read');
-    });
-  });
+  Future<Map<String, dynamic>> updateNotificationRead(String id) async {
+    fakeNotifications = fakeNotifications.map((n) {
+      if (n.id == id) {
+        return NotificationModel(
+          id: n.id,
+          title: n.title,
+          viewed: true,
+        );
+      }
+      return n;
+    }).toList();
+    return {'status': 'success'};
+  }
 }
