@@ -33,6 +33,7 @@ class SocketService {
   Function(Map<String, dynamic>)? _onCallTerminated;
 
   bool isChatPageOpen = false;
+  String? activeCustomerId;
 
   Function? onMessageReceivedCallback;
 
@@ -85,14 +86,28 @@ class SocketService {
       _updateRoomMembers(List<String>.from(roomMembers));
     });
 
+    // _socket.on('receiveMessage', (data) {
+    //   debugPrint(data.toString());
+    //   if (isChatPageOpen && _onMessageReceived != null) {
+    //     _onMessageReceived!(data);
+    //   } else if (!isChatPageOpen && _onMessageReceived != null) {
+    //     _chatNotification(data);
+    //   } else {
+    //     return;
+    //   }
+    // });
     _socket.on('receiveMessage', (data) {
       debugPrint(data.toString());
-      if (isChatPageOpen && _onMessageReceived != null) {
+
+      final String senderId = data['senderId'];
+
+      // If chat page is open and it's the correct chat, deliver message
+      if (isChatPageOpen &&
+          activeCustomerId == senderId &&
+          _onMessageReceived != null) {
         _onMessageReceived!(data);
-      } else if (!isChatPageOpen && _onMessageReceived != null) {
-        _chatNotification(data);
       } else {
-        return;
+        _chatNotification(data);
       }
     });
 
@@ -381,6 +396,11 @@ class SocketService {
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;
+  }
+
+  void setChatPageState({required bool isOpen, String? customerId}) {
+    isChatPageOpen = isOpen;
+    activeCustomerId = isOpen ? customerId : null;
   }
 
   Future<void> _handleNotificationTap(NotificationResponse response) async {

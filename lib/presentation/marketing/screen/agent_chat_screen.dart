@@ -84,7 +84,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void initState() {
     _fetchUserRole();
     super.initState();
-    _socketService.toggleChatPageOpen(true);
+    // _socketService.toggleChatPageOpen(true);
+    _socketService.setChatPageState(
+        isOpen: true, customerId: widget.customerEmail);
+
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
     _loadPreviousMessages(context);
@@ -115,14 +118,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
-    _socketService.toggleChatPageOpen(false);
+    // _socketService.toggleChatPageOpen(false);
+    _socketService.setChatPageState(
+      isOpen: false,
+    );
 
     super.dispose();
   }
 
   @override
   void deactivate() {
-    _socketService.toggleChatPageOpen(false);
+    //_socketService.toggleChatPageOpen(false);
+    _socketService.setChatPageState(isOpen: false);
     super.deactivate();
   }
 
@@ -130,9 +137,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _socketService.toggleChatPageOpen(false);
+      // _socketService.toggleChatPageOpen(false);
+      _socketService.setChatPageState(isOpen: false);
     } else if (state == AppLifecycleState.resumed) {
-      _socketService.toggleChatPageOpen(true);
+      // _socketService.toggleChatPageOpen(true);
+      _socketService.setChatPageState(
+        isOpen: true,
+        customerId: widget.customerEmail,
+      );
       // Scroll to bottom when the app is resumed
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
