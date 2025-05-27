@@ -727,7 +727,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   callId: callId,
                 );
 
-                Navigator.push(
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => AgoraAudioCallScreen(
@@ -739,6 +739,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     ),
                   ),
                 );
+
+                if (result != null) {
+                  await _chatStorageService.saveMessage(
+                      result, widget.customerEmail!);
+                  setState(() {
+                    messages.add(result);
+                    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                  });
+                  _scrollToBottom();
+                }
               },
               icon: const Icon(Icons.call_outlined, color: Colors.black),
             ),

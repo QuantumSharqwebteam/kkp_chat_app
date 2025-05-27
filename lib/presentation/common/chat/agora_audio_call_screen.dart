@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/media_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
@@ -173,7 +174,9 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       },
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
-        _updateCallData("not answered");
+        if (_remoteUid == null) {
+          _updateCallData("not answered");
+        }
       },
       onError: (ErrorCodeType code, String message) {
         debugPrint("⚠️Error joinning channel Agora error: $code - $message");
@@ -205,20 +208,32 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     });
   }
 
+  ChatMessageModel _createCallDetailsMessage(
+      String callStatus, String callDuration) {
+    return ChatMessageModel(
+      message: "Call $callStatus",
+      timestamp: DateTime.now(),
+      sender: "",
+      type: 'call',
+      callStatus: callStatus,
+      callDuration: callDuration,
+    );
+  }
+
   void _endCall() {
     _durationTimer?.cancel();
     _callTimeoutTimer?.cancel();
     _engine.leaveChannel();
     _stopRinging(); //Stop ringing if still active
-    // if (_remoteUid == null) {
-    //   // Update call status to missed
-    //   _updateCallData('missed');
-    // } else {
-    //   // Update call status to answered and send call duration
-    //   final callDuration = _formatDuration(_callDuration);
-    //   _updateCallData('answered', callDuration: callDuration);
-    // }
-    if (mounted) Navigator.pop(context);
+
+    final callStatus = _remoteUid != null ? "answered" : "not answered";
+    final callDuration = _formatDuration(_callDuration);
+    final callDetailsMessage =
+        _createCallDetailsMessage(callStatus, callDuration);
+
+    if (mounted) {
+      Navigator.pop(context, callDetailsMessage);
+    }
   }
 
   //  Start ringing

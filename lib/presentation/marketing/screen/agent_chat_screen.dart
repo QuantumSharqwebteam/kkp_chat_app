@@ -686,7 +686,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 color: Colors.black),
           ),
           IconButton(
-            onPressed: () {
+            onPressed: () async {
               final channelName =
                   sha256.convert(utf8.encode(widget.agentEmail!)).toString();
 
@@ -703,7 +703,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 callId: callId,
               );
 
-              Navigator.push(
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => AgoraAudioCallScreen(
@@ -716,6 +716,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                   ),
                 ),
               );
+
+              if (result != null) {
+                setState(() {
+                  messages.add(result);
+                  messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                });
+                _scrollToBottom();
+              }
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),

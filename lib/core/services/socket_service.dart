@@ -230,6 +230,7 @@ class SocketService {
     String type = 'text',
     Map<String, dynamic>? form,
     String? mediaUrl,
+    String? timestamp,
   }) {
     if (_isConnected) {
       Map<String, dynamic> messageData = {
@@ -242,6 +243,7 @@ class SocketService {
       if (message != null) messageData['message'] = message;
       if (form != null) messageData['form'] = form;
       if (mediaUrl != null) messageData['mediaUrl'] = mediaUrl;
+      if (timestamp != null) messageData['timestamp'] = timestamp;
 
       _socket.emit('sendMessage', messageData);
     } else {
@@ -306,9 +308,9 @@ class SocketService {
     final userType = await LocalDbHelper.getUserType();
 
     final message = ChatMessageModel(
-      message: data["message"],
+      message: data["message"] ?? "",
       timestamp: DateTime.now(),
-      sender: data["senderId"],
+      sender: data["senderId"] ?? "",
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
       form: data["form"],

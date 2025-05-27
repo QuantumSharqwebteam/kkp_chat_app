@@ -28,7 +28,7 @@ class CallMessageBubble extends StatelessWidget {
         iconColor = Colors.green;
         statusText = 'Call ended';
         break;
-      case 'not_answered':
+      case 'not answered':
         iconData = Icons.call_end;
         iconColor = Colors.orange;
         statusText = 'Not answered';
@@ -42,21 +42,23 @@ class CallMessageBubble extends StatelessWidget {
     }
 
     return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      //   alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: Alignment.centerRight,
       child: IntrinsicWidth(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isMe
-                ? AppColors.senderMessageBubbleColor
-                : AppColors.recieverMessageBubble,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-              bottomLeft: isMe ? Radius.circular(16) : Radius.circular(0),
-              bottomRight: isMe ? Radius.circular(0) : Radius.circular(16),
-            ),
+            color: //isMe
+                //? AppColors.senderMessageBubbleColor:
+                AppColors.recieverMessageBubble,
+            // borderRadius: BorderRadius.only(
+            //   topLeft: Radius.circular(16),
+            //   topRight: Radius.circular(16),
+            //   bottomLeft: isMe ? Radius.circular(16) : Radius.circular(0),
+            //   bottomRight: isMe ? Radius.circular(0) : Radius.circular(16),
+            // ),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
