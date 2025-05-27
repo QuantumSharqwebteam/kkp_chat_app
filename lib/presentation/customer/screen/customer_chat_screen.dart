@@ -84,55 +84,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = {};
 
-  String generateMessageId(ChatMessageModel message, {bool isLocal = false}) {
-    final normalizedMessage =
-        message.message.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-
-    String formString = '';
-    if (message.form != null) {
-      final filteredForm = Map<String, dynamic>.from(message.form!);
-      filteredForm.remove('_id');
-      final sortedForm = _sortMap(filteredForm);
-      formString = jsonEncode(sortedForm);
-    }
-
-    final mediaUrl = message.mediaUrl ?? '';
-
-    var baseId = '${message.sender}_$normalizedMessage\_$mediaUrl\_$formString';
-
-    if (isLocal) {
-      // Append a random number to guarantee uniqueness for locally sent messages
-      final random = Random();
-      baseId = '$baseId\_${random.nextInt(100000)}';
-    }
-
-    return baseId;
-  }
-
-  Map<String, dynamic> _sortMap(Map<String, dynamic> map) {
-    final sortedKeys = map.keys.toList()..sort();
-    final sortedMap = <String, dynamic>{};
-    for (var key in sortedKeys) {
-      var value = map[key];
-      if (value is Map<String, dynamic>) {
-        value = _sortMap(value);
-      } else if (value is List) {
-        value = value.map((e) {
-          if (e is Map<String, dynamic>) return _sortMap(e);
-          return e;
-        }).toList();
-      } else {
-        if (value is num) {
-          value = value.toString();
-        } else {
-          value = value?.toString() ?? '';
-        }
-      }
-      sortedMap[key] = value;
-    }
-    return sortedMap;
-  }
-
   Future<void> _loadPreviousMessages() async {
     final boxName = widget.customerEmail!;
     bool boxExists = await Hive.boxExists(boxName);
@@ -208,8 +159,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
     return messages.where((message) {
-      final messageId = generateMessageId(message);
-
+      final messageId =
+          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
       if (_loadedMessageIds.contains(messageId)) {
         return false;
       } else {
@@ -328,23 +279,33 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    final currentTime = DateTime.now().toIso8601String();
+    debugPrint("Received Message: ${data.toString()}");
+
+    DateTime timestamp;
+    try {
+      timestamp = DateTime.parse(data["timestamp"]);
+    } catch (_) {
+      timestamp = DateTime.now(); // fallback in case of bad format
+    }
+
     final message = ChatMessageModel(
       message: data["message"],
-      timestamp: DateTime.parse(currentTime), // local timestamp
+      timestamp: timestamp,
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
       form: data["form"],
     );
 
-    final messageId = generateMessageId(message);
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
+
       _chatStorageService.saveMessage(message, widget.customerEmail!);
       _loadedMessageIds.add(messageId);
     }
@@ -358,17 +319,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
-    final currentTime = DateTime.now().toIso8601String();
+    final currentTime = DateTime.now();
     final message = ChatMessageModel(
       message: messageText,
-      timestamp: DateTime.parse(currentTime), // local timestamp
+      timestamp: currentTime,
       sender: widget.customerEmail!,
       type: type!,
       mediaUrl: mediaUrl,
       form: form,
     );
 
-    final messageId = generateMessageId(message);
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
@@ -385,6 +347,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         type: type,
         mediaUrl: mediaUrl,
         form: form,
+        timestamp: currentTime.toIso8601String(), // ✅ Send timestamp
       );
 
       _chatStorageService.saveMessage(message, widget.customerEmail!);

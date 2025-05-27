@@ -199,85 +199,27 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     await Permission.microphone.request();
   }
 
-  String generateMessageId(ChatMessageModel message) {
-    final normalizedMessage =
-        message.message.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-
-    String formString = '';
-    if (message.form != null) {
-      final filteredForm = Map<String, dynamic>.from(message.form!);
-      filteredForm.remove('_id');
-      final sortedForm = _sortMap(filteredForm);
-      formString = jsonEncode(sortedForm);
-    }
-
-    final mediaUrl = message.mediaUrl ?? '';
-
-    final generatedId =
-        // ignore: unnecessary_string_escapes
-        '${message.sender}_$normalizedMessage\_$mediaUrl\_$formString';
-
-    // print('Generated Message ID: $generatedId');
-    return generatedId;
-  }
-
-  Map<String, dynamic> _sortMap(Map<String, dynamic> map) {
-    final sortedKeys = map.keys.toList()..sort();
-    final sortedMap = <String, dynamic>{};
-    for (var key in sortedKeys) {
-      var value = map[key];
-      if (value is Map<String, dynamic>) {
-        value = _sortMap(value);
-      } else if (value is List) {
-        value = value.map((e) {
-          if (e is Map<String, dynamic>) return _sortMap(e);
-          return e;
-        }).toList();
-      } else {
-        if (value is num) {
-          value = value.toString();
-        } else {
-          value = value?.toString() ?? '';
-        }
-      }
-      sortedMap[key] = value;
-    }
-    return sortedMap;
-  }
-
   Future<void> _loadPreviousMessages(context) async {
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
     bool boxExists = await Hive.boxExists(boxName);
 
     if (!boxExists) {
-      List<ChatMessageModel> fetchedMessages =
-          await _fetchMessagesFromAPI(boxName, context);
-      if (fetchedMessages.isNotEmpty) {
-        await _chatStorageService.saveMessages(fetchedMessages, boxName);
-      }
-      setState(() {
-        messages = fetchedMessages;
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _isLoading = false;
-      });
+      // Fetch messages from API
+      await _fetchMessagesFromAPI(boxName, context);
     } else {
+      // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getMessages(boxName, page: _currentPage);
-      _loadedMessageIds.clear();
-      for (var msg in loadedMessages) {
-        _loadedMessageIds.add(generateMessageId(msg));
-      }
+      final newLoadedMessages = _removeDuplicates(loadedMessages);
       setState(() {
-        messages = loadedMessages;
+        messages = newLoadedMessages;
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
     }
   }
 
-  // Modify to return new unique messages but not setState inside here
-  Future<List<ChatMessageModel>> _fetchMessagesFromAPI(
-      String boxName, context) async {
+  Future<void> _fetchMessagesFromAPI(String boxName, context) async {
     try {
       String? before;
       if (messages.isNotEmpty) {
@@ -293,9 +235,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       );
 
       if (fetchedMessages.isEmpty) {
-        return [];
+        // No more messages to load
+        return;
       }
 
+      // Convert MessageModel to ChatMessageModel
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
@@ -310,12 +254,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         );
       }).toList();
 
-      final newChatMessages =
-          _removeDuplicates(chatMessages); // Updates _loadedMessageIds
-      return newChatMessages;
+      final newChatMessages = _removeDuplicates(chatMessages);
+      if (newChatMessages.isNotEmpty) {
+        // Save all messages at once
+        await _chatStorageService.saveMessages(newChatMessages, boxName);
+        setState(() {
+          messages.insertAll(0, newChatMessages);
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _isLoading = false;
+        });
+      }
     } catch (e) {
+      // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
-      return [];
+      // You can show a snackbar or alert dialog to inform the user about the error
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Failed to load messages: $e")),
+      // );
     }
   }
 
@@ -349,95 +304,82 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Future<void> _loadMoreMessages(context) async {
     if (_isFetching || _isLoadingMore) return;
     _isLoadingMore = true;
-    _isFetching = true;
     setState(() {});
 
     _currentPage++;
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
-
     if (_fetchedPages.contains(_currentPage)) {
+      // Page already fetched, do nothing
       _isLoadingMore = false;
-      _isFetching = false;
       setState(() {});
       return;
     }
 
-    // First try to get from Hive:
     final loadedMessages =
         await _chatStorageService.getMessages(boxName, page: _currentPage);
 
     if (loadedMessages.isEmpty) {
-      // Fetch from API:
-      final newMessages = await _fetchMessagesFromAPI(boxName, context);
-
-      if (newMessages.isNotEmpty) {
-        // Save messages only once
-        await _chatStorageService.saveMessages(newMessages, boxName);
-
-        setState(() {
-          messages.insertAll(0, newMessages);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        });
-      }
+      // Fetch more messages from API
+      await _fetchMessagesFromAPI(boxName, context);
+      final newLoadedMessages =
+          await _chatStorageService.getMessages(boxName, page: _currentPage);
+      final uniqueMessages = _removeDuplicates(newLoadedMessages);
+      setState(() {
+        messages.insertAll(0, uniqueMessages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      });
+      _fetchedPages.add(_currentPage);
     } else {
-      // Hive has messages:
       final uniqueMessages = _removeDuplicates(loadedMessages);
-
-      if (uniqueMessages.isNotEmpty) {
-        setState(() {
-          messages.insertAll(0, uniqueMessages);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        });
-      }
+      setState(() {
+        messages.insertAll(0, uniqueMessages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      });
+      _fetchedPages.add(_currentPage);
     }
 
-    _fetchedPages.add(_currentPage);
     _isLoadingMore = false;
-    _isFetching = false;
     setState(() {});
   }
 
-  // This stays the same but resets _loadedMessageIds properly
-  List<ChatMessageModel> _removeDuplicates(
-      List<ChatMessageModel> incomingMessages) {
-    List<ChatMessageModel> uniqueMessages = [];
-    for (var message in incomingMessages) {
-      final messageId = generateMessageId(message);
-      if (!_loadedMessageIds.contains(messageId)) {
+  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
+    return messages.where((message) {
+      final messageId =
+          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+      if (_loadedMessageIds.contains(messageId)) {
+        return false;
+      } else {
         _loadedMessageIds.add(messageId);
-        uniqueMessages.add(message);
+        return true;
       }
-    }
-    return uniqueMessages;
+    }).toList();
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    if (data["senderId"] == widget.customerEmail) {
-      // final currentTime = DateTime.now();
-      final timestampStr = data["timestamp"] as String?;
-      final timestamp =
-          timestampStr != null ? DateTime.parse(timestampStr) : DateTime.now();
-      final message = ChatMessageModel(
-        message: data["message"],
-        timestamp: timestamp,
-        sender: data["senderId"],
-        type: data["type"] ?? "text",
-        mediaUrl: data["mediaUrl"],
-        form: data["form"],
-      );
+    final message = ChatMessageModel(
+      message: data["message"],
+      timestamp: data["timestamp"] != null
+          ? DateTime.parse(data["timestamp"])
+          : DateTime.now(),
+      sender: data["senderId"],
+      type: data["type"] ?? "text",
+      mediaUrl: data["mediaUrl"],
+      form: data["form"],
+    );
 
-      final messageId = generateMessageId(message);
-      if (!_loadedMessageIds.contains(messageId)) {
-        setState(() {
-          messages.add(message);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-          _scrollToBottom();
-        });
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
+      });
 
-        _chatStorageService.saveMessage(
-            message, '${widget.agentEmail}${widget.customerEmail}');
-        _loadedMessageIds.add(messageId);
-      }
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(
+          message, '${widget.agentEmail}${widget.customerEmail}');
+      _loadedMessageIds.add(messageId);
     }
   }
 
@@ -459,30 +401,32 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: form,
     );
 
-    // Add to UI immediately
-    setState(() {
-      messages.add(message);
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    });
+    final messageId =
+        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
+    if (!_loadedMessageIds.contains(messageId)) {
+      setState(() {
+        messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      });
 
-    _socketService.sendMessage(
-      targetEmail: widget.customerEmail,
-      message: messageText,
-      senderEmail: widget.agentEmail!,
-      senderName: widget.agentName!,
-      type: type,
-      mediaUrl: mediaUrl,
-      form: form,
-    );
+      _socketService.sendMessage(
+        targetEmail: widget.customerEmail,
+        message: messageText,
+        senderEmail: widget.agentEmail!,
+        senderName: widget.agentName!,
+        type: type,
+        mediaUrl: mediaUrl,
+        form: form,
+        timestamp: currentTime.toIso8601String(),
+      );
 
-    _chatStorageService.saveMessage(
-        message, '${widget.agentEmail}${widget.customerEmail}');
-
-    // Add to loaded ids immediately to prevent duplicates
-    final messageId = generateMessageId(message);
-    _loadedMessageIds.add(messageId);
-
+      // Save the message to Hive only if it's not already saved
+      _chatStorageService.saveMessage(
+          message, '${widget.agentEmail}${widget.customerEmail}');
+      _loadedMessageIds.add(messageId);
+    }
     _scrollToBottom();
+
     _chatController.clear();
   }
 
