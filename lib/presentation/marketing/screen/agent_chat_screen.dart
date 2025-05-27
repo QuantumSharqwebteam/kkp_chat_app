@@ -18,6 +18,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
@@ -33,6 +34,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class AgentChatScreen extends StatefulWidget {
@@ -107,6 +109,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     final boxNameWithCount = '${widget.agentEmail}${widget.customerEmail}count';
     final box = await Hive.openBox<int>(boxNameWithCount);
     await box.put('count', 0);
+  }
+
+  Future<void> _saveLastMessageTime() async {
+    if (widget.agentEmail == null) return;
+    final timeBox = await Hive.openBox<String>(
+        '${widget.agentEmail}${widget.customerEmail}lastMessageTime');
+    await timeBox.put('lastMessageTime', DateTime.now().toIso8601String());
   }
 
   @override
@@ -235,11 +244,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       );
 
       if (fetchedMessages.isEmpty) {
-        // No more messages to load
         return;
       }
 
-      // Convert MessageModel to ChatMessageModel
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
@@ -254,9 +261,19 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         );
       }).toList();
 
+      // 🔽 Fix timestamps that are somehow newer than local ones
+      final latestLocalTimestamp =
+          messages.isNotEmpty ? messages.last.timestamp : DateTime.now();
+
+      for (var msg in chatMessages) {
+        if (msg.timestamp.isAfter(latestLocalTimestamp)) {
+          msg.timestamp =
+              latestLocalTimestamp.subtract(Duration(milliseconds: 1));
+        }
+      }
+
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
-        // Save all messages at once
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
           messages.insertAll(0, newChatMessages);
@@ -265,12 +282,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         });
       }
     } catch (e) {
-      // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
-      // You can show a snackbar or alert dialog to inform the user about the error
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text("Failed to load messages: $e")),
-      // );
     }
   }
 
@@ -380,6 +392,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       _chatStorageService.saveMessage(
           message, '${widget.agentEmail}${widget.customerEmail}');
       _loadedMessageIds.add(messageId);
+
+      _saveLastMessageTime();
+      Provider.of<ChatRefreshProvider>(context, listen: false)
+          .markNeedsRefresh();
     }
   }
 
@@ -428,6 +444,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _scrollToBottom();
 
     _chatController.clear();
+    _saveLastMessageTime();
+    Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
   }
 
   void _addTemporaryMessage(String messageText) {

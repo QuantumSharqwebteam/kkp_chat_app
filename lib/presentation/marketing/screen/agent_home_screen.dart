@@ -5,6 +5,7 @@ import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
@@ -13,6 +14,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart'
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 
 // Make sure this path is correct
 
@@ -37,6 +39,18 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    final chatRefreshProvider =
+        Provider.of<ChatRefreshProvider>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      chatRefreshProvider.addListener(() {
+        if (chatRefreshProvider.shouldRefresh) {
+          _fetchAssignedCustomers();
+          chatRefreshProvider.reset();
+        }
+      });
+    });
     _fetchAssignedCustomers();
     _statusSubscription = _socketService.statusStream.listen((_) {
       if (mounted) {
@@ -64,11 +78,22 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
       // Fetch notification count for each user
       for (var customer in fetchedCustomerList) {
-        final boxNameWithCount =
-            '${widget.agentEmail}${customer["email"]}count';
-        final box = await Hive.openBox<int>(boxNameWithCount);
-        final count = box.get('count', defaultValue: 0);
+        final countBoxName = '${widget.agentEmail}${customer["email"]}count';
+        final timeBoxName =
+            '${widget.agentEmail}${customer["email"]}lastMessageTime';
+
+        final countBox = await Hive.openBox<int>(countBoxName);
+        final timeBox = await Hive.openBox<String>(
+            timeBoxName); // assuming you save time as ISO string
+
+        final count = countBox.get('count', defaultValue: 0);
+        final lastMessageTimeStr = timeBox.get('lastMessageTime');
+        final lastMessageTime = lastMessageTimeStr != null
+            ? DateTime.tryParse(lastMessageTimeStr)
+            : null;
+
         customer['notificationCount'] = count;
+        customer['lastMessageTime'] = lastMessageTime;
       }
 
       setState(() {
@@ -213,13 +238,15 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     _filteredCustomers.sort((a, b) {
       final isAOnline = _socketService.isUserOnline(a["email"]);
       final isBOnline = _socketService.isUserOnline(b["email"]);
-      if (isAOnline && !isBOnline) {
-        return -1;
-      } else if (!isAOnline && isBOnline) {
-        return 1;
-      } else {
-        return 0;
-      }
+
+      if (isAOnline && !isBOnline) return -1;
+      if (!isAOnline && isBOnline) return 1;
+
+      final timeA =
+          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB =
+          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return timeB.compareTo(timeA); // Descending order
     });
 
     return RefreshIndicator(

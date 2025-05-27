@@ -9,6 +9,7 @@ import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
+import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -117,6 +118,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => ForgotPassProvider()),
         ChangeNotifierProvider(create: (_) => NewPassProvider()),
         ChangeNotifierProvider(create: (_) => AgentHomeScreenProvider()),
+        ChangeNotifierProvider(create: (_) => ChatRefreshProvider()),
         ChangeNotifierProvider(
           create: (_) => NotificationProvider()..fetchNotifications(),
         ),
