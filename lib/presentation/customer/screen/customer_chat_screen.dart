@@ -111,7 +111,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     try {
       String? before;
       if (messages.isNotEmpty) {
-        before = messages.first.timestamp.toIso8601String();
+        before = messages.first.timestamp.toUtc().toIso8601String();
       }
 
       final List<MessageModel> fetchedMessages =
@@ -130,9 +130,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
-          timestamp: DateTime.parse(
-              messageJson.timestamp ?? DateTime.now().toIso8601String()),
-          sender: messageJson.senderId!,
+          timestamp: messageJson.timestamp ?? DateTime.now(),
+          sender: messageJson.senderId ?? 'unknown',
           type: messageJson.type,
           mediaUrl: messageJson.mediaUrl,
           form: messageJson.form != null && messageJson.form!.isNotEmpty
@@ -151,9 +150,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         });
       }
     } catch (e) {
-      // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
-      // You can show a snackbar or alert dialog to inform the user about the error
+      // Optionally show a snackbar or dialog
     }
   }
 
@@ -647,8 +645,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     try {
       final dateTime = timestamp is DateTime
-          ? timestamp.toLocal()
-          : DateTime.parse(timestamp.toString()).toLocal();
+          ? timestamp
+          : DateTime.parse(timestamp.toString());
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
       return DateFormat('hh:mm a').format(DateTime.now());

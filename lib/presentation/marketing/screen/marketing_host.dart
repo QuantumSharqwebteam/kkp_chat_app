@@ -46,6 +46,8 @@ class _MarketingHostState extends State<MarketingHost> {
 
   OverlayEntry? _activeCallOverlay;
 
+  OverlayEntry? _disconnectOverlay;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +74,8 @@ class _MarketingHostState extends State<MarketingHost> {
             token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onDisconnect(_handleDisconnect);
+        _socketService.onConnect(_handleConnect);
       } else {
         debugPrint("Skipping socket init: agentName or agentEmail is null");
       }
@@ -179,6 +183,56 @@ class _MarketingHostState extends State<MarketingHost> {
             navigatorKey: widget.navigatorKey,
           ),
         ));
+  }
+
+  void _handleConnect() {
+    if (_disconnectOverlay != null) {
+      _disconnectOverlay?.remove();
+      _disconnectOverlay = null;
+    }
+  }
+
+  void _handleDisconnect() {
+    if (_activeCallOverlay != null) {
+      _activeCallOverlay?.remove();
+      _activeCallOverlay = null;
+    }
+
+    final overlayState = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Connection Lost ',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Something went wrong. Please restart the app or check internet connection.',
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    _disconnectOverlay = overlayEntry;
+    overlayState.insert(overlayEntry);
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {

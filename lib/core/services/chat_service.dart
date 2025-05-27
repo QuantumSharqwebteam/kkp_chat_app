@@ -401,6 +401,7 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
+
         final List<dynamic> messagesJson = json['messages'];
         return messagesJson
             .map((msg) => MessageModel.fromJson(msg, agentEmail))

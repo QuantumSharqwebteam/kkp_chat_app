@@ -250,8 +250,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
-          timestamp: DateTime.parse(
-              messageJson.timestamp ?? DateTime.now().toIso8601String()),
+          timestamp: messageJson.timestamp ?? DateTime.now(),
           sender: messageJson.senderId!,
           type: messageJson.type,
           mediaUrl: messageJson.mediaUrl,
@@ -261,23 +260,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         );
       }).toList();
 
-      // 🔽 Fix timestamps that are somehow newer than local ones
-      final latestLocalTimestamp =
-          messages.isNotEmpty ? messages.last.timestamp : DateTime.now();
-
-      for (var msg in chatMessages) {
-        if (msg.timestamp.isAfter(latestLocalTimestamp)) {
-          msg.timestamp =
-              latestLocalTimestamp.subtract(Duration(milliseconds: 1));
-        }
-      }
-
+      // In _fetchMessagesFromAPI method
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
-          messages.insertAll(0, newChatMessages);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          messages.addAll(newChatMessages);
+          messages.sort((a, b) =>
+              a.timestamp.compareTo(b.timestamp)); // Sort by timestamp
           _isLoading = false;
         });
       }
@@ -367,7 +357,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }).toList();
   }
 
+  // In _handleIncomingMessage method
   void _handleIncomingMessage(Map<String, dynamic> data) {
+    debugPrint("message received: ${data.toString()}");
     final message = ChatMessageModel(
       message: data["message"],
       timestamp: data["timestamp"] != null
@@ -383,8 +375,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
-        messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        messages.add(message); // Append to the end
+        messages.sort(
+            (a, b) => a.timestamp.compareTo(b.timestamp)); // Sort by timestamp
         _scrollToBottom();
       });
 
@@ -422,7 +415,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       });
 
       _socketService.sendMessage(
@@ -439,6 +432,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(
           message, '${widget.agentEmail}${widget.customerEmail}');
+      debugPrint("message saved in hive: ${message.toString()}");
       _loadedMessageIds.add(messageId);
     }
     _scrollToBottom();

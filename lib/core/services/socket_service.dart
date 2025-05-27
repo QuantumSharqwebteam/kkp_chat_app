@@ -31,6 +31,8 @@ class SocketService {
   Function(Map<String, dynamic>)? _onIncomingCall;
   Function(Map<String, dynamic>)? _onCallAnswered;
   Function(Map<String, dynamic>)? _onCallTerminated;
+  Function? _onDisconnect;
+  Function? _onConnect;
 
   bool isChatPageOpen = false;
   String? activeCustomerId;
@@ -75,6 +77,9 @@ class SocketService {
         "role": role,
         "token": token,
       });
+      if (_onConnect != null) {
+        _onConnect!(); // Trigger the connect callback
+      }
     });
 
     _socket.on('socketId', (socketId) {
@@ -142,6 +147,14 @@ class SocketService {
     });
 
     _socket.connect();
+  }
+
+  void onDisconnect(Function callback) {
+    _onDisconnect = callback;
+  }
+
+  void onConnect(Function callback) {
+    _onConnect = callback;
   }
 
   void _updateRoomMembers(List<String> newRoomMembers) {
@@ -219,6 +232,17 @@ class SocketService {
       });
     } else {
       debugPrint('🚫 Max reconnection attempts reached or user logged out.');
+      if (_onDisconnect != null) {
+        _onDisconnect!(); // Trigger the disconnect callback only when max attempts are reached
+      }
+      // Reset reconnection attempts and reinitialize the socket
+      _reconnectAttempts = 0;
+      Future.delayed(_reconnectInterval, () {
+        debugPrint('🔄 Reinitializing socket connection...');
+        _socket.connect();
+        _socket.emit(
+            'join', {'user': userName, 'userId': userEmail, "role": role});
+      });
     }
   }
 
@@ -246,6 +270,7 @@ class SocketService {
       if (timestamp != null) messageData['timestamp'] = timestamp;
 
       _socket.emit('sendMessage', messageData);
+      debugPrint("message sent :${messageData.toString()}");
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
     }

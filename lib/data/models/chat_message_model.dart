@@ -24,7 +24,7 @@ class ChatMessageModel {
     return {
       'message': message,
       'sender': sender,
-      'timestamp': timestamp.toIso8601String(),
+      'timestamp': timestamp.toIso8601String(), // Ensure ISO 8601 format
       'type': type,
       'mediaUrl': mediaUrl,
       'form': form,
@@ -38,12 +38,19 @@ class ChatMessageModel {
     return ChatMessageModel(
       message: map['message'],
       sender: map['sender'],
-      timestamp: DateTime.parse(map['timestamp']),
+      timestamp: DateTime.parse(map['timestamp']), // Parse from ISO 8601 format
       type: map['type'],
       mediaUrl: map['mediaUrl'],
       form: map['form'] != null ? Map<String, dynamic>.from(map['form']) : null,
       callStatus: map['callStatus'],
       callDuration: map['callDuration'],
     );
+  }
+
+  @override
+  String toString() {
+    return 'ChatMessageModel(message: $message, sender: $sender, timestamp: $timestamp, '
+        'type: $type, mediaUrl: $mediaUrl, form: $form, callStatus: $callStatus, '
+        'callDuration: $callDuration)';
   }
 }

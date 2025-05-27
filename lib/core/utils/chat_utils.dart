@@ -1,6 +1,4 @@
 import 'dart:math';
-
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ChatUtils {
@@ -10,12 +8,10 @@ class ChatUtils {
       return DateFormat('hh:mm a').format(currentTime);
     }
     try {
-      // debugPrint("Timestamp string: $timestamp"); // Debug print
-      final dateTime = DateTime.parse(timestamp).toLocal();
-      //debugPrint("Parsed DateTime: $dateTime"); // Debug print
+      final dateTime =
+          DateTime.parse(timestamp); // Keep UTC time as is, NO toLocal()
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
-      debugPrint("Error parsing timestamp: $e"); // Debug print
       final currentTime = DateTime.now();
       return DateFormat('hh:mm a').format(currentTime);
     }
