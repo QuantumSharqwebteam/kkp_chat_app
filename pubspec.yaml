@@ -79,6 +79,7 @@ dependencies:
   excel: ^4.0.6
   share_plus: ^11.0.0
   device_info_plus: ^11.4.0
+  flutter_launcher_icons: ^0.14.3
 
   
   
@@ -99,6 +100,12 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
   mockito: ^5.4.6
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_logo.png"
+  remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
