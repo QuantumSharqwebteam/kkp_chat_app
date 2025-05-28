@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -73,6 +71,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final ChatStorageService _chatStorageService = ChatStorageService();
   final ChatRepository _chatRepository = ChatRepository();
   bool isFormUpdating = false;
+  bool _isLoading = true;
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
@@ -85,20 +84,67 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final Set<String> _loadedMessageIds = {};
 
   Future<void> _loadPreviousMessages() async {
+    setState(() {
+      _isLoading = true; // Set loading to true when starting to load messages
+    });
+
     final boxName = widget.customerEmail!;
     bool boxExists = await Hive.boxExists(boxName);
 
-    if (!boxExists) {
-      // Fetch messages from API
-      await _fetchMessagesFromAPI(boxName);
-    } else {
+    // Fetch the latest 20 messages from the API
+    final List<MessageModel> fetchedMessages =
+        await _chatRepository.fetchCustomerMessages(
+      customerEmail: widget.customerEmail!,
+      limit: 20,
+    );
+
+    // Convert MessageModel to ChatMessageModel
+    final chatMessages = fetchedMessages.map((messageJson) {
+      return ChatMessageModel(
+        message: messageJson.message ?? '',
+        timestamp: DateTime.parse(
+            messageJson.timestamp ?? DateTime.now().toIso8601String()),
+        sender: messageJson.senderId!,
+        type: messageJson.type,
+        mediaUrl: messageJson.mediaUrl,
+        form: messageJson.form != null && messageJson.form!.isNotEmpty
+            ? Map<String, dynamic>.from(messageJson.form![0])
+            : null,
+      );
+    }).toList();
+
+    if (boxExists) {
       // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getCustomerMessages(boxName);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
 
-      messages = newLoadedMessages;
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      // Compare the fetched messages with the ones in the Hive database
+      final uniqueFetchedMessages = _removeDuplicates(chatMessages);
+      final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
+        return !newLoadedMessages.any((loadedMessage) =>
+            loadedMessage.message == fetchedMessage.message &&
+            loadedMessage.timestamp == fetchedMessage.timestamp &&
+            loadedMessage.sender == fetchedMessage.sender);
+      }).toList();
+
+      // Add the messages that are not in the Hive database to the list of messages
+      newLoadedMessages.addAll(messagesToAdd);
+
+      setState(() {
+        messages = newLoadedMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false; // Set loading to false after messages are loaded
+      });
+    } else {
+      // Save the fetched messages to the Hive database
+      await _chatStorageService.saveMessages(chatMessages, boxName);
+
+      setState(() {
+        messages = chatMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false; // Set loading to false after messages are loaded
+      });
     }
 
     // Scroll to bottom after loading messages
@@ -729,71 +775,73 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                     ),
                   ),
                 Expanded(
-                  child: messages.isEmpty
-                      ? NoChatConversation()
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(10),
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            final msg = messages[index];
-                            if (msg.type == 'media') {
-                              return ImageMessageBubble(
-                                imageUrl: msg.mediaUrl!,
-                                isMe: msg.sender == widget.customerEmail,
-                                timestamp: formatTimestamp(msg.timestamp),
-                              );
-                            } else if (msg.type == 'form') {
-                              return FormMessageBubble(
-                                formData: msg.form!,
-                                isMe: msg.sender == widget.agentEmail,
-                                timestamp: formatTimestamp(
-                                    msg.timestamp.toIso8601String()),
-                                userRole: userRole!,
-                              );
-                            } else if (msg.type == 'document') {
-                              return DocumentMessageBubble(
-                                documentUrl: msg.mediaUrl!,
-                                isMe: msg.sender == widget.customerEmail,
-                                timestamp: formatTimestamp(msg.timestamp),
-                              );
-                            } else if (msg.type == 'voice') {
-                              return VoiceMessageBubble(
-                                voiceUrl: msg.mediaUrl!,
-                                isMe: msg.sender == widget.customerEmail,
-                                timestamp: formatTimestamp(msg.timestamp),
-                              );
-                            } else if (msg.type == 'call') {
-                              return CallMessageBubble(
-                                isMe: msg.sender == widget.agentEmail,
-                                timestamp: formatTimestamp(
-                                    msg.timestamp.toIso8601String()),
-                                callStatus: msg.callStatus ?? "",
-                                callDuration: msg.callDuration ?? '',
-                              );
-                            } else if (msg.message == 'Fill details') {
-                              return FillFormButton(
-                                buttonText: "Fill product details",
-                                onSubmit: _showFormOverlay,
-                              );
-                            } else if (msg.message == "Update form rate") {
-                              return FillFormButton(
-                                buttonText: "Update Form",
-                                onSubmit: () {
-                                  openFormDialogToUpdateRate(msg.form!);
-                                },
-                              );
-                            }
-                            return MessageBubble(
-                              text: msg.message,
-                              isMe: msg.sender == widget.customerEmail,
-                              timestamp: formatTimestamp(msg.timestamp),
-                              image: msg.sender == widget.customerEmail
-                                  ? widget.customerName ?? ""
-                                  : "Agent",
-                            );
-                          },
-                        ),
+                  child: _isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : messages.isEmpty
+                          ? NoChatConversation()
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(10),
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final msg = messages[index];
+                                if (msg.type == 'media') {
+                                  return ImageMessageBubble(
+                                    imageUrl: msg.mediaUrl!,
+                                    isMe: msg.sender == widget.customerEmail,
+                                    timestamp: formatTimestamp(msg.timestamp),
+                                  );
+                                } else if (msg.type == 'form') {
+                                  return FormMessageBubble(
+                                    formData: msg.form!,
+                                    isMe: msg.sender == widget.agentEmail,
+                                    timestamp: formatTimestamp(
+                                        msg.timestamp.toIso8601String()),
+                                    userRole: userRole!,
+                                  );
+                                } else if (msg.type == 'document') {
+                                  return DocumentMessageBubble(
+                                    documentUrl: msg.mediaUrl!,
+                                    isMe: msg.sender == widget.customerEmail,
+                                    timestamp: formatTimestamp(msg.timestamp),
+                                  );
+                                } else if (msg.type == 'voice') {
+                                  return VoiceMessageBubble(
+                                    voiceUrl: msg.mediaUrl!,
+                                    isMe: msg.sender == widget.customerEmail,
+                                    timestamp: formatTimestamp(msg.timestamp),
+                                  );
+                                } else if (msg.type == 'call') {
+                                  return CallMessageBubble(
+                                    isMe: msg.sender == widget.agentEmail,
+                                    timestamp: formatTimestamp(
+                                        msg.timestamp.toIso8601String()),
+                                    callStatus: msg.callStatus ?? "",
+                                    callDuration: msg.callDuration ?? '',
+                                  );
+                                } else if (msg.message == 'Fill details') {
+                                  return FillFormButton(
+                                    buttonText: "Fill product details",
+                                    onSubmit: _showFormOverlay,
+                                  );
+                                } else if (msg.message == "Update form rate") {
+                                  return FillFormButton(
+                                    buttonText: "Update Form",
+                                    onSubmit: () {
+                                      openFormDialogToUpdateRate(msg.form!);
+                                    },
+                                  );
+                                }
+                                return MessageBubble(
+                                  text: msg.message,
+                                  isMe: msg.sender == widget.customerEmail,
+                                  timestamp: formatTimestamp(msg.timestamp),
+                                  image: msg.sender == widget.customerEmail
+                                      ? widget.customerName ?? ""
+                                      : "Agent",
+                                );
+                              },
+                            ),
                 ),
                 ChatInputField(
                   controller: _chatController,

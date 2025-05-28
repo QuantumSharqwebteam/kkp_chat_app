@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/incoming_call_screen.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
@@ -35,20 +33,20 @@ Future<void> handlePushNotificationClickForCustomer(
   // Function to trigger navigation
   void triggerNavigation() {
     final customerEmail = LocalDbHelper.getProfile()?.email;
-    ChatStorageService chatStorageService = ChatStorageService();
-    final Map<String, dynamic> notiData = notificationData;
-    final targetId = notificationData['targetId'];
+    // ChatStorageService chatStorageService = ChatStorageService();
+    // final Map<String, dynamic> notiData = notificationData;
+    // final targetId = notificationData['targetId'];
 
-    ChatMessageModel pushMessage = ChatMessageModel(
-      message: notiData['message'],
-      sender: notiData['senderId'],
-      timestamp: DateTime.now(),
-      form: notiData['form'] ?? {},
-      mediaUrl: notiData['mediaUrl'] ?? "",
-      type: notiData['type'] ?? "",
-    );
+    // ChatMessageModel pushMessage = ChatMessageModel(
+    //   message: notiData['message'],
+    //   sender: notiData['senderId'],
+    //   timestamp: DateTime.now(),
+    //   form: notiData['form'] ?? {},
+    //   mediaUrl: notiData['mediaUrl'] ?? "",
+    //   type: notiData['type'] ?? "",
+    // );
 
-    chatStorageService.saveMessage(pushMessage, targetId);
+    //chatStorageService.saveMessage(pushMessage, targetId);
 
     Navigator.push(
       navigatorKey.currentContext!,
@@ -117,22 +115,22 @@ Future<void> handlePushNotificationClickForAgent(
 
   // Function to trigger navigation
   void triggerNavigation() {
-    ChatStorageService chatStorageService = ChatStorageService();
-    final Map<String, dynamic> notiData = notificationData;
+    // ChatStorageService chatStorageService = ChatStorageService();
+    // final Map<String, dynamic> notiData = notificationData;
     // final boxName =
     //     LocalDbHelper.getProfile()!.email! + notificationData['senderId'];
-    final boxName = notificationData['targetId'] + notificationData['senderId'];
+    // final boxName = notificationData['targetId'] + notificationData['senderId'];
 
-    ChatMessageModel pushMessage = ChatMessageModel(
-      message: notiData['message'],
-      sender: notiData['senderId'],
-      timestamp: DateTime.now(),
-      form: notiData['form'] ?? {},
-      mediaUrl: notiData['mediaUrl'] ?? "",
-      type: notiData['type'] ?? "",
-    );
+    // ChatMessageModel pushMessage = ChatMessageModel(
+    //   message: notiData['message'],
+    //   sender: notiData['senderId'],
+    //   timestamp: DateTime.now(),
+    //   form: notiData['form'] ?? {},
+    //   mediaUrl: notiData['mediaUrl'] ?? "",
+    //   type: notiData['type'] ?? "",
+    // );
 
-    chatStorageService.saveMessage(pushMessage, boxName);
+    // chatStorageService.saveMessage(pushMessage, boxName);
 
     final customerEmail = notificationData['senderId'];
     final customerName = notificationData['senderName'];

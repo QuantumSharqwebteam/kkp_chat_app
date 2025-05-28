@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
@@ -86,14 +87,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void initState() {
     _fetchUserRole();
     super.initState();
-    // _socketService.toggleChatPageOpen(true);
+
     _socketService.setChatPageState(
         isOpen: true, customerId: widget.customerEmail);
 
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _initializeRecorder();
     _loadPreviousMessages(context);
-    // _checkViewOnlyMode();
 
     // Scroll to bottom when the chat page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -127,7 +127,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
-    // _socketService.toggleChatPageOpen(false);
     _socketService.setChatPageState(
       isOpen: false,
     );
@@ -137,7 +136,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   @override
   void deactivate() {
-    //_socketService.toggleChatPageOpen(false);
     _socketService.setChatPageState(isOpen: false);
     super.deactivate();
   }
@@ -161,41 +159,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
-  // Future<void> _checkViewOnlyMode() async {
-  //   Profile currentUser = await LocalDbHelper.getProfileFuture();
-  //   final currentUserEmail = currentUser!.email;
-  //   if (widget.agentEmail != currentUserEmail) {
-  //     setState(() {
-  //       _isViewOnlyMode = true;
-  //     });
-  //     WidgetsBinding.instance.addPostFrameCallback((_) {
-  //       _showViewOnlyModeAlert();
-  //     });
-  //   }
-  // }
-
-  // void _showViewOnlyModeAlert() {
-  //   showDialog(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return AlertDialog(
-  //         backgroundColor: Colors.white,
-  //         surfaceTintColor: Colors.white,
-  //         title: Text("View-Only Mode"),
-  //         content: Text("You are in view-only mode and cannot send messages."),
-  //         actions: <Widget>[
-  //           TextButton(
-  //             child: Text("OK"),
-  //             onPressed: () {
-  //               Navigator.of(context).pop();
-  //             },
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
-
   Future<void> _fetchUserRole() async {
     final role = await LocalDbHelper.getUserType();
     setState(() {
@@ -212,20 +175,63 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
     bool boxExists = await Hive.boxExists(boxName);
 
-    if (!boxExists) {
-      // Fetch messages from API
-      await _fetchMessagesFromAPI(boxName, context);
-    } else {
+    // Fetch the latest 20 messages from the API
+    final List<MessageModel> fetchedMessages =
+        await _chatRepository.fetchAgentMessages(
+      agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
+      customerEmail: widget.customerEmail,
+      limit: 20,
+    );
+
+    // Convert MessageModel to ChatMessageModel
+    final chatMessages = fetchedMessages.map((messageJson) {
+      return ChatMessageModel(
+        message: messageJson.message ?? '',
+        timestamp: DateTime.parse(
+            messageJson.timestamp ?? DateTime.now().toIso8601String()),
+        sender: messageJson.senderId!,
+        type: messageJson.type,
+        mediaUrl: messageJson.mediaUrl,
+        form: messageJson.form != null && messageJson.form!.isNotEmpty
+            ? Map<String, dynamic>.from(messageJson.form![0])
+            : null,
+      );
+    }).toList();
+
+    if (boxExists) {
       // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getMessages(boxName, page: _currentPage);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
+
+      // Compare the fetched messages with the ones in the Hive database
+      final uniqueFetchedMessages = _removeDuplicates(chatMessages);
+      final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
+        return !newLoadedMessages.any((loadedMessage) =>
+            loadedMessage.message == fetchedMessage.message &&
+            loadedMessage.timestamp == fetchedMessage.timestamp &&
+            loadedMessage.sender == fetchedMessage.sender);
+      }).toList();
+
+      // Add the messages that are not in the Hive database to the list of messages
+      newLoadedMessages.addAll(messagesToAdd);
+
       setState(() {
         messages = newLoadedMessages;
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
+    } else {
+      // Save the fetched messages to the Hive database
+      await _chatStorageService.saveMessages(chatMessages, boxName);
+
+      setState(() {
+        messages = chatMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false;
+      });
     }
+    _scrollToBottom();
   }
 
   Future<void> _fetchMessagesFromAPI(String boxName, context) async {
@@ -275,11 +281,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       }
     } catch (e) {
       // Handle errors properly
-      debugPrint("Error fetching messages from API: $e");
-      // You can show a snackbar or alert dialog to inform the user about the error
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text("Failed to load messages: $e")),
-      // );
+      if (kDebugMode) {
+        debugPrint("Error fetching messages from API: $e");
+      }
     }
   }
 
@@ -428,7 +432,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         targetEmail: widget.customerEmail,
         message: messageText,
         senderEmail: widget.agentEmail!,
-        senderName: widget.agentName!,
+        senderName: widget.agentName ?? "agent",
         type: type,
         mediaUrl: mediaUrl,
         form: form,
@@ -438,7 +442,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(
           message, '${widget.agentEmail}${widget.customerEmail}');
-      debugPrint("message saved in hive: ${message.toString()}");
       _loadedMessageIds.add(messageId);
     }
     _scrollToBottom();

@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
-import 'package:kkpchatapp/core/services/chat_storage_service.dart';
+//import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/models/chat_message_model.dart';
+// import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
@@ -23,7 +23,7 @@ class SocketService {
   late io.Socket _socket;
   bool _isConnected = false;
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
-  ChatStorageService chatStorageService = ChatStorageService();
+  //ChatStorageService chatStorageService = ChatStorageService();
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
@@ -332,17 +332,17 @@ class SocketService {
 
     final userType = await LocalDbHelper.getUserType();
 
-    final message = ChatMessageModel(
-      message: data["message"] ?? "",
-      timestamp: DateTime.now(),
-      sender: data["senderId"] ?? "",
-      type: data["type"] ?? "text",
-      mediaUrl: data["mediaUrl"],
-      form: data["form"],
-    );
+    // final message = ChatMessageModel(
+    //   message: data["message"] ?? "",
+    //   timestamp: DateTime.now(),
+    //   sender: data["senderId"] ?? "",
+    //   type: data["type"] ?? "text",
+    //   mediaUrl: data["mediaUrl"],
+    //   form: data["form"],
+    // );
 
     if (userType == "0") {
-      chatStorageService.saveMessage(message, data['targetId']);
+      // chatStorageService.saveMessage(message, data['targetId']);
 
       // Store message count in Hive
       final currentUserEmail = LocalDbHelper.getProfile()!.email;
@@ -360,7 +360,7 @@ class SocketService {
       final box = await Hive.openBox<int>(boxNameWithCount);
       int count = box.get('count', defaultValue: 0)! + 1;
       await box.put('count', count);
-      chatStorageService.saveMessage(message, boxName);
+      // chatStorageService.saveMessage(message, boxName);
 
       if (onMessageReceivedCallback != null) {
         onMessageReceivedCallback!();

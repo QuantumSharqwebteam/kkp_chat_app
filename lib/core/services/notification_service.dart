@@ -5,7 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
-import 'package:kkpchatapp/core/services/chat_storage_service.dart';
+//import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
@@ -78,22 +78,22 @@ class NotificationService with WidgetsBindingObserver {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if ("0" == await LocalDbHelper.getUserType()) {
-        ChatStorageService chatStorageService =
-            ChatStorageService(); // Get the customer's email
+        // ChatStorageService chatStorageService =
+        //     ChatStorageService(); // Get the customer's email
         final customerEmail = LocalDbHelper.getEmail();
 
         if (customerEmail != null) {
           // Save the message to Hive local storage
-          final message = ChatMessageModel(
-            message: notificationData["message"],
-            timestamp: DateTime.parse(DateTime.now().toIso8601String()),
-            sender: notificationData["senderId"],
-            type: notificationData["type"],
-            mediaUrl: notificationData["mediaUrl"],
-            form: notificationData["form"],
-          );
+          // final message = ChatMessageModel(
+          //   message: notificationData["message"],
+          //   timestamp: DateTime.parse(DateTime.now().toIso8601String()),
+          //   sender: notificationData["senderId"],
+          //   type: notificationData["type"],
+          //   mediaUrl: notificationData["mediaUrl"],
+          //   form: notificationData["form"],
+          // );
 
-          chatStorageService.saveMessage(message, customerEmail);
+          //   chatStorageService.saveMessage(message, customerEmail);
         }
 
         // if (isAppInitialized) {
@@ -114,7 +114,7 @@ class NotificationService with WidgetsBindingObserver {
         await FirebaseMessaging.instance.getInitialMessage();
 
     if (message != null) {
-      debugPrint("🚀 full message data: ${message.toMap()}");
+      // debugPrint("🚀 full message data: ${message.toMap()}");
       debugPrint(
           "🚀@@ App Opened via Notification: ${message.toMap()['data']}");
 

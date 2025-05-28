@@ -176,6 +176,9 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         debugPrint("🚪 Local user left the channel");
         if (_remoteUid == null) {
           _updateCallData("not answered");
+        } else {
+          final totalCallDuration = _formatDuration(_callDuration);
+          _updateCallData("answered", callDuration: totalCallDuration);
         }
       },
       onError: (ErrorCodeType code, String message) {
