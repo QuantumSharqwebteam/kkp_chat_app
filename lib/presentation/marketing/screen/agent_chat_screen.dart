@@ -244,13 +244,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       );
 
       if (fetchedMessages.isEmpty) {
+        // No more messages to load
         return;
       }
 
+      // Convert MessageModel to ChatMessageModel
       final chatMessages = fetchedMessages.map((messageJson) {
         return ChatMessageModel(
           message: messageJson.message ?? '',
-          timestamp: messageJson.timestamp ?? DateTime.now(),
+          timestamp: DateTime.parse(
+              messageJson.timestamp ?? DateTime.now().toIso8601String()),
           sender: messageJson.senderId!,
           type: messageJson.type,
           mediaUrl: messageJson.mediaUrl,
@@ -260,19 +263,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         );
       }).toList();
 
-      // In _fetchMessagesFromAPI method
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
+        // Save all messages at once
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
-          messages.addAll(newChatMessages);
-          messages.sort((a, b) =>
-              a.timestamp.compareTo(b.timestamp)); // Sort by timestamp
+          messages.insertAll(0, newChatMessages);
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           _isLoading = false;
         });
       }
     } catch (e) {
+      // Handle errors properly
       debugPrint("Error fetching messages from API: $e");
+      // You can show a snackbar or alert dialog to inform the user about the error
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text("Failed to load messages: $e")),
+      // );
     }
   }
 
