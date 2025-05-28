@@ -416,14 +416,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       mediaUrl: mediaUrl,
       form: form,
     );
-    print("first : ${message.toString()}");
 
     final messageId =
         '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
-        // messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       });
 
       _socketService.sendMessage(
