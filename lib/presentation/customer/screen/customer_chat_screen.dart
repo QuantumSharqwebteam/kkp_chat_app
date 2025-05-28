@@ -302,7 +302,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        // messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
 
@@ -334,7 +334,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        // messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
 
