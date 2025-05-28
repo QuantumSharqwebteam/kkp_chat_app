@@ -98,6 +98,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       limit: 20,
     );
 
+    // if (fetchedMessages.isEmpty) {
+    //   setState(() {
+    //     _isLoading = false; // Stop loading if no messages are fetched
+    //   });
+    //   return;
+    // }
+
     // Convert MessageModel to ChatMessageModel
     final chatMessages = fetchedMessages.map((messageJson) {
       return ChatMessageModel(

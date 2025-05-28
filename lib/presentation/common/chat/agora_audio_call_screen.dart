@@ -165,21 +165,21 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       onUserOffline: (RtcConnection connection, int remoteUid,
           UserOfflineReasonType reason) {
         debugPrint("❌ Remote user $remoteUid left due to $reason");
-        if (mounted) {
-          setState(() => _remoteUid = null);
-          final totalCallDuration = _formatDuration(_callDuration);
-          _updateCallData("answered", callDuration: totalCallDuration);
-          _endCall();
-        }
+
+        // setState(() => _remoteUid = null);
+        final totalCallDuration = _formatDuration(_callDuration);
+        _updateCallData("answered", callDuration: totalCallDuration);
+        _endCall();
       },
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
         if (_remoteUid == null) {
           _updateCallData("not answered");
-        } else {
-          final totalCallDuration = _formatDuration(_callDuration);
-          _updateCallData("answered", callDuration: totalCallDuration);
         }
+        //  else {
+        //   final totalCallDuration = _formatDuration(_callDuration);
+        //   _updateCallData("answered", callDuration: totalCallDuration);
+        // }
       },
       onError: (ErrorCodeType code, String message) {
         debugPrint("⚠️Error joinning channel Agora error: $code - $message");

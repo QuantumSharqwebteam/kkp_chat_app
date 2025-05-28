@@ -406,9 +406,16 @@ class ChatService {
         return messagesJson
             .map((msg) => MessageModel.fromJson(msg, agentEmail))
             .toList();
-      } else {
-        throw Exception("Failed to load agent messages: ${response.body}");
+      } else if (response.statusCode == 404) {
+        final json = jsonDecode(response.body);
+        if (json['message'] == 'No conversations found for this user') {
+          return [];
+        }
+      } // Log for other status codes
+      if (kDebugMode) {
+        print("Unexpected response (${response.statusCode}): ${response.body}");
       }
+      return [];
     } catch (e) {
       throw Exception("Error fetching agent messages: $e");
     }
@@ -420,7 +427,8 @@ class ChatService {
     String? before,
   }) async {
     final url = Uri.parse(
-        "$baseUrl/chat/getUserMessages/$customerEmail?limit=$limit${before != null ? '&before=$before' : ''}");
+      "$baseUrl/chat/getUserMessages/$customerEmail?limit=$limit${before != null ? '&before=$before' : ''}",
+    );
 
     try {
       final response = await client.get(url);
@@ -431,9 +439,18 @@ class ChatService {
         return messagesJson
             .map((msg) => MessageModel.fromJson(msg, customerEmail))
             .toList();
-      } else {
-        throw Exception("Failed to load messages: ${response.body}");
+      } else if (response.statusCode == 404) {
+        final json = jsonDecode(response.body);
+        if (json['message'] == 'No conversations found for this user') {
+          return [];
+        }
       }
+
+      // Log for other status codes
+      if (kDebugMode) {
+        print("Unexpected response (${response.statusCode}): ${response.body}");
+      }
+      return [];
     } catch (e) {
       throw Exception("Error fetching messages: $e");
     }
