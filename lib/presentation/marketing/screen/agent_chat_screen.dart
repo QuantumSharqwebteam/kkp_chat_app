@@ -683,6 +683,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               );
 
               if (result != null) {
+                await _chatStorageService.saveMessage(
+                    result, '${widget.agentEmail}${widget.customerEmail}');
                 setState(() {
                   messages.add(result);
                   messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));

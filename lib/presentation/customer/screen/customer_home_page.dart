@@ -205,23 +205,23 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             radius: 25,
             backgroundImage: AssetImage("assets/images/user4.png"),
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Material(
-              elevation: 5,
-              color: Colors.transparent,
-              type: MaterialType.circle,
-              child: Container(
-                height: 12,
-                width: 12,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(50),
-                  color: Colors.green,
-                ),
-              ),
-            ),
-          ),
+          // Positioned(
+          //   bottom: 0,
+          //   right: 0,
+          //   child: Material(
+          //     elevation: 5,
+          //     color: Colors.transparent,
+          //     type: MaterialType.circle,
+          //     child: Container(
+          //       height: 12,
+          //       width: 12,
+          //       decoration: BoxDecoration(
+          //         borderRadius: BorderRadius.circular(50),
+          //         color: Colors.green,
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ]),
         title: Text('Product Enquirers',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

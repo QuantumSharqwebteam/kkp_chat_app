@@ -135,6 +135,7 @@ Future<void> handlePushNotificationClickForAgent(
     final customerEmail = notificationData['senderId'];
     final customerName = notificationData['senderName'];
     final agentEmail = notificationData['targetId'];
+    final agentName = notificationData['targetName'];
     Navigator.push(
       navigatorKey.currentContext!,
       MaterialPageRoute(
@@ -142,7 +143,8 @@ Future<void> handlePushNotificationClickForAgent(
           customerName: customerName,
           customerEmail: customerEmail,
           agentEmail: agentEmail,
-          agentName: LocalDbHelper.getProfile()?.name,
+          agentName: agentName,
+          // agentName: LocalDbHelper.getProfile()?.name,
           navigatorKey: navigatorKey,
         ),
       ),
@@ -189,6 +191,7 @@ Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
     final remoteUserName = callData['remoteUserName'];
     final remoteUserId = callData['remoteUserId'];
     final notificationId = callData['notificationId'];
+    final callId = callData["callId"];
 
     Navigator.push(
       navigatorKey.currentContext!,
@@ -198,6 +201,7 @@ Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
           remoteUserId: remoteUserId,
           channelName: channelName,
           notificationId: notificationId,
+          callId: callId,
         ),
       ),
     );
