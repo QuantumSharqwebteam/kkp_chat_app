@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.kkptextile.kkpchatapp"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = "26.1.10909125"//"25.1.8937393"
     //flutter.ndkVersion // 26.1.10909125
 
