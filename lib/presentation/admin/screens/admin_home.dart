@@ -1,10 +1,9 @@
 import 'dart:async';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/chart_utils.dart';
@@ -16,6 +15,7 @@ import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile
 import 'package:kkpchatapp/presentation/admin/widgets/admin_home_chart.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/my_vertical_divider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminHome extends StatefulWidget {
   const AdminHome({super.key});
@@ -86,6 +86,16 @@ class _AdminHomeState extends State<AdminHome> {
     }
   }
 
+  Future<void> _launchURL() async {
+    final Uri url =
+        Uri.parse('https://development.d3uxrpw60z2zmg.amplifyapp.com');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (kDebugMode) {
+        print('Could not launch $url');
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,14 +129,20 @@ class _AdminHomeState extends State<AdminHome> {
           spacing: 10,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSeeMoreAdminDataButton(),
             _buildTrafficChart(),
             _buildTrafficStatsCard(),
             _buildCustomerInquriesButton(),
-            _buildAgentManagementSection()
+            _buildAgentManagementSection(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildSeeMoreAdminDataButton() {
+    return TextButton(
+        onPressed: _launchURL, child: Text("See more data in web"));
   }
 
   Widget _buildTrafficChart() {
@@ -388,7 +404,7 @@ class _AdminHomeState extends State<AdminHome> {
                         return AgentManagementListTile(
                           title: agent.name,
                           subtitle: agent.role,
-                          image: ImageConstants.userImage,
+                          name: agent.name,
                           isOnline: isOnline,
                         );
                       },

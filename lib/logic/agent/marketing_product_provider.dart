@@ -26,7 +26,6 @@ class MarketingProductProvider extends ChangeNotifier {
     } catch (e) {
       _allProducts = [];
       _filteredProducts = [];
-      // optionally save error state here
     }
 
     _isLoading = false;

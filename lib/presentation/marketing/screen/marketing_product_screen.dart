@@ -12,8 +12,28 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/product_model.dart';
 
-class MarketingProductScreen extends StatelessWidget {
+class MarketingProductScreen extends StatefulWidget {
   const MarketingProductScreen({super.key});
+
+  @override
+  State<MarketingProductScreen> createState() => _MarketingProductScreenState();
+}
+
+class _MarketingProductScreenState extends State<MarketingProductScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<MarketingProductProvider>();
+    _searchController.text = provider.searchQuery;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,9 +85,11 @@ class MarketingProductScreen extends StatelessWidget {
           CustomSearchBar(
             width: double.infinity,
             enable: true,
-            controller: TextEditingController(text: provider.searchQuery),
+            controller: _searchController,
             hintText: "Search products...",
-            onChanged: provider.applyFilter,
+            onChanged: (query) {
+              provider.applyFilter(query);
+            },
           ),
           const SizedBox(height: 20),
         ],
