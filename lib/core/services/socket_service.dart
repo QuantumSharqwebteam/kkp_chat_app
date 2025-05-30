@@ -282,6 +282,7 @@ class SocketService {
     required String callerId,
     required String callerName,
     required String callId,
+    required String timestamp,
   }) {
     if (_isConnected) {
       final payload = {
@@ -289,6 +290,7 @@ class SocketService {
         'callerId': callerId,
         'callerName': callerName,
         'callId': callId,
+        'timestamp': timestamp,
       };
       if (targetId != null) payload['targetId'] = targetId;
       debugPrint('📤 Emitting Agora call: $payload');

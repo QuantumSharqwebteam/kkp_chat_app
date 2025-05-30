@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +12,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
@@ -18,6 +20,7 @@ import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -82,6 +85,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isLoadingMore = false;
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = {};
+  Timer? _dateHeaderTimer;
+  bool _showDateHeader = false;
+
+  final ValueNotifier<String?> _currentTopDate = ValueNotifier(null);
+
+  final Map<Key, GlobalKey> _messageKeys = {};
 
   Future<void> _loadPreviousMessages() async {
     setState(() {
@@ -223,13 +232,79 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }).toList();
   }
 
+  void _showFloatingDateHeader() {
+    setState(() {
+      _showDateHeader = true;
+    });
+
+    // Cancel existing timer if user is still scrolling
+    _dateHeaderTimer?.cancel();
+
+    // Start new timer to hide after 1 second
+    _dateHeaderTimer = Timer(Duration(seconds: 1), () {
+      setState(() {
+        _showDateHeader = false;
+      });
+    });
+  }
+
+  void _hideFloatingDateHeader() {
+    // Optionally hide immediately when scrolling down
+    setState(() {
+      _showDateHeader = false;
+    });
+
+    // Cancel the timer to avoid it interfering
+    _dateHeaderTimer?.cancel();
+  }
+
   void _handleScroll() {
-    if (_scrollController.position.atEdge) {
-      if (_scrollController.position.pixels == 0) {
-        // User has scrolled to the top
-        _loadMoreMessages();
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.forward) {
+      _showFloatingDateHeader();
+    }
+
+    // Hide header when scrolling down (optional, but could improve UX)
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse) {
+      _hideFloatingDateHeader();
+    }
+
+    // Check if at the top edge, then load more messages
+    if (_scrollController.position.atEdge &&
+        _scrollController.position.pixels == 0) {
+      _loadMoreMessages();
+    }
+
+    // Find index of first visible message and update date
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      final firstVisibleIndex = _getFirstVisibleIndex();
+      if (firstVisibleIndex != null && firstVisibleIndex < messages.length) {
+        final message = messages[firstVisibleIndex];
+        final newDate = ChatUtils().formatDateHeader(message.timestamp);
+        if (_currentTopDate.value != newDate) {
+          _currentTopDate.value = newDate;
+        }
       }
     }
+  }
+
+  int? _getFirstVisibleIndex() {
+    for (int i = 0; i < messages.length; i++) {
+      final key = ValueKey('chat-msg-$i');
+      final context = _messageKeys[key]?.currentContext;
+      if (context != null) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box != null) {
+          final pos = box.localToGlobal(Offset.zero);
+          if (pos.dy >= 0) {
+            return i;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   void _checkIfAtBottom() {
@@ -313,6 +388,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
     _socketService.toggleChatPageOpen(false);
+    _dateHeaderTimer?.cancel();
 
     super.dispose();
   }
@@ -741,6 +817,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   callerId: widget.customerEmail!,
                   callerName: widget.customerName!,
                   callId: callId,
+                  timestamp: DateTime.now().toIso8601String(),
                 );
 
                 final result = await Navigator.push(
@@ -792,60 +869,95 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
                                 final msg = messages[index];
-                                if (msg.type == 'media') {
-                                  return ImageMessageBubble(
-                                    imageUrl: msg.mediaUrl!,
-                                    isMe: msg.sender == widget.customerEmail,
-                                    timestamp: formatTimestamp(msg.timestamp),
-                                  );
-                                } else if (msg.type == 'form') {
-                                  return FormMessageBubble(
-                                    formData: msg.form!,
-                                    isMe: msg.sender == widget.agentEmail,
-                                    timestamp: formatTimestamp(
-                                        msg.timestamp.toIso8601String()),
-                                    userRole: userRole!,
-                                  );
-                                } else if (msg.type == 'document') {
-                                  return DocumentMessageBubble(
-                                    documentUrl: msg.mediaUrl!,
-                                    isMe: msg.sender == widget.customerEmail,
-                                    timestamp: formatTimestamp(msg.timestamp),
-                                  );
-                                } else if (msg.type == 'voice') {
-                                  return VoiceMessageBubble(
-                                    voiceUrl: msg.mediaUrl!,
-                                    isMe: msg.sender == widget.customerEmail,
-                                    timestamp: formatTimestamp(msg.timestamp),
-                                  );
-                                } else if (msg.type == 'call') {
-                                  return CallMessageBubble(
-                                    isMe: msg.sender == widget.agentEmail,
-                                    timestamp: formatTimestamp(
-                                        msg.timestamp.toIso8601String()),
-                                    callStatus: msg.callStatus ?? "",
-                                    callDuration: msg.callDuration ?? '',
-                                  );
-                                } else if (msg.message == 'Fill details') {
-                                  return FillFormButton(
-                                    buttonText: "Fill product details",
-                                    onSubmit: _showFormOverlay,
-                                  );
-                                } else if (msg.message == "Update form rate") {
-                                  return FillFormButton(
-                                    buttonText: "Update Form",
-                                    onSubmit: () {
-                                      openFormDialogToUpdateRate(msg.form!);
-                                    },
-                                  );
+                                final valueKey = ValueKey('chat-msg-$index');
+                                final globalKey = GlobalKey();
+                                _messageKeys[valueKey] = globalKey;
+                                String? dateHeader;
+
+                                if (index == 0 ||
+                                    !ChatUtils().isSameDay(
+                                        messages[index - 1].timestamp,
+                                        msg.timestamp)) {
+                                  dateHeader = ChatUtils()
+                                      .formatDateHeader(msg.timestamp);
                                 }
-                                return MessageBubble(
-                                  text: msg.message,
-                                  isMe: msg.sender == widget.customerEmail,
-                                  timestamp: formatTimestamp(msg.timestamp),
-                                  image: msg.sender == widget.customerEmail
-                                      ? widget.customerName ?? ""
-                                      : "Agent",
+
+                                return Container(
+                                  key: globalKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (dateHeader != null)
+                                        DateHeader(date: dateHeader),
+                                      if (msg.type == 'media')
+                                        ImageMessageBubble(
+                                          imageUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                        )
+                                      else if (msg.type == 'form')
+                                        FormMessageBubble(
+                                          formData: msg.form!,
+                                          isMe: msg.sender == widget.agentEmail,
+                                          timestamp: formatTimestamp(
+                                              msg.timestamp.toIso8601String()),
+                                          userRole: userRole!,
+                                        )
+                                      else if (msg.type == 'document')
+                                        DocumentMessageBubble(
+                                          documentUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                        )
+                                      else if (msg.type == 'voice')
+                                        VoiceMessageBubble(
+                                          voiceUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                        )
+                                      else if (msg.type == 'call')
+                                        CallMessageBubble(
+                                          isMe: msg.sender == widget.agentEmail,
+                                          timestamp: formatTimestamp(
+                                              msg.timestamp.toIso8601String()),
+                                          callStatus: msg.callStatus ?? "",
+                                          callDuration: msg.callDuration ?? '',
+                                        )
+                                      else if (msg.message == 'Fill details')
+                                        FillFormButton(
+                                          buttonText: "Fill product details",
+                                          onSubmit: _showFormOverlay,
+                                        )
+                                      else if (msg.message ==
+                                          "Update form rate")
+                                        FillFormButton(
+                                          buttonText: "Update Form",
+                                          onSubmit: () {
+                                            openFormDialogToUpdateRate(
+                                                msg.form!);
+                                          },
+                                        )
+                                      else
+                                        MessageBubble(
+                                          text: msg.message,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                          image:
+                                              msg.sender == widget.customerEmail
+                                                  ? widget.customerName ?? ""
+                                                  : "Agent",
+                                        )
+                                    ],
+                                  ),
                                 );
                               },
                             ),
@@ -875,6 +987,21 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   child: Icon(Icons.arrow_downward_rounded),
                 ),
               ),
+            Positioned(
+              top: 10,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: _currentTopDate,
+                builder: (context, date, _) {
+                  if (date == null || !_showDateHeader)
+                    return SizedBox.shrink();
+                  return Center(
+                    child: DateHeader(date: date),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),

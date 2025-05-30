@@ -142,7 +142,7 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         controller: _pass,
                         errorText: signupProvider.passwordError,
-                        helperText: 'Must be at least 8 characters',
+                        //helperText: 'Must be at least 6 characters',
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
@@ -168,7 +168,7 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         controller: _repass,
                         errorText: signupProvider.rePasswordError,
-                        helperText: 'Must be at least 8 characters',
+                        //helperText: 'Must be at least 6 characters',
                         borderRadius: 10,
                         height: 45,
                         maxLines: 1,

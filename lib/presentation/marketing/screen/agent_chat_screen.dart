@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hive/hive.dart';
@@ -25,6 +26,7 @@ import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart
 import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -82,6 +84,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Set<String> _loadedMessageIds = {};
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   //bool _isViewOnlyMode = false;
+  Timer? _dateHeaderTimer;
+  bool _showDateHeader = false;
+
+  final ValueNotifier<String?> _currentTopDate = ValueNotifier(null);
+
+  final Map<Key, GlobalKey> _messageKeys = {};
 
   @override
   void initState() {
@@ -130,7 +138,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.setChatPageState(
       isOpen: false,
     );
-
+    _dateHeaderTimer?.cancel();
     super.dispose();
   }
 
@@ -287,13 +295,78 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+  void _showFloatingDateHeader() {
+    setState(() {
+      _showDateHeader = true;
+    });
+
+    // Cancel existing timer if user is still scrolling
+    _dateHeaderTimer?.cancel();
+
+    // Start new timer to hide after 1 second
+    _dateHeaderTimer = Timer(Duration(seconds: 1), () {
+      setState(() {
+        _showDateHeader = false;
+      });
+    });
+  }
+
+  void _hideFloatingDateHeader() {
+    // Optionally hide immediately when scrolling down
+    setState(() {
+      _showDateHeader = false;
+    });
+
+    // Cancel the timer to avoid it interfering
+    _dateHeaderTimer?.cancel();
+  }
+
   void _handleScroll() {
-    if (_scrollController.position.atEdge) {
-      if (_scrollController.position.pixels == 0) {
-        // User has scrolled to the top
-        _loadMoreMessages(context);
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.forward) {
+      _showFloatingDateHeader();
+    }
+
+    // Hide header when scrolling down (optional, but could improve UX)
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse) {
+      _hideFloatingDateHeader();
+    }
+    // Check if at the top edge, then load more messages
+    if (_scrollController.position.atEdge &&
+        _scrollController.position.pixels == 0) {
+      _loadMoreMessages(context);
+    }
+
+    // Find index of first visible message and update date
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      final firstVisibleIndex = _getFirstVisibleIndex();
+      if (firstVisibleIndex != null && firstVisibleIndex < messages.length) {
+        final message = messages[firstVisibleIndex];
+        final newDate = ChatUtils().formatDateHeader(message.timestamp);
+        if (_currentTopDate.value != newDate) {
+          _currentTopDate.value = newDate;
+        }
       }
     }
+  }
+
+  int? _getFirstVisibleIndex() {
+    for (int i = 0; i < messages.length; i++) {
+      final key = ValueKey('chat-msg-$i');
+      final context = _messageKeys[key]?.currentContext;
+      if (context != null) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box != null) {
+          final pos = box.localToGlobal(Offset.zero);
+          if (pos.dy >= 0) {
+            return i;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   void _checkIfAtBottom() {
@@ -666,6 +739,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
                 callId: callId,
+                timestamp: DateTime.now().toIso8601String(),
               );
 
               final result = await Navigator.push(
@@ -713,6 +787,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                     child: CircularProgressIndicator(),
                   ),
                 ),
+
               Expanded(
                 child: _isLoading
                     ? Center(child: CircularProgressIndicator())
@@ -724,79 +799,103 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             itemCount: messages.length,
                             itemBuilder: (context, index) {
                               final msg = messages[index];
-                              if (msg.type == 'media') {
-                                return ImageMessageBubble(
-                                  imageUrl: msg.mediaUrl!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: ChatUtils().formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                );
-                              } else if (msg.type == 'form') {
-                                return FormMessageBubble(
-                                  formData: msg.form!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: ChatUtils().formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                  userRole: userRole!,
-                                  onRateUpdated: _handleRateUpdated,
-                                  onStatusUpdated: _handleStatusUpdated,
-                                  onFormUpdateStart: () {
-                                    setState(() {
-                                      _isFormUpdating = true;
-                                    });
-                                  },
-                                  onFormUpdateEnd: () {
-                                    setState(() {
-                                      _isFormUpdating = false;
-                                    });
-                                  },
-                                  onAskForRateUpdate: sendFormToUpdateRate,
-                                );
-                              } else if (msg.type == 'document') {
-                                return DocumentMessageBubble(
-                                  documentUrl: msg.mediaUrl!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: ChatUtils().formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                );
-                              } else if (msg.type == 'voice') {
-                                return VoiceMessageBubble(
-                                  voiceUrl: msg.mediaUrl!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: ChatUtils().formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                );
-                              } else if (msg.type == 'call') {
-                                return CallMessageBubble(
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: ChatUtils().formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                  callStatus: msg.callStatus ?? "",
-                                  callDuration: msg.callDuration ?? '',
-                                );
-                              } else if (msg.message == 'Fill details') {
-                                return FillFormButton(
-                                  buttonText: "Fill product details",
-                                  onSubmit: () {
-                                    // Agent not allowed to fill the form
-                                  },
-                                );
-                              } else if (msg.message == "Update form rate") {
-                                return FillFormButton(
-                                  buttonText: "Update Form",
-                                  onSubmit: () {
-                                    // only show the widget for history not to do anything agent side
-                                  },
-                                );
+                              final valueKey = ValueKey('chat-msg-$index');
+                              final globalKey = GlobalKey();
+                              _messageKeys[valueKey] = globalKey;
+                              String? dateHeader;
+
+                              if (index == 0 ||
+                                  !ChatUtils().isSameDay(
+                                      messages[index - 1].timestamp,
+                                      msg.timestamp)) {
+                                dateHeader =
+                                    ChatUtils().formatDateHeader(msg.timestamp);
                               }
-                              return MessageBubble(
-                                text: msg.message,
-                                isMe: msg.sender == widget.agentEmail,
-                                timestamp: ChatUtils().formatTimestamp(
-                                    msg.timestamp.toIso8601String()),
-                                image: msg.sender == widget.agentEmail
-                                    ? widget.agentName ?? ""
-                                    : widget.customerName ?? "",
+
+                              return Container(
+                                key: globalKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (dateHeader != null)
+                                      DateHeader(date: dateHeader),
+                                    if (msg.type == 'media')
+                                      ImageMessageBubble(
+                                        imageUrl: msg.mediaUrl!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                      )
+                                    else if (msg.type == 'form')
+                                      FormMessageBubble(
+                                        formData: msg.form!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                        userRole: userRole!,
+                                        onRateUpdated: _handleRateUpdated,
+                                        onStatusUpdated: _handleStatusUpdated,
+                                        onFormUpdateStart: () {
+                                          setState(() {
+                                            _isFormUpdating = true;
+                                          });
+                                        },
+                                        onFormUpdateEnd: () {
+                                          setState(() {
+                                            _isFormUpdating = false;
+                                          });
+                                        },
+                                        onAskForRateUpdate:
+                                            sendFormToUpdateRate,
+                                      )
+                                    else if (msg.type == 'document')
+                                      DocumentMessageBubble(
+                                        documentUrl: msg.mediaUrl!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                      )
+                                    else if (msg.type == 'voice')
+                                      VoiceMessageBubble(
+                                        voiceUrl: msg.mediaUrl!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                      )
+                                    else if (msg.type == 'call')
+                                      CallMessageBubble(
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                        callStatus: msg.callStatus ?? "",
+                                        callDuration: msg.callDuration ?? '',
+                                      )
+                                    else if (msg.message == 'Fill details')
+                                      FillFormButton(
+                                        buttonText: "Fill product details",
+                                        onSubmit: () {
+                                          // Agent not allowed to fill the form
+                                        },
+                                      )
+                                    else if (msg.message == "Update form rate")
+                                      FillFormButton(
+                                        buttonText: "Update Form",
+                                        onSubmit: () {
+                                          // Only show the widget for history, not to do anything on the agent side
+                                        },
+                                      )
+                                    else
+                                      MessageBubble(
+                                        text: msg.message,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                        image: msg.sender == widget.agentEmail
+                                            ? widget.agentName ?? ""
+                                            : widget.customerName ?? "",
+                                      ),
+                                  ],
+                                ),
                               );
                             },
                           ),
@@ -826,6 +925,21 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 child: Icon(Icons.arrow_downward_rounded),
               ),
             ),
+          //  Floating day/date header
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: ValueListenableBuilder<String?>(
+              valueListenable: _currentTopDate,
+              builder: (context, date, _) {
+                if (date == null || !_showDateHeader) return SizedBox.shrink();
+                return Center(
+                  child: DateHeader(date: date),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );

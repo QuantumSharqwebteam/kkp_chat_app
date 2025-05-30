@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:intl/intl.dart';
 
 class ChatUtils {
@@ -16,18 +15,24 @@ class ChatUtils {
     }
   }
 
-  int generateUniqueUId() {
-    // Get current timestamp in milliseconds
-    int timestamp = DateTime.now().millisecondsSinceEpoch;
+  bool isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
 
-    // Generate a random number
-    Random random = Random();
-    int randomNumber = random.nextInt(1000000); // Adjust the range as needed
+  String formatDateHeader(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final messageDate = DateTime(date.year, date.month, date.day);
 
-    // Combine timestamp and random number to create a unique ID
-    // Use bitwise operations to ensure the combined value fits within an integer
-    int uniqueId = timestamp ^ randomNumber;
-
-    return uniqueId;
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat('dd/MM/yyyy').format(date);
+    }
   }
 }

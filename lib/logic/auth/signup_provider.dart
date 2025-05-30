@@ -30,6 +30,13 @@ class SignupProvider with ChangeNotifier {
 
   void setName(String name) {
     _name = name;
+    if (name.trim().isEmpty) {
+      setNameError("Name can't be Empty");
+    } else if (!_validateName(name)) {
+      setNameError("Name should be at least 3 words");
+    } else {
+      setNameError(null); // Clear the error if the input is valid
+    }
     notifyListeners();
   }
 
@@ -40,6 +47,13 @@ class SignupProvider with ChangeNotifier {
 
   void setPassword(String password) {
     _password = password;
+    if (password.trim().isEmpty) {
+      setPasswordError("Password can't be Empty");
+    } else if (!_validatePassword(password)) {
+      setPasswordError("Password should be at least 6 characters");
+    } else {
+      setPasswordError(null); // Clear the error if the input is valid
+    }
     notifyListeners();
   }
 
@@ -73,6 +87,14 @@ class SignupProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  bool _validateName(String name) {
+    return name.length >= 3;
+  }
+
+  bool _validatePassword(String password) {
+    return password.length >= 6;
+  }
+
   Future<void> signup(BuildContext context) async {
     setIsLoading(true);
     setNameError(null);
@@ -82,6 +104,12 @@ class SignupProvider with ChangeNotifier {
 
     if (_name.trim().isEmpty) {
       setNameError("Name can't be Empty");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!_validateName(_name)) {
+      setNameError("Name should be at least 3 words");
       setIsLoading(false);
       return;
     }
@@ -100,6 +128,12 @@ class SignupProvider with ChangeNotifier {
 
     if (_password.trim().isEmpty) {
       setPasswordError("Password can't be Empty");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!_validatePassword(_password)) {
+      setPasswordError("Password should be at least 6 characters");
       setIsLoading(false);
       return;
     }
@@ -128,7 +162,9 @@ class SignupProvider with ChangeNotifier {
           await LocalDbHelper.saveToken(response['token'].toString());
           await LocalDbHelper.saveUserType("0");
 
-          await _saveUser(context, _name);
+          if (context.mounted) {
+            await _saveUser(context, _name);
+          }
 
           final result = await AuthRepository().sendOtp(email: _email);
           if (result['message'] == "OTP sent") {

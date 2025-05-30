@@ -69,7 +69,7 @@ class CallMessageBubble extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(statusText,
                       style: AppTextStyles.black14_600
-                          .copyWith(color: isMe ? Colors.white : Colors.black)),
+                          .copyWith(color: Colors.black)),
                 ],
               ),
               if (callStatus == 'answered') ...[
