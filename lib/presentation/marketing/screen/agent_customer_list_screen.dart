@@ -3,9 +3,10 @@ import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-import 'package:kkpchatapp/main.dart';
+//import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
-import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
+//import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_messages_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 
 class AgentCustomersListScreen extends StatefulWidget {
@@ -127,21 +128,30 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                               ),
                               trailing: Icon(Icons.arrow_forward_ios),
                               onTap: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AgentChatScreen(
-                                      navigatorKey: navigatorKey,
-                                      customerName: customer["name"],
-                                      customerEmail: customer['email'],
-                                      agentEmail: widget.agentEmail,
-                                      agentName: widget.agentName,
-                                    ),
-                                  ),
-                                );
-                                if (result == true) {
-                                  await fetchCustomers();
-                                }
+                                // final result = await Navigator.push(
+                                //   context,
+                                //   MaterialPageRoute(
+                                //     builder: (context) => AgentChatScreen(
+                                //       navigatorKey: navigatorKey,
+                                //       customerName: customer["name"],
+                                //       customerEmail: customer['email'],
+                                //       agentEmail: widget.agentEmail,
+                                //       agentName: widget.agentName,
+                                //     ),
+                                //   ),
+                                // );
+                                // if (result == true) {
+                                //   await fetchCustomers();
+                                // }
+                                Navigator.push(context,
+                                    MaterialPageRoute(builder: (context) {
+                                  return AgentCustomerMessagesScreen(
+                                    agentEmail: widget.agentEmail,
+                                    agentName: widget.agentName,
+                                    customerEmail: customer['email'],
+                                    customerName: customer["name"],
+                                  );
+                                }));
                               },
                             ),
                           );

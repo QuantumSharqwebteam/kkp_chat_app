@@ -421,6 +421,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final newValue = bottomInset > 0.0;
+
+    if (newValue) {
+      // Keyboard is opened
+      _scrollToBottom();
+    }
+  }
+
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("Received Message: ${data.toString()}");
 

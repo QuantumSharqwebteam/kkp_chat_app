@@ -93,6 +93,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
     _fetchUserRole();
     super.initState();
 
@@ -164,6 +165,17 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final newValue = bottomInset > 0.0;
+
+    if (newValue) {
+      // Keyboard is opened
+      _scrollToBottom();
     }
   }
 
