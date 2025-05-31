@@ -861,8 +861,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 );
 
                 if (result != null) {
-                  print(
-                      "✅ call data saved in the local as: ${result.toString()}");
+                  // print(
+                  //     "✅ call data saved in the local as: ${result.toString()}");
                   await _chatStorageService.saveMessage(
                       result, widget.customerEmail!);
                   setState(() {
@@ -1023,8 +1023,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               child: ValueListenableBuilder<String?>(
                 valueListenable: _currentTopDate,
                 builder: (context, date, _) {
-                  if (date == null || !_showDateHeader)
+                  if (date == null || !_showDateHeader) {
                     return SizedBox.shrink();
+                  }
                   return Center(
                     child: DateHeader(date: date),
                   );
