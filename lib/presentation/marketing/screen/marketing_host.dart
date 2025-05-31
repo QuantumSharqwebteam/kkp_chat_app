@@ -288,7 +288,7 @@ class _MarketingHostState extends State<MarketingHost> {
                     uid: uid,
                     remoteUserId: callerId,
                     remoteUserName: callerName,
-                    messageId: incomingCallId,
+                    callId: incomingCallId,
                   ),
                 ),
               );
@@ -296,7 +296,7 @@ class _MarketingHostState extends State<MarketingHost> {
           },
           onReject: () async {
             await stopAndRemoveOverlay();
-            await chatRepository.updateCallData(incomingCallId, "missed");
+            await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
           },
           audioPlayer: audioPlayer,

@@ -203,6 +203,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         form: messageJson.form != null && messageJson.form!.isNotEmpty
             ? Map<String, dynamic>.from(messageJson.form![0])
             : null,
+        callDuration: messageJson.callDuration,
+        callStatus: messageJson.callStatus,
+        callId: messageJson.callId,
       );
     }).toList();
 
@@ -215,10 +218,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       // Compare the fetched messages with the ones in the Hive database
       final uniqueFetchedMessages = _removeDuplicates(chatMessages);
       final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
-        return !newLoadedMessages.any((loadedMessage) =>
-            loadedMessage.message == fetchedMessage.message &&
-            loadedMessage.timestamp == fetchedMessage.timestamp &&
-            loadedMessage.sender == fetchedMessage.sender);
+        return !newLoadedMessages.any((loadedMessage) {
+          // For call-type messages, compare using callId, callDuration, callStatus
+          if (fetchedMessage.type == 'call' && loadedMessage.type == 'call') {
+            return loadedMessage.callId == fetchedMessage.callId;
+          }
+
+          // For all other message types, compare using existing fields
+          return loadedMessage.message == fetchedMessage.message &&
+              loadedMessage.timestamp == fetchedMessage.timestamp &&
+              loadedMessage.sender == fetchedMessage.sender &&
+              loadedMessage.type == fetchedMessage.type;
+        });
       }).toList();
 
       // Add the messages that are not in the Hive database to the list of messages
@@ -274,6 +285,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           form: messageJson.form != null && messageJson.form!.isNotEmpty
               ? Map<String, dynamic>.from(messageJson.form![0])
               : null,
+          callDuration: messageJson.callDuration,
+          callId: messageJson.callId,
+          callStatus: messageJson.callStatus,
         );
       }).toList();
 
@@ -732,6 +746,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               debugPrint("Generated UID for agent (caller): $uid");
 
               final callId = Uuid().v4();
+              final timestamp = DateTime.now();
 
               _socketService.sendAgoraCall(
                 targetId: widget.customerEmail,
@@ -739,7 +754,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
                 callId: callId,
-                timestamp: DateTime.now().toIso8601String(),
+                timestamp: timestamp.toIso8601String(),
               );
 
               final result = await Navigator.push(
@@ -751,12 +766,15 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                     uid: uid,
                     remoteUserId: widget.customerEmail,
                     remoteUserName: widget.customerName!,
-                    messageId: callId,
+                    callId: callId,
+                    timestamp: timestamp,
                   ),
                 ),
               );
 
               if (result != null) {
+                print(
+                    "✅ call data saved in the local as: ${result.toString()}");
                 await _chatStorageService.saveMessage(
                     result, '${widget.agentEmail}${widget.customerEmail}');
                 setState(() {
@@ -886,7 +904,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                       )
                                     else
                                       MessageBubble(
-                                        text: msg.message,
+                                        text: msg.message!,
                                         isMe: msg.sender == widget.agentEmail,
                                         timestamp: ChatUtils().formatTimestamp(
                                             msg.timestamp.toIso8601String()),

@@ -20,7 +20,8 @@ class AgoraAudioCallScreen extends StatefulWidget {
   final String? remoteUserId;
   final String remoteUserName;
   final int uid;
-  final String? messageId;
+  final String? callId;
+  final DateTime? timestamp; // time at which call is made should be common
 
   const AgoraAudioCallScreen({
     super.key,
@@ -30,7 +31,8 @@ class AgoraAudioCallScreen extends StatefulWidget {
     this.remoteUserId,
     required this.remoteUserName,
     required this.uid,
-    this.messageId,
+    this.callId,
+    this.timestamp,
   });
 
   @override
@@ -118,14 +120,14 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
 
   Future<void> _updateCallData(String callStatus,
       {String? callDuration}) async {
-    if (widget.messageId == null) {
+    if (widget.callId == null) {
       debugPrint("❌ Message ID is null. Cannot update call data.");
       return;
     }
 
     try {
       await chatRepository.updateCallData(
-        widget.messageId!,
+        widget.callId!,
         callStatus,
         callDuration: callDuration,
       );
@@ -214,12 +216,13 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   ChatMessageModel _createCallDetailsMessage(
       String callStatus, String callDuration) {
     return ChatMessageModel(
-      message: "Call $callStatus",
-      timestamp: DateTime.now(),
-      sender: "",
+      //  message: "Call $callStatus", // no need to save any thing for call data in messsage
+      timestamp: widget.timestamp ?? DateTime.now(),
+      // sender: "",
       type: 'call',
       callStatus: callStatus,
       callDuration: callDuration,
+      callId: widget.callId,
     );
   }
 

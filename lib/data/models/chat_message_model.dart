@@ -1,22 +1,24 @@
 class ChatMessageModel {
-  String message;
-  String sender;
+  String? message;
+  String? sender;
   DateTime timestamp;
   String? type;
   String? mediaUrl;
   Map<String, dynamic>? form;
   String? callStatus;
   String? callDuration;
+  String? callId;
 
   ChatMessageModel({
-    required this.message,
-    required this.sender,
+    this.message,
+    this.sender,
     required this.timestamp,
     this.type,
     this.mediaUrl,
     this.form,
     this.callStatus,
     this.callDuration,
+    this.callId,
   });
 
   // Convert a ChatMessage object into a Map
@@ -30,6 +32,7 @@ class ChatMessageModel {
       'form': form,
       'callStatus': callStatus,
       'callDuration': callDuration,
+      'callId': callId,
     };
   }
 
@@ -44,6 +47,7 @@ class ChatMessageModel {
       form: map['form'] != null ? Map<String, dynamic>.from(map['form']) : null,
       callStatus: map['callStatus'],
       callDuration: map['callDuration'],
+      callId: map['callId'],
     );
   }
 
@@ -51,6 +55,6 @@ class ChatMessageModel {
   String toString() {
     return 'ChatMessageModel(message: $message, sender: $sender, timestamp: $timestamp, '
         'type: $type, mediaUrl: $mediaUrl, form: $form, callStatus: $callStatus, '
-        'callDuration: $callDuration)';
+        'callDuration: $callDuration,callId :$callId)';
   }
 }

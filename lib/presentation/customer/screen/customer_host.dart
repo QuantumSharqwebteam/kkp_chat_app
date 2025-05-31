@@ -212,7 +212,7 @@ class _CustomerHostState extends State<CustomerHost> {
                     uid: uid,
                     remoteUserId: callerId,
                     remoteUserName: callerName,
-                    messageId: incomingCallId,
+                    callId: incomingCallId,
                   ),
                 ),
               );
@@ -220,7 +220,7 @@ class _CustomerHostState extends State<CustomerHost> {
           },
           onReject: () async {
             await stopAndRemoveOverlay();
-            await chatRepository.updateCallData(incomingCallId, "missed");
+            await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
           },
           audioPlayer: audioPlayer,

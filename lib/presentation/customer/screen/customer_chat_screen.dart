@@ -126,6 +126,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         form: messageJson.form != null && messageJson.form!.isNotEmpty
             ? Map<String, dynamic>.from(messageJson.form![0])
             : null,
+        callDuration: messageJson.callDuration,
+        callStatus: messageJson.callStatus,
+        callId: messageJson.callId,
       );
     }).toList();
 
@@ -138,10 +141,18 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       // Compare the fetched messages with the ones in the Hive database
       final uniqueFetchedMessages = _removeDuplicates(chatMessages);
       final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
-        return !newLoadedMessages.any((loadedMessage) =>
-            loadedMessage.message == fetchedMessage.message &&
-            loadedMessage.timestamp == fetchedMessage.timestamp &&
-            loadedMessage.sender == fetchedMessage.sender);
+        return !newLoadedMessages.any((loadedMessage) {
+          // For call-type messages, compare using callId, callDuration, callStatus
+          if (fetchedMessage.type == 'call' && loadedMessage.type == 'call') {
+            return loadedMessage.callId == fetchedMessage.callId;
+          }
+
+          // For all other message types, compare using existing fields
+          return loadedMessage.message == fetchedMessage.message &&
+              loadedMessage.timestamp == fetchedMessage.timestamp &&
+              loadedMessage.sender == fetchedMessage.sender &&
+              loadedMessage.type == fetchedMessage.type;
+        });
       }).toList();
 
       // Add the messages that are not in the Hive database to the list of messages
@@ -200,6 +211,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           form: messageJson.form != null && messageJson.form!.isNotEmpty
               ? Map<String, dynamic>.from(messageJson.form![0])
               : null,
+          callDuration: messageJson.callDuration,
+          callStatus: messageJson.callStatus,
+          callId: messageJson.callId,
         );
       }).toList();
 
@@ -810,6 +824,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 final uid =
                     Utils().generateIntUidFromEmail(widget.customerEmail!);
                 debugPrint("Generated UID for agent (caller): $uid");
+                final timestamp = DateTime.now();
 
                 final callId = Uuid().v4();
                 _socketService.sendAgoraCall(
@@ -817,7 +832,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   callerId: widget.customerEmail!,
                   callerName: widget.customerName!,
                   callId: callId,
-                  timestamp: DateTime.now().toIso8601String(),
+                  timestamp: timestamp.toIso8601String(),
                 );
 
                 final result = await Navigator.push(
@@ -828,12 +843,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                       channelName: channelName,
                       uid: uid,
                       remoteUserName: widget.agentName!,
-                      messageId: callId,
+                      callId: callId,
+                      timestamp: timestamp,
                     ),
                   ),
                 );
 
                 if (result != null) {
+                  print(
+                      "✅ call data saved in the local as: ${result.toString()}");
                   await _chatStorageService.saveMessage(
                       result, widget.customerEmail!);
                   setState(() {
@@ -946,7 +964,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                         )
                                       else
                                         MessageBubble(
-                                          text: msg.message,
+                                          text: msg.message!,
                                           isMe: msg.sender ==
                                               widget.customerEmail,
                                           timestamp:
