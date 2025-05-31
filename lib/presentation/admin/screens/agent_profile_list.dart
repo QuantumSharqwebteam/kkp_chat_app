@@ -97,32 +97,32 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     }
   }
 
-  void removeAgentFromList(String email) async {
-    try {
-      final success = await AuthApi().removeAssignedAgent(email: email);
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("✅ Agent removed from list")),
-          );
-        }
+  // void removeAgentFromList(String email) async {
+  //   try {
+  //     final success = await AuthApi().removeAssignedAgent(email: email);
+  //     if (success) {
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(content: Text("✅ Agent removed from list")),
+  //         );
+  //       }
 
-        _fetchAssignedAgentList();
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("⚠️ Failed to remove agent")),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Error: $e")),
-        );
-      }
-    }
-  }
+  //       _fetchAssignedAgentList();
+  //     } else {
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(content: Text("⚠️ Failed to remove agent")),
+  //         );
+  //       }
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text("❌ Error: $e")),
+  //       );
+  //     }
+  //   }
+  // }
 
   void _deleteAgent(String email) async {
     try {
@@ -431,21 +431,25 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                 elevation: 10,
                 onSelected: (value) {
                   if (value == 'Add agent to assign list') {
-                    assignAgentToList(agent.email); // Replace with actual email
-                  } else if (value == 'Remove from Assigned list') {
-                    removeAgentFromList(
-                        agent.email); // Replace with actual email
+                    assignAgentToList(agent.email);
                   } else if (value == 'Delete Agent Profile') {
-                    // Add delete logic here
                     _deleteAgent(agent.email);
                   }
                 },
                 itemBuilder: (BuildContext context) {
-                  return [
-                    'Add agent to assign list',
-                    'Remove from Assigned list',
-                    'Delete Agent Profile'
-                  ].map((String choice) {
+                  List<String> menuItems = [];
+
+                  // Add 'Add agent to assign list' only if the agent is not assigned
+                  if (!isAssigned) {
+                    menuItems.add('Add agent to assign list');
+                  }
+
+                  // Add 'Delete Agent Profile' only if the agent is not an AgentHead
+                  if (agent.role != 'AgentHead') {
+                    menuItems.add('Delete Agent Profile');
+                  }
+
+                  return menuItems.map((String choice) {
                     return PopupMenuItem<String>(
                       value: choice,
                       child: Text(choice),

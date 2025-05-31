@@ -129,11 +129,16 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     final now = DateTime.now();
 
     filteredInquiries = allInquiries.where((item) {
-      // final matchAgent =
-      //     selectedAgent == 'All Agents' || item.agentName == selectedAgent;
-
       final matchQuality =
           selectedStatus == 'All' || item.status.contains(selectedStatus);
+
+      final dateTime = DateTime.tryParse(item.date);
+      final formattedDate = dateTime != null
+          ? DateFormat('MMMM d, yyyy').format(dateTime).toLowerCase()
+          : '';
+      final formattedTime = dateTime != null
+          ? DateFormat('h:mm a').format(dateTime).toLowerCase()
+          : '';
 
       final matchSearch = item.customerName.toLowerCase().contains(search) ||
           item.agentName.toLowerCase().contains(search) ||
@@ -142,27 +147,28 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           item.composition.toLowerCase().contains(search) ||
           item.rate.toLowerCase().contains(search) ||
           item.quantity.toLowerCase().contains(search) ||
-          item.status.toLowerCase().contains(search);
+          item.status.toLowerCase().contains(search) ||
+          formattedDate.contains(search) || // 🔍 Match formatted date
+          formattedTime.contains(search); // 🔍 Match formatted time
 
       bool matchDate = true;
-      final date = DateTime.tryParse(item.date);
-
-      if (date != null) {
+      if (dateTime != null) {
         switch (selectedDateRange) {
           case 'Today':
-            matchDate = date.day == now.day &&
-                date.month == now.month &&
-                date.year == now.year;
+            matchDate = dateTime.day == now.day &&
+                dateTime.month == now.month &&
+                dateTime.year == now.year;
             break;
           case 'Last Week':
-            matchDate = date.isAfter(now.subtract(const Duration(days: 7)));
+            matchDate = dateTime.isAfter(now.subtract(const Duration(days: 7)));
             break;
           case 'Last Month':
             matchDate =
-                date.isAfter(DateTime(now.year, now.month - 1, now.day));
+                dateTime.isAfter(DateTime(now.year, now.month - 1, now.day));
             break;
           case 'Last 30 days':
-            matchDate = date.isAfter(now.subtract(const Duration(days: 30)));
+            matchDate =
+                dateTime.isAfter(now.subtract(const Duration(days: 30)));
             break;
         }
       }
@@ -170,7 +176,17 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       return matchQuality && matchSearch && matchDate;
     }).toList();
 
-    visibleItemCount = min(itemsPerPage, filteredInquiries.length);
+    // Sort by date and time
+    filteredInquiries.sort((a, b) {
+      final dateA = DateTime.tryParse(a.date);
+      final dateB = DateTime.tryParse(b.date);
+      if (dateA == null || dateB == null) return 0;
+      return dateB.compareTo(dateA); // Newest first
+    });
+
+    visibleItemCount = filteredInquiries.length > itemsPerPage
+        ? itemsPerPage
+        : filteredInquiries.length;
     setState(() {});
   }
 
