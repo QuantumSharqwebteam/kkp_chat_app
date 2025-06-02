@@ -160,15 +160,34 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   Widget _buildAgentList() {
-    List<Agent> displayList = showPinned
-        ? _agentsList
-            .where((agent) => pinnedAgentsSet.contains(agent.email))
-            .toList()
-        : _agentsList
-            .where((agent) =>
-                agent.email !=
-                widget.loggedAgentEmail) // Exclude logged-in agent
-            .toList();
+    // Create a copy of the list to avoid modifying the original list directly
+    List<Agent> displayList = List.from(_agentsList);
+
+    if (showPinned) {
+      // Filter to show only pinned agents
+      displayList = displayList
+          .where((agent) => pinnedAgentsSet.contains(agent.email))
+          .toList();
+    } else {
+      // Exclude the logged-in agent and sort the list to show pinned agents first
+      displayList = displayList
+          .where((agent) => agent.email != widget.loggedAgentEmail)
+          .toList();
+
+      // Sort the list to show pinned agents first
+      displayList.sort((a, b) {
+        bool aIsPinned = pinnedAgentsSet.contains(a.email);
+        bool bIsPinned = pinnedAgentsSet.contains(b.email);
+
+        if (aIsPinned && !bIsPinned) {
+          return -1; // a comes before b
+        } else if (!aIsPinned && bIsPinned) {
+          return 1; // b comes before a
+        } else {
+          return 0; // maintain the original order
+        }
+      });
+    }
 
     if (displayList.isEmpty) {
       return const Center(child: Text("No agents found"));

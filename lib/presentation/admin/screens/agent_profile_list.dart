@@ -355,7 +355,6 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     // Fetch the current user's role
     String currentUserRole =
         LocalDbHelper.getProfile()?.role ?? ""; // Fetch the current user's role
-    debugPrint("fetched role from db in agent profile list :$currentUserRole");
     String currentUserEmail = LocalDbHelper.getProfile()?.email ??
         ''; // Fetch the current user's email
 
