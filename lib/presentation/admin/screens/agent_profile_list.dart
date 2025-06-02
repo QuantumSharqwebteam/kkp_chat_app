@@ -5,6 +5,7 @@ import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
@@ -97,32 +98,32 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     }
   }
 
-  // void removeAgentFromList(String email) async {
-  //   try {
-  //     final success = await AuthApi().removeAssignedAgent(email: email);
-  //     if (success) {
-  //       if (mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(content: Text("✅ Agent removed from list")),
-  //         );
-  //       }
+  void removeAgentFromList(String email) async {
+    try {
+      final success = await AuthApi().removeAssignedAgent(email: email);
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("✅ Agent removed from list")),
+          );
+        }
 
-  //       _fetchAssignedAgentList();
-  //     } else {
-  //       if (mounted) {
-  //         ScaffoldMessenger.of(context).showSnackBar(
-  //           SnackBar(content: Text("⚠️ Failed to remove agent")),
-  //         );
-  //       }
-  //     }
-  //   } catch (e) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text("❌ Error: $e")),
-  //       );
-  //     }
-  //   }
-  // }
+        _fetchAssignedAgentList();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("⚠️ Failed to remove agent")),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Error: $e")),
+        );
+      }
+    }
+  }
 
   void _deleteAgent(String email) async {
     try {
@@ -351,6 +352,13 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
       return const Center(child: Text("No agents found"));
     }
 
+    // Fetch the current user's role
+    String currentUserRole =
+        LocalDbHelper.getProfile()?.role ?? ""; // Fetch the current user's role
+    debugPrint("fetched role from db in agent profile list :$currentUserRole");
+    String currentUserEmail = LocalDbHelper.getProfile()?.email ??
+        ''; // Fetch the current user's email
+
     return ListView.builder(
       itemCount: _agentsList.length,
       itemBuilder: (context, index) {
@@ -434,6 +442,8 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                     assignAgentToList(agent.email);
                   } else if (value == 'Delete Agent Profile') {
                     _deleteAgent(agent.email);
+                  } else if (value == "Remove agent from assign list") {
+                    removeAgentFromList(agent.email);
                   }
                 },
                 itemBuilder: (BuildContext context) {
@@ -444,8 +454,18 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                     menuItems.add('Add agent to assign list');
                   }
 
-                  // Add 'Delete Agent Profile' only if the agent is not an AgentHead
-                  if (agent.role != 'AgentHead') {
+                  // Add 'Remove agent from assign list' only if the agent is assigned and not an AgentHead
+                  if (isAssigned && agent.role != "AgentHead") {
+                    menuItems.add("Remove agent from assign list");
+                  }
+
+                  // Logic to determine if 'Delete Agent Profile' should be shown
+                  if (currentUserRole == 'Admin') {
+                    // Admin can delete any agent profile
+                    menuItems.add('Delete Agent Profile');
+                  } else if (currentUserRole == 'AgentHead' &&
+                      agent.email != currentUserEmail) {
+                    // AgentHead can delete other agents but not themselves
                     menuItems.add('Delete Agent Profile');
                   }
 
