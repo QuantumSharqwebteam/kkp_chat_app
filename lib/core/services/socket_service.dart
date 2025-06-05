@@ -29,7 +29,7 @@ class SocketService {
   final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
   Function(Map<String, dynamic>)? _onIncomingCall;
-  Function(Map<String, dynamic>)? _onCallAnswered;
+  // Function(Map<String, dynamic>)? _onCallAnswered;
   Function(Map<String, dynamic>)? _onCallTerminated;
   Function? _onDisconnect;
   Function? _onConnect;
@@ -120,13 +120,13 @@ class SocketService {
       }
     });
 
-    _socket.on('callAnswered', (data) {
-      debugPrint('📥 callAnswered: $data');
-      _onCallAnswered?.call(data);
-    });
+    // _socket.on('callAnswered', (data) {
+    //   debugPrint('📥 callAnswered: $data');
+    //   _onCallAnswered?.call(data);
+    // });
 
     _socket.on('callTerminated', (data) {
-      debugPrint('📥 callTerminated');
+      debugPrint('📥 callTerminated :${data.toString()}');
       _onCallTerminated?.call(data);
     });
 
@@ -209,9 +209,9 @@ class SocketService {
     _onIncomingCall = callback;
   }
 
-  void onCallAnswered(Function(Map<String, dynamic>) callback) {
-    _onCallAnswered = callback;
-  }
+  // void onCallAnswered(Function(Map<String, dynamic>) callback) {
+  //   _onCallAnswered = callback;
+  // }
 
   void onCallTerminated(Function(Map<String, dynamic>) callback) {
     _onCallTerminated = callback;
@@ -300,10 +300,19 @@ class SocketService {
 
   void terminateCall({
     required String targetId,
+    required String callId,
+    String? channelName,
   }) {
     if (_isConnected) {
-      debugPrint("❌ Sending terminate call to $targetId");
-      _socket.emit('terminateCall', {'targetId': targetId});
+      final data = {
+        'targetId': targetId,
+        'callId': callId,
+      };
+      if (channelName != null) {
+        data['channelName'] = channelName;
+      }
+      debugPrint("❌ Sending terminate call: $data");
+      _socket.emit('terminateCall', data);
     }
   }
 

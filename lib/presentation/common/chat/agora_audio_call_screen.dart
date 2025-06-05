@@ -1,12 +1,15 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/media_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,6 +25,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
   final int uid;
   final String? callId;
   final DateTime? timestamp; // time at which call is made should be common
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   const AgoraAudioCallScreen({
     super.key,
@@ -33,6 +37,7 @@ class AgoraAudioCallScreen extends StatefulWidget {
     required this.uid,
     this.callId,
     this.timestamp,
+    this.navigatorKey,
   });
 
   @override
@@ -52,12 +57,26 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   final ChatRepository chatRepository = ChatRepository();
   final AudioPlayer _ringingPlayer = AudioPlayer();
   final String agoraAppId = dotenv.env['AGORA_APP_ID']!;
+  final _socketService = SocketService(navigatorKey);
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initAgora();
+    });
+    // Subscribe to termination event
+    _socketService.onCallTerminated((data) {
+      if (kDebugMode) {
+        debugPrint(
+            "recieved call termination socket data: ${data.toString()} ");
+      }
+      final callId = data['callId'];
+      if (callId == widget.callId) {
+        // Terminate this call
+        debugPrint("Call terminated by other side. Closing call screen...");
+        _endCall();
+      }
     });
   }
 

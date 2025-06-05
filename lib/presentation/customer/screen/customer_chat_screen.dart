@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
@@ -29,6 +32,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
@@ -831,13 +835,19 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           actions: [
             IconButton(
               onPressed: () async {
-                final channelName = "customerCall123";
+                // final channelName = sha256
+                //     .convert(utf8.encode(widget.customerEmail!))
+                //     .toString();
                 final uid =
                     Utils().generateIntUidFromEmail(widget.customerEmail!);
                 debugPrint("Generated UID for agent (caller): $uid");
                 final timestamp = DateTime.now();
 
                 final callId = Uuid().v4();
+                final rawChannel = '${widget.customerEmail}_$callId';
+                final channelName = sha256
+                    .convert(utf8.encode(rawChannel))
+                    .toString(); // different channel name for every call
                 _socketService.sendAgoraCall(
                   channelName: channelName,
                   callerId: widget.customerEmail!,
@@ -856,9 +866,25 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                       remoteUserName: widget.agentName!,
                       callId: callId,
                       timestamp: timestamp,
+                      navigatorKey: navigatorKey,
                     ),
                   ),
                 );
+
+                // ✅ Check if the call was terminated without connecting
+                if (result != null &&
+                    result is Map &&
+                    result['terminated'] == true) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Call was rejected or terminated.'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                  return;
+                }
 
                 if (result != null) {
                   // print(
@@ -889,7 +915,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   ),
                 Expanded(
                   child: _isLoading
-                      ? Center(child: CircularProgressIndicator())
+                      ? ShimmerMessageList()
                       : messages.isEmpty
                           ? NoChatConversation()
                           : ListView.builder(

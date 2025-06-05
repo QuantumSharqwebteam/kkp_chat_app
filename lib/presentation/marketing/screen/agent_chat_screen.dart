@@ -34,6 +34,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -780,13 +781,29 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                     remoteUserName: widget.customerName!,
                     callId: callId,
                     timestamp: timestamp,
+                    navigatorKey: navigatorKey,
                   ),
                 ),
               );
 
+              // ✅ Check if the call was terminated without connecting
+              if (result != null &&
+                  result is Map &&
+                  result['terminated'] == true) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Call was rejected or terminated.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
+
               if (result != null) {
-                print(
-                    "✅ call data saved in the local as: ${result.toString()}");
+                // print(
+                //     "✅ call data saved in the local as: ${result.toString()}");
                 await _chatStorageService.saveMessage(
                     result, '${widget.agentEmail}${widget.customerEmail}');
                 setState(() {
@@ -820,7 +837,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
               Expanded(
                 child: _isLoading
-                    ? Center(child: CircularProgressIndicator())
+                    ? ShimmerMessageList()
                     : messages.isEmpty
                         ? NoChatConversation()
                         : ListView.builder(

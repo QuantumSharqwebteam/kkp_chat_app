@@ -213,6 +213,7 @@ class _CustomerHostState extends State<CustomerHost> {
                     remoteUserId: callerId,
                     remoteUserName: callerName,
                     callId: incomingCallId,
+                    navigatorKey: navigatorKey,
                   ),
                 ),
               );
@@ -222,6 +223,11 @@ class _CustomerHostState extends State<CustomerHost> {
             await stopAndRemoveOverlay();
             await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
+            _socketService.terminateCall(
+              targetId: callerId,
+              callId: incomingCallId,
+              channelName: channelName,
+            );
           },
           audioPlayer: audioPlayer,
         ),
