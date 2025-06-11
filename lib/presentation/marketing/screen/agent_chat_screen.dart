@@ -102,6 +102,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         isOpen: true, customerId: widget.customerEmail);
 
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onMessageDeleted(_handleMessageDeleted);
     _initializeRecorder();
     _loadPreviousMessages(context);
 
@@ -219,6 +220,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         callDuration: messageJson.callDuration,
         callStatus: messageJson.callStatus,
         callId: messageJson.callId,
+        messageId: messageJson.messageId,
+        isDeleted: messageJson.isDeleted ?? false,
       );
     }).toList();
 
@@ -237,11 +240,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
             return loadedMessage.callId == fetchedMessage.callId;
           }
 
-          // For all other message types, compare using existing fields
-          return loadedMessage.message == fetchedMessage.message &&
-              loadedMessage.timestamp == fetchedMessage.timestamp &&
-              loadedMessage.sender == fetchedMessage.sender &&
-              loadedMessage.type == fetchedMessage.type;
+          // For all other message types, compare using messageId
+          return loadedMessage.messageId == fetchedMessage.messageId;
         });
       }).toList();
 
@@ -301,6 +301,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           callDuration: messageJson.callDuration,
           callId: messageJson.callId,
           callStatus: messageJson.callStatus,
+          messageId: messageJson.messageId,
+          isDeleted: messageJson.isDeleted ?? false,
         );
       }).toList();
 
@@ -457,12 +459,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
     return messages.where((message) {
-      final messageId =
-          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-      if (_loadedMessageIds.contains(messageId)) {
+      if (_loadedMessageIds.contains(message.messageId)) {
         return false;
       } else {
-        _loadedMessageIds.add(messageId);
+        _loadedMessageIds.add(message.messageId!);
         return true;
       }
     }).toList();
@@ -480,27 +480,39 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
       form: data["form"],
+      messageId: data["messageId"], // Include the message ID
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-    if (!_loadedMessageIds.contains(messageId)) {
+    if (!_loadedMessageIds.contains(message.messageId)) {
       setState(() {
         messages.add(message); // Append to the end
-        // messages.sort(
-        //     (a, b) => a.timestamp.compareTo(b.timestamp)); // Sort by timestamp
         _scrollToBottom();
       });
 
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(
           message, '${widget.agentEmail}${widget.customerEmail}');
-      _loadedMessageIds.add(messageId);
+      _loadedMessageIds.add(message.messageId!);
 
       _saveLastMessageTime();
       Provider.of<ChatRefreshProvider>(context, listen: false)
           .markNeedsRefresh();
     }
+  }
+
+  void _handleMessageDeleted(String messageId) {
+    setState(() {
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+      }
+    });
+
+    // Save the updated message state to local storage
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    _chatStorageService.saveMessages(messages, boxName);
   }
 
   void _sendMessage({
@@ -512,6 +524,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
     final currentTime = DateTime.now();
+    final messageId =
+        ChatUtils().generateMessageId(); // Generate a unique message ID
+
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
@@ -519,10 +534,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       type: type!,
       mediaUrl: mediaUrl,
       form: form,
+      messageId: messageId, // Include the message ID
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
@@ -537,6 +551,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         mediaUrl: mediaUrl,
         form: form,
         timestamp: currentTime.toIso8601String(),
+        messageId: messageId, // Include the message ID
       );
 
       // Save the message to Hive only if it's not already saved
@@ -565,6 +580,51 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     });
 
     _scrollToBottom();
+  }
+
+  void _showDeleteDialog(BuildContext context, String messageId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Message"),
+          content: const Text("Are you sure you want to delete this message?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text("Delete"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteMessage(messageId);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteMessage(String messageId) {
+    _socketService.deleteMessage(messageId);
+
+    // Update the local message state to reflect deletion
+    setState(() {
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+      }
+    });
+
+    // Save the updated message state to local storage
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    _chatStorageService.saveMessages(messages, boxName);
   }
 
   void _scrollToBottom() {
@@ -933,13 +993,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                       )
                                     else
                                       MessageBubble(
-                                        text: msg.message!,
+                                        message: msg,
                                         isMe: msg.sender == widget.agentEmail,
-                                        timestamp: ChatUtils().formatTimestamp(
-                                            msg.timestamp.toIso8601String()),
-                                        image: msg.sender == widget.agentEmail
-                                            ? widget.agentName ?? ""
-                                            : widget.customerName ?? "",
+                                        onLongPress: () {
+                                          _showDeleteDialog(
+                                              context, msg.messageId!);
+                                        },
                                       ),
                                   ],
                                 ),
@@ -965,7 +1024,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           if (!_isAtBottom)
             Positioned(
               bottom: 80, // Adjust the position as needed
-              right: 16, // Adjust the position as needed
+              right: 16, // Adjust the posMessageBubbleition as needed
               child: FloatingActionButton(
                 onPressed: _scrollToBottom,
                 mini: true,

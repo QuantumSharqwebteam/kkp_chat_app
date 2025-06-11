@@ -11,6 +11,8 @@ class MessageModel {
   final String? callStatus;
   final String? callDuration;
   final String? callId;
+  final String? messageId;
+  final bool? isDeleted;
 
   MessageModel({
     this.senderId,
@@ -25,6 +27,8 @@ class MessageModel {
     this.callStatus,
     this.callDuration,
     this.callId,
+    this.messageId,
+    this.isDeleted,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json, String agentEmail) {
@@ -41,6 +45,8 @@ class MessageModel {
       callStatus: json['callStatus'] as String?,
       callDuration: json['callDuration'] as String?,
       callId: json['callId'] as String?,
+      messageId: json['messageId'] as String?,
+      isDeleted: json['isDeleted'] as bool? ?? false,
     );
   }
 }

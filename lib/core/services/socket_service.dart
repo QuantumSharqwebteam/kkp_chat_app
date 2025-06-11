@@ -28,6 +28,7 @@ class SocketService {
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
+  Function(String)? _onMessageDeleted;
   Function(Map<String, dynamic>)? _onIncomingCall;
   // Function(Map<String, dynamic>)? _onCallAnswered;
   Function(Map<String, dynamic>)? _onCallTerminated;
@@ -130,6 +131,11 @@ class SocketService {
       _onCallTerminated?.call(data);
     });
 
+    _socket.on('messageDeleted', (data) {
+      final messageId = data['messageId'];
+      _onMessageDeleted?.call(messageId);
+    });
+
     _socket.onDisconnect((_) {
       _isConnected = false;
       for (String email in _roomMembers) {
@@ -205,6 +211,10 @@ class SocketService {
     _onMessageReceived = callback;
   }
 
+  void onMessageDeleted(Function(String) callback) {
+    _onMessageDeleted = callback;
+  }
+
   void onIncomingCall(Function(Map<String, dynamic>) callback) {
     _onIncomingCall = callback;
   }
@@ -255,6 +265,7 @@ class SocketService {
     Map<String, dynamic>? form,
     String? mediaUrl,
     String? timestamp,
+    String? messageId,
   }) {
     if (_isConnected) {
       Map<String, dynamic> messageData = {
@@ -268,11 +279,21 @@ class SocketService {
       if (form != null) messageData['form'] = form;
       if (mediaUrl != null) messageData['mediaUrl'] = mediaUrl;
       if (timestamp != null) messageData['timestamp'] = timestamp;
+      if (messageId != null) messageData["messageId"] = messageId;
 
       _socket.emit('sendMessage', messageData);
       debugPrint("message sent :${messageData.toString()}");
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
+    }
+  }
+
+  void deleteMessage(String messageId) {
+    if (_isConnected) {
+      _socket.emit('deleteMessage', {'messageId': messageId});
+      debugPrint("🗑️ Delete message event emitted: $messageId");
+    } else {
+      debugPrint('Socket is not connected. Cannot delete message.');
     }
   }
 

@@ -103,6 +103,8 @@ class _AgentCustomerMessagesScreenState
             callDuration: messageJson.callDuration,
             callStatus: messageJson.callStatus,
             callId: messageJson.callId,
+            messageId: messageJson.messageId, // Ensure messageId is mapped
+            isDeleted: messageJson.isDeleted!,
           );
         }).toList();
         _isLoading = false;
@@ -213,13 +215,11 @@ class _AgentCustomerMessagesScreenState
                                     )
                                   else
                                     MessageBubble(
-                                      text: msg.message!,
+                                      message: msg,
                                       isMe: isAgent,
-                                      timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String()),
-                                      image: isAgent
-                                          ? widget.agentName ?? ""
-                                          : widget.customerName ?? "",
+                                      onLongPress: () {
+                                        //
+                                      },
                                     ),
                                 ],
                               );

@@ -133,6 +133,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         callDuration: messageJson.callDuration,
         callStatus: messageJson.callStatus,
         callId: messageJson.callId,
+        messageId: messageJson.messageId,
+        isDeleted: messageJson.isDeleted ?? false,
       );
     }).toList();
 
@@ -151,11 +153,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             return loadedMessage.callId == fetchedMessage.callId;
           }
 
-          // For all other message types, compare using existing fields
-          return loadedMessage.message == fetchedMessage.message &&
-              loadedMessage.timestamp == fetchedMessage.timestamp &&
-              loadedMessage.sender == fetchedMessage.sender &&
-              loadedMessage.type == fetchedMessage.type;
+          // For all other message types, compare using messageId
+          return loadedMessage.messageId == fetchedMessage.messageId;
         });
       }).toList();
 
@@ -218,6 +217,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           callDuration: messageJson.callDuration,
           callStatus: messageJson.callStatus,
           callId: messageJson.callId,
+          messageId: messageJson.messageId,
+          isDeleted: messageJson.isDeleted ?? false,
         );
       }).toList();
 
@@ -239,12 +240,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
     return messages.where((message) {
-      final messageId =
-          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-      if (_loadedMessageIds.contains(messageId)) {
+      if (_loadedMessageIds.contains(message.messageId)) {
         return false;
       } else {
-        _loadedMessageIds.add(messageId);
+        _loadedMessageIds.add(message.messageId!);
         return true;
       }
     }).toList();
@@ -378,6 +377,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       customerId: widget.customerEmail, // This is targetId in incoming message
     );
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onMessageDeleted(_handleMessageDeleted);
     _loadPreviousMessages();
     _initializeRecorder();
     _scrollController.addListener(_handleScroll);
@@ -453,11 +453,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
       form: data["form"],
+      messageId: data['messageId'],
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-    if (!_loadedMessageIds.contains(messageId)) {
+    if (!_loadedMessageIds.contains(message.messageId)) {
       setState(() {
         messages.add(message);
         // messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -465,8 +464,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       });
 
       _chatStorageService.saveMessage(message, widget.customerEmail!);
-      _loadedMessageIds.add(messageId);
+      _loadedMessageIds.add(message.messageId!);
     }
+  }
+
+  void _handleMessageDeleted(String messageId) {
+    setState(() {
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+      }
+    });
+
+    // Save the updated message state to local storage
+
+    final boxName = widget.customerEmail!;
+    _chatStorageService.saveMessages(messages, boxName);
   }
 
   void _sendMessage({
@@ -478,6 +493,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
     final currentTime = DateTime.now();
+    final messageId = ChatUtils().generateMessageId();
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
@@ -485,10 +501,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       type: type!,
       mediaUrl: mediaUrl,
       form: form,
+      messageId: messageId,
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
@@ -506,12 +521,59 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         mediaUrl: mediaUrl,
         form: form,
         timestamp: currentTime.toIso8601String(), // ✅ Send timestamp
+        messageId: messageId,
       );
 
       _chatStorageService.saveMessage(message, widget.customerEmail!);
       _loadedMessageIds.add(messageId);
     }
     _chatController.clear();
+  }
+
+  void _showDeleteDialog(BuildContext context, String messageId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Message"),
+          content: const Text("Are you sure you want to delete this message?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text("Delete"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteMessage(messageId);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteMessage(String messageId) {
+    _socketService.deleteMessage(messageId);
+
+    // Update the local message state to reflect deletion
+    setState(() {
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+      }
+    });
+
+    // Save the updated message state to local storage
+
+    final boxName = widget.customerEmail!;
+    _chatStorageService.saveMessages(messages, boxName);
   }
 
   void _scrollToBottom() {
@@ -1001,16 +1063,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                         )
                                       else
                                         MessageBubble(
-                                          text: msg.message!,
+                                          message: msg,
                                           isMe: msg.sender ==
                                               widget.customerEmail,
-                                          timestamp:
-                                              formatTimestamp(msg.timestamp),
-                                          image:
-                                              msg.sender == widget.customerEmail
-                                                  ? widget.customerName ?? ""
-                                                  : "Agent",
-                                        )
+                                          onLongPress: () {
+                                            _showDeleteDialog(
+                                                context, msg.messageId!);
+                                          },
+                                        ),
                                     ],
                                   ),
                                 );
