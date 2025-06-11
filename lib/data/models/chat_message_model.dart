@@ -8,6 +8,8 @@ class ChatMessageModel {
   String? callStatus;
   String? callDuration;
   String? callId;
+  String? messageId;
+  bool isDeleted;
 
   ChatMessageModel({
     this.message,
@@ -19,6 +21,8 @@ class ChatMessageModel {
     this.callStatus,
     this.callDuration,
     this.callId,
+    this.messageId,
+    this.isDeleted = false,
   });
 
   // Convert a ChatMessage object into a Map
@@ -33,6 +37,8 @@ class ChatMessageModel {
       'callStatus': callStatus,
       'callDuration': callDuration,
       'callId': callId,
+      'messageId': messageId,
+      'isDeleted': isDeleted,
     };
   }
 
@@ -48,6 +54,8 @@ class ChatMessageModel {
       callStatus: map['callStatus'],
       callDuration: map['callDuration'],
       callId: map['callId'],
+      messageId: map['messageId'],
+      isDeleted: map['isDeleted'],
     );
   }
 
@@ -55,6 +63,6 @@ class ChatMessageModel {
   String toString() {
     return 'ChatMessageModel(message: $message, sender: $sender, timestamp: $timestamp, '
         'type: $type, mediaUrl: $mediaUrl, form: $form, callStatus: $callStatus, '
-        'callDuration: $callDuration,callId :$callId)';
+        'callDuration: $callDuration,callId :$callId), messageId: $messageId,isDeleted:$isDeleted ';
   }
 }

@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 class ChatUtils {
   String formatTimestamp(String? timestamp) {
@@ -34,5 +35,9 @@ class ChatUtils {
     } else {
       return DateFormat('dd/MM/yyyy').format(date);
     }
+  }
+
+  String generateMessageId() {
+    return const Uuid().v4(); // Use the uuid package to generate a unique ID
   }
 }
