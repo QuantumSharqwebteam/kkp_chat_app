@@ -285,7 +285,7 @@ class AuthApi {
     }
   }
 
-  // get particular user profile detaiils api admin , agent , customer
+  // get particular user profile details api admin , agent , customer
   Future<dynamic> getUserInfo() async {
     const endPoint = "user/getInfo";
     final url = Uri.parse('$baseUrl$endPoint');
@@ -500,11 +500,14 @@ class AuthApi {
   }
 
   Future<Map<String, dynamic>> deleteUserAccount(
-      String email, String password) async {
+    String email, String password , String feedback) async {
     final endPoint = "user/deleteUserAccount";
     final url = Uri.parse("$baseUrl$endPoint");
     final token = await LocalDbHelper.getToken();
-    final body = jsonEncode({"email": email, "password": password});
+    final body = jsonEncode({
+      "email": email,
+       "password": password,
+       "feedback":feedback});
     try {
       final response = await client.delete(url,
           headers: {
@@ -512,7 +515,7 @@ class AuthApi {
             "Authorization": "Bearer $token",
           },
           body: body);
-
+          debugPrint("Response : ${response.body.toString()}");
       return json.decode(response.body);
     } catch (e) {
       throw Exception(e);

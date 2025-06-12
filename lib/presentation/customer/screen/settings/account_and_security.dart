@@ -1,3 +1,4 @@
+// Ensure all necessary imports
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -32,7 +33,7 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
 
   void getRole() async {
     role = await LocalDbHelper.getUserType();
-    setState(() {}); // Update the UI after getting the role
+    setState(() {});
   }
 
   @override
@@ -48,15 +49,9 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Account & Security',
-                style: AppTextStyles.black20_500,
-              ),
+              Text('Account & Security', style: AppTextStyles.black20_500),
               SizedBox(height: 16),
-              Text(
-                'Login & recovery',
-                style: AppTextStyles.black16_500,
-              ),
+              Text('Login & recovery', style: AppTextStyles.black16_500),
               Text(
                 'Manage your password, login preference and recovery methods',
                 style: AppTextStyles.black14_400,
@@ -67,19 +62,15 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                   border: Border.all(color: Colors.black),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Column(
-                  children: [
-                    SettingsTile(
-                      titles: ['Change password'],
-                      numberOfTiles: 1,
-                      isDense: true,
-                      onTaps: [
-                        () {
-                          Navigator.pushNamed(
-                              context, CustomerRoutes.changePassword);
-                        }
-                      ],
-                    ),
+                child: SettingsTile(
+                  titles: ['Change password'],
+                  numberOfTiles: 1,
+                  isDense: true,
+                  onTaps: [
+                    () {
+                      Navigator.pushNamed(
+                          context, CustomerRoutes.changePassword);
+                    }
                   ],
                 ),
               ),
@@ -90,26 +81,22 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                     border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Column(
-                    children: [
-                      SettingsTile(
-                        titles: ['Delete Account Permanently'],
-                        tileTitleStyle: TextStyle(
-                            color: Colors.red,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700),
-                        numberOfTiles: 1,
-                        isDense: true,
-                        onTaps: [
-                          () {
-                            confirmDelete(context);
-                          }
-                        ],
-                        trailingIconColor: Colors.red,
-                        leadingIcons: [Icons.delete_forever_rounded],
-                        iconColor: Colors.red,
-                      ),
+                  child: SettingsTile(
+                    titles: ['Delete Account Permanently'],
+                    tileTitleStyle: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700),
+                    numberOfTiles: 1,
+                    isDense: true,
+                    onTaps: [
+                      () {
+                        confirmDelete(context);
+                      }
                     ],
+                    trailingIconColor: Colors.red,
+                    leadingIcons: [Icons.delete_forever_rounded],
+                    iconColor: Colors.red,
                   ),
                 ),
               SizedBox(height: 20),
@@ -123,23 +110,26 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
 
 Future confirmDelete(BuildContext context) {
   return showModalBottomSheet(
-      useSafeArea: true,
-      context: context,
-      isDismissible: false,
-      showDragHandle: true,
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-          maxHeight: Utils().height(context) * 0.8,
-          minHeight: Utils().height(context) * 0.6),
-      elevation: 10,
-      builder: (BuildContext ctx) {
-        return ConfirmDeleteBottomSheet(
-            scaffoldMessenger: ScaffoldMessenger.of(context));
-      });
+    useSafeArea: true,
+    context: context,
+    isDismissible: false,
+    showDragHandle: true,
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    isScrollControlled: true,
+    constraints: BoxConstraints(
+      maxHeight: Utils().height(context) * 0.8,
+      minHeight: Utils().height(context) * 0.6,
+    ),
+    elevation: 10,
+    builder: (BuildContext ctx) {
+      return ConfirmDeleteBottomSheet(
+        scaffoldMessenger: ScaffoldMessenger.of(context),
+      );
+    },
+  );
 }
 
 class ConfirmDeleteBottomSheet extends StatefulWidget {
@@ -155,42 +145,37 @@ class ConfirmDeleteBottomSheet extends StatefulWidget {
 class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
+  final TextEditingController feedback = TextEditingController();
+
   String? emailError;
   String? passwordError;
-  bool isLoading = false; // Add this variable to track loading state
+  String? feedbackError;
+  bool isLoading = false;
 
   final AuthApi authApi = AuthApi();
 
-  Future<void> deleteAccount(context) async {
-    setState(() {
-      isLoading = true; // Set loading to true when API call starts
-    });
+  Future<void> deleteAccount(BuildContext context) async {
+    setState(() => isLoading = true);
 
     try {
-      await authApi
-          .deleteUserAccount(email.text, password.text)
-          .then((response) async {
-        if (response['message'] == "User deleted successfully") {
-          widget.scaffoldMessenger
-              .showSnackBar(SnackBar(content: Text(response['message'])));
+      final response = await authApi.deleteUserAccount(
+        email.text,
+        password.text,
+        feedback.text,
+      );
+      
+      final message = response['message'];
+      widget.scaffoldMessenger.showSnackBar(SnackBar(content: Text(message)));
 
-          // Clear Hive storage
-          await clearHiveStorage();
-
-          // Logout and navigate to login page
-          logOut(context);
-        } else {
-          widget.scaffoldMessenger
-              .showSnackBar(SnackBar(content: Text(response['message'])));
-        }
-      });
+      if (message == "User marked as deleted successfully") {
+        await clearHiveStorage();
+        logOut(context);
+      }
     } catch (e) {
       widget.scaffoldMessenger
           .showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
-      setState(() {
-        isLoading = false; // Set loading to false when API call ends
-      });
+      setState(() => isLoading = false);
     }
   }
 
@@ -211,10 +196,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(height: 10),
-            Text(
-              "Confirm Account Deletion",
-              style: AppTextStyles.black18_600,
-            ),
+            Text("Confirm Account Deletion", style: AppTextStyles.black18_600),
             SizedBox(height: 10),
             SizedBox(
               width: Utils().width(context) * 0.9,
@@ -241,41 +223,54 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
               isPassword: true,
             ),
             SizedBox(height: 20),
+            CustomTextField(
+              controller: feedback,
+              errorText: feedbackError,
+              hintText: "Feedback",
+              width: Utils().width(context) * 0.8,
+              keyboardType: TextInputType.text,
+              isPassword: false,
+            ),
+            SizedBox(height: 20),
             isLoading
                 ? CupertinoActivityIndicator(radius: 20)
                 : CustomButton(
-                    text: isLoading
-                        ? ""
-                        : "Confirm Delete", // Show empty text if loading
-                    onPressed: () {
-                      setState(() {
-                        if (email.text.isEmpty) {
-                          emailError = "Email is required";
-                        } else {
-                          emailError = null;
-                        }
-                        if (password.text.isEmpty) {
-                          passwordError = "Password is required";
-                        } else {
-                          passwordError = null;
-                        }
-                      });
+                  text: "Confirm Delete",
+                  onPressed: isLoading
+               ? null
+               : () {
+               setState(() {
+                emailError = email.text.trim().isEmpty
+                ? "Email is required"
+                : null;
+                passwordError = password.text.trim().isEmpty
+                ? "Password is required"
+                : null;
+               feedbackError = feedback.text.trim().isEmpty
+                ? "Feedback is required"
+                : null;
+              });
 
-                      if (emailError == null && passwordError == null) {
-                        deleteAccount(context);
-                      }
-                    },
-                    width: Utils().width(context) * 0.8,
-                    backgroundColor: Colors.red.shade100,
-                    textColor: Colors.red,
-                    // Show CircularProgressIndicator if loading
-                  ),
+              if (emailError == null &&
+                passwordError == null &&
+                feedbackError == null) {
+              deleteAccount(context);
+            }
+          },
+             width: Utils().width(context) * 0.8,
+              backgroundColor: Colors.red.shade100,
+             textColor: Colors.red,
+             ),
+
           ],
         ),
       ),
     );
   }
 }
+
+
+
 
 void logOut(BuildContext context) async {
   try {
