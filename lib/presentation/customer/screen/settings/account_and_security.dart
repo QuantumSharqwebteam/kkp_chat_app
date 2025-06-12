@@ -1,5 +1,6 @@
 // Ensure all necessary imports
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
@@ -155,27 +156,36 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
   final AuthApi authApi = AuthApi();
 
   Future<void> deleteAccount(BuildContext context) async {
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true; // Start loading
+    });
 
     try {
-      final response = await authApi.deleteUserAccount(
-        email.text,
-        password.text,
-        feedback.text,
-      );
-      
-      final message = response['message'];
-      widget.scaffoldMessenger.showSnackBar(SnackBar(content: Text(message)));
+      authApi
+          .deleteUserAccount(email.text, password.text, feedback.text)
+          .then((response) async {
+        final message = response['message'];
+        if (message == "User marked as deleted successfully") {
+          widget.scaffoldMessenger
+              .showSnackBar(SnackBar(content: Text(message)));
 
-      if (message == "User marked as deleted successfully") {
-        await clearHiveStorage();
-        logOut(context);
-      }
+          await clearHiveStorage();
+          if (context.mounted) {
+            logOut(context);
+          }
+        } else {
+          widget.scaffoldMessenger
+              .showSnackBar(SnackBar(content: Text(message)));
+        }
+      });
     } catch (e) {
-      widget.scaffoldMessenger
-          .showSnackBar(SnackBar(content: Text(e.toString())));
+      if (kDebugMode) {
+        print("error in deleting account : ${e.toString()}");
+      }
     } finally {
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false; // End loading
+      });
     }
   }
 
@@ -226,7 +236,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             CustomTextField(
               controller: feedback,
               errorText: feedbackError,
-              hintText: "Feedback",
+              hintText: "Reason for deleting the account ",
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.text,
               isPassword: false,
@@ -235,42 +245,38 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             isLoading
                 ? CupertinoActivityIndicator(radius: 20)
                 : CustomButton(
-                  text: "Confirm Delete",
-                  onPressed: isLoading
-               ? null
-               : () {
-               setState(() {
-                emailError = email.text.trim().isEmpty
-                ? "Email is required"
-                : null;
-                passwordError = password.text.trim().isEmpty
-                ? "Password is required"
-                : null;
-               feedbackError = feedback.text.trim().isEmpty
-                ? "Feedback is required"
-                : null;
-              });
+                    text: "Confirm Delete",
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            setState(() {
+                              emailError = email.text.trim().isEmpty
+                                  ? "Email is required"
+                                  : null;
+                              passwordError = password.text.trim().isEmpty
+                                  ? "Password is required"
+                                  : null;
+                              feedbackError = feedback.text.trim().isEmpty
+                                  ? "Feedback is required"
+                                  : null;
+                            });
 
-              if (emailError == null &&
-                passwordError == null &&
-                feedbackError == null) {
-              deleteAccount(context);
-            }
-          },
-             width: Utils().width(context) * 0.8,
-              backgroundColor: Colors.red.shade100,
-             textColor: Colors.red,
-             ),
-
+                            if (emailError == null &&
+                                passwordError == null &&
+                                feedbackError == null) {
+                              deleteAccount(context);
+                            }
+                          },
+                    width: Utils().width(context) * 0.8,
+                    backgroundColor: Colors.red.shade100,
+                    textColor: Colors.red,
+                  ),
           ],
         ),
       ),
     );
   }
 }
-
-
-
 
 void logOut(BuildContext context) async {
   try {
