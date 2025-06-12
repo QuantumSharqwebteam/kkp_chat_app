@@ -9,7 +9,10 @@ class AuthRepository {
   AuthRepository({AuthApi? authApi}) : _authApi = authApi ?? AuthApi();
 
   Future<Map<String, dynamic>> signup(
-      {required String email, required String password}) {
+      {
+        required String email,
+       required String password,
+       }) {
     return _authApi.signup(email: email, password: password);
   }
 
@@ -123,7 +126,7 @@ class AuthRepository {
   }
 
   Future<Map<String, dynamic>> deleteUserAccount(
-      String email, String password) async {
-    return _authApi.deleteUserAccount(email, password);
+      String email, String password, String feedback) async {
+    return _authApi.deleteUserAccount(email, password, feedback);
   }
 }
