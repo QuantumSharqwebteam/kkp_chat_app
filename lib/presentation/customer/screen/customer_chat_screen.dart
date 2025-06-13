@@ -481,7 +481,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     // Save the updated message state to local storage
 
     final boxName = widget.customerEmail!;
-    _chatStorageService.saveMessages(messages, boxName);
+    _chatStorageService.saveMessage(
+        messages.firstWhere((message) => message.messageId == messageId),
+        boxName);
   }
 
   void _sendMessage({
@@ -502,6 +504,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       mediaUrl: mediaUrl,
       form: form,
       messageId: messageId,
+      isDeleted: false,
     );
 
     if (!_loadedMessageIds.contains(messageId)) {
@@ -573,7 +576,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     // Save the updated message state to local storage
 
     final boxName = widget.customerEmail!;
-    _chatStorageService.saveMessages(messages, boxName);
+    _chatStorageService.saveMessage(
+        messages.firstWhere((message) => message.messageId == messageId),
+        boxName);
   }
 
   void _scrollToBottom() {
@@ -986,6 +991,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
                                 final msg = messages[index];
+                                final isCustomer =
+                                    msg.sender == widget.customerEmail;
                                 final valueKey = ValueKey('chat-msg-$index');
                                 final globalKey = GlobalKey();
                                 _messageKeys[valueKey] = globalKey;
@@ -1014,6 +1021,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               widget.customerEmail,
                                           timestamp:
                                               formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
                                         )
                                       else if (msg.type == 'form')
                                         FormMessageBubble(
@@ -1030,6 +1044,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               widget.customerEmail,
                                           timestamp:
                                               formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
                                         )
                                       else if (msg.type == 'voice')
                                         VoiceMessageBubble(
@@ -1038,6 +1059,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               widget.customerEmail,
                                           timestamp:
                                               formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
                                         )
                                       else if (msg.type == 'call')
                                         CallMessageBubble(
@@ -1066,10 +1094,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                           message: msg,
                                           isMe: msg.sender ==
                                               widget.customerEmail,
-                                          onLongPress: () {
-                                            _showDeleteDialog(
-                                                context, msg.messageId!);
-                                          },
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
                                         ),
                                     ],
                                   ),

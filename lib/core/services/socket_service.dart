@@ -106,6 +106,8 @@ class SocketService {
       final String senderId = data['senderId'] ?? '';
       final String targetId = data['targetId'] ?? '';
 
+      updateLastMessage(data['targetId'], data['message']);
+
       if (isChatPageOpen &&
           (activeCustomerId == senderId || activeCustomerId == targetId)) {
         _onMessageReceived?.call(data);
@@ -256,10 +258,20 @@ class SocketService {
     }
   }
 
+  void updateLastMessage(String email, String message) {
+    LocalDbHelper.updateLastMessage(email, message);
+  }
+
+  String getLastMessage(String email) {
+    String? lastMessage = LocalDbHelper.getLastMessage(email);
+    if (lastMessage == null) return "last message";
+    return lastMessage;
+  }
+
   void sendMessage({
-    String? targetEmail,
+    String? targetEmail, // email to whom we are sending the email
     String? message,
-    required String senderEmail,
+    required String senderEmail, // from which email we are sending
     required String senderName,
     String type = 'text',
     Map<String, dynamic>? form,
@@ -282,7 +294,10 @@ class SocketService {
       if (messageId != null) messageData["messageId"] = messageId;
 
       _socket.emit('sendMessage', messageData);
-      debugPrint("message sent :${messageData.toString()}");
+      // debugPrint("message sent :${messageData.toString()}");
+
+      // Save the last message for the sender
+      updateLastMessage(messageData['targetId'], messageData['message']);
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
     }
@@ -375,6 +390,9 @@ class SocketService {
 
     if (userType == "0") {
       // chatStorageService.saveMessage(message, data['targetId']);
+
+      // Save the last message for the
+      updateLastMessage(data['targetId'], data['message']);
 
       // Store message count in Hive
       final currentUserEmail = LocalDbHelper.getProfile()!.email;
