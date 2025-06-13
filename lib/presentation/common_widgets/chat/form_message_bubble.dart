@@ -40,55 +40,6 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   final chatRepository = ChatRepository();
   final rateController = TextEditingController();
 
-  // Future<void> _updateFormRate(BuildContext context, String newRate) async {
-  //   if (widget.onFormUpdateStart != null) {
-  //     widget
-  //         .onFormUpdateStart!(); // Notify the parent to start the loading indicator
-  //   }
-
-  //   final formData = widget.formData;
-  //   final id = widget.formData['_id']?.toString();
-  //   if (id == null) {
-  //     debugPrint(
-  //         "No form id is found to update: $id in the ${formData.toString()}");
-  //     return;
-  //   }
-
-  //   try {
-  //     await chatRepository.updateInquiryFormRate(id, newRate);
-  //     if (context.mounted) {
-  //       Utils().showSuccessDialog(context, "Rate is updated: $newRate", true);
-  //       await Future.delayed(Duration(seconds: 2), () {
-  //         if (context.mounted) {
-  //           Navigator.pop(context);
-  //         }
-  //       });
-  //       if (context.mounted) {
-  //         Navigator.pop(context);
-  //       }
-  //     }
-  //     // Call the callback function with the updated form data
-  //     if (widget.onRateUpdated != null) {
-  //       final updatedFormData = Map<String, dynamic>.from(widget.formData);
-  //       updatedFormData['rate'] = newRate;
-  //       widget.onRateUpdated!(updatedFormData);
-  //     }
-  //   } catch (e) {
-  //     if (kDebugMode) {
-  //       debugPrint('Error updating rate of the form: $e');
-  //     }
-  //     if (context.mounted) {
-  //       Utils()
-  //           .showSuccessDialog(context, "Cannot Update, send new form!", false);
-  //     }
-  //   } finally {
-  //     if (widget.onFormUpdateEnd != null) {
-  //       widget
-  //           .onFormUpdateEnd!(); // Notify the parent to end the loading indicator
-  //     }
-  //   }
-  // }
-
   Future<void> _updateFormStatus(BuildContext context, String status) async {
     if (widget.onFormUpdateStart != null) {
       widget
@@ -254,53 +205,6 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
       _updateFormStatus(context, 'Declined');
     }
   }
-
-  // void _showUpdateRateDialog(BuildContext context) {
-  //   final formData = widget.formData;
-  //   final rateController =
-  //       TextEditingController(text: formData['rate']?.toString() ?? '');
-
-  //   showDialog(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return AlertDialog(
-  //         title: Text('Update Rate for Form ID: ${formData['_id']}'),
-  //         content: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             Text('Quality: ${formData['quality']}'),
-  //             Text('Quantity: ${formData['quantity']}'),
-  //             Text('Weave: ${formData['weave']}'),
-  //             Text('Composition: ${formData['composition']}'),
-  //             TextField(
-  //               controller: rateController,
-  //               keyboardType: TextInputType.number,
-  //               decoration: InputDecoration(labelText: 'Rate'),
-  //             ),
-  //           ],
-  //         ),
-  //         actions: <Widget>[
-  //           TextButton(
-  //             child: Text('Cancel'),
-  //             onPressed: () {
-  //               Navigator.of(context).pop();
-  //             },
-  //           ),
-  //           TextButton(
-  //             child: Text('Submit'),
-  //             onPressed: () {
-  //               final newRate = rateController.text;
-  //               if (newRate.isNotEmpty) {
-  //                 _updateFormRate(context, newRate);
-  //                 Navigator.of(context).pop();
-  //               }
-  //             },
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
 
   Widget _buildTextRow(String label, String value) {
     return Padding(

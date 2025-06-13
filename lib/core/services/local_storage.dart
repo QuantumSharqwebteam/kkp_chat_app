@@ -1,1 +1,0 @@
-//for hive storage

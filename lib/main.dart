@@ -67,6 +67,7 @@ void main() async {
     Hive.openBox('CREDENTIALS'),
     Hive.openBox("lastSeenTimeBox"),
     Hive.openBox('feedBox'),
+    Hive.openBox("lastMessageMap"),
     dotenv.load(fileName: "keys.env"),
   ]);
 

@@ -264,14 +264,17 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               _socketService.getLastSeenTime(assignedCustomer["email"]);
           final int notificationCount =
               assignedCustomer['notificationCount'] ?? 0;
-
+          final isAccountDeleted = assignedCustomer["isDeleted"];
+          final customerLastChattedMessage =
+              _socketService.getLastMessage(assignedCustomer["email"]);
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Stack(
               children: [
                 FeedListCard(
+                  isAccountDeleted: isAccountDeleted,
                   name: assignedCustomer["name"],
-                  message: "last message",
+                  message: customerLastChattedMessage,
                   isActive: isOnline,
                   time: isOnline ? "Online" : lastSeen,
                   enableLongPress: false,
@@ -284,20 +287,23 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                       // Update in-memory list to reflect zero count
                       assignedCustomer['notificationCount'] = 0;
                     });
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AgentChatScreen(
-                          navigatorKey: navigatorKey,
-                          customerName: assignedCustomer["name"],
-                          customerEmail: assignedCustomer['email'],
-                          agentEmail: widget.agentEmail,
-                          agentName: widget.agentName,
+                    if (context.mounted) {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AgentChatScreen(
+                            navigatorKey: navigatorKey,
+                            customerName: assignedCustomer["name"],
+                            customerEmail: assignedCustomer['email'],
+                            agentEmail: widget.agentEmail,
+                            agentName: widget.agentName,
+                            isAccountDeleted: isAccountDeleted,
+                          ),
                         ),
-                      ),
-                    );
-                    if (result == true) {
-                      await _fetchAssignedCustomers();
+                      );
+                      if (result == true) {
+                        await _fetchAssignedCustomers();
+                      }
                     }
                   },
                 ),

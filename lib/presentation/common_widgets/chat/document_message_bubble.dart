@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -9,12 +10,16 @@ class DocumentMessageBubble extends StatefulWidget {
   final String documentUrl;
   final bool isMe;
   final String timestamp;
+  final VoidCallback? onLongPress;
+  final bool isDeleted;
 
   const DocumentMessageBubble({
     super.key,
     required this.documentUrl,
     required this.isMe,
     required this.timestamp,
+    this.onLongPress,
+    this.isDeleted = false,
   });
 
   @override
@@ -190,52 +195,57 @@ class _DocumentMessageBubbleState extends State<DocumentMessageBubble>
     final fileName = Uri.parse(widget.documentUrl).pathSegments.last;
     final shortFileName = _getShortFileName(fileName);
 
-    return Align(
-      alignment: widget.isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: widget.isMe
-                ? AppColors.senderMessageBubbleColor
-                : AppColors.recieverMessageBubble,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildActionIcon(),
-              const SizedBox(width: 10),
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return widget.isDeleted
+        ? DeletedMessageBubble(isMe: widget.isMe, timestamp: widget.timestamp)
+        : Align(
+            alignment:
+                widget.isMe ? Alignment.centerRight : Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: _handleTap,
+              onLongPress: widget.onLongPress,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: widget.isMe
+                      ? AppColors.senderMessageBubbleColor
+                      : AppColors.recieverMessageBubble,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      shortFileName,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: widget.isMe ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.timestamp,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: widget.isMe ? Colors.white70 : Colors.black54,
+                    _buildActionIcon(),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            shortFileName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: widget.isMe ? Colors.white : Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.timestamp,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  widget.isMe ? Colors.white70 : Colors.black54,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
+            ),
+          );
   }
 }
