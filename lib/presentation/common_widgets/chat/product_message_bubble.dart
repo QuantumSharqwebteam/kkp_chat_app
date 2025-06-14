@@ -26,72 +26,71 @@ class ProductMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Parse the product JSON string to get the product details
+    if (isDeleted || productJson.isEmpty) {
+      return DeletedMessageBubble(isMe: isMe, timestamp: timestamp);
+    }
+
     final productMap = jsonDecode(productJson);
     final productName = productMap['productName'];
     final productImageUrl = productMap['imageUrl'];
 
-    return isDeleted
-        ? DeletedMessageBubble(isMe: isMe, timestamp: timestamp)
-        : Align(
-            alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
-              ),
-              child: Column(
-                crossAxisAlignment:
-                    isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: onTap,
-                    onLongPress: onLongPress,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.greyE5E7EB),
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: onTap,
+              onLongPress: onLongPress,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.greyE5E7EB),
+                ),
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CachedNetworkImage(
+                      imageUrl: productImageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 200,
+                      placeholder: (context, url) => Container(
+                        height: 200,
+                        color: AppColors.greyE5E7EB,
                       ),
-                      padding: const EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Display the product image
-                          CachedNetworkImage(
-                            imageUrl: productImageUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: 200,
-                            placeholder: (context, url) => Container(
-                              height: 200,
-                              color: AppColors.greyE5E7EB,
-                            ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.broken_image),
-                          ),
-                          const SizedBox(height: 8),
-                          // Display the product name
-                          Text(
-                            productName,
-                            style: AppTextStyles.black14_600
-                                .copyWith(color: Colors.black),
-                          ),
-                        ],
-                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.broken_image),
                     ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        timestamp,
-                        style: AppTextStyles.greyAAAAAA_10_400,
-                      ),
-                    ],
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      productName,
+                      style: AppTextStyles.black14_600
+                          .copyWith(color: Colors.black),
+                    ),
+                  ],
+                ),
               ),
             ),
-          );
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  timestamp,
+                  style: AppTextStyles.greyAAAAAA_10_400,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

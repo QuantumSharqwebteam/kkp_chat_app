@@ -26,6 +26,7 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -1179,32 +1180,51 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                           },
                                         )
                                       else if (msg.type == 'product')
-                                        ProductMessageBubble(
-                                          productJson: msg.message!,
-                                          isMe: msg.sender ==
-                                              widget.customerEmail,
-                                          timestamp:
-                                              ChatUtils().formatTimestamp(
-                                            msg.timestamp.toIso8601String(),
-                                          ),
-                                          onTap: () {
-                                            // Parse the product JSON string to get the product object
-                                            final productMap =
-                                                jsonDecode(msg.message!);
-                                            final product =
-                                                Product.fromJson(productMap);
+                                        (msg.message != null &&
+                                                msg.message!.isNotEmpty)
+                                            ? ProductMessageBubble(
+                                                productJson: msg.message!,
+                                                isMe: msg.sender ==
+                                                    widget.customerEmail,
+                                                timestamp:
+                                                    ChatUtils().formatTimestamp(
+                                                  msg.timestamp
+                                                      .toIso8601String(),
+                                                ),
+                                                onTap: () {
+                                                  final productMap =
+                                                      jsonDecode(msg.message!);
+                                                  final product =
+                                                      Product.fromJson(
+                                                          productMap);
 
-                                            // Navigate to the product description page
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    CustomerProductDescriptionPage(
-                                                        product: product),
-                                              ),
-                                            );
-                                          },
-                                        )
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          CustomerProductDescriptionPage(
+                                                        product: product,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                isDeleted: msg.isDeleted,
+                                                onLongPress: isCustomer
+                                                    ? () => _showDeleteDialog(
+                                                          context,
+                                                          msg.messageId!,
+                                                        )
+                                                    : null,
+                                              )
+                                            : DeletedMessageBubble(
+                                                isMe: msg.sender ==
+                                                    widget.customerEmail,
+                                                timestamp:
+                                                    ChatUtils().formatTimestamp(
+                                                  msg.timestamp
+                                                      .toIso8601String(),
+                                                ),
+                                              )
                                       else
                                         MessageBubble(
                                           message: msg,
