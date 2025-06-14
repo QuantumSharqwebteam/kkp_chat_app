@@ -95,6 +95,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   bool _isLoadingMore = false;
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = {};
+  final Set<String> _loadedCallIds = {};
   Timer? _dateHeaderTimer;
   bool _showDateHeader = false;
 
@@ -244,13 +245,26 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
-    return messages.where((message) {
-      if (_loadedMessageIds.contains(message.messageId)) {
-        return false;
+  List<ChatMessageModel> _removeDuplicates(
+      List<ChatMessageModel> messagesList) {
+    return messagesList.where((message) {
+      if (message.type == 'call') {
+        // Use callId for call messages
+        if (message.callId == null || _loadedCallIds.contains(message.callId)) {
+          return false;
+        } else {
+          _loadedCallIds.add(message.callId!);
+          return true;
+        }
       } else {
-        _loadedMessageIds.add(message.messageId!);
-        return true;
+        // Use messageId for all other messages
+        if (message.messageId == null ||
+            _loadedMessageIds.contains(message.messageId)) {
+          return false;
+        } else {
+          _loadedMessageIds.add(message.messageId!);
+          return true;
+        }
       }
     }).toList();
   }

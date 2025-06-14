@@ -91,6 +91,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final Set<int> _fetchedPages = {}; // Keep track of fetched pages
   bool _isLoadingMore = false; // Show loading indicator when loading more
   final Set<String> _loadedMessageIds = {};
+  final Set<String> _loadedCallIds = {};
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   //bool _isViewOnlyMode = false;
   Timer? _dateHeaderTimer;
@@ -465,13 +466,26 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     setState(() {});
   }
 
-  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
-    return messages.where((message) {
-      if (_loadedMessageIds.contains(message.messageId)) {
-        return false;
+  List<ChatMessageModel> _removeDuplicates(
+      List<ChatMessageModel> messagesList) {
+    return messagesList.where((message) {
+      if (message.type == 'call') {
+        // Use callId for call messages
+        if (message.callId == null || _loadedCallIds.contains(message.callId)) {
+          return false;
+        } else {
+          _loadedCallIds.add(message.callId!);
+          return true;
+        }
       } else {
-        _loadedMessageIds.add(message.messageId!);
-        return true;
+        // Use messageId for all other messages
+        if (message.messageId == null ||
+            _loadedMessageIds.contains(message.messageId)) {
+          return false;
+        } else {
+          _loadedMessageIds.add(message.messageId!);
+          return true;
+        }
       }
     }).toList();
   }
@@ -1119,7 +1133,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                           ? ProductMessageBubble(
                                               productJson: msg.message!,
                                               isMe: msg.sender ==
-                                                  widget.customerEmail,
+                                                  widget.agentEmail,
                                               timestamp:
                                                   ChatUtils().formatTimestamp(
                                                 msg.timestamp.toIso8601String(),
