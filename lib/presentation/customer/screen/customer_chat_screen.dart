@@ -544,8 +544,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Delete Message"),
-          content: const Text("Are you sure you want to delete this message?"),
+          title: const Text("Unsend Message"),
+          content: const Text("Are you sure you want to unsend this message?"),
           actions: <Widget>[
             TextButton(
               child: const Text("Cancel"),
@@ -554,7 +554,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               },
             ),
             TextButton(
-              child: const Text("Delete"),
+              child: const Text("unsend"),
               onPressed: () {
                 Navigator.of(context).pop();
                 _deleteMessage(messageId);
