@@ -19,7 +19,9 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
@@ -34,9 +36,11 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -74,6 +78,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final ChatStorageService _chatStorageService = ChatStorageService();
+  final _productRepository = ProductRepository();
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
@@ -473,6 +478,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   // In _handleIncomingMessage method
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("message received: ${data.toString()}");
+    // saving last seen message
+    if (data['type'] == "product") {
+      _socketService.updateLastMessage(data["senderId"], "shared product");
+    } else {
+      _socketService.updateLastMessage(data['senderId'], data['message']);
+    }
+    //converting data in to message model
     final message = ChatMessageModel(
       message: data["message"],
       timestamp: data["timestamp"] != null
@@ -588,6 +600,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _scrollToBottom();
   }
 
+  void _sendProductMessage(Product product) {
+    // Convert the product object to a JSON string
+    final productJson = jsonEncode(product.toJson());
+
+    _sendMessage(
+      messageText: productJson,
+      type: 'product',
+    );
+  }
+
   void _showDeleteDialog(BuildContext context, String messageId) {
     showDialog(
       context: context,
@@ -633,6 +655,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _chatStorageService.saveMessage(
         messages.firstWhere((message) => message.messageId == messageId),
         boxName);
+    _socketService.updateLastMessage(widget.customerEmail, "message deleted");
   }
 
   void _scrollToBottom() {
@@ -780,6 +803,80 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _sendMessage(
       messageText: messageText,
       type: 'text',
+    );
+  }
+
+  void _showProductsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return FutureBuilder<List<Product>>(
+          future: _productRepository.getProducts(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text("Error loading products"));
+            } else {
+              final products = snapshot.data;
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                height: MediaQuery.of(context).size.height * 0.6,
+                child: ListView.builder(
+                  itemCount: products?.length,
+                  itemBuilder: (context, index) {
+                    final product = products![index];
+                    return Container(
+                      margin: EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: 4,
+                              spreadRadius: 0,
+                              color: Colors.black.withValues(alpha: 0.15),
+                              offset: const Offset(0, 1),
+                            )
+                          ]),
+                      child: ListTile(
+                        title: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Image.network(
+                                  product.imageUrl,
+                                  height: 60,
+                                  width: 65,
+                                  fit: BoxFit.cover,
+                                )),
+                            const SizedBox(width: 4),
+                            Text(
+                              product.productName,
+                              style: AppTextStyles.black12_700,
+                            ),
+                          ],
+                        ),
+                        trailing: Icon(
+                          Icons.ios_share_rounded,
+                          color: AppColors.blue0056FB,
+                        ),
+                        onTap: () {
+                          _sendProductMessage(product);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
+          },
+        );
+      },
     );
   }
 
@@ -1015,6 +1112,31 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                           // Only show the widget for history, not to do anything on the agent side
                                         },
                                       )
+                                    else if (msg.type == 'product')
+                                      ProductMessageBubble(
+                                        productJson: msg.message!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                          msg.timestamp.toIso8601String(),
+                                        ),
+                                        onTap: () {
+                                          // Parse the product JSON string to get the product object
+                                          final productMap =
+                                              jsonDecode(msg.message!);
+                                          final product =
+                                              Product.fromJson(productMap);
+
+                                          // Navigate to the product description page
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  CustomerProductDescriptionPage(
+                                                      product: product),
+                                            ),
+                                          );
+                                        },
+                                      )
                                     else
                                       MessageBubble(
                                         message: msg,
@@ -1038,6 +1160,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                   onSendForm: sendFormButton,
                   onSendDocument: _pickAndSendDocument,
                   onSendImageByCamera: _pickAndSendImageByCamera,
+                  onShareProduct: () => _showProductsBottomSheet(context),
                   onSendVoice: _isRecording ? _stopRecording : _startRecording,
                   isRecording: _isRecording,
                   recordedSeconds: _recordedSeconds,
