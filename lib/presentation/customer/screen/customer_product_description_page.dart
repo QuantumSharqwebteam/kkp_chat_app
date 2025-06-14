@@ -127,34 +127,20 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         // Buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            CustomButton(
-                              text: product.stock > 0
-                                  ? 'Available'
-                                  : 'Out of Stock',
-                              onPressed: () {},
-                              width: Utils().width(context) * 0.43,
-                              height: 35,
-                              borderRadius: 5,
-                              backgroundColor: Colors.white,
-                              textColor: product.stock > 0
-                                  ? AppColors.blue
-                                  : Colors.grey,
-                            ),
-                            CustomButton(
-                              text: 'Notify Me',
-                              onPressed: () {
-                                // Implement Notify Me functionality
-                              },
-                              width: Utils().width(context) * 0.43,
-                              height: 35,
-                              borderRadius: 5,
-                              backgroundColor: Colors.white,
-                              textColor: Colors.black,
-                            ),
-                          ],
+                        Center(
+                          child: CustomButton(
+                            text: product.stock > 0
+                                ? 'Available'
+                                : 'Out of Stock',
+                            onPressed: () {},
+                            width: Utils().width(context) * 0.8,
+                            height: 35,
+                            borderRadius: 5,
+                            backgroundColor: Colors.white,
+                            textColor: product.stock > 0
+                                ? AppColors.blue
+                                : Colors.grey,
+                          ),
                         )
                       ],
                     ),

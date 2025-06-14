@@ -1181,7 +1181,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       else if (msg.type == 'product')
                                         ProductMessageBubble(
                                           productJson: msg.message!,
-                                          isMe: msg.sender == widget.agentEmail,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
                                           timestamp:
                                               ChatUtils().formatTimestamp(
                                             msg.timestamp.toIso8601String(),
