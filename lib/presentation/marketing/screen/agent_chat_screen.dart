@@ -1163,7 +1163,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                             )
                                           : DeletedMessageBubble(
                                               isMe: msg.sender ==
-                                                  widget.customerEmail,
+                                                  widget.agentEmail,
                                               timestamp:
                                                   ChatUtils().formatTimestamp(
                                                 msg.timestamp.toIso8601String(),
