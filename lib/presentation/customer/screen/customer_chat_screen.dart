@@ -34,12 +34,14 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 
@@ -1174,6 +1176,32 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                           onSubmit: () {
                                             openFormDialogToUpdateRate(
                                                 msg.form!);
+                                          },
+                                        )
+                                      else if (msg.type == 'product')
+                                        ProductMessageBubble(
+                                          productJson: msg.message!,
+                                          isMe: msg.sender == widget.agentEmail,
+                                          timestamp:
+                                              ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String(),
+                                          ),
+                                          onTap: () {
+                                            // Parse the product JSON string to get the product object
+                                            final productMap =
+                                                jsonDecode(msg.message!);
+                                            final product =
+                                                Product.fromJson(productMap);
+
+                                            // Navigate to the product description page
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    CustomerProductDescriptionPage(
+                                                        product: product),
+                                              ),
+                                            );
                                           },
                                         )
                                       else
