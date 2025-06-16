@@ -106,8 +106,6 @@ class SocketService {
       final String senderId = data['senderId'] ?? '';
       final String targetId = data['targetId'] ?? '';
 
-      updateLastMessage(data['targetId'], data['message']);
-
       if (isChatPageOpen &&
           (activeCustomerId == senderId || activeCustomerId == targetId)) {
         _onMessageReceived?.call(data);
@@ -296,8 +294,12 @@ class SocketService {
       _socket.emit('sendMessage', messageData);
       // debugPrint("message sent :${messageData.toString()}");
 
-      // Save the last message for the sender
-      updateLastMessage(messageData['targetId'], messageData['message']);
+      // Save the last message for the user last chatted
+      if (type == "product") {
+        updateLastMessage(targetEmail ?? "", "shared product");
+      } else {
+        updateLastMessage(targetEmail ?? "", messageData['message']);
+      }
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
     }
@@ -391,9 +393,6 @@ class SocketService {
     if (userType == "0") {
       // chatStorageService.saveMessage(message, data['targetId']);
 
-      // Save the last message for the
-      updateLastMessage(data['targetId'], data['message']);
-
       // Store message count in Hive
       final currentUserEmail = LocalDbHelper.getProfile()!.email;
       final boxNameWithCount = "${currentUserEmail}count";
@@ -411,7 +410,12 @@ class SocketService {
       int count = box.get('count', defaultValue: 0)! + 1;
       await box.put('count', count);
       // chatStorageService.saveMessage(message, boxName);
-
+      // Save the last message for the
+      if (data['type'] == "product") {
+        updateLastMessage(data["senderId"], "shared product");
+      } else {
+        updateLastMessage(data['senderId'], data['message']);
+      }
       if (onMessageReceivedCallback != null) {
         onMessageReceivedCallback!();
       }

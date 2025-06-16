@@ -273,7 +273,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               children: [
                 FeedListCard(
                   isAccountDeleted: isAccountDeleted,
-                  name: assignedCustomer["name"],
+                  name: assignedCustomer["name"] ?? "user",
                   message: customerLastChattedMessage,
                   isActive: isOnline,
                   time: isOnline ? "Online" : lastSeen,

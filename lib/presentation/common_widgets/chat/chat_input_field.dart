@@ -15,6 +15,7 @@ class ChatInputField extends StatefulWidget {
   final VoidCallback onSendVoice;
   final bool isRecording;
   final int recordedSeconds; // Add this line
+  final VoidCallback onShareProduct;
 
   const ChatInputField({
     super.key,
@@ -26,7 +27,8 @@ class ChatInputField extends StatefulWidget {
     required this.onSendVoice,
     required this.isRecording,
     required this.recordedSeconds,
-    required this.onSendImageByCamera, // Add this line
+    required this.onSendImageByCamera,
+    required this.onShareProduct, // Add this line
   });
 
   @override
@@ -96,6 +98,8 @@ class _ChatInputFieldState extends State<ChatInputField>
                   widget.onSendImageByCamera();
                 } else if (selectedItem == "Documents") {
                   widget.onSendDocument();
+                } else if (selectedItem == "Share Product") {
+                  widget.onShareProduct();
                 }
               });
             },
@@ -198,12 +202,14 @@ final List<Map<String, String>> attachmentItems = [
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
+  {"image": ImageConstants.shareProduct, "label": "Share Product"},
 ];
 
 final List<Map<String, String>> attachmentItemsforCustomer = [
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
+  {"image": ImageConstants.shareProduct, "label": "Share Product"},
 ];
 
 final String? currentUser = LocalDbHelper.getProfile()?.role;
@@ -247,8 +253,16 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
                     : attachmentItems[index];
                 return GestureDetector(
                   onTap: () {
-                    onItemSelected(item['label']!);
-                    Navigator.pop(context);
+                    if (item['label'] == "Share Product") {
+                      Navigator.pop(context); // Close the current bottom sheet
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        onItemSelected(
+                            item['label']!); // Open the product bottom sheet
+                      });
+                    } else {
+                      onItemSelected(item['label']!);
+                      Navigator.pop(context);
+                    }
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
