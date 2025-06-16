@@ -12,6 +12,7 @@ import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:excel/excel.dart' hide Border;
@@ -319,6 +320,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   @override
   Widget build(BuildContext context) {
+    final hasInquiries = allInquiries.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -327,36 +330,39 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-              onTap: isDownloading
-                  ? null
-                  : () async {
-                      await downloadAsExcel(filteredInquiries);
-                    },
-              child: isDownloading
-                  ? const SizedBox(
-                      width: 35,
-                      height: 35,
-                      child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2)),
-                    )
-                  : Container(
-                      width: 35,
-                      height: 35,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border:
-                            Border.all(width: 1, color: AppColors.greyB2BACD),
-                      ),
-                      child: const Icon(Icons.download),
-                    ),
-            ),
-          ),
-        ],
+        actions: hasInquiries
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GestureDetector(
+                    onTap: isDownloading
+                        ? null
+                        : () async {
+                            await downloadAsExcel(filteredInquiries);
+                          },
+                    child: isDownloading
+                        ? const SizedBox(
+                            width: 35,
+                            height: 35,
+                            child: Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
+                          )
+                        : Container(
+                            width: 35,
+                            height: 35,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  width: 1, color: AppColors.greyB2BACD),
+                            ),
+                            child: const Icon(Icons.download),
+                          ),
+                  ),
+                ),
+              ]
+            : [],
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -364,39 +370,40 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomSearchBar(
-                          enable: true,
-                          controller: _searchController,
-                          hintText: "Search by anything...",
-                          onChanged: (value) => _applyFilters(),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: toggleShowFilters,
-                        child: Container(
-                          width: 50,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                width: 1, color: AppColors.greyB2BACD),
-                          ),
-                          child: CustomImage(
-                            imagePath: ImageConstants.filterIcon,
-                            height: 25,
-                            width: 25,
+                  if (hasInquiries)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomSearchBar(
+                            enable: true,
+                            controller: _searchController,
+                            hintText: "Search by anything...",
+                            onChanged: (value) => _applyFilters(),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (showFilters) _buildFilters(),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: toggleShowFilters,
+                          child: Container(
+                            width: 50,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  width: 1, color: AppColors.greyB2BACD),
+                            ),
+                            child: CustomImage(
+                              imagePath: ImageConstants.filterIcon,
+                              height: 25,
+                              width: 25,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (hasInquiries) const SizedBox(height: 20),
+                  if (showFilters && hasInquiries) _buildFilters(),
                   Expanded(child: _buildInquiryList()),
                 ],
               ),
@@ -446,7 +453,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   Widget _buildInquiryList() {
     if (filteredInquiries.isEmpty) {
-      return const Center(child: Text("No related inquiries found."));
+      return Center(child: EmptyInquriesWidget());
     }
 
     final visibleItems = filteredInquiries.take(visibleItemCount).toList();

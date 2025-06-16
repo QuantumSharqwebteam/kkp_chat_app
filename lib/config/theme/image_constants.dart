@@ -3,13 +3,13 @@ class ImageConstants {
   static const String iconBase = "assets/icons";
 
   //Image assets
-  static const String userImage = "$imageBase/user1.png";
-  static const String agentImage = "$imageBase/user4.png";
+
   static const String noChat = "$imageBase/noChat.png";
   static const String profileAvatar = "$imageBase/profile_avataar.png";
   static const String poorConnection = "$imageBase/poorConn.png";
   static const String noCustomerAssigned = "$imageBase/noAssigned.jpg";
   static const String somethingWentWrong = "$imageBase/wrong.jpg";
+  static const String emptyInquries = "$imageBase/empty_inquries.png";
 
   //Icons asstes
   static const String deleteProduct = "$iconBase/deleteProduct.png";

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/config/theme/app_colors.dart';
-import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class NotificationSettings extends StatefulWidget {
   const NotificationSettings({super.key});
@@ -13,118 +14,109 @@ class _NotificationSettingsState extends State<NotificationSettings> {
   bool isNotificationPaused = false;
   bool isMessagePaused = false;
   bool isCallPaused = true;
+  bool? isPushNotificationEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkNotificationPermission();
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    if (!mounted) return;
+    setState(() {
+      isPushNotificationEnabled =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+              settings.authorizationStatus == AuthorizationStatus.provisional;
+    });
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    final granted = await NotificationService.requestPermission(context);
+    if (!mounted) return;
+
+    if (granted) {
+      await NotificationService.checkAndUpdateFCMToken();
+      setState(() => isPushNotificationEnabled = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Push notifications enabled.')),
+        );
+      }
+    } else {
+      setState(() => isPushNotificationEnabled = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Permission denied. Please enable from settings.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: AppColors.background,
-        title: Text(
-          'Notification',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: const Text('Notification Settings'),
       ),
-      body: Center(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Push notification',
-                style: AppTextStyles.black16_500,
-              ),
-            ),
-            SizedBox(height: 8),
-            ListTile(
-              title: Text(
-                'Pause all',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
+      body: isPushNotificationEnabled == null
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Push Notifications for messages',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
-              ),
-              trailing: Switch(
-                thumbColor: WidgetStatePropertyAll(Colors.black),
-                trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
-                activeTrackColor: AppColors.blue,
-                inactiveTrackColor: AppColors.greyD9D9D9,
-                value: isNotificationPaused,
-                onChanged: (newValue) {
-                  setState(() {
-                    isNotificationPaused = newValue;
-                  });
-                },
-                activeColor: Colors.blue,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Temporarily pause notification',
-                style: AppTextStyles.black12_400,
-              ),
-            ),
-            Divider(
-              color: Colors.black,
-              thickness: 1,
-            ),
-            SizedBox(height: 8),
-            ListTile(
-              title: Text(
-                'Message',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
+
+                // 🔔 Push Notification Permission Switch
+                ListTile(
+                  title: const Text('Enable Push Notifications'),
+                  subtitle: !isPushNotificationEnabled!
+                      ? const Text(
+                          'Push notifications are disabled. Enable to receive alerts.',
+                          style: TextStyle(color: Colors.red),
+                        )
+                      : null,
+                  trailing: Switch(
+                    value: isPushNotificationEnabled!,
+                    onChanged: (value) async {
+                      if (value) {
+                        await _requestNotificationPermission();
+                      } else {
+                        final opened = await openAppSettings();
+                        if (!opened && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Could not open app settings.'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
                 ),
-              ),
-              trailing: Switch(
-                thumbColor: WidgetStatePropertyAll(Colors.black),
-                trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
-                activeTrackColor: AppColors.blue,
-                inactiveTrackColor: AppColors.greyD9D9D9,
-                value: isMessagePaused,
-                onChanged: (newValue) {
-                  setState(() {
-                    isMessagePaused = newValue;
-                  });
-                },
-                activeColor: Colors.blue,
-              ),
-            ),
-            SizedBox(height: 8),
-            ListTile(
-              title: Text(
-                'Calls',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black,
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    isPushNotificationEnabled!
+                        ? 'Notifications are enabled.'
+                        : 'Notifications are disabled. You won’t receive messages notifications.',
+                    style: TextStyle(
+                      color: isPushNotificationEnabled!
+                          ? Colors.green
+                          : Colors.red,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
-              ),
-              trailing: Switch(
-                thumbColor: WidgetStatePropertyAll(Colors.black),
-                trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
-                activeTrackColor: AppColors.blue,
-                inactiveTrackColor: AppColors.greyD9D9D9,
-                value: isCallPaused,
-                onChanged: (newValue) {
-                  setState(() {
-                    isCallPaused = newValue;
-                  });
-                },
-                activeColor: Colors.blue,
-              ),
+              ],
             ),
-            Divider(
-              color: Colors.black,
-              thickness: 1,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

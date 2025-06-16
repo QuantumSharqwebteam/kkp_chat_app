@@ -227,7 +227,7 @@ class SignupProvider with ChangeNotifier {
         if (kDebugMode) {
           if (context.mounted) {
             ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(response['message'])));
+                .showSnackBar(SnackBar(content: Text("Details updated !!")));
           }
         }
       } else {

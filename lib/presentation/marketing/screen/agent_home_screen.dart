@@ -264,7 +264,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               _socketService.getLastSeenTime(assignedCustomer["email"]);
           final int notificationCount =
               assignedCustomer['notificationCount'] ?? 0;
-          final isAccountDeleted = assignedCustomer["isDeleted"];
+          final isAccountDeleted = assignedCustomer["isDeleted"] ?? false;
           final customerLastChattedMessage =
               _socketService.getLastMessage(assignedCustomer["email"]);
           return Padding(
