@@ -16,8 +16,6 @@ import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_wi
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 
-// Make sure this path is correct
-
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
   final String? agentName;
@@ -234,8 +232,20 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   // Recent Messages List
   Widget _buildCustomerInquiriesList() {
-    // Sort the list to show online users first
-    _filteredCustomers.sort((a, b) {
+    // Filter valid customers: must have name, email, and not deleted
+    final validCustomers = _filteredCustomers.where((customer) {
+      final email = customer['email'];
+      final name = customer['name'];
+      final isDeleted = customer['isDeleted'] ?? false;
+
+      return email != null &&
+          name != null &&
+          email.toString().isNotEmpty &&
+          !isDeleted;
+    }).toList();
+
+    // Sort: online users first, then by latest message time
+    validCustomers.sort((a, b) {
       final isAOnline = _socketService.isUserOnline(a["email"]);
       final isBOnline = _socketService.isUserOnline(b["email"]);
 
@@ -246,64 +256,67 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
       final timeB =
           b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return timeB.compareTo(timeA); // Descending order
+      return timeB.compareTo(timeA);
     });
 
+    if (validCustomers.isEmpty) {
+      return const Center(child: Text("No customer inquiries available."));
+    }
+
     return RefreshIndicator(
-      onRefresh: () {
-        return _fetchAssignedCustomers();
-      },
+      onRefresh: _fetchAssignedCustomers,
       child: ListView.builder(
-        itemCount: _filteredCustomers.length,
-        physics: AlwaysScrollableScrollPhysics(),
+        itemCount: validCustomers.length,
+        physics: const AlwaysScrollableScrollPhysics(),
         itemBuilder: (context, index) {
-          final assignedCustomer = _filteredCustomers[index];
-          final isOnline =
-              _socketService.isUserOnline(assignedCustomer["email"]);
-          final String lastSeen =
-              _socketService.getLastSeenTime(assignedCustomer["email"]);
-          final int notificationCount =
-              assignedCustomer['notificationCount'] ?? 0;
-          final isAccountDeleted = assignedCustomer["isDeleted"] ?? false;
-          final customerLastChattedMessage =
-              _socketService.getLastMessage(assignedCustomer["email"]);
+          final customer = validCustomers[index];
+          final name = customer['name'] ?? "Unnamed";
+          final email = customer['email'] ?? "";
+          final isAccountDeleted = customer['isDeleted'] ?? false;
+          final isOnline = _socketService.isUserOnline(email);
+          final lastSeen = _socketService.getLastSeenTime(email);
+          final notificationCount = customer['notificationCount'] ?? 0;
+          final lastMessage = _socketService.getLastMessage(email);
+
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Stack(
               children: [
                 FeedListCard(
+                  name: name,
+                  message: lastMessage,
                   isAccountDeleted: isAccountDeleted,
-                  name: assignedCustomer["name"] ?? "user",
-                  message: customerLastChattedMessage,
                   isActive: isOnline,
                   time: isOnline ? "Online" : lastSeen,
                   enableLongPress: false,
                   onTap: () async {
                     final boxNameWithCount =
-                        '${widget.agentEmail}${assignedCustomer["email"]}count';
+                        '${widget.agentEmail}$email' 'count';
                     final box = await Hive.openBox<int>(boxNameWithCount);
                     await box.put('count', 0);
+
                     setState(() {
-                      // Update in-memory list to reflect zero count
-                      assignedCustomer['notificationCount'] = 0;
+                      customer['notificationCount'] = 0;
                     });
-                    if (context.mounted) {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AgentChatScreen(
-                            navigatorKey: navigatorKey,
-                            customerName: assignedCustomer["name"],
-                            customerEmail: assignedCustomer['email'],
-                            agentEmail: widget.agentEmail,
-                            agentName: widget.agentName,
-                            isAccountDeleted: isAccountDeleted,
-                          ),
+
+                    if (!context.mounted) return;
+
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AgentChatScreen(
+                          navigatorKey: navigatorKey,
+                          customerName: name,
+                          customerEmail: email,
+                          agentEmail: widget.agentEmail,
+                          agentName: widget.agentName,
+                          isAccountDeleted: isAccountDeleted,
                         ),
-                      );
-                      if (result == true) {
-                        await _fetchAssignedCustomers();
-                      }
+                      ),
+                    );
+
+                    if (result == true) {
+                      await _fetchAssignedCustomers();
                     }
                   },
                 ),
@@ -312,14 +325,14 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     right: 10,
                     top: 10,
                     child: Container(
-                      padding: EdgeInsets.all(6),
-                      decoration: BoxDecoration(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
                         notificationCount.toString(),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                         ),
