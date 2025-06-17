@@ -120,7 +120,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         // Already in channel → mark as joined and keep going
         setState(() => _joined = true);
         // make sure timer is running
-        context.read<CallTimerProvider>().start();
+        //  context.read<CallTimerProvider>().start();
       } else {
         rethrow; // any other error should still surface
       }
@@ -212,13 +212,16 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     _callEnded = true;
     _callTimeoutTimer?.cancel();
     CallOverlayService().stopRinging();
+
     context.read<CallTimerProvider>().stop();
 
     final status = _remoteUid != null ? 'answered' : 'not answered';
     final duration = context.read<CallTimerProvider>().formatted;
 
     _updateCallData(status, callDuration: duration);
+    _engine.leaveChannel();
     _overlay.hide();
+    context.read<CallTimerProvider>().reset();
 
     if (mounted) {
       Navigator.pop(context, _createCallMessage(status, duration));
