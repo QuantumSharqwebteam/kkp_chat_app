@@ -1,11 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-
 import 'package:kkpchatapp/data/models/notification_model.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/empty_notifications_widget.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:provider/provider.dart';
 
@@ -63,27 +64,29 @@ class NotificationsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 1,
         actions: [
-          TextButton(
-            onPressed: provider.markAllRead,
-            child: const Text(
-              "Mark all read",
-              style: TextStyle(color: Colors.blue),
+          if (provider.notifications.isNotEmpty)
+            TextButton(
+              onPressed: provider.markAllRead,
+              child: const Text(
+                "Mark all read",
+                style: TextStyle(color: Colors.blue),
+              ),
             ),
-          ),
         ],
       ),
       body: Stack(
         children: [
-          provider.notifications.isEmpty
-              ? const Center(child: Text(""))
-              : ListView(
-                  children: grouped.entries
-                      .where((e) => e.value.isNotEmpty)
-                      .map((entry) =>
-                          _buildGroup(context, entry.key, entry.value))
-                      .toList(),
-                ),
-          if (provider.isLoading) const FullScreenLoader(),
+          if (provider.isLoading)
+            const FullScreenLoader()
+          else if (provider.notifications.isEmpty)
+            EmptyNotificationsWidget()
+          else
+            ListView(
+              children: grouped.entries
+                  .where((e) => e.value.isNotEmpty)
+                  .map((entry) => _buildGroup(context, entry.key, entry.value))
+                  .toList(),
+            ),
         ],
       ),
     );
@@ -117,6 +120,23 @@ class NotificationsScreen extends StatelessWidget {
     final date = n.timestamp ?? DateTime.now();
     final displayTime = getFormattedTime(date);
 
+    // Check if body is a JSON string and type is 'product'
+    String bodyText;
+    if (n.type == 'product') {
+      try {
+        final decoded = jsonDecode(n.body ?? '');
+        if (decoded is Map<String, dynamic>) {
+          bodyText = "shared a product with you";
+        } else {
+          bodyText = n.body ?? '';
+        }
+      } catch (e) {
+        bodyText = n.body ?? '';
+      }
+    } else {
+      bodyText = n.body ?? '';
+    }
+
     return ListTile(
       onTap: () {
         provider.markAsRead(n.id ?? '');
@@ -132,7 +152,7 @@ class NotificationsScreen extends StatelessWidget {
           style: AppTextStyles.black14_600,
           children: [
             TextSpan(
-              text: ' ${n.body}',
+              text: ' $bodyText',
               style: AppTextStyles.black12_400,
             ),
           ],
@@ -148,7 +168,6 @@ class NotificationsScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.blue,
-                decoration: TextDecoration.underline,
               ),
             )
           : null,

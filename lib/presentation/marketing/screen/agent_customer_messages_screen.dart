@@ -6,11 +6,13 @@ import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 
 class AgentCustomerMessagesScreen extends StatefulWidget {
@@ -174,6 +176,7 @@ class _AgentCustomerMessagesScreenState
                                       isMe: isAgent,
                                       timestamp: ChatUtils().formatTimestamp(
                                           msg.timestamp.toIso8601String()),
+                                      isDeleted: msg.isDeleted,
                                     )
                                   else if (msg.type == 'form')
                                     FormMessageBubble(
@@ -197,6 +200,7 @@ class _AgentCustomerMessagesScreenState
                                       isMe: isAgent,
                                       timestamp: ChatUtils().formatTimestamp(
                                           msg.timestamp.toIso8601String()),
+                                      isDeleted: msg.isDeleted,
                                     )
                                   else if (msg.type == 'voice')
                                     VoiceMessageBubble(
@@ -204,6 +208,7 @@ class _AgentCustomerMessagesScreenState
                                       isMe: isAgent,
                                       timestamp: ChatUtils().formatTimestamp(
                                           msg.timestamp.toIso8601String()),
+                                      isDeleted: msg.isDeleted,
                                     )
                                   else if (msg.type == 'call')
                                     CallMessageBubble(
@@ -213,6 +218,29 @@ class _AgentCustomerMessagesScreenState
                                       callStatus: msg.callStatus ?? "",
                                       callDuration: msg.callDuration ?? '',
                                     )
+                                  else if (msg.type == 'product')
+                                    (msg.message != null &&
+                                            msg.message!.isNotEmpty)
+                                        ? ProductMessageBubble(
+                                            productJson: msg.message!,
+                                            isMe:
+                                                msg.sender == widget.agentEmail,
+                                            timestamp:
+                                                ChatUtils().formatTimestamp(
+                                              msg.timestamp.toIso8601String(),
+                                            ),
+                                            isDeleted: msg.isDeleted,
+                                            onLongPress: () {},
+                                            onTap: () {},
+                                          )
+                                        : DeletedMessageBubble(
+                                            isMe:
+                                                msg.sender == widget.agentEmail,
+                                            timestamp:
+                                                ChatUtils().formatTimestamp(
+                                              msg.timestamp.toIso8601String(),
+                                            ),
+                                          )
                                   else
                                     MessageBubble(
                                       message: msg,

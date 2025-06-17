@@ -31,19 +31,19 @@ class NotificationService with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(NotificationService());
     await _initializeLocalNotifications();
     if (context.mounted) {
-      bool isGranted = await _requestPermission(context);
+      bool isGranted = await requestPermission(context);
       if (isGranted) {
-        await _checkAndUpdateFCMToken();
+        await checkAndUpdateFCMToken();
         _setupBackgroundNotification();
         _setupTerminatedNotification();
 
         _messaging.onTokenRefresh.listen((newToken) async {
           debugPrint("🔄 [FCM Token Refreshed]: $newToken");
-          await _checkAndUpdateFCMToken(newToken: newToken);
+          await checkAndUpdateFCMToken(newToken: newToken);
         });
       } else {
         if (context.mounted) {
-          _showPermissionDialog(context);
+          showPermissionDialog();
         }
       }
     }
@@ -220,7 +220,7 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Request notification permission
-  static Future<bool> _requestPermission(BuildContext context) async {
+  static Future<bool> requestPermission(BuildContext context) async {
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -233,7 +233,7 @@ class NotificationService with WidgetsBindingObserver {
     } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
       debugPrint('❌ User denied notification permission');
       if (context.mounted) {
-        _showPermissionDialog(context);
+        showPermissionDialog();
       }
       return false;
     } else if (settings.authorizationStatus ==
@@ -246,12 +246,19 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Show permission dialog if notification permissions are denied
-  static void _showPermissionDialog(BuildContext context) {
+  static void showPermissionDialog() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = navigatorKey?.currentContext;
+
+      if (context == null || !context.mounted) {
+        debugPrint(
+            "⚠️ Cannot show permission dialog: Context not ready or unmounted.");
+        return;
+      }
+
       showDialog(
         context: context,
-        barrierDismissible:
-            false, // Prevent dismissing the dialog by tapping outside
+        barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
             title: const Text("Enable Notifications"),
@@ -268,8 +275,8 @@ class NotificationService with WidgetsBindingObserver {
                 onPressed: () async {
                   PermissionStatus status =
                       await Permission.notification.status;
-                  if (status.isGranted && context.mounted) {
-                    Navigator.pop(context);
+                  if (context.mounted && status.isGranted) {
+                    Navigator.of(context).pop();
                   } else {
                     debugPrint('❌ User still denied notification permission');
                   }
@@ -283,7 +290,7 @@ class NotificationService with WidgetsBindingObserver {
     });
   }
 
-  static Future<void> _checkAndUpdateFCMToken({String? newToken}) async {
+  static Future<void> checkAndUpdateFCMToken({String? newToken}) async {
     final AuthApi auth = AuthApi();
     debugPrint("🔑 CHECKING FCM TOKEN ##########");
     try {

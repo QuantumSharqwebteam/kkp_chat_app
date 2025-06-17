@@ -203,7 +203,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         leading: Stack(children: [
           const CircleAvatar(
             radius: 25,
-            backgroundImage: AssetImage("assets/images/user4.png"),
+            backgroundImage: AssetImage("assets/images/user.jpg"),
           ),
           // Positioned(
           //   bottom: 0,
