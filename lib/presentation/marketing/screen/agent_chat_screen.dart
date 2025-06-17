@@ -981,17 +981,15 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 return;
               }
 
-              if (result != null) {
-                // print(
-                //     "✅ call data saved in the local as: ${result.toString()}");
-                await _chatStorageService.saveMessage(
-                    result, '${widget.agentEmail}${widget.customerEmail}');
-                setState(() {
-                  messages.add(result);
-                  messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-                });
-                _scrollToBottom();
-              }
+              if (result == null) return;
+
+              await _chatStorageService.saveMessage(
+                  result, '${widget.agentEmail}${widget.customerEmail}');
+              setState(() {
+                messages.add(result);
+                messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+              });
+              _scrollToBottom();
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
