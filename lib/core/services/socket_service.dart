@@ -10,6 +10,8 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 // import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/provider/call_timer_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
@@ -128,10 +130,20 @@ class SocketService {
     //   _onCallAnswered?.call(data);
     // });
 
-    _socket.on('callTerminated', (_) {
-      CallOverlayService().stopRinging(); // stop if still ringing
-      _onCallTerminated?.call(_); // e.g., show toast
-    });
+    // inside SocketService.initSocket after _socket.on('callTerminated' …)
+_socket.on('callTerminated', (data) {
+  debugPrint('📥 callTerminated from server: $data');
+
+  // 1. Stop local ring / timer
+  CallOverlayService().hide();              // hides pill & stops ring
+  navigatorKey.currentContext
+      ?.read<CallTimerProvider>()
+      .reset();                             // reset timer
+
+  // 2. Notify any open screen
+  _onCallTerminated?.call(data);
+});
+
 
     _socket.on('messageDeleted', (data) {
       final messageId = data['messageId'];

@@ -209,6 +209,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   }
 
   void _endCall() {
+    if (_callEnded) return;
     _callEnded = true;
     _callTimeoutTimer?.cancel();
     CallOverlayService().stopRinging();
