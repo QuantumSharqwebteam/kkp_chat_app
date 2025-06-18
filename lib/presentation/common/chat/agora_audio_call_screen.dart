@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:kkpchatapp/core/services/event_bus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
@@ -73,8 +74,17 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       _initAgora();
     });
 
-    _socketService.onCallTerminated((data) {
-      if (data['callId'] == widget.callId) _endCall();
+    // _socketService.onCallTerminated((data) {
+    //   if (data['callId'] == widget.callId) {
+    //     _overlay.hide();
+    //     _endCall();
+    //   }
+    // });
+    EventBus().stream.listen((event) {
+      if (event['type'] == 'call_terminated' &&
+          event['data']['callId'] == widget.callId) {
+        _endCall();
+      }
     });
   }
 
@@ -209,7 +219,6 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   }
 
   void _endCall() {
-    if (_callEnded) return;
     _callEnded = true;
     _callTimeoutTimer?.cancel();
     CallOverlayService().stopRinging();
