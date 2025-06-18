@@ -2,6 +2,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/provider/call_timer_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -104,5 +105,8 @@ class CallOverlayService {
     _entry?.remove();
     _entry = null;
     stopRinging(); // also silence ring if still playing
+    navigatorKey.currentContext
+      ?.read<CallTimerProvider>()
+      .stop();
   }
 }
