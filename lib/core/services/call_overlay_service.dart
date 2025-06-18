@@ -2,7 +2,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/services/event_bus.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/provider/call_timer_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -10,20 +11,29 @@ class CallOverlayService {
   // ---------------- singleton boilerplate ----------------
   static final CallOverlayService _i = CallOverlayService._internal();
   factory CallOverlayService() => _i;
-  CallOverlayService._internal() {
-    EventBus().stream.listen((event) {
-      if (event['type'] == 'call_terminated') {
-        hide();
-      }
-    });
-  }
+  CallOverlayService._internal();
+  final _socketService =
+      SocketService(navigatorKey); // or inject this in `init()`
+  String? _activeCallId;
 
   // ---------------- overlay ----------------
   late OverlayState _overlayState;
   OverlayEntry? _entry;
 
-  void init(GlobalKey<NavigatorState> navKey) =>
-      _overlayState = navKey.currentState!.overlay!;
+  void init(GlobalKey<NavigatorState> navKey) {
+    _overlayState = navKey.currentState!.overlay!;
+    _listenToCallTerminations();
+  }
+
+  void _listenToCallTerminations() {
+    _socketService.onCallTerminated((data) {
+      final terminatedCallId = data['callId'];
+      if (_activeCallId != null && _activeCallId == terminatedCallId) {
+        hide();
+        // Optionally: clean up any other state or notify
+      }
+    });
+  }
 
   // ---------------- ringtone ----------------
   final AudioPlayer _player = AudioPlayer();
@@ -46,8 +56,10 @@ class CallOverlayService {
     required String remoteName,
     required VoidCallback onExpand,
     required VoidCallback onHangup,
+    required String callId, // 👈 Add this to track active call
   }) {
     hide();
+    _activeCallId = callId;
 
     _entry = OverlayEntry(
       builder: (ctx) => Positioned(
@@ -79,7 +91,6 @@ class CallOverlayService {
                     children: [
                       const Icon(Icons.call, size: 18, color: Colors.white),
                       const SizedBox(width: 6),
-                      // 👇 live timer
                       Consumer<CallTimerProvider>(
                         builder: (_, t, __) => Text(
                           t.formatted,
@@ -87,13 +98,6 @@ class CallOverlayService {
                               color: Colors.white, fontSize: 12),
                         ),
                       ),
-                      // IconButton(
-                      //   icon: const Icon(Icons.call_end, size: 20, color: Colors.red),
-                      //   onPressed: () {
-                      //     onHangup();
-                      //     hide();
-                      //   },
-                      // ),
                     ],
                   ),
                 ],
@@ -110,6 +114,7 @@ class CallOverlayService {
   void hide() {
     _entry?.remove();
     _entry = null;
-    stopRinging(); // also silence ring if still playing
+    _activeCallId = null;
+    stopRinging();
   }
 }

@@ -4,7 +4,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/call_overlay_service.dart';
-import 'package:kkpchatapp/core/services/event_bus.dart';
 //import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
@@ -134,7 +133,7 @@ class SocketService {
     // inside SocketService.initSocket after _socket.on('callTerminated' …)
     _socket.on('callTerminated', (data) {
       debugPrint('📥 callTerminated from server: $data');
-      EventBus().fireEvent({'type': 'call_terminated', 'data': data});
+      // 2. Notify any open screen
       _onCallTerminated?.call(data);
     });
 
