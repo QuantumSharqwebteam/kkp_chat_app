@@ -27,7 +27,6 @@ class CallTimerProvider extends ChangeNotifier {
   }
 
   void reset() {
-    stop();
     _duration = Duration.zero;
     notifyListeners();
   }
