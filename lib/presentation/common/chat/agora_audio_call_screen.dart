@@ -30,11 +30,9 @@ class AgoraAudioCallScreen extends StatefulWidget {
     this.callId,
     this.timestamp,
     this.navigatorKey,
-    this.existingRemoteUid,
   });
 
   final bool isCaller;
-  final int? existingRemoteUid;
   final String channelName;
   final String? remoteUserId;
   final String remoteUserName;
@@ -69,7 +67,6 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   // ======================   LIFECYCLE   =====================================
   @override
   void initState() {
-    _remoteUid = widget.existingRemoteUid;
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _overlay.init(widget.navigatorKey ?? navigatorKey);
@@ -202,14 +199,13 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
                   callId: widget.callId,
                   timestamp: widget.timestamp,
                   navigatorKey: widget.navigatorKey,
-                  existingRemoteUid: _remoteUid,
                 ),
               ),
             );
       },
       onHangup: _endCall,
     );
-    Navigator.of(context).pop(); // close full‑screen UI
+    Navigator.of(context).pop();
   }
 
   void _endCall() {
@@ -217,15 +213,17 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     _callTimeoutTimer?.cancel();
     CallOverlayService().stopRinging();
 
-    context.read<CallTimerProvider>().stop();
+    final timerProv = context.read<CallTimerProvider>();
+    timerProv.stop();
 
-    final status = _remoteUid != null ? 'answered' : 'not answered';
-    final duration = context.read<CallTimerProvider>().formatted;
+    final bool answered = timerProv.duration > Duration.zero;
+    final status = answered ? 'answered' : 'not answered';
+    final duration = timerProv.formatted;
 
     _updateCallData(status, callDuration: duration);
     _engine.leaveChannel();
     _overlay.hide();
-    context.read<CallTimerProvider>().reset();
+    timerProv.reset();
 
     if (mounted) {
       Navigator.pop(context, _createCallMessage(status, duration));
