@@ -30,9 +30,11 @@ class AgoraAudioCallScreen extends StatefulWidget {
     this.callId,
     this.timestamp,
     this.navigatorKey,
+    this.existingRemoteUid,
   });
 
   final bool isCaller;
+  final int? existingRemoteUid;
   final String channelName;
   final String? remoteUserId;
   final String remoteUserName;
@@ -67,6 +69,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   // ======================   LIFECYCLE   =====================================
   @override
   void initState() {
+    _remoteUid = widget.existingRemoteUid;
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _overlay.init(widget.navigatorKey ?? navigatorKey);
@@ -199,6 +202,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
                   callId: widget.callId,
                   timestamp: widget.timestamp,
                   navigatorKey: widget.navigatorKey,
+                  existingRemoteUid: _remoteUid,
                 ),
               ),
             );
