@@ -133,7 +133,7 @@ class SocketService {
     // inside SocketService.initSocket after _socket.on('callTerminated' …)
     _socket.on('callTerminated', (data) {
       debugPrint('📥 callTerminated from server: $data');
-      // 2. Notify any open screen
+
       _onCallTerminated?.call(data);
     });
 
