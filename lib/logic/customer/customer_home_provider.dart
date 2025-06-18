@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/data/models/poster_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/data/repositories/poster_repository.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:hive/hive.dart';
@@ -11,6 +13,7 @@ import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dar
 class CustomerHomeProvider with ChangeNotifier {
   final ProductRepository _productRepository = ProductRepository();
   final AuthRepository _authRepository = AuthRepository();
+  final PosterRepository _posterRepository = PosterRepository();
   final SocketService _socketService;
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -39,6 +42,37 @@ class CustomerHomeProvider with ChangeNotifier {
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
+  List<PosterModel>? _posters;
+  List<PosterModel>? get posters => _posters;
+
+  // ✅ Added: Getter for fallback + fetched carousel images
+  List<String> get carouselImageUrls {
+    if (_posters == null) {
+      return []; // indicates loading
+    } else if (_posters!.isEmpty) {
+      return [
+        "assets/images/carousel_image1.png",
+        "assets/images/carousel_image1.png",
+        "assets/images/carousel_image1.png",
+      ];
+    } else {
+      return _posters!.map((poster) => poster.mediaUrl).toList();
+    }
+  }
+
+  // ✅ Optional: Flag to indicate poster loading
+  bool get isPostersLoading => _posters == null;
+
+  Future<void> fetchPosters() async {
+    try {
+      _posters = await _posterRepository.getPosters();
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        print(e.toString());
+      }
+    }
+  }
 
   Future<void> loadUserInfo() async {
     try {

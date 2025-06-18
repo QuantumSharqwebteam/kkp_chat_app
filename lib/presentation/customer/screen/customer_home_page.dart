@@ -1,11 +1,15 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:provider/provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkpchatapp/presentation/customer/widget/custom_app_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -17,6 +21,7 @@ class CustomerHomePage extends StatefulWidget {
 class _CustomerHomePageState extends State<CustomerHomePage> {
   late CustomerHomeProvider _provider;
   bool _initialized = false;
+  int _currentCarouselIndex = 0;
 
   @override
   void didChangeDependencies() {
@@ -26,6 +31,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _provider.loadUserInfo();
         _provider.fetchProducts();
+        _provider.fetchPosters();
         _provider.initSocketService();
       });
       _initialized = true;
@@ -52,6 +58,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
               children: [
                 const SizedBox(height: 10),
                 _carousel(),
+                const SizedBox(height: 10),
+                _buildCarouselIndicator(),
                 const SizedBox(height: 10),
                 Container(
                   padding:
@@ -169,26 +177,91 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   Widget _carousel() {
-    List<String> imageUrls = [
-      "assets/images/carousel_image1.png",
-      "assets/images/carousel_image1.png",
-      "assets/images/carousel_image1.png",
-    ];
+    final imageUrls = _provider.carouselImageUrls;
 
-    return CarouselSlider(
-      options: CarouselOptions(
-        autoPlay: true,
-        enlargeCenterPage: true,
-        aspectRatio: 16 / 6,
-        viewportFraction: 1,
+    final double carouselHeight = MediaQuery.of(context).size.width / (16 / 6);
+    final BorderRadius borderRadius = BorderRadius.circular(10);
+
+    // Show shimmer while loading
+    if (_provider.isPostersLoading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: SizedBox(
+          height: carouselHeight,
+          width: double.infinity,
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: Shimmer.fromColors(
+              baseColor: Colors.grey.shade300,
+              highlightColor: Colors.grey.shade100,
+              child: Container(
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: SizedBox(
+        height: carouselHeight,
+        width: double.infinity,
+        child: CarouselSlider(
+          options: CarouselOptions(
+            autoPlay: true,
+            enlargeCenterPage: true,
+            height: carouselHeight, // 👈 explicitly set height
+            viewportFraction: 1,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _currentCarouselIndex = index;
+              });
+            },
+          ),
+          items: imageUrls.map((imageUrl) {
+            return ClipRRect(
+              borderRadius: borderRadius,
+              child: imageUrl.startsWith("http")
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey.shade300,
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey.shade300,
+                      ),
+                    )
+                  : Image.asset(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+            );
+          }).toList(),
+        ),
       ),
-      items: imageUrls.map((imageUrl) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset(imageUrl, fit: BoxFit.fill),
-        );
-      }).toList(),
     );
+  }
+
+  Widget _buildCarouselIndicator() {
+    final imageUrls = _provider.carouselImageUrls;
+
+    return imageUrls.isEmpty
+        ? const SizedBox.shrink()
+        : AnimatedSmoothIndicator(
+            activeIndex: _currentCarouselIndex,
+            count: imageUrls.length,
+            effect: WormEffect(
+              dotHeight: 8,
+              dotWidth: 8,
+              activeDotColor: AppColors.bluePrimary,
+              dotColor: Colors.grey,
+            ),
+          );
   }
 
   Widget _enquirySupport({VoidCallback? onTap, int? notificationCount}) {

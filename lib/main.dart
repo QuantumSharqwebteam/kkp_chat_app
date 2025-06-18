@@ -130,8 +130,10 @@ class _MyAppState extends State<MyApp> {
               MarketingProductProvider(ProductRepository())..fetchProducts(),
         ),
         ChangeNotifierProvider(
-            create: (_) => CustomerHomeProvider(
-                SocketService(navigatorKey), navigatorKey)),
+            create: (_) =>
+                CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
+                  ..fetchPosters()
+                  ..fetchProducts()),
       ],
       child: MaterialApp(
         navigatorKey: widget.navigatorKey,

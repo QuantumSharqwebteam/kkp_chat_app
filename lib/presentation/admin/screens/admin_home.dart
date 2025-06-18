@@ -11,6 +11,7 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/admin/screens/poster_management_screen.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/admin_home_chart.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -311,14 +312,30 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildCustomerInquriesButton() {
-    return CustomButton(
-        onPressed: () {
-          Navigator.pushNamed(context, MarketingRoutes.customerInquriesPage);
-        },
-        height: Utils().height(context) * 0.06,
-        fontSize: 18,
-        borderRadius: 10,
-        text: "Customer Inquries");
+    return Column(
+      children: [
+        CustomButton(
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return PosterManagementScreen();
+              }));
+            },
+            height: Utils().height(context) * 0.06,
+            fontSize: 18,
+            borderRadius: 10,
+            text: "Poster Management"),
+        const SizedBox(height: 10),
+        CustomButton(
+            onPressed: () {
+              Navigator.pushNamed(
+                  context, MarketingRoutes.customerInquriesPage);
+            },
+            height: Utils().height(context) * 0.06,
+            fontSize: 18,
+            borderRadius: 10,
+            text: "Customer Inquries"),
+      ],
+    );
   }
 
   Widget _buildAgentManagementSection() {
