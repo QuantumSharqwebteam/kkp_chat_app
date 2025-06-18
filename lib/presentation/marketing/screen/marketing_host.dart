@@ -122,6 +122,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
       Hive.openBox('CREDENTIALS'),
       Hive.openBox("lastSeenTimeBox"),
       Hive.openBox('feedBox'),
+      Hive.openBox("lastMessageMap"),
       // dotenv.load(fileName: "keys.env"), // Only if required again
     ]);
   }
