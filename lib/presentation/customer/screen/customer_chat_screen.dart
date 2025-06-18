@@ -118,13 +118,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       limit: 20,
     );
 
-    // if (fetchedMessages.isEmpty) {
-    //   setState(() {
-    //     _isLoading = false; // Stop loading if no messages are fetched
-    //   });
-    //   return;
-    // }
-
     // Convert MessageModel to ChatMessageModel
     final chatMessages = fetchedMessages.map((messageJson) {
       return ChatMessageModel(
@@ -151,16 +144,26 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           await _chatStorageService.getCustomerMessages(boxName);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
 
-      // Compare the fetched messages with the ones in the Hive database
+      // Replace local messages with fetched messages where the fetched message has an empty string
+      final messagesToReplace = chatMessages
+          .where((fetchedMessage) => fetchedMessage.message == "")
+          .toList();
+
+      for (var fetchedMessage in messagesToReplace) {
+        final index = newLoadedMessages.indexWhere((localMessage) =>
+            localMessage.messageId == fetchedMessage.messageId);
+        if (index != -1) {
+          newLoadedMessages[index] = fetchedMessage;
+        }
+      }
+
+      // Add any new messages that are not already in the local storage
       final uniqueFetchedMessages = _removeDuplicates(chatMessages);
       final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
         return !newLoadedMessages.any((loadedMessage) {
-          // For call-type messages, compare using callId, callDuration, callStatus
           if (fetchedMessage.type == 'call' && loadedMessage.type == 'call') {
             return loadedMessage.callId == fetchedMessage.callId;
           }
-
-          // For all other message types, compare using messageId
           return loadedMessage.messageId == fetchedMessage.messageId;
         });
       }).toList();
@@ -489,14 +492,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleMessageDeleted(String messageId) {
-    setState(() {
-      final index =
-          messages.indexWhere((message) => message.messageId == messageId);
-      if (index != -1) {
-        messages[index].isDeleted = true;
-        messages[index].message = "This message is deleted";
-      }
-    });
+    if (mounted) {
+      // Check if the widget is currently mounted
+      setState(() {
+        final index =
+            messages.indexWhere((message) => message.messageId == messageId);
+        if (index != -1) {
+          messages[index].isDeleted = true;
+          messages[index].message = "This message is deleted";
+        }
+      });
+    }
 
     // Save the updated message state to local storage
 
@@ -581,7 +587,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _deleteMessage(String messageId) {
-    _socketService.deleteMessage(messageId);
+    _socketService.deleteMessage(messageId, widget.customerEmail!);
 
     // Update the local message state to reflect deletion
     setState(() {

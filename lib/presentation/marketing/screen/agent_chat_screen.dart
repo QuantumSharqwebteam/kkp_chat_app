@@ -240,16 +240,26 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           await _chatStorageService.getMessages(boxName, page: _currentPage);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
 
-      // Compare the fetched messages with the ones in the Hive database
+      // Replace local messages with fetched messages where the fetched message has an empty string
+      final messagesToReplace = chatMessages
+          .where((fetchedMessage) => fetchedMessage.message!.isEmpty)
+          .toList();
+
+      for (var fetchedMessage in messagesToReplace) {
+        final index = newLoadedMessages.indexWhere((localMessage) =>
+            localMessage.messageId == fetchedMessage.messageId);
+        if (index != -1) {
+          newLoadedMessages[index] = fetchedMessage;
+        }
+      }
+
+      // Add any new messages that are not already in the local storage
       final uniqueFetchedMessages = _removeDuplicates(chatMessages);
       final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
         return !newLoadedMessages.any((loadedMessage) {
-          // For call-type messages, compare using callId, callDuration, callStatus
           if (fetchedMessage.type == 'call' && loadedMessage.type == 'call') {
             return loadedMessage.callId == fetchedMessage.callId;
           }
-
-          // For all other message types, compare using messageId
           return loadedMessage.messageId == fetchedMessage.messageId;
         });
       }).toList();
@@ -530,20 +540,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _handleMessageDeleted(String messageId) {
-    setState(() {
-      final index =
-          messages.indexWhere((message) => message.messageId == messageId);
-      if (index != -1) {
-        messages[index].isDeleted = true;
-        messages[index].message = "This message is deleted";
-      }
-    });
+    if (mounted) {
+      setState(() {
+        final index =
+            messages.indexWhere((message) => message.messageId == messageId);
+        if (index != -1) {
+          messages[index].isDeleted = true;
+          messages[index].message = "This message is deleted";
+        }
+      });
+    }
 
     // Save the updated message state to local storage
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
     _chatStorageService.saveMessage(
         messages.firstWhere((message) => message.messageId == messageId),
         boxName);
+    _socketService.updateLastMessage(widget.customerEmail, "message deleted");
   }
 
   void _sendMessage({
@@ -643,7 +656,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               child: const Text("Unsend Message"),
               onPressed: () {
                 Navigator.of(context).pop();
-                _deleteMessage(messageId);
+                _deleteMessage(
+                  messageId,
+                );
               },
             ),
           ],
@@ -653,7 +668,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _deleteMessage(String messageId) {
-    _socketService.deleteMessage(messageId);
+    _socketService.deleteMessage(
+        messageId, widget.agentEmail!, widget.customerEmail);
 
     // Update the local message state to reflect deletion
     setState(() {

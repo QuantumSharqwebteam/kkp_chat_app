@@ -4,14 +4,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/call_overlay_service.dart';
+import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 //import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 // import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/provider/call_timer_provider.dart';
-import 'package:provider/provider.dart';
+
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
@@ -106,6 +106,7 @@ class SocketService {
     //   }
     // });
     _socket.on('receiveMessage', (data) {
+      debugPrint("recived message socket : ${data.toString()}");
       final String senderId = data['senderId'] ?? '';
       final String targetId = data['targetId'] ?? '';
 
@@ -113,6 +114,7 @@ class SocketService {
           (activeCustomerId == senderId || activeCustomerId == targetId)) {
         _onMessageReceived?.call(data);
       } else {
+        debugPrint("recived message socket : ${data.toString()}");
         _chatNotification(data);
       }
     });
@@ -138,8 +140,16 @@ class SocketService {
     });
 
     _socket.on('messageDeleted', (data) {
+      debugPrint("socket message deleted: ${data.toString()}");
       final messageId = data['messageId'];
-      _onMessageDeleted?.call(messageId);
+
+      if (isChatPageOpen) {
+        // If the chat page is open, call the existing callback
+        _onMessageDeleted?.call(messageId);
+      } else {
+        // If the chat page is not open, handle the deletion in the background
+        _handleBackgroundMessageDeletion(data);
+      }
     });
 
     _socket.onDisconnect((_) {
@@ -167,6 +177,63 @@ class SocketService {
 
   void onConnect(Function callback) {
     _onConnect = callback;
+  }
+
+  void _handleBackgroundMessageDeletion(Map<String, dynamic> data) async {
+    final messageId = data['messageId'];
+    final senderId = data['senderId'];
+    final targetId = data['targetId'];
+
+    final userType = await LocalDbHelper.getUserType();
+
+    if (userType == "0") {
+      // For customers, retrieve messages using getCustomerMessages
+      final messages = await ChatStorageService().getCustomerMessages(targetId);
+      debugPrint("Retrieved messages for customer: ${messages.length}");
+
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+
+        // Save the updated message state to local storage
+        await ChatStorageService().saveMessage(messages[index], targetId);
+        debugPrint(
+            "Message marked as deleted for customer with ID: $messageId");
+
+        // Verify the message is updated in the storage
+        final updatedMessages =
+            await ChatStorageService().getCustomerMessages(targetId);
+        final updatedIndex = updatedMessages
+            .indexWhere((message) => message.messageId == messageId);
+        if (updatedIndex != -1 && updatedMessages[updatedIndex].isDeleted) {
+          debugPrint("Successfully updated message in storage for customer.");
+        } else {
+          debugPrint("Failed to update message in storage for customer.");
+        }
+      } else {
+        debugPrint("Message not found for deletion with ID: $messageId");
+      }
+    } else {
+      // For agents, the box name is a combination of targetId and senderId
+      String boxName = '$targetId$senderId';
+
+      // Retrieve and update the message in local storage
+      final messages = await ChatStorageService().getMessages(boxName);
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+
+        // Save the updated message state to local storage
+        await ChatStorageService().saveMessage(messages[index], boxName);
+
+        // Update the last message status
+        updateLastMessage(senderId, "message deleted");
+      }
+    }
   }
 
   void _updateRoomMembers(List<String> newRoomMembers) {
@@ -311,9 +378,21 @@ class SocketService {
     }
   }
 
-  void deleteMessage(String messageId) {
+  void deleteMessage(String messageId, String senderId, [String? targetId]) {
     if (_isConnected) {
-      _socket.emit('deleteMessage', {'messageId': messageId});
+      // Create a map with the required parameters
+      Map<String, dynamic> messageData = {
+        'messageId': messageId,
+        'senderId': senderId,
+      };
+
+      // Add targetId to the map if it is provided
+      if (targetId != null) {
+        messageData['targetId'] = targetId;
+      }
+
+      // Emit the deleteMessage event with the constructed map
+      _socket.emit('deleteMessage', messageData);
       debugPrint("🗑️ Delete message event emitted: $messageId");
     } else {
       debugPrint('Socket is not connected. Cannot delete message.');
