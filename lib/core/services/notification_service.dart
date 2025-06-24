@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -310,12 +310,23 @@ class NotificationService with WidgetsBindingObserver {
     final AuthApi auth = AuthApi();
     debugPrint("🔑 CHECKING FCM TOKEN ##########");
     try {
+      // ✅ Only for iOS: wait until APNs token is available
+      if (Platform.isIOS) {
+        String? apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken == null) {
+          debugPrint(
+              "❌ [iOS] APNs token not yet available. Aborting FCM token fetch.");
+          return; // Wait and retry later
+        }
+      }
+
       String? currentToken;
       if (newToken == null) {
         currentToken = await _messaging.getToken();
       } else {
         currentToken = newToken;
       }
+
       if (currentToken != null) {
         String? savedToken = LocalDbHelper.getFCMToken();
         if (savedToken != currentToken) {

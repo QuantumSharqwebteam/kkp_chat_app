@@ -63,13 +63,20 @@
 	<string>$(PRODUCT_NAME) Microphone Usage!</string>
 	<key>NSUserNotificationUsageDescription</key>
     <string>This app needs notifications to alert you about updates.</string>
+	<!-- ✅ Required for background remote notifications -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+
+	<!-- ✅ Firebase: Prevent automatic APNs proxying (for manual token handling) -->
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier will be used to deliver personalized ads to you.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app uses the local network to communicate with nearby devices.</string>
+	<key>NSMicrophoneUsageDescription</key>
+    <string>This app needs access to your microphone to record audio for calls or voice messages.</string>
 </dict>
 </plist>
