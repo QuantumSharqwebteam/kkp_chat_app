@@ -55,14 +55,18 @@
 		<key>NSAllowArbitraryLoads</key>
 		<true/>
 	</dict>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Need permission</string>
 	<key>NSCameraUsageDescription</key>
-	<string>$(PRODUCT_NAME) Camera Usage!</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>$(PRODUCT_NAME) Microphone Usage!</string>
-	<key>NSUserNotificationUsageDescription</key>
-    <string>This app needs notifications to alert you about updates.</string>
+    <string>This app needs camera access to take photos or record videos.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app needs access to your microphone to record audio for calls or voice messages.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs access to your photo library to select media files.</string>
+    <key>NSUserNotificationUsageDescription</key>
+    <string>This app needs notifications to alert you about updates and messages.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app uses the local network to communicate with nearby devices.</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>This identifier will be used to deliver personalized ads to you.</string>
 	<!-- ✅ Required for background remote notifications -->
 	<key>UIBackgroundModes</key>
 	<array>
@@ -76,7 +80,10 @@
 	<string>This identifier will be used to deliver personalized ads to you.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app uses the local network to communicate with nearby devices.</string>
-	<key>NSMicrophoneUsageDescription</key>
-    <string>This app needs access to your microphone to record audio for calls or voice messages.</string>
+	<key>NSAppTransportSecurity</key>
+    <dict>
+      <key>NSAllowArbitraryLoads</key>
+      <true/>
+    </dict>
 </dict>
 </plist>
