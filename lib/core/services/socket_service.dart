@@ -370,6 +370,14 @@ class SocketService {
       // Save the last message for the user last chatted
       if (type == "product") {
         updateLastMessage(targetEmail ?? "", "shared product");
+      } else if (message != null &&
+          message.contains("Your order is confirmed with form Id")) {
+        // Handle order confirmation
+        updateLastMessage(targetEmail ?? "", "Order Confirmed");
+      } else if (message != null &&
+          message.contains("Your order is declined with form Id")) {
+        // Handle order decline
+        updateLastMessage(targetEmail ?? "", "Order Declined");
       } else {
         updateLastMessage(targetEmail ?? "", messageData['message']);
       }

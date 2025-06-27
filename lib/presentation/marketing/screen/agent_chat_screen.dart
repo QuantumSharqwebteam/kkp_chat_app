@@ -29,6 +29,7 @@ import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/delete_dialog.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
@@ -37,6 +38,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_bottom_sheet.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
@@ -642,26 +644,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Unsend Message"),
-          content: const Text("Are you sure you want to unsend this message?"),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text("Unsend Message"),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteMessage(
-                  messageId,
-                );
-              },
-            ),
-          ],
+        return DeleteDialog(
+          messageId: messageId,
+          onDelete: (messageId) {
+            _deleteMessage(messageId);
+          },
         );
       },
     );
@@ -731,10 +718,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     });
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _pickAndSendImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
       // Add a temporary message
@@ -742,30 +728,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
-      if (imageUrl != null) {
-        // Remove the temporary message
-        setState(() {
-          messages
-              .removeWhere((message) => message.message == "Sending image...");
-        });
 
-        // Send the actual message
-        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
-      }
-    }
-  }
-
-  Future<void> _pickAndSendImageByCamera() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.camera);
-
-    if (pickedFile != null) {
-      // Add a temporary message
-      _addTemporaryMessage("Sending image...");
-
-      final File imageFile = File(pickedFile.path);
-      final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
         // Remove the temporary message
         setState(() {
@@ -843,69 +806,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return FutureBuilder<List<Product>>(
-          future: _productRepository.getProducts(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error loading products"));
-            } else {
-              final products = snapshot.data;
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                height: MediaQuery.of(context).size.height * 0.6,
-                child: ListView.builder(
-                  itemCount: products?.length,
-                  itemBuilder: (context, index) {
-                    final product = products![index];
-                    return Container(
-                      margin: EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              blurRadius: 4,
-                              spreadRadius: 0,
-                              color: Colors.black.withValues(alpha: 0.15),
-                              offset: const Offset(0, 1),
-                            )
-                          ]),
-                      child: ListTile(
-                        title: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Image.network(
-                                  product.imageUrl,
-                                  height: 60,
-                                  width: 65,
-                                  fit: BoxFit.cover,
-                                )),
-                            const SizedBox(width: 4),
-                            Text(
-                              product.productName,
-                              style: AppTextStyles.black12_700,
-                            ),
-                          ],
-                        ),
-                        trailing: Icon(
-                          Icons.ios_share_rounded,
-                          color: AppColors.blue0056FB,
-                        ),
-                        onTap: () {
-                          _sendProductMessage(product);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  },
-                ),
-              );
-            }
-          },
+        return ProductsBottomSheet(
+          productsFuture: _productRepository.getProducts(),
+          onProductTap: _sendProductMessage,
         );
       },
     );
@@ -1202,10 +1105,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 ChatInputField(
                   controller: _chatController,
                   onSend: () => _sendMessage(messageText: _chatController.text),
-                  onSendImage: _pickAndSendImage,
+                  onSendImage: () {
+                    _pickAndSendImage(ImageSource.gallery);
+                  },
                   onSendForm: sendFormButton,
                   onSendDocument: _pickAndSendDocument,
-                  onSendImageByCamera: _pickAndSendImageByCamera,
+                  onSendImageByCamera: () {
+                    _pickAndSendImage(ImageSource.camera);
+                  },
                   onShareProduct: () => _showProductsBottomSheet(context),
                   onSendVoice: _isRecording ? _stopRecording : _startRecording,
                   isRecording: _isRecording,
