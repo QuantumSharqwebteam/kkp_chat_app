@@ -30,14 +30,15 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubb
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/form_overlay.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_update_alert_dialog.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_bottom_sheet.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
@@ -73,13 +74,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final rateController = TextEditingController();
-  final qualityController = TextEditingController();
-  final quantityController = TextEditingController();
-  final weaveController = TextEditingController();
-  final compositionController = TextEditingController();
-  final sNoController = TextEditingController();
   final ChatStorageService _chatStorageService = ChatStorageService();
   final ChatRepository _chatRepository = ChatRepository();
   bool isFormUpdating = false;
@@ -420,10 +414,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
-    qualityController.dispose();
-    quantityController.dispose();
-    sNoController.dispose();
-    compositionController.dispose();
     _recorder.closeRecorder();
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
@@ -674,34 +664,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _pickAndSendImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      // Add a temporary message
-      _addTemporaryMessage("Sending image...");
-
-      final File imageFile = File(pickedFile.path);
-      final imageUrl = await _s3uploadService.uploadFile(imageFile);
-      if (imageUrl != null) {
-        // Remove the temporary message
-        setState(() {
-          messages
-              .removeWhere((message) => message.message == "Sending image...");
-        });
-
-        // Send the actual message
-        _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
-      }
-    }
-  }
-
-  Future<void> _pickAndSendImageByCamera() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.camera);
+    final XFile? pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
       // Add a temporary message
@@ -757,69 +722,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return FutureBuilder<List<Product>>(
-          future: _productRepository.getProducts(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error loading products"));
-            } else {
-              final products = snapshot.data;
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                height: MediaQuery.of(context).size.height * 0.6,
-                child: ListView.builder(
-                  itemCount: products?.length,
-                  itemBuilder: (context, index) {
-                    final product = products![index];
-                    return Container(
-                      margin: EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              blurRadius: 4,
-                              spreadRadius: 0,
-                              color: Colors.black.withValues(alpha: 0.15),
-                              offset: const Offset(0, 1),
-                            )
-                          ]),
-                      child: ListTile(
-                        title: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Image.network(
-                                  product.imageUrl,
-                                  height: 60,
-                                  width: 65,
-                                  fit: BoxFit.cover,
-                                )),
-                            const SizedBox(width: 4),
-                            Text(
-                              product.productName,
-                              style: AppTextStyles.black12_700,
-                            ),
-                          ],
-                        ),
-                        trailing: Icon(
-                          Icons.ios_share_rounded,
-                          color: AppColors.blue0056FB,
-                        ),
-                        onTap: () {
-                          _sendProductMessage(product);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  },
-                ),
-              );
-            }
-          },
+        return ProductsBottomSheet(
+          productsFuture: _productRepository.getProducts(),
+          onProductTap: _sendProductMessage,
         );
       },
     );
@@ -830,81 +735,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return Form(
-          key: _formKey,
-          child: Container(
-            padding: const EdgeInsets.all(16.0),
-            height: Utils().height(context) * 0.8,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Please fill in the form details",
-                    style: AppTextStyles.black16_600),
-                const SizedBox(height: 10),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Quality"),
-                  controller: qualityController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter quality';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Quantity"),
-                  controller: quantityController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter quantity';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Weave"),
-                  controller: weaveController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter weave';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Composition"),
-                  controller: compositionController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter composition';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                CustomButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final formData = {
-                        "quality": qualityController.text,
-                        "quantity": quantityController.text,
-                        "weave": weaveController.text,
-                        "composition": compositionController.text,
-                        "rate": 0,
-                      };
-                      _sendMessage(
-                          messageText: "product", type: 'form', form: formData);
-                      Navigator.pop(context);
-                    }
-                  },
-                  textColor: Colors.white,
-                  fontSize: 14,
-                  backgroundColor: AppColors.blue,
-                  text: "Submit",
-                ),
-              ],
-            ),
-          ),
+        return FormOverlay(
+          onSubmit: (formData) {
+            _sendMessage(
+              messageText: "product",
+              type: 'form',
+              form: formData,
+            );
+          },
         );
       },
     );
@@ -1266,8 +1104,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 ChatInputField(
                   controller: _chatController,
                   onSend: () => _sendMessage(messageText: _chatController.text),
-                  onSendImage: _pickAndSendImage,
-                  onSendImageByCamera: _pickAndSendImageByCamera,
+                  onSendImage: () {
+                    _pickAndSendImage(ImageSource.gallery);
+                  },
+                  onSendImageByCamera: () {
+                    _pickAndSendImage(ImageSource.camera);
+                  },
                   onSendForm: _showFormOverlay,
                   onSendDocument: _pickAndSendDocument,
                   onShareProduct: () => _showProductsBottomSheet(context),

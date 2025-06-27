@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
 
-class FormOverlay extends StatelessWidget {
-  final GlobalKey<FormState> formKey;
-  final TextEditingController qualityController;
-  final TextEditingController quantityController;
-  final TextEditingController weaveController;
-  final TextEditingController compositionController;
-  final VoidCallback onSubmit;
+class FormOverlay extends StatefulWidget {
+  final Function(Map<String, dynamic>) onSubmit;
 
-  const FormOverlay({
-    super.key,
-    required this.formKey,
-    required this.qualityController,
-    required this.quantityController,
-    required this.weaveController,
-    required this.compositionController,
-    required this.onSubmit,
-  });
+  const FormOverlay({super.key, required this.onSubmit});
+
+  @override
+  State<FormOverlay> createState() => _FormOverlayState();
+}
+
+class _FormOverlayState extends State<FormOverlay> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController qualityController = TextEditingController();
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController weaveController = TextEditingController();
+  final TextEditingController compositionController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Form(
-      key: formKey,
+      key: _formKey,
       child: Container(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         height: MediaQuery.of(context).size.height * 0.8,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Please fill in the form details",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            Text(
+              "Please fill in the form details",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 10),
             TextFormField(
               decoration: InputDecoration(labelText: "Quality"),
@@ -73,7 +73,19 @@ class FormOverlay extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: onSubmit,
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  final formData = {
+                    "quality": qualityController.text,
+                    "quantity": quantityController.text,
+                    "weave": weaveController.text,
+                    "composition": compositionController.text,
+                    "rate": 0,
+                  };
+                  widget.onSubmit(formData);
+                  Navigator.pop(context);
+                }
+              },
               child: Text("Submit"),
             ),
           ],
