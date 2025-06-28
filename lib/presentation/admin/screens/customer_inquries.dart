@@ -13,9 +13,11 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
+// import 'package:permission_handler/permission_handler.dart';
+// import 'package:device_info_plus/device_info_plus.dart';
 import 'package:excel/excel.dart' hide Border;
+import 'package:open_filex/open_filex.dart';
 
 class CustomerInquiriesPage extends StatefulWidget {
   const CustomerInquiriesPage({super.key});
@@ -209,23 +211,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     });
 
     try {
-      // Check Android version
-      if (Platform.isAndroid) {
-        if (await _checkAndRequestPermissions() == false) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Storage permission denied. Cannot save file.'),
-              ),
-            );
-          }
-          setState(() {
-            isDownloading = false;
-          });
-          return;
-        }
-      }
-
       final excel = Excel.createExcel();
       final sheet = excel['Sheet1'];
 
@@ -263,60 +248,47 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       final formattedDate =
           DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
 
-      final dir = Directory('/storage/emulated/0/Download');
-      if (await dir.exists()) {
-        final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
-        await file.writeAsBytes(bytes!);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('File saved to ${file.path}')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Download directory not found')),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Excel download error: $e');
+      final dir = await getTemporaryDirectory(); // App-private cache directory
+      final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
+      await file.writeAsBytes(bytes!);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to download file')),
+          SnackBar(content: Text('File generated: ${file.path}')),
+        );
+      }
+
+      await OpenFilex.open(
+          file.path); // Opens with Excel or Sheets, if installed
+    } catch (e) {
+      debugPrint('Excel generation error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate Excel file')),
         );
       }
     } finally {
-      setState(() {
-        isDownloading = false;
-      });
+      setState(() => isDownloading = false);
     }
   }
 
-  Future<bool> _checkAndRequestPermissions() async {
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      final sdkInt = androidInfo.version.sdkInt;
+  // Future<bool> _checkAndRequestPermissions() async {
+  //   if (Platform.isAndroid) {
+  //     final androidInfo = await DeviceInfoPlugin().androidInfo;
+  //     final sdkInt = androidInfo.version.sdkInt;
 
-      if (sdkInt >= 30) {
-        // Android 11+ needs MANAGE_EXTERNAL_STORAGE
-        if (await Permission.manageExternalStorage.isGranted) {
-          return true;
-        }
-        final result = await Permission.manageExternalStorage.request();
-        return result.isGranted;
-      } else {
-        // Android <11 needs basic storage permission
-        if (await Permission.storage.isGranted) {
-          return true;
-        }
-        final result = await Permission.storage.request();
-        return result.isGranted;
-      }
-    }
-    // On iOS or other platforms, you may adjust logic if needed
-    return true;
-  }
+  //     if (sdkInt >= 33) {
+  //       // Android 13+
+  //       final images = await Permission.photos.request();
+  //       final videos = await Permission.videos.request();
+  //       return images.isGranted && videos.isGranted;
+  //     } else {
+  //       final result = await Permission.storage.request();
+  //       return result.isGranted;
+  //     }
+  //   }
+  //   return true;
+  // }
 
   @override
   Widget build(BuildContext context) {
