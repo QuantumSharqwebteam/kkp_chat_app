@@ -83,7 +83,7 @@ class _ChatInputFieldState extends State<ChatInputField>
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 23),
       child: Row(
         children: [
           IconButton(
