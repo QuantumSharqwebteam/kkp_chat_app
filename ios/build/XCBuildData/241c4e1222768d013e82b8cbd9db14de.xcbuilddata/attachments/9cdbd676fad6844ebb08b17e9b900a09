@@ -1,0 +1,4 @@
+
+module file_saver.__Swift {
+  exclude header "file_saver-Swift.h"
+}

@@ -1,0 +1,5 @@
+ extern const unsigned char flutter_foreground_taskVersionString[];
+ extern const double flutter_foreground_taskVersionNumber;
+
+ const unsigned char flutter_foreground_taskVersionString[] __attribute__ ((used)) = "@(#)PROGRAM:flutter_foreground_task  PROJECT:Pods-1" "\n";
+ const double flutter_foreground_taskVersionNumber __attribute__ ((used)) = (double)1.;

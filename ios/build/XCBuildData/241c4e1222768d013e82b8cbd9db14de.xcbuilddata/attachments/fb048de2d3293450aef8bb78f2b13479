@@ -1,0 +1,110 @@
+{
+  "" : {
+    "const-values" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/flutter_foreground_task-master.swiftconstvalues",
+    "dependencies" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/flutter_foreground_task-master.d",
+    "diagnostics" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/flutter_foreground_task-master.dia",
+    "emit-module-dependencies" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/flutter_foreground_task-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/flutter_foreground_task-master-emit-module.dia",
+    "swift-dependencies" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/flutter_foreground_task-master.swiftdeps"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/FlutterForegroundTaskLifecycleListener.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/FlutterForegroundTaskLifecycleListener.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/FlutterForegroundTaskLifecycleListener.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/FlutterForegroundTaskLifecycleListener.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/FlutterForegroundTaskStarter.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/FlutterForegroundTaskStarter.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/FlutterForegroundTaskStarter.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/FlutterForegroundTaskStarter.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/PreferencesKey.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/PreferencesKey.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/PreferencesKey.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/PreferencesKey.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/SwiftFlutterForegroundTaskPlugin.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/SwiftFlutterForegroundTaskPlugin.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/SwiftFlutterForegroundTaskPlugin.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/SwiftFlutterForegroundTaskPlugin.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/errors/ServiceError.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ServiceError.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ServiceError.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ServiceError.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/BackgroundServiceAction.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceAction.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceAction.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceAction.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/BackgroundServiceStatus.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceStatus.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceStatus.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceStatus.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/ForegroundTaskData.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskData.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskData.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskData.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/ForegroundTaskEventAction.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskEventAction.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskEventAction.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskEventAction.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/ForegroundTaskEventType.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskEventType.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskEventType.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskEventType.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/ForegroundTaskOptions.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskOptions.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskOptions.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskOptions.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/NotificationButton.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationButton.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationButton.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationButton.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/NotificationContent.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationContent.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationContent.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationContent.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/NotificationOptions.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationOptions.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationOptions.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationOptions.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/models/NotificationPermission.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationPermission.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationPermission.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationPermission.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/service/BackgroundService.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundService.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundService.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundService.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/service/BackgroundServiceManager.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceManager.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceManager.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/BackgroundServiceManager.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/service/ForegroundTask.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTask.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTask.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTask.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/service/ForegroundTaskLifecycleListeners.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskLifecycleListeners.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskLifecycleListeners.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/ForegroundTaskLifecycleListeners.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/flutter_foreground_task-9.1.0/ios/Classes/service/NotificationPermissionManager.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationPermissionManager.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationPermissionManager.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/flutter_foreground_task.build/Objects-normal/arm64/NotificationPermissionManager.o"
+  }
+}
