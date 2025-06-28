@@ -14,8 +14,6 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
 import 'package:path_provider/path_provider.dart';
-// import 'package:permission_handler/permission_handler.dart';
-// import 'package:device_info_plus/device_info_plus.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:open_filex/open_filex.dart';
 
@@ -271,24 +269,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       setState(() => isDownloading = false);
     }
   }
-
-  // Future<bool> _checkAndRequestPermissions() async {
-  //   if (Platform.isAndroid) {
-  //     final androidInfo = await DeviceInfoPlugin().androidInfo;
-  //     final sdkInt = androidInfo.version.sdkInt;
-
-  //     if (sdkInt >= 33) {
-  //       // Android 13+
-  //       final images = await Permission.photos.request();
-  //       final videos = await Permission.videos.request();
-  //       return images.isGranted && videos.isGranted;
-  //     } else {
-  //       final result = await Permission.storage.request();
-  //       return result.isGranted;
-  //     }
-  //   }
-  //   return true;
-  // }
 
   @override
   Widget build(BuildContext context) {

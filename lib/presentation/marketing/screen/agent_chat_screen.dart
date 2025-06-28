@@ -1118,6 +1118,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                   isRecording: _isRecording,
                   recordedSeconds: _recordedSeconds,
                 ),
+              const SizedBox(height: 10),
             ],
           ),
           if (_isFormUpdating) FullScreenLoader(),
