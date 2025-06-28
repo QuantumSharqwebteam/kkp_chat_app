@@ -313,6 +313,7 @@ class NotificationService with WidgetsBindingObserver {
       // ✅ Only for iOS: wait until APNs token is available
       if (Platform.isIOS) {
         String? apnsToken = await _messaging.getAPNSToken();
+        debugPrint("🍏 apn toke: $apnsToken");
         if (apnsToken == null) {
           debugPrint(
               "❌ [iOS] APNs token not yet available. Aborting FCM token fetch.");
