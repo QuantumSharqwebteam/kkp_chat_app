@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/auth_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/chart_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';

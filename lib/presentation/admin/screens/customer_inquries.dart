@@ -15,7 +15,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart'
 import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart' hide Border;
-import 'package:open_filex/open_filex.dart';
+import 'package:open_file/open_file.dart';
 
 class CustomerInquiriesPage extends StatefulWidget {
   const CustomerInquiriesPage({super.key});
@@ -245,8 +245,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       final bytes = excel.save();
       final formattedDate =
           DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-
-      final dir = await getTemporaryDirectory(); // App-private cache directory
+      final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
       await file.writeAsBytes(bytes!);
 
@@ -256,15 +255,22 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         );
       }
 
-      await OpenFilex.open(
-          file.path); // Opens with Excel or Sheets, if installed
+      final result = await OpenFile.open(file.path);
+      if (result.type != ResultType.done) {
+        debugPrint("⚠️ Could not open Excel file: ${result.message}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open the file')),
+          );
+        }
+      }
     } catch (e) {
       debugPrint('Excel generation error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to generate Excel file')),
-        );
-      }
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     const SnackBar(content: Text('Failed to generate Excel file')),
+      //   );
+      // }
     } finally {
       setState(() => isDownloading = false);
     }

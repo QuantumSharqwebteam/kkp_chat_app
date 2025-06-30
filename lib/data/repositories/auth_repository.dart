@@ -1,4 +1,4 @@
-import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/auth_service.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/models/notification_model.dart';
@@ -8,11 +8,10 @@ class AuthRepository {
 
   AuthRepository({AuthApi? authApi}) : _authApi = authApi ?? AuthApi();
 
-  Future<Map<String, dynamic>> signup(
-      {
-        required String email,
-       required String password,
-       }) {
+  Future<Map<String, dynamic>> signup({
+    required String email,
+    required String password,
+  }) {
     return _authApi.signup(email: email, password: password);
   }
 

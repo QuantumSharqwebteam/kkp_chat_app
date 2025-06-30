@@ -60,7 +60,6 @@ dependencies:
   flutter_image_compress: ^2.4.0
   agora_rtc_engine: ^6.5.1
   audioplayers: ^6.4.0
-  open_filex: ^4.7.0
   firebase_core: ^3.13.0
   firebase_messaging: ^15.2.5
   flutter_local_notifications: ^19.1.0
@@ -74,6 +73,8 @@ dependencies:
   flutter_launcher_icons: ^0.14.3
   url_launcher: ^6.3.1
   smooth_page_indicator: ^1.2.1
+  open_file: ^3.5.10
+  webview_flutter: ^4.13.0
 
   
   

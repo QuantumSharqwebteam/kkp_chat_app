@@ -6,7 +6,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 
-import '../../../core/network/auth_api.dart';
+import '../../../core/services/auth_service.dart';
 
 class AddAgent extends StatefulWidget {
   const AddAgent({super.key});
