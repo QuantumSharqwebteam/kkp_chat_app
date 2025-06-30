@@ -543,6 +543,14 @@ class SocketService {
       await _notificationsPlugin!.initialize(initSettings,
           onDidReceiveNotificationResponse: _handleNotificationTap);
     }
+    // Request permissions for iOS
+    await _notificationsPlugin!.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  
+    
 
     const androidDetails = AndroidNotificationDetails(
       'your_channel_id',

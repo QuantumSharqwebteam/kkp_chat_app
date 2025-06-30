@@ -49,7 +49,14 @@
 	<string>This identifier will be used to deliver personalized ads to you.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+		<!-- ✅ Required for Local Network + Flutter VM Service -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+	</array>
+
 	<key>UIBackgroundModes</key>
+
 	<array>
 		<string>remote-notification</string>
 		<string>processing</string>
