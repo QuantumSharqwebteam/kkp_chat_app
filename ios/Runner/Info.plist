@@ -49,7 +49,14 @@
 	<string>This identifier will be used to deliver personalized ads to you.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+		<!-- ✅ Required for Local Network + Flutter VM Service -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+	</array>
+
 	<key>UIBackgroundModes</key>
+
 	<array>
 		<string>remote-notification</string>
 		<string>processing</string>
@@ -71,44 +78,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowArbitraryLoads</key>
-		<true/>
-	</dict>
-	<key>NSCameraUsageDescription</key>
-    <string>This app needs camera access to take photos or record videos.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>This app needs access to your microphone to record audio for calls or voice messages.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>This app needs access to your photo library to select media files.</string>
-    <key>NSUserNotificationUsageDescription</key>
-    <string>This app needs notifications to alert you about updates and messages.</string>
-    <key>NSLocalNetworkUsageDescription</key>
-    <string>This app uses the local network to communicate with nearby devices.</string>
-    <key>NSUserTrackingUsageDescription</key>
-    <string>This identifier will be used to deliver personalized ads to you.</string>
-	<!-- ✅ Required for background remote notifications -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
-
-	<!-- ✅ Firebase: Prevent automatic APNs proxying (for manual token handling) -->
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to deliver personalized ads to you.</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>This app uses the local network to communicate with nearby devices.</string>
-	<key>NSAppTransportSecurity</key>
-    <dict>
-      <key>NSAllowArbitraryLoads</key>
-      <true/>
-    </dict>
 </dict>
 </plist>
