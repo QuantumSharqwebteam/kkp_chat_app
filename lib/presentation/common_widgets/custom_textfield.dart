@@ -27,7 +27,7 @@ class CustomTextField extends StatefulWidget {
     this.inputFormatters,
     this.onChanged,
     this.maxLength,
-    this.showLength = false, // ✅ Show length property
+    this.showLength = false,
   });
 
   final double width;
@@ -53,7 +53,7 @@ class CustomTextField extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String>? onChanged;
   final int? maxLength;
-  final bool showLength; // ✅ Show length property
+  final bool showLength;
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -85,20 +85,13 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate the height based on showLength and errorText
-    double effectiveHeight = widget.height + (widget.showLength ? 20 : 0);
-
-    // Ensure the height increase is at most 20
-    if (widget.errorText != null) {
-      effectiveHeight += 20;
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: widget.width,
-          height: effectiveHeight,
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: widget.height,
+          ),
           child: TextFormField(
             enabled: widget.enabled,
             obscuringCharacter: '*',
@@ -149,9 +142,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     children: [
                       if (widget.isPassword)
                         IconButton(
-                          icon: Icon(_isObscured
-                              ? Icons.visibility_off
-                              : Icons.visibility),
+                          icon: Icon(
+                            _isObscured
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
                           onPressed: () {
                             setState(() => _isObscured = !_isObscured);
                           },
@@ -164,10 +159,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
                     ],
                   ),
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              counterText: widget.showLength
-                  ? null
-                  : "", // Show counter text only if showLength is true
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              counterText: widget.showLength ? null : "",
             ),
           ),
         ),
