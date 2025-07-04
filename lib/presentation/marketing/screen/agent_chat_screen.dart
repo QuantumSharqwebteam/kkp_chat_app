@@ -850,67 +850,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 color: Colors.black),
           ),
           IconButton(
-            // onPressed: () async {
-
-            //   final channelName =
-            //       sha256.convert(utf8.encode(widget.agentEmail!)).toString();
-
-            //   final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
-            //   debugPrint("Generated UID for agent (caller): $uid");
-
-            //   final callId = Uuid().v4();
-            //   final timestamp = DateTime.now();
-
-            //   _socketService.sendAgoraCall(
-            //     targetId: widget.customerEmail,
-            //     channelName: channelName,
-            //     callerId: widget.agentEmail!,
-            //     callerName: widget.agentName!,
-            //     callId: callId,
-            //     timestamp: timestamp.toIso8601String(),
-            //   );
-
-            //   final result = await Navigator.push(
-            //     context,
-            //     MaterialPageRoute(
-            //       builder: (_) => AgoraAudioCallScreen(
-            //         isCaller: true,
-            //         channelName: channelName,
-            //         uid: uid,
-            //         remoteUserId: widget.customerEmail,
-            //         remoteUserName: widget.customerName!,
-            //         callId: callId,
-            //         timestamp: timestamp,
-            //         navigatorKey: navigatorKey,
-            //       ),
-            //     ),
-            //   );
-
-            //   // ✅ Check if the call was terminated without connecting
-            //   if (result != null &&
-            //       result is Map &&
-            //       result['terminated'] == true) {
-            //     if (context.mounted) {
-            //       ScaffoldMessenger.of(context).showSnackBar(
-            //         const SnackBar(
-            //           content: Text('Call was rejected or terminated.'),
-            //           backgroundColor: Colors.red,
-            //         ),
-            //       );
-            //     }
-            //     return;
-            //   }
-
-            //   if (result == null) return;
-
-            //   await _chatStorageService.saveMessage(
-            //       result, '${widget.agentEmail}${widget.customerEmail}');
-            //   setState(() {
-            //     messages.add(result);
-            //     messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-            //   });
-            //   _scrollToBottom();
-            // },
             onPressed: () async {
               final callProvider = context.read<CallProvider>();
 
@@ -970,7 +909,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
               callProvider.addListener(subscription);
             },
-
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
         ],
