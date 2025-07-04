@@ -28,12 +28,14 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
     final email = LocalDbHelper.getEmail();
     try {
       final fetchedLogs = await _chatRepo.fetchCallLogs(email!);
+      if (!mounted) return; 
       setState(() {
         callLogs = fetchedLogs;
         isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching call logs: $e');
+      if (!mounted) return; 
       setState(() {
         isLoading = false;
       });
@@ -57,7 +59,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
     }
 
     if (callLogs.isEmpty) {
-      return Center(child: EmptyCallLogsWidget());
+      return const Center(child: EmptyCallLogsWidget());
     }
 
     final Map<String, List<CallLogModel>> groupedLogs = {};
@@ -69,8 +71,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
 
       if (DateUtils.isSameDay(date, now)) {
         key = "Today";
-      } else if (DateUtils.isSameDay(
-          date, now.subtract(const Duration(days: 1)))) {
+      } else if (DateUtils.isSameDay(date, now.subtract(const Duration(days: 1)))) {
         key = "Yesterday";
       } else {
         key = "${date.day}/${date.month}/${date.year}";
@@ -80,6 +81,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
     }
 
     final currentUserId = LocalDbHelper.getEmail();
+
     return ListView(
       children: groupedLogs.entries.map((entry) {
         return Column(
