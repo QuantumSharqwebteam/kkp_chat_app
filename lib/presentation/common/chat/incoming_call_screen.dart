@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
+import 'package:provider/provider.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final String callerName;
@@ -132,20 +133,27 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                   onPressed: () {
                     // Remove the incoming call screen from the navigation stack
                     _stopRingtone();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AgoraAudioCallScreen(
-                          isCaller: false,
+                    // Navigator.pushReplacement(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (_) => AgoraAudioCallScreen(
+                    //         // isCaller: false,
+                    //         // channelName: widget.channelName,
+                    //         // uid: generateUniqueId(),
+                    //         // //Utils().generateIntUidFromEmail("agent@gmail.com"),
+                    //         // remoteUserId: widget.remoteUserId,
+                    //         // remoteUserName: widget.callerName,
+                    //         // callId: widget.callId,
+                    //         ),
+                    //   ),
+                    // );
+                    context.read<CallProvider>().startNewCall(
                           channelName: widget.channelName,
-                          uid: generateUniqueId(),
-                          //Utils().generateIntUidFromEmail("agent@gmail.com"),
-                          remoteUserId: widget.remoteUserId,
                           remoteUserName: widget.callerName,
+                          uid: generateUniqueId(),
                           callId: widget.callId,
-                        ),
-                      ),
-                    );
+                          isCaller: false,
+                        );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,

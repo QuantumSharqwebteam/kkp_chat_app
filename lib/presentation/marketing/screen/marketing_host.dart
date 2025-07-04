@@ -14,7 +14,8 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
+
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
@@ -23,10 +24,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_scree
 import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/marketing_nav_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
-
-// 🔍 Add this at the top of the file
-final RouteObserver<ModalRoute<void>> routeObserver =
-    RouteObserver<ModalRoute<void>>();
+import 'package:provider/provider.dart';
 
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key, required this.navigatorKey});
@@ -52,8 +50,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
   OverlayEntry? _disconnectOverlay;
 
-  OverlayEntry? _ongoingCallOverlay;
-  bool isCallOngoing = false;
+  AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
@@ -62,33 +59,6 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
       _initializeNotificationService().then((_) {});
     });
     initCheck();
-  }
-
-  // 🔍 Subscribe to RouteObserver
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
-  }
-
-  // 🔍 Unsubscribe on dispose
-  @override
-  void dispose() {
-    routeObserver.unsubscribe(this);
-    _ongoingCallOverlay?.remove();
-    _socketService.disconnect();
-    super.dispose();
-  }
-
-  // 🔍 Track navigation state
-  @override
-  void didPush() => _checkIfOnCallScreen();
-  @override
-  void didPopNext() => _checkIfOnCallScreen();
-
-  void _checkIfOnCallScreen() {
-    final currentRoute = ModalRoute.of(context);
-    isCallOngoing = currentRoute?.settings.name == '/agoraCallScreen';
   }
 
   void initCheck() async {
@@ -177,12 +147,11 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
     }
   }
 
-  // @override
-  // void dispose() {
-  //   _ongoingCallOverlay?.remove();
-  //   _socketService.disconnect(); // Disconnect when leaving the host screen
-  //   super.dispose();
-  // }
+  @override
+  void dispose() {
+    _socketService.disconnect(); // Disconnect when leaving the host screen
+    super.dispose();
+  }
 
   Future<void> _updateScreens() async {
     setState(() {
@@ -219,14 +188,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
           navigatorKey: widget.navigatorKey,
         ),
       ),
-    ).then((_) {
-      // 🔍 Delay overlay check until after frame builds
-      if (isCallOngoing) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          showOngoingCallOverlay();
-        });
-      }
-    });
+    );
   }
 
   void _handleConnect() {
@@ -279,67 +241,6 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
     overlayState.insert(overlayEntry);
   }
 
-  void showOngoingCallOverlay() {
-    // Remove any existing overlay before showing a new one
-    _ongoingCallOverlay?.remove();
-
-    final overlayState = Overlay.of(context);
-    _ongoingCallOverlay = OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).padding.top + 10,
-        left: 16,
-        right: 16,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.blue,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Call is ongoing',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        // Navigate back to the call screen
-                        _ongoingCallOverlay?.remove();
-                        _ongoingCallOverlay = null;
-                        Navigator.pop(context); // Navigate back on the stack
-                      },
-                      child: const Text('Back to Call'),
-                    ),
-                    ElevatedButton(
-                      onPressed: _endCall,
-                      child: const Text('End Call'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    overlayState.insert(_ongoingCallOverlay!);
-  }
-
-  void _endCall() {
-    _ongoingCallOverlay?.remove();
-    _ongoingCallOverlay = null;
-    // Navigate back to the appropriate screen
-    Navigator.popUntil(context, (route) => route.isFirst);
-  }
-
   void _handleIncomingMessage(Map<String, dynamic> data) {
     _navigateToChat(
       customeremail: data["senderId"],
@@ -363,13 +264,22 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
     late OverlayEntry overlayEntry;
     Timer? timeoutTimer;
-    final audioPlayer = AudioPlayer();
+    _audioPlayer?.stop();
+    _audioPlayer = AudioPlayer();
 
     Future<void> stopAndRemoveOverlay() async {
-      await audioPlayer.stop();
+      try {
+        debugPrint("🛑 Stopping ringtone...");
+        await _audioPlayer?.stop();
+        debugPrint("✅ Ringtone stopped");
+      } catch (e) {
+        debugPrint("⚠️ Failed to stop ringtone: $e");
+      }
+
       timeoutTimer?.cancel();
       overlayEntry.remove();
       _activeCallOverlay = null;
+      _audioPlayer = null; // ✅ ADDED: cleanup reference
     }
 
     overlayEntry = OverlayEntry(
@@ -381,31 +291,28 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
           callerName: callerName,
           onAnswer: () async {
             await stopAndRemoveOverlay();
-            setState(() {
-              isCallOngoing = true;
-            });
-
             if (context.mounted) {
               // Set flag to indicate you are on a call screen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  settings: const RouteSettings(name: '/agoraCallScreen'),
-                  builder: (_) => AgoraAudioCallScreen(
-                    isCaller: false,
-                    channelName: channelName,
-                    uid: uid,
-                    remoteUserId: callerId,
-                    remoteUserName: callerName,
-                    callId: incomingCallId,
-                    navigatorKey: navigatorKey,
-                  ),
-                ),
-              ).then((_) {
-                setState(() {
-                  isCallOngoing = false;
-                }); // Reset flag when leaving the call screen
-              });
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (_) => AgoraAudioCallScreen(
+              //         // isCaller: false,
+              //         // channelName: channelName,
+              //         // uid: uid,
+              //         // remoteUserId: callerId,
+              //         // remoteUserName: callerName,
+              //         // callId: incomingCallId,
+              //         // navigatorKey: navigatorKey,
+              //         ),
+              //   ),
+              // );
+              context.read<CallProvider>().startNewCall(
+                  channelName: channelName,
+                  remoteUserName: callerName,
+                  uid: uid,
+                  callId: incomingCallId,
+                  isCaller: false);
             }
           },
           onReject: () async {
@@ -418,7 +325,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
               channelName: channelName,
             );
           },
-          audioPlayer: audioPlayer,
+          audioPlayer: _audioPlayer!,
         ),
       ),
     );
@@ -436,21 +343,50 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
+    return Consumer<CallProvider>(
+      builder: (context, callProvider, child) {
+        if (callProvider.callDetailsMessage != null) {
+          // Handle the call details message, e.g., save it to the chat storage
+          // and then reset the callDetailsMessage in the provider.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // _handleCallDetailsMessage(callProvider.callDetailsMessage!);
+            // callProvider.setCallDetailsMessage(null);
+          });
+        }
+
+        Widget content = GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Scaffold(
+            body: Stack(
+              children: [
+                IndexedStack(
+                  index: _selectedIndex,
+                  children: _screens,
+                ),
+                // if (callProvider.isOutgoingCallVisible)
+                //   OutgoingCallUI(
+                //     onTap: () {
+                //       callProvider.navigatorKey.currentState?.push(
+                //         MaterialPageRoute(
+                //             builder: (_) => const AgoraAudioCallScreen()),
+                //       );
+                //     },
+                //   ),
+              ],
+            ),
+            bottomNavigationBar: MarketingNavBar(
+              selectedIndex: _selectedIndex,
+              onTabSelected: _onTabSelected,
+            ),
+          ),
+        );
+
+        return BackPressHandler(
+          child: content,
+        );
       },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
-        bottomNavigationBar: MarketingNavBar(
-          selectedIndex: _selectedIndex,
-          onTabSelected: _onTabSelected,
-        ),
-      ),
     );
-    return BackPressHandler(child: content);
   }
 }

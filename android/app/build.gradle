@@ -73,17 +73,17 @@ flutter {
 dependencies {
    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
    implementation 'com.google.android.material:material:1.11.0'
-   implementation("io.agora.rtc:full-sdk:4.5.1") {
-        exclude group: 'io.agora.rtc', module: 'full-screen-sharing'
-    }
+//    implementation("io.agora.rtc:full-sdk:4.5.1") {
+//         exclude group: 'io.agora.rtc', module: 'full-screen-sharing'
+//     }
 }
 
-configurations.all {
-    resolutionStrategy.eachDependency { details ->
-        if (details.requested.group == 'io.agora.rtc' &&
-            details.requested.name == 'full-screen-sharing') {
-            details.useTarget 'io.agora.rtc:full-screen-sharing:4.5.0'
-            details.because 'Avoids adding foreground-service and media projection permissions'
-        }
-    }
-}
+// configurations.all {
+//     resolutionStrategy.eachDependency { details ->
+//         if (details.requested.group == 'io.agora.rtc' &&
+//             details.requested.name == 'full-screen-sharing') {
+//             details.useTarget 'io.agora.rtc:full-screen-sharing:4.5.0'
+//             details.because 'Avoids adding foreground-service and media projection permissions'
+//         }
+//     }
+// }

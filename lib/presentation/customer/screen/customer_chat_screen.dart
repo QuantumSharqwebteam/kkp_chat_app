@@ -22,8 +22,7 @@ import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
-import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
@@ -45,6 +44,7 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class CustomerChatScreen extends StatefulWidget {
@@ -848,21 +848,91 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             ],
           ),
           actions: [
+            // IconButton(
+            //   onPressed: () async {
+            //     // final channelName = sha256
+            //     //     .convert(utf8.encode(widget.customerEmail!))
+            //     //     .toString();
+            //     final uid =
+            //         Utils().generateIntUidFromEmail(widget.customerEmail!);
+            //     debugPrint("Generated UID for agent (caller): $uid");
+            //     final timestamp = DateTime.now();
+
+            //     final callId = Uuid().v4();
+            //     final rawChannel = '${widget.customerEmail}_$callId';
+            //     final channelName = sha256
+            //         .convert(utf8.encode(rawChannel))
+            //         .toString(); // different channel name for every call
+            //     _socketService.sendAgoraCall(
+            //       channelName: channelName,
+            //       callerId: widget.customerEmail!,
+            //       callerName: widget.customerName!,
+            //       callId: callId,
+            //       timestamp: timestamp.toIso8601String(),
+            //     );
+
+            //     final result = await Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //         builder: (_) => AgoraAudioCallScreen(
+            //           // isCaller: true,
+            //           // channelName: channelName,
+            //           // uid: uid,
+            //           // remoteUserName: widget.agentName!,
+            //           // callId: callId,
+            //           // timestamp: timestamp,
+            //           // navigatorKey: navigatorKey,
+            //         ),
+            //       ),
+            //     );
+
+            //     // ✅ Check if the call was terminated without connecting
+            //     if (result != null &&
+            //         result is Map &&
+            //         result['terminated'] == true) {
+            //       if (context.mounted) {
+            //         ScaffoldMessenger.of(context).showSnackBar(
+            //           const SnackBar(
+            //             content: Text('Call was rejected or terminated.'),
+            //             backgroundColor: Colors.red,
+            //           ),
+            //         );
+            //       }
+            //       return;
+            //     }
+
+            //     if (result != null) {
+            //       // print(
+            //       //     "✅ call data saved in the local as: ${result.toString()}");
+            //       await _chatStorageService.saveMessage(
+            //           result, widget.customerEmail!);
+            //       setState(() {
+            //         messages.add(result);
+            //         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+            //       });
+            //       _scrollToBottom();
+            //     }
+            //   },
+            //   icon: const Icon(Icons.call_outlined, color: Colors.black),
+            // ),
             IconButton(
               onPressed: () async {
-                // final channelName = sha256
-                //     .convert(utf8.encode(widget.customerEmail!))
-                //     .toString();
+                final callProvider = context.read<CallProvider>();
+
                 final uid =
                     Utils().generateIntUidFromEmail(widget.customerEmail!);
-                debugPrint("Generated UID for agent (caller): $uid");
                 final timestamp = DateTime.now();
-
                 final callId = Uuid().v4();
+
+                // Unique channel name per call
                 final rawChannel = '${widget.customerEmail}_$callId';
-                final channelName = sha256
-                    .convert(utf8.encode(rawChannel))
-                    .toString(); // different channel name for every call
+                final channelName =
+                    sha256.convert(utf8.encode(rawChannel)).toString();
+
+                debugPrint("📞 Customer (caller) UID: $uid");
+                debugPrint("📞 Generated Channel: $channelName");
+
+                // 1. 🔁 Send outgoing call request
                 _socketService.sendAgoraCall(
                   channelName: channelName,
                   callerId: widget.customerEmail!,
@@ -871,47 +941,40 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   timestamp: timestamp.toIso8601String(),
                 );
 
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AgoraAudioCallScreen(
-                      isCaller: true,
-                      channelName: channelName,
-                      uid: uid,
-                      remoteUserName: widget.agentName!,
-                      callId: callId,
-                      timestamp: timestamp,
-                      navigatorKey: navigatorKey,
-                    ),
-                  ),
+                // 2. 🚀 Start call via provider
+                await callProvider.startNewCall(
+                  channelName: channelName,
+                  remoteUserName: widget.agentName!,
+                  uid: uid,
+                  callId: callId,
+                  isCaller: true,
                 );
 
-                // ✅ Check if the call was terminated without connecting
-                if (result != null &&
-                    result is Map &&
-                    result['terminated'] == true) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Call was rejected or terminated.'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  return;
-                }
-
-                if (result != null) {
-                  // print(
-                  //     "✅ call data saved in the local as: ${result.toString()}");
+                // 3. ⏳ Wait for call message to be available
+                void handleCallMessage(ChatMessageModel message) async {
                   await _chatStorageService.saveMessage(
-                      result, widget.customerEmail!);
+                      message, widget.customerEmail!);
+
+                  if (!mounted) return;
                   setState(() {
-                    messages.add(result);
+                    messages.add(message);
                     messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
                   });
+
                   _scrollToBottom();
                 }
+
+                // 4. ✅ Listen once to callDetailsMessage
+                late final VoidCallback subscription;
+                subscription = () {
+                  final message = callProvider.callDetailsMessage;
+                  if (message != null) {
+                    handleCallMessage(message);
+                    callProvider.removeListener(subscription); // Only once
+                  }
+                };
+
+                callProvider.addListener(subscription);
               },
               icon: const Icon(Icons.call_outlined, color: Colors.black),
             ),

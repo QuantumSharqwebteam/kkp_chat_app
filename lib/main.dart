@@ -20,6 +20,7 @@ import 'package:kkpchatapp/logic/auth/signup_provider.dart';
 import 'package:kkpchatapp/logic/auth/verification_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -122,6 +123,8 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => NewPassProvider()),
         ChangeNotifierProvider(create: (_) => AgentHomeScreenProvider()),
         ChangeNotifierProvider(create: (_) => ChatRefreshProvider()),
+        ChangeNotifierProvider(
+            create: (_) => CallProvider(widget.navigatorKey)),
         ChangeNotifierProvider(
           create: (_) => NotificationProvider()..fetchNotifications(),
         ),

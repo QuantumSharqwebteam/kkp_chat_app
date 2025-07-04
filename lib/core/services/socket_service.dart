@@ -11,7 +11,6 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 // import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
-
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
@@ -544,13 +543,14 @@ class SocketService {
           onDidReceiveNotificationResponse: _handleNotificationTap);
     }
     // Request permissions for iOS
-    await _notificationsPlugin!.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.requestPermissions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-  
-    
+    await _notificationsPlugin!
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
 
     const androidDetails = AndroidNotificationDetails(
       'your_channel_id',
