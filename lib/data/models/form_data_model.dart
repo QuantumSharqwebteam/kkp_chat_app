@@ -10,10 +10,6 @@ class FormDataModel {
   final String status;
   final String id;
 
-  late final String dateOnly;
-  late final String timeOnly;
-  final DateTime? parsedDate;
-
   FormDataModel({
     required this.date,
     required this.quality,
@@ -25,15 +21,7 @@ class FormDataModel {
     required this.customerName,
     required this.status,
     required this.id,
-  }) : parsedDate = DateTime.tryParse(date) {
-    if (parsedDate != null) {
-      dateOnly = _formatDate(parsedDate!);
-      timeOnly = _formatTime(parsedDate!);
-    } else {
-      dateOnly = '';
-      timeOnly = '';
-    }
-  }
+  });
 
   factory FormDataModel.fromJson(Map<String, dynamic> json) {
     return FormDataModel(
@@ -50,32 +38,18 @@ class FormDataModel {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return "${_monthName(date.month)} ${date.day}, ${date.year}";
-  }
-
-  String _formatTime(DateTime date) {
-    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final period = date.hour >= 12 ? 'pm' : 'am';
-    return "$hour:$minute $period";
-  }
-
-  String _monthName(int month) {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec"
-    ];
-    return months[month - 1];
+  Map<String, dynamic> toMap() {
+    return {
+      'date': date,
+      'quality': quality,
+      'weave': weave,
+      'quantity': quantity,
+      'composition': composition,
+      'rate': rate,
+      'agentName': agentName,
+      'customerName': customerName,
+      'status': status,
+      '_id': id,
+    };
   }
 }

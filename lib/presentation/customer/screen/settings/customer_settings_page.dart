@@ -7,7 +7,7 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+
 import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
@@ -22,7 +22,7 @@ class CustomerSettingsPage extends StatefulWidget {
 class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
   @override
   Widget build(BuildContext context) {
-    final searchController = TextEditingController();
+    //  final searchController = TextEditingController();
     final SocketService socketService = SocketService(navigatorKey);
 
     void logOut() async {
@@ -67,17 +67,17 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: Utils().width(context),
-              color: AppColors.background,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: CustomSearchBar(
-                width: Utils().width(context),
-                enable: true,
-                controller: searchController,
-                hintText: 'Search',
-              ),
-            ),
+            // Container(
+            //   width: Utils().width(context),
+            //   color: AppColors.background,
+            //   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            //   child: CustomSearchBar(
+            //     width: Utils().width(context),
+            //     enable: true,
+            //     controller: searchController,
+            //     hintText: 'Search',
+            //   ),
+            // ),
             SettingsTile(
               numberOfTiles: 1,
               leadingIcons: [Icons.shield_moon_outlined],

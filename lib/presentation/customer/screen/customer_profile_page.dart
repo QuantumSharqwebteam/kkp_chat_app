@@ -8,8 +8,9 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
+import 'package:kkpchatapp/presentation/common_widgets/profile_details_field.dart';
 
 class CustomerProfilePage extends StatefulWidget {
   const CustomerProfilePage({super.key});
@@ -41,11 +42,22 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   }
 
   Future<void> _loadUserInfo() async {
-    profile = await auth.getUserInfo();
-    if (profile != null) {
-      LocalDbHelper.saveProfile(profile!);
-      profileImageUrl = profile?.profileUrl;
-      _updateProfileFields(profile!);
+    final Map<String, dynamic> userData = await auth.getUserInfo();
+    if (userData['message'] ==
+        "Session expired due to login on another device") {
+      if (mounted) {
+        Navigator.of(context)
+            .pushReplacement(MaterialPageRoute(builder: (context) {
+          return LoginPage();
+        }));
+      }
+    } else {
+      profile = Profile.fromJson(userData['message']);
+      if (profile != null) {
+        LocalDbHelper.saveProfile(profile!);
+        profileImageUrl = profile?.profileUrl;
+        _updateProfileFields(profile!);
+      }
     }
   }
 
@@ -92,11 +104,11 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   _name.text.isNotEmpty ? _name.text : 'No Name',
                   style: AppTextStyles.black28_600,
                 ),
-                Text(
-                  'Customer',
-                  style:
-                      AppTextStyles.black16_600.copyWith(color: Colors.black54),
-                ),
+                // Text(
+                //   'Customer',
+                //   style:
+                //       AppTextStyles.black16_600.copyWith(color: Colors.black54),
+                // ),
                 SizedBox(height: 10),
                 SizedBox(
                   width: Utils().width(context) * 0.9,
@@ -104,15 +116,51 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildCustomerTypeSelection(),
-                      _buildTextField('Full Name', _name),
-                      _buildTextField('Email', _email),
-                      _buildTextField('Mobile Number', _number),
-                      _buildTextField('GST Number', _gstNo, maxLength: 15),
-                      _buildTextField('PAN Number', _panNo, maxLength: 10),
-                      _buildTextField('House No.', _houseNo),
-                      _buildTextField('Street Name', _streetName),
-                      _buildTextField('City', _city),
-                      _buildTextField('Pincode', _pincode),
+                      ProfileDetailsField(
+                        icon: Icons.person,
+                        label: 'Full Name',
+                        value: _name.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.email,
+                        label: 'Email',
+                        value: _email.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.phone,
+                        label: 'Mobile Number',
+                        value: _number.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.assignment,
+                        label: 'GST Number',
+                        value: _gstNo.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.assignment_ind,
+                        label: 'PAN Number',
+                        value: _panNo.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.home,
+                        label: 'House No.',
+                        value: _houseNo.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.streetview,
+                        label: 'Street Name',
+                        value: _streetName.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.location_city,
+                        label: 'City',
+                        value: _city.text,
+                      ),
+                      ProfileDetailsField(
+                        icon: Icons.markunread_mailbox,
+                        label: 'Pincode',
+                        value: _pincode.text,
+                      ),
                       SizedBox(height: 20),
                       Center(
                         child: CustomButton(
@@ -204,24 +252,24 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller,
-      {int? maxLength}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: AppTextStyles.black14_600),
-          CustomTextField(
-            controller: controller,
-            hintText: controller.text,
-            hintStyle: AppTextStyles.black16_500,
-            readOnly: true,
-            height: 40,
-            maxLength: maxLength,
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildTextField(String label, TextEditingController controller,
+  //     {int? maxLength}) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(label, style: AppTextStyles.black14_600),
+  //         CustomTextField(
+  //           controller: controller,
+  //           hintText: controller.text,
+  //           hintStyle: AppTextStyles.black16_500,
+  //           readOnly: true,
+  //           height: 40,
+  //           maxLength: maxLength,
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

@@ -5,6 +5,7 @@ import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
@@ -12,6 +13,8 @@ import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
+import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 
 class AgentHomeScreen extends StatefulWidget {
   final String? agentEmail;
@@ -34,12 +37,26 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    final chatRefreshProvider =
+        Provider.of<ChatRefreshProvider>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      chatRefreshProvider.addListener(() {
+        if (chatRefreshProvider.shouldRefresh) {
+          _fetchAssignedCustomers();
+          chatRefreshProvider.reset();
+        }
+      });
+    });
     _fetchAssignedCustomers();
     _statusSubscription = _socketService.statusStream.listen((_) {
       if (mounted) {
         setState(() {}); // Forces a rebuild to reflect the new online status
       }
     });
+    _socketService.onMessageReceived((data) {},
+        refreshCallback: _fetchAssignedCustomers);
   }
 
   @override
@@ -56,6 +73,27 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     try {
       final fetchedCustomerList =
           await _chatRepo.fetchAssignedCustomerList(widget.agentEmail!);
+
+      // Fetch notification count for each user
+      for (var customer in fetchedCustomerList) {
+        final countBoxName = '${widget.agentEmail}${customer["email"]}count';
+        final timeBoxName =
+            '${widget.agentEmail}${customer["email"]}lastMessageTime';
+
+        final countBox = await Hive.openBox<int>(countBoxName);
+        final timeBox = await Hive.openBox<String>(
+            timeBoxName); // assuming you save time as ISO string
+
+        final count = countBox.get('count', defaultValue: 0);
+        final lastMessageTimeStr = timeBox.get('lastMessageTime');
+        final lastMessageTime = lastMessageTimeStr != null
+            ? DateTime.tryParse(lastMessageTimeStr)
+            : null;
+
+        customer['notificationCount'] = count;
+        customer['lastMessageTime'] = lastMessageTime;
+      }
+
       setState(() {
         _assignedCustomers = fetchedCustomerList;
         _filteredCustomers = fetchedCustomerList;
@@ -108,8 +146,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   _buildSearchBar(),
-                                  // const SizedBox(height: 20),
-                                  // _buildDirectMessages(),
                                   const SizedBox(height: 20),
                                   Text("Customer Inquiries",
                                       style: AppTextStyles.black16_500)
@@ -196,44 +232,114 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   // Recent Messages List
   Widget _buildCustomerInquiriesList() {
+    // Filter valid customers: must have name, email, and not deleted
+    final validCustomers = _filteredCustomers.where((customer) {
+      final email = customer['email'];
+      final name = customer['name'];
+      final isDeleted = customer['isDeleted'] ?? false;
+
+      return email != null &&
+          name != null &&
+          email.toString().isNotEmpty &&
+          !isDeleted;
+    }).toList();
+
+    // Sort: online users first, then by latest message time
+    validCustomers.sort((a, b) {
+      final isAOnline = _socketService.isUserOnline(a["email"]);
+      final isBOnline = _socketService.isUserOnline(b["email"]);
+
+      if (isAOnline && !isBOnline) return -1;
+      if (!isAOnline && isBOnline) return 1;
+
+      final timeA =
+          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB =
+          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return timeB.compareTo(timeA);
+    });
+
+    if (validCustomers.isEmpty) {
+      return const Center(child: Text("No customer inquiries available."));
+    }
+
     return RefreshIndicator(
-      onRefresh: () {
-        return _fetchAssignedCustomers();
-      },
+      onRefresh: _fetchAssignedCustomers,
       child: ListView.builder(
-        itemCount: _filteredCustomers.length,
-        physics: AlwaysScrollableScrollPhysics(),
+        itemCount: validCustomers.length,
+        physics: const AlwaysScrollableScrollPhysics(),
         itemBuilder: (context, index) {
-          final assignedCustomer = _filteredCustomers[index];
-          final isOnline =
-              _socketService.isUserOnline(assignedCustomer["email"]);
-          final String lastSeen =
-              _socketService.getLastSeenTime(assignedCustomer["email"]);
+          final customer = validCustomers[index];
+          final name = customer['name'] ?? "Unnamed";
+          final email = customer['email'] ?? "";
+          final isAccountDeleted = customer['isDeleted'] ?? false;
+          final isOnline = _socketService.isUserOnline(email);
+          final lastSeen = _socketService.getLastSeenTime(email);
+          final notificationCount = customer['notificationCount'] ?? 0;
+          final lastMessage = _socketService.getLastMessage(email);
+
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: FeedListCard(
-              name: assignedCustomer["name"],
-              message: "last message",
-              isActive: isOnline,
-              time: isOnline ? "Online" : lastSeen,
-              enableLongPress: false,
-              onTap: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AgentChatScreen(
-                      navigatorKey: navigatorKey,
-                      customerName: assignedCustomer["name"],
-                      customerEmail: assignedCustomer['email'],
-                      agentEmail: widget.agentEmail,
-                      agentName: widget.agentName,
+            child: Stack(
+              children: [
+                FeedListCard(
+                  name: name,
+                  message: lastMessage,
+                  isAccountDeleted: isAccountDeleted,
+                  isActive: isOnline,
+                  time: isOnline ? "Online" : lastSeen,
+                  enableLongPress: false,
+                  onTap: () async {
+                    final boxNameWithCount =
+                        '${widget.agentEmail}$email' 'count';
+                    final box = await Hive.openBox<int>(boxNameWithCount);
+                    await box.put('count', 0);
+
+                    setState(() {
+                      customer['notificationCount'] = 0;
+                    });
+
+                    if (!context.mounted) return;
+
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AgentChatScreen(
+                          navigatorKey: navigatorKey,
+                          customerName: name,
+                          customerEmail: email,
+                          agentEmail: widget.agentEmail,
+                          agentName: widget.agentName,
+                          isAccountDeleted: isAccountDeleted,
+                        ),
+                      ),
+                    );
+
+                    if (result == true) {
+                      await _fetchAssignedCustomers();
+                    }
+                  },
+                ),
+                if (notificationCount > 0)
+                  Positioned(
+                    right: 10,
+                    top: 10,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        notificationCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
-                );
-                if (result == true) {
-                  await _fetchAssignedCustomers();
-                }
-              },
+              ],
             ),
           );
         },

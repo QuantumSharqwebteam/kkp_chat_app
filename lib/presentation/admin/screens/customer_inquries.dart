@@ -1,14 +1,21 @@
-import 'dart:math';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:open_file/open_file.dart';
 
 class CustomerInquiriesPage extends StatefulWidget {
   const CustomerInquiriesPage({super.key});
@@ -23,19 +30,20 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   final _chatRepository = ChatRepository();
 
   bool showFilters = false;
-  String selectedAgent = 'All Agents';
+  // String selectedAgent = 'All Agents';
   String selectedDateRange = 'Last 30 days';
-  String selectedQuality = "Quality";
+  String selectedStatus = "All";
   bool isFetchingMore = false;
+  bool isDownloading = false;
 
-  List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
+  // List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
   List<String> dateRanges = [
     'Today',
     'Last Week',
     'Last Month',
     'Last 30 days'
   ];
-  List<String> qualities = ["Quality", "Standard", "Premium"];
+  List<String> status = ["All", "Confirmed", "Processed", "Declined"];
 
   List<FormDataModel> allInquiries = [];
   List<FormDataModel> filteredInquiries = [];
@@ -105,16 +113,33 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     }
   }
 
+  String _getFormattedDate(String rawDate) {
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) return '';
+    return DateFormat('MMMM d, yyyy').format(parsed); // e.g., "May 21, 2025"
+  }
+
+  String _getFormattedTime(String rawDate) {
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) return '';
+    return DateFormat('h:mm a').format(parsed); // e.g., "3:45 PM"
+  }
+
   void _applyFilters() {
     String search = _searchController.text.toLowerCase();
     final now = DateTime.now();
 
     filteredInquiries = allInquiries.where((item) {
-      final matchAgent =
-          selectedAgent == 'All Agents' || item.agentName == selectedAgent;
+      final matchQuality =
+          selectedStatus == 'All' || item.status.contains(selectedStatus);
 
-      final matchQuality = selectedQuality == 'Quality' ||
-          item.quality.contains(selectedQuality);
+      final dateTime = DateTime.tryParse(item.date);
+      final formattedDate = dateTime != null
+          ? DateFormat('MMMM d, yyyy').format(dateTime).toLowerCase()
+          : '';
+      final formattedTime = dateTime != null
+          ? DateFormat('h:mm a').format(dateTime).toLowerCase()
+          : '';
 
       final matchSearch = item.customerName.toLowerCase().contains(search) ||
           item.agentName.toLowerCase().contains(search) ||
@@ -123,32 +148,46 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           item.composition.toLowerCase().contains(search) ||
           item.rate.toLowerCase().contains(search) ||
           item.quantity.toLowerCase().contains(search) ||
-          item.status.toLowerCase().contains(search);
+          item.status.toLowerCase().contains(search) ||
+          formattedDate.contains(search) || // 🔍 Match formatted date
+          formattedTime.contains(search); // 🔍 Match formatted time
 
       bool matchDate = true;
-      final date = item.parsedDate;
-
-      switch (selectedDateRange) {
-        case 'Today':
-          matchDate = date?.day == now.day &&
-              date?.month == now.month &&
-              date?.year == now.year;
-          break;
-        case 'Last Week':
-          matchDate = date!.isAfter(now.subtract(const Duration(days: 7)));
-          break;
-        case 'Last Month':
-          matchDate = date!.isAfter(DateTime(now.year, now.month - 1, now.day));
-          break;
-        case 'Last 30 days':
-          matchDate = date!.isAfter(now.subtract(const Duration(days: 30)));
-          break;
+      if (dateTime != null) {
+        switch (selectedDateRange) {
+          case 'Today':
+            matchDate = dateTime.day == now.day &&
+                dateTime.month == now.month &&
+                dateTime.year == now.year;
+            break;
+          case 'Last Week':
+            matchDate = dateTime.isAfter(now.subtract(const Duration(days: 7)));
+            break;
+          case 'Last Month':
+            matchDate =
+                dateTime.isAfter(DateTime(now.year, now.month - 1, now.day));
+            break;
+          case 'Last 30 days':
+            matchDate =
+                dateTime.isAfter(now.subtract(const Duration(days: 30)));
+            break;
+        }
       }
 
-      return matchAgent && matchQuality && matchSearch && matchDate;
+      return matchQuality && matchSearch && matchDate;
     }).toList();
 
-    visibleItemCount = min(itemsPerPage, filteredInquiries.length);
+    // Sort by date and time
+    filteredInquiries.sort((a, b) {
+      final dateA = DateTime.tryParse(a.date);
+      final dateB = DateTime.tryParse(b.date);
+      if (dateA == null || dateB == null) return 0;
+      return dateB.compareTo(dateA); // Newest first
+    });
+
+    visibleItemCount = filteredInquiries.length > itemsPerPage
+        ? itemsPerPage
+        : filteredInquiries.length;
     setState(() {});
   }
 
@@ -164,8 +203,83 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     });
   }
 
+  Future<void> downloadAsExcel(List<FormDataModel> inquiries) async {
+    setState(() {
+      isDownloading = true;
+    });
+
+    try {
+      final excel = Excel.createExcel();
+      final sheet = excel['Sheet1'];
+
+      sheet.appendRow([
+        TextCellValue('Date'),
+        TextCellValue('Quality'),
+        TextCellValue('Weave'),
+        TextCellValue('Quantity'),
+        TextCellValue('Composition'),
+        TextCellValue('Rate'),
+        TextCellValue('Agent Name'),
+        TextCellValue('Customer Name'),
+        TextCellValue('Status'),
+        TextCellValue('ID'),
+        TextCellValue('Time'),
+      ]);
+
+      for (var inquiry in inquiries) {
+        sheet.appendRow([
+          TextCellValue(_getFormattedDate(inquiry.date)),
+          TextCellValue(inquiry.quality),
+          TextCellValue(inquiry.weave),
+          TextCellValue(inquiry.quantity),
+          TextCellValue(inquiry.composition),
+          TextCellValue(inquiry.rate),
+          TextCellValue(inquiry.agentName),
+          TextCellValue(inquiry.customerName),
+          TextCellValue(inquiry.status),
+          TextCellValue(inquiry.id),
+          TextCellValue(_getFormattedTime(inquiry.date)),
+        ]);
+      }
+
+      final bytes = excel.save();
+      final formattedDate =
+          DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
+      await file.writeAsBytes(bytes!);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File generated: ${file.path}')),
+        );
+      }
+
+      final result = await OpenFile.open(file.path);
+      if (result.type != ResultType.done) {
+        debugPrint("⚠️ Could not open Excel file: ${result.message}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open the file')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Excel generation error: $e');
+      // if (mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     const SnackBar(content: Text('Failed to generate Excel file')),
+      //   );
+      // }
+    } finally {
+      setState(() => isDownloading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasInquiries = allInquiries.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -174,6 +288,39 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: hasInquiries
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GestureDetector(
+                    onTap: isDownloading
+                        ? null
+                        : () async {
+                            await downloadAsExcel(filteredInquiries);
+                          },
+                    child: isDownloading
+                        ? const SizedBox(
+                            width: 35,
+                            height: 35,
+                            child: Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
+                          )
+                        : Container(
+                            width: 35,
+                            height: 35,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  width: 1, color: AppColors.greyB2BACD),
+                            ),
+                            child: const Icon(Icons.download),
+                          ),
+                  ),
+                ),
+              ]
+            : [],
       ),
       body: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -181,9 +328,40 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
-                  _buildSearchRow(),
-                  const SizedBox(height: 20),
-                  //  if (showFilters) _buildFilters(),
+                  if (hasInquiries)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomSearchBar(
+                            enable: true,
+                            controller: _searchController,
+                            hintText: "Search by anything...",
+                            onChanged: (value) => _applyFilters(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: toggleShowFilters,
+                          child: Container(
+                            width: 50,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  width: 1, color: AppColors.greyB2BACD),
+                            ),
+                            child: CustomImage(
+                              imagePath: ImageConstants.filterIcon,
+                              height: 25,
+                              width: 25,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (hasInquiries) const SizedBox(height: 20),
+                  if (showFilters && hasInquiries) _buildFilters(),
                   Expanded(child: _buildInquiryList()),
                 ],
               ),
@@ -191,79 +369,49 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     );
   }
 
-  Widget _buildSearchRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: CustomSearchBar(
-            enable: true,
-            controller: _searchController,
-            hintText: "Search by anything...",
-            onChanged: (value) => _applyFilters(),
-          ),
-        ),
-        const SizedBox(width: 10),
-        GestureDetector(
-          onTap: toggleShowFilters,
-          child: Container(
-            width: 50,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(width: 1, color: AppColors.greyB2BACD),
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            // CustomDropDown(
+            //   value: selectedAgent,
+            //   items: agents,
+            //   onChanged: (value) {
+            //     setState(() => selectedAgent = value!);
+            //     _applyFilters();
+            //   },
+            // ),
+            // const SizedBox(width: 10),
+            CustomDropDown(
+              value: selectedDateRange,
+              items: dateRanges,
+              onChanged: (value) {
+                setState(() => selectedDateRange = value!);
+                _applyFilters();
+              },
             ),
-            child: CustomImage(
-              imagePath: ImageConstants.filterIcon,
-              height: 25,
-              width: 25,
+            const SizedBox(width: 10),
+            CustomDropDown(
+              value: selectedStatus,
+              items: status,
+              onChanged: (value) {
+                setState(() => selectedStatus = value!);
+                _applyFilters();
+              },
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  // Widget _buildFilters() {
-  //   return SingleChildScrollView(
-  //     scrollDirection: Axis.horizontal,
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.start,
-  //       children: [
-  //         // CustomDropDown(
-  //         //   value: selectedAgent,
-  //         //   items: agents,
-  //         //   onChanged: (value) {
-  //         //     setState(() => selectedAgent = value!);
-  //         //     _applyFilters();
-  //         //   },
-  //         // ),
-  //         // const SizedBox(width: 10),
-  //         CustomDropDown(
-  //           value: selectedDateRange,
-  //           items: dateRanges,
-  //           onChanged: (value) {
-  //             setState(() => selectedDateRange = value!);
-  //             _applyFilters();
-  //           },
-  //         ),
-  //         const SizedBox(width: 10),
-  //         CustomDropDown(
-  //           value: selectedQuality,
-  //           items: qualities,
-  //           onChanged: (value) {
-  //             setState(() => selectedQuality = value!);
-  //             _applyFilters();
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _buildInquiryList() {
     if (filteredInquiries.isEmpty) {
-      return const Center(child: Text("No related inquiries found."));
+      return Center(child: EmptyInquriesWidget());
     }
 
     final visibleItems = filteredInquiries.take(visibleItemCount).toList();
@@ -322,8 +470,10 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(inquiry.dateOnly, style: AppTextStyles.black12_400),
-                    Text(inquiry.timeOnly, style: AppTextStyles.black12_400),
+                    Text(_getFormattedDate(inquiry.date),
+                        style: AppTextStyles.black12_400),
+                    Text(_getFormattedTime(inquiry.date),
+                        style: AppTextStyles.black12_400),
                     Text(
                       inquiry.status,
                       style: AppTextStyles.black12_400.copyWith(

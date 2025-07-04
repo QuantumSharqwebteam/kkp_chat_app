@@ -7,21 +7,31 @@ import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
+import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
+import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
+import 'package:kkpchatapp/logic/agent/notification_provider.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
 import 'package:kkpchatapp/logic/auth/new_pass_provider.dart';
 import 'package:kkpchatapp/logic/auth/signup_provider.dart';
 import 'package:kkpchatapp/logic/auth/verification_provider.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:kkpchatapp/provider/call_timer_provider.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 
 // Global flag to indicate if the app is initialized
 bool isAppInitialized = false;
 
+@pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Check if the app is initialized
@@ -59,6 +69,7 @@ void main() async {
     Hive.openBox('CREDENTIALS'),
     Hive.openBox("lastSeenTimeBox"),
     Hive.openBox('feedBox'),
+    Hive.openBox("lastMessageMap"),
     dotenv.load(fileName: "keys.env"),
   ]);
 
@@ -104,11 +115,28 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => CallTimerProvider()),
         ChangeNotifierProvider(create: (context) => LoginProvider()),
         ChangeNotifierProvider(create: (_) => SignupProvider()),
         ChangeNotifierProvider(create: (_) => VerificationProvider()),
         ChangeNotifierProvider(create: (_) => ForgotPassProvider()),
         ChangeNotifierProvider(create: (_) => NewPassProvider()),
+        ChangeNotifierProvider(create: (_) => AgentHomeScreenProvider()),
+        ChangeNotifierProvider(create: (_) => ChatRefreshProvider()),
+        ChangeNotifierProvider(
+            create: (_) => CallProvider(widget.navigatorKey)),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider()..fetchNotifications(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              MarketingProductProvider(ProductRepository())..fetchProducts(),
+        ),
+        ChangeNotifierProvider(
+            create: (_) =>
+                CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
+                  ..fetchPosters()
+                  ..fetchProducts()),
       ],
       child: MaterialApp(
         navigatorKey: widget.navigatorKey,

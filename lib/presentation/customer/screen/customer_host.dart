@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:hive/hive.dart';
+import 'package:kkpchatapp/core/services/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -11,7 +12,8 @@ import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
@@ -20,6 +22,7 @@ import 'package:kkpchatapp/presentation/customer/screen/customer_profile_page.da
 import 'package:kkpchatapp/presentation/customer/screen/settings/customer_settings_page.dart';
 import 'package:kkpchatapp/presentation/customer/widget/customer_nav_bar.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:provider/provider.dart';
 
 class CustomerHost extends StatefulWidget {
   const CustomerHost({super.key, required this.navigatorKey});
@@ -39,6 +42,7 @@ class _CustomerHostState extends State<CustomerHost> {
   Profile? profile;
 
   OverlayEntry? _activeCallOverlay;
+  AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
@@ -128,7 +132,18 @@ class _CustomerHostState extends State<CustomerHost> {
 
   Future<void> _loadCurrentUserData() async {
     try {
-      profile = await auth.getUserInfo();
+      final Map<String, dynamic> userData = await auth.getUserInfo();
+      if (userData['message'] ==
+          "Session expired due to login on another device") {
+        Hive.deleteFromDisk();
+        if (mounted) {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (context) {
+            return LoginPage();
+          }));
+        }
+      }
+      profile = Profile.fromJson(userData['message']);
       if (profile != null) {
         await LocalDbHelper.saveProfile(profile!);
       } else {
@@ -171,13 +186,22 @@ class _CustomerHostState extends State<CustomerHost> {
 
     late OverlayEntry overlayEntry;
     Timer? timeoutTimer;
-    final audioPlayer = AudioPlayer();
+    _audioPlayer?.stop();
+    _audioPlayer = AudioPlayer();
 
     Future<void> stopAndRemoveOverlay() async {
-      await audioPlayer.stop();
+      try {
+        debugPrint("🛑 Stopping ringtone...");
+        await _audioPlayer?.stop();
+        debugPrint("✅ Ringtone stopped");
+      } catch (e) {
+        debugPrint("⚠️ Failed to stop ringtone: $e");
+      }
+
       timeoutTimer?.cancel();
       overlayEntry.remove();
       _activeCallOverlay = null;
+      _audioPlayer = null; // ✅ ADDED: cleanup reference
     }
 
     overlayEntry = OverlayEntry(
@@ -190,27 +214,39 @@ class _CustomerHostState extends State<CustomerHost> {
           onAnswer: () async {
             await stopAndRemoveOverlay();
             if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AgoraAudioCallScreen(
-                    isCaller: false,
-                    channelName: channelName,
-                    uid: uid,
-                    remoteUserId: callerId,
-                    remoteUserName: callerName,
-                    messageId: incomingCallId,
-                  ),
-                ),
-              );
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (_) => AgoraAudioCallScreen(
+              //         // isCaller: false,
+              //         // channelName: channelName,
+              //         // uid: uid,
+              //         // remoteUserId: callerId,
+              //         // remoteUserName: callerName,
+              //         // callId: incomingCallId,
+              //         // navigatorKey: navigatorKey,
+              //         ),
+              //   ),
+              // );
+              context.read<CallProvider>().startNewCall(
+                  channelName: channelName,
+                  remoteUserName: callerName,
+                  uid: uid,
+                  callId: incomingCallId,
+                  isCaller: false);
             }
           },
           onReject: () async {
             await stopAndRemoveOverlay();
-            await chatRepository.updateCallData(incomingCallId, "missed");
+            await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
+            _socketService.terminateCall(
+              targetId: callerId,
+              callId: incomingCallId,
+              channelName: channelName,
+            );
           },
-          audioPlayer: audioPlayer,
+          audioPlayer: _audioPlayer!,
         ),
       ),
     );
@@ -241,21 +277,46 @@ class _CustomerHostState extends State<CustomerHost> {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
+    return Consumer<CallProvider>(
+      builder: (context, callProvider, child) {
+        if (callProvider.callDetailsMessage != null) {
+          // Handle the call details message, e.g., save it to the chat storage
+          // and then reset the callDetailsMessage in the provider.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // _handleCallDetailsMessage(callProvider.callDetailsMessage!);
+            // callProvider.setCallDetailsMessage(null);
+          });
+        }
+        Widget content = GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Scaffold(
+            body: Stack(
+              children: [
+                IndexedStack(
+                  index: _selectedIndex,
+                  children: _screens,
+                ),
+                // if (callProvider.isOutgoingCallVisible)
+                //   OutgoingCallUI(
+                //     onTap: () {
+                //       callProvider.navigatorKey.currentState?.push(
+                //         MaterialPageRoute(
+                //             builder: (_) => const AgoraAudioCallScreen()),
+                //       );
+                //     },
+                //   ),
+              ],
+            ),
+            bottomNavigationBar: CustomerNavBar(
+              selectedIndex: _selectedIndex,
+              onTabSelected: _onTabSelected,
+            ),
+          ),
+        );
+        return BackPressHandler(child: content);
       },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
-        bottomNavigationBar: CustomerNavBar(
-          selectedIndex: _selectedIndex,
-          onTabSelected: _onTabSelected,
-        ),
-      ),
     );
-    return BackPressHandler(child: content);
   }
 }

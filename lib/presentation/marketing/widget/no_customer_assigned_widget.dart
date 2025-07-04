@@ -8,29 +8,31 @@ class NoCustomerAssignedWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Center(
-          child: Stack(
-            children: [
-              CustomImage(
-                imagePath: ImageConstants.noCustomerAssigned,
-                height: 400,
-                width: 300,
-              ),
-              Positioned(
-                top: 300,
-                left: 70,
-                child: Text(
-                  "No Customer Assigned !!",
-                  style: AppTextStyles.grey12_600,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Center(
+            child: Stack(
+              children: [
+                CustomImage(
+                  imagePath: ImageConstants.noCustomerAssigned,
+                  height: 400,
+                  width: 300,
                 ),
-              )
-            ],
+                Positioned(
+                  top: 300,
+                  left: 70,
+                  child: Text(
+                    "No Customer Assigned !!",
+                    style: AppTextStyles.grey12_600,
+                  ),
+                )
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -1,22 +1,28 @@
 class ChatMessageModel {
-  String message;
-  String sender;
+  String? message;
+  String? sender;
   DateTime timestamp;
   String? type;
   String? mediaUrl;
   Map<String, dynamic>? form;
   String? callStatus;
   String? callDuration;
+  String? callId;
+  String? messageId;
+  bool isDeleted;
 
   ChatMessageModel({
-    required this.message,
-    required this.sender,
+    this.message,
+    this.sender,
     required this.timestamp,
     this.type,
     this.mediaUrl,
     this.form,
     this.callStatus,
     this.callDuration,
+    this.callId,
+    this.messageId,
+    this.isDeleted = false,
   });
 
   // Convert a ChatMessage object into a Map
@@ -24,12 +30,15 @@ class ChatMessageModel {
     return {
       'message': message,
       'sender': sender,
-      'timestamp': timestamp.toIso8601String(),
+      'timestamp': timestamp.toIso8601String(), // Ensure ISO 8601 format
       'type': type,
       'mediaUrl': mediaUrl,
       'form': form,
       'callStatus': callStatus,
       'callDuration': callDuration,
+      'callId': callId,
+      'messageId': messageId,
+      'isDeleted': isDeleted,
     };
   }
 
@@ -38,12 +47,22 @@ class ChatMessageModel {
     return ChatMessageModel(
       message: map['message'],
       sender: map['sender'],
-      timestamp: DateTime.parse(map['timestamp']),
+      timestamp: DateTime.parse(map['timestamp']), // Parse from ISO 8601 format
       type: map['type'],
       mediaUrl: map['mediaUrl'],
       form: map['form'] != null ? Map<String, dynamic>.from(map['form']) : null,
       callStatus: map['callStatus'],
       callDuration: map['callDuration'],
+      callId: map['callId'],
+      messageId: map['messageId'],
+      isDeleted: map['isDeleted'],
     );
+  }
+
+  @override
+  String toString() {
+    return 'ChatMessageModel(message: $message, sender: $sender, timestamp: $timestamp, '
+        'type: $type, mediaUrl: $mediaUrl, form: $form, callStatus: $callStatus, '
+        'callDuration: $callDuration,callId :$callId), messageId: $messageId,isDeleted:$isDeleted ';
   }
 }

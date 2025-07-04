@@ -1,0 +1,1 @@
+C:\flutter_windows_3.19.6-stable\kkp_chat_app\build\app\intermediates\cxx\RelWithDebInfo\4l17166n\obj\x86

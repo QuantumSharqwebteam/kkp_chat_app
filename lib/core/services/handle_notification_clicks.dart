@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/common/chat/incoming_call_screen.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 
@@ -11,7 +10,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart'
 Future<void> handleNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
-  final customerEmail = LocalDbHelper.getProfile()?.email;
+//  final customerEmail = LocalDbHelper.getProfile()?.email;
 
   navigatorKey.currentState?.push(
     MaterialPageRoute(
@@ -34,20 +33,20 @@ Future<void> handlePushNotificationClickForCustomer(
   // Function to trigger navigation
   void triggerNavigation() {
     final customerEmail = LocalDbHelper.getProfile()?.email;
-    ChatStorageService chatStorageService = ChatStorageService();
-    final Map<String, dynamic> notiData = notificationData;
-    final targetId = notificationData['targetId'];
+    // ChatStorageService chatStorageService = ChatStorageService();
+    // final Map<String, dynamic> notiData = notificationData;
+    // final targetId = notificationData['targetId'];
 
-    ChatMessageModel pushMessage = ChatMessageModel(
-      message: notiData['message'],
-      sender: notiData['senderId'],
-      timestamp: DateTime.now(),
-      form: notiData['form'] ?? {},
-      mediaUrl: notiData['mediaUrl'] ?? "",
-      type: notiData['type'] ?? "",
-    );
+    // ChatMessageModel pushMessage = ChatMessageModel(
+    //   message: notiData['message'],
+    //   sender: notiData['senderId'],
+    //   timestamp: DateTime.now(),
+    //   form: notiData['form'] ?? {},
+    //   mediaUrl: notiData['mediaUrl'] ?? "",
+    //   type: notiData['type'] ?? "",
+    // );
 
-    chatStorageService.saveMessage(pushMessage, targetId);
+    //chatStorageService.saveMessage(pushMessage, targetId);
 
     Navigator.push(
       navigatorKey.currentContext!,
@@ -116,26 +115,27 @@ Future<void> handlePushNotificationClickForAgent(
 
   // Function to trigger navigation
   void triggerNavigation() {
-    ChatStorageService chatStorageService = ChatStorageService();
-    final Map<String, dynamic> notiData = notificationData;
+    // ChatStorageService chatStorageService = ChatStorageService();
+    // final Map<String, dynamic> notiData = notificationData;
     // final boxName =
     //     LocalDbHelper.getProfile()!.email! + notificationData['senderId'];
-    final boxName = notificationData['targetId'] + notificationData['senderId'];
+    // final boxName = notificationData['targetId'] + notificationData['senderId'];
 
-    ChatMessageModel pushMessage = ChatMessageModel(
-      message: notiData['message'],
-      sender: notiData['senderId'],
-      timestamp: DateTime.now(),
-      form: notiData['form'] ?? {},
-      mediaUrl: notiData['mediaUrl'] ?? "",
-      type: notiData['type'] ?? "",
-    );
+    // ChatMessageModel pushMessage = ChatMessageModel(
+    //   message: notiData['message'],
+    //   sender: notiData['senderId'],
+    //   timestamp: DateTime.now(),
+    //   form: notiData['form'] ?? {},
+    //   mediaUrl: notiData['mediaUrl'] ?? "",
+    //   type: notiData['type'] ?? "",
+    // );
 
-    chatStorageService.saveMessage(pushMessage, boxName);
+    // chatStorageService.saveMessage(pushMessage, boxName);
 
     final customerEmail = notificationData['senderId'];
     final customerName = notificationData['senderName'];
     final agentEmail = notificationData['targetId'];
+    final agentName = notificationData['targetName'];
     Navigator.push(
       navigatorKey.currentContext!,
       MaterialPageRoute(
@@ -143,7 +143,8 @@ Future<void> handlePushNotificationClickForAgent(
           customerName: customerName,
           customerEmail: customerEmail,
           agentEmail: agentEmail,
-          agentName: LocalDbHelper.getProfile()?.name,
+          agentName: agentName,
+          // agentName: LocalDbHelper.getProfile()?.name,
           navigatorKey: navigatorKey,
         ),
       ),
@@ -155,6 +156,62 @@ Future<void> handlePushNotificationClickForAgent(
     if (isInitialized) {
       timer?.cancel(); // Cancel the timer if the variable becomes true
       triggerNavigation();
+    }
+  });
+
+  // Start a timer to observe the variable for 20 seconds
+  timer = Timer(Duration(seconds: 20), () {
+    if (!controller.isClosed) {
+      controller.close(); // Close the stream if the timer completes
+      debugPrint("Timeout reached. App is not initialized.");
+    }
+  });
+
+  // Simulate checking the variable (replace this with actual logic)
+  Future.doWhile(() async {
+    if (isAppInitialized) {
+      controller.add(true);
+      return false; // Exit the loop if the variable is true
+    }
+    await Future.delayed(Duration(milliseconds: 100)); // Check every 100ms
+    return true;
+  });
+}
+
+/// Handles incoming call notification.
+/// Handles incoming call notification.
+Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> callData) async {
+  final StreamController<bool> controller = StreamController<bool>();
+  Timer? timer;
+
+  // Function to trigger the incoming call screen
+  void triggerIncomingCall() {
+    final channelName = callData['channelName'];
+    final remoteUserName = callData['remoteUserName'];
+    final remoteUserId = callData['remoteUserId'];
+    final notificationId = callData['notificationId'];
+    final callId = callData["callId"];
+
+    Navigator.push(
+      navigatorKey.currentContext!,
+      MaterialPageRoute(
+        builder: (_) => IncomingCallScreen(
+          callerName: remoteUserName,
+          remoteUserId: remoteUserId,
+          channelName: channelName,
+          notificationId: notificationId,
+          callId: callId,
+        ),
+      ),
+    );
+  }
+
+  // Listen for changes to isAppInitialized
+  controller.stream.listen((isInitialized) {
+    if (isInitialized) {
+      timer?.cancel(); // Cancel the timer if the variable becomes true
+      triggerIncomingCall();
     }
   });
 

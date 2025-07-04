@@ -13,6 +13,8 @@ class FeedListCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onPinTap;
   final bool enableLongPress;
+  final int unreadCount;
+  final bool isAccountDeleted;
 
   const FeedListCard({
     super.key,
@@ -24,6 +26,8 @@ class FeedListCard extends StatelessWidget {
     required this.onTap,
     this.onPinTap,
     this.enableLongPress = true,
+    this.unreadCount = 0,
+    this.isAccountDeleted = false,
   });
 
   String _getCurrentTime() {
@@ -47,9 +51,21 @@ class FeedListCard extends StatelessWidget {
           image: name,
           isActive: isActive ?? true,
         ),
-        title: Text(
-          name,
-          style: AppTextStyles.black14_600,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: AppTextStyles.black14_600,
+            ),
+            const SizedBox(width: 6),
+            if (isAccountDeleted)
+              Icon(
+                Icons.no_accounts_outlined,
+                color: AppColors.helperOrange,
+                size: 20,
+              )
+          ],
         ),
         subtitle:
             Text(message ?? "Last Message", style: AppTextStyles.grey12_600),
@@ -60,12 +76,16 @@ class FeedListCard extends StatelessWidget {
                 children: [
                   Text(time ?? _getCurrentTime(),
                       style: AppTextStyles.black10_600),
-                  CircleAvatar(
-                    radius: 4,
-                    backgroundColor: isActive!
-                        ? AppColors.activeGreen
-                        : AppColors.inActiveRed,
-                  ),
+                  unreadCount > 0
+                      ? CircleAvatar(
+                          radius: 10,
+                          backgroundColor: AppColors.activeGreen,
+                          child: Text(
+                            "2",
+                            style: AppTextStyles.black12_400,
+                          ),
+                        )
+                      : SizedBox.shrink(),
                 ],
               ),
       ),

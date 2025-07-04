@@ -1,0 +1,5 @@
+
+module file_saver.Swift {
+  header "file_saver-Swift.h"
+  requires objc
+}

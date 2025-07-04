@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/network/auth_api.dart';
 import 'package:kkpchatapp/core/services/chat_service.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 
 class TransferAgentScreen extends StatefulWidget {
   final String customerEmailId;
@@ -15,27 +15,50 @@ class TransferAgentScreen extends StatefulWidget {
 
 class _TransferAgentScreenState extends State<TransferAgentScreen> {
   List<Agent> _agentsList = [];
+  List<String> _assignedAgentEmails = [];
   bool _isLoading = true;
-  final AuthApi _auth = AuthApi();
+  final _repo = AuthRepository();
   final _chatService = ChatService();
 
   @override
   void initState() {
     super.initState();
-    _fetchAgents();
+    _fetchAssignedAgentList();
   }
 
   Future<void> _fetchAgents() async {
     try {
-      List<Agent> agents = await _auth.getAgent();
+      List<Agent> agents = await _repo.getAgent();
+      // Filter agents to include only those in the assigned list
+      List<Agent> filteredAgents = agents
+          .where((agent) => _assignedAgentEmails.contains(agent.email))
+          .toList();
+
       if (mounted) {
         setState(() {
-          _agentsList = agents;
+          _agentsList = filteredAgents;
           _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint("Error fetching agents: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchAssignedAgentList() async {
+    try {
+      List<String> assignedAgents = await _repo.fetchAssignedAgentList();
+      setState(() {
+        _assignedAgentEmails = assignedAgents;
+      });
+      _fetchAgents(); // Fetch agents after getting the assigned list
+    } catch (e) {
+      debugPrint("Error fetching assigned agent list: $e");
       if (mounted) {
         setState(() {
           _isLoading = false;

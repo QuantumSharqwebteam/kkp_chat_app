@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
@@ -45,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
           ],
         ),
         body: Center(
-          heightFactor: 1.2,
+          heightFactor: 1.5,
           child: SizedBox(
             width: Utils().width(context) * 0.8,
             child: SingleChildScrollView(
@@ -59,25 +58,25 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   SizedBox(height: 30),
-                  CustomButton(
-                    text: 'Signup with Google',
-                    fontSize: 14,
-                    height: 45,
-                    image: SvgPicture.asset('assets/icons/google.svg'),
-                    onPressed: () {},
-                    textColor: Colors.black,
-                    backgroundColor: Colors.white,
-                    borderRadius: 10,
-                    elevation: 0,
-                    borderColor: Colors.grey.shade300,
-                    borderWidth: 1,
-                  ),
-                  SizedBox(height: 15),
-                  Text(
-                    'OR',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(height: 15),
+                  // CustomButton(
+                  //   text: 'Signup with Google',
+                  //   fontSize: 14,
+                  //   height: 45,
+                  //   image: SvgPicture.asset('assets/icons/google.svg'),
+                  //   onPressed: () {},
+                  //   textColor: Colors.black,
+                  //   backgroundColor: Colors.white,
+                  //   borderRadius: 10,
+                  //   elevation: 0,
+                  //   borderColor: Colors.grey.shade300,
+                  //   borderWidth: 1,
+                  // ),
+                  // SizedBox(height: 15),
+                  // Text(
+                  //   'OR',
+                  //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  // ),
+                  // SizedBox(height: 15),
                   // Email textField
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

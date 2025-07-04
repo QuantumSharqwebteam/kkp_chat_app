@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -10,26 +14,37 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
-import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/form_overlay.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/form_update_alert_dialog.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_bottom_sheet.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class CustomerChatScreen extends StatefulWidget {
@@ -59,42 +74,111 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final rateController = TextEditingController();
-  final qualityController = TextEditingController();
-  final quantityController = TextEditingController();
-  final weaveController = TextEditingController();
-  final compositionController = TextEditingController();
-  final sNoController = TextEditingController();
   final ChatStorageService _chatStorageService = ChatStorageService();
   final ChatRepository _chatRepository = ChatRepository();
   bool isFormUpdating = false;
+  bool _isLoading = true;
+  final _productRepository = ProductRepository();
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
   int _recordedSeconds = 0;
   Timer? _timer;
   String? userRole;
-  bool _isFetching = false;
+  final bool _isFetching = false;
   bool _isLoadingMore = false;
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
   final Set<String> _loadedMessageIds = {};
+  final Set<String> _loadedCallIds = {};
+  Timer? _dateHeaderTimer;
+  bool _showDateHeader = false;
+
+  final ValueNotifier<String?> _currentTopDate = ValueNotifier(null);
+
+  final Map<Key, GlobalKey> _messageKeys = {};
 
   Future<void> _loadPreviousMessages() async {
+    setState(() {
+      _isLoading = true; // Set loading to true when starting to load messages
+    });
+
     final boxName = widget.customerEmail!;
     bool boxExists = await Hive.boxExists(boxName);
 
-    if (!boxExists) {
-      // Fetch messages from API
-      await _fetchMessagesFromAPI(boxName);
-    } else {
+    // Fetch the latest 20 messages from the API
+    final List<MessageModel> fetchedMessages =
+        await _chatRepository.fetchCustomerMessages(
+      customerEmail: widget.customerEmail!,
+      limit: 20,
+    );
+
+    // Convert MessageModel to ChatMessageModel
+    final chatMessages = fetchedMessages.map((messageJson) {
+      return ChatMessageModel(
+        message: messageJson.message ?? '',
+        timestamp: DateTime.parse(
+            messageJson.timestamp ?? DateTime.now().toIso8601String()),
+        sender: messageJson.senderId!,
+        type: messageJson.type,
+        mediaUrl: messageJson.mediaUrl,
+        form: messageJson.form != null && messageJson.form!.isNotEmpty
+            ? Map<String, dynamic>.from(messageJson.form![0])
+            : null,
+        callDuration: messageJson.callDuration,
+        callStatus: messageJson.callStatus,
+        callId: messageJson.callId,
+        messageId: messageJson.messageId,
+        isDeleted: messageJson.isDeleted ?? false,
+      );
+    }).toList();
+
+    if (boxExists) {
       // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getCustomerMessages(boxName);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
 
-      messages = newLoadedMessages;
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      // Replace local messages with fetched messages where the fetched message has an empty string
+      final messagesToReplace = chatMessages
+          .where((fetchedMessage) => fetchedMessage.message == "")
+          .toList();
+
+      for (var fetchedMessage in messagesToReplace) {
+        final index = newLoadedMessages.indexWhere((localMessage) =>
+            localMessage.messageId == fetchedMessage.messageId);
+        if (index != -1) {
+          newLoadedMessages[index] = fetchedMessage;
+        }
+      }
+
+      // Add any new messages that are not already in the local storage
+      final uniqueFetchedMessages = _removeDuplicates(chatMessages);
+      final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
+        return !newLoadedMessages.any((loadedMessage) {
+          if (fetchedMessage.type == 'call' && loadedMessage.type == 'call') {
+            return loadedMessage.callId == fetchedMessage.callId;
+          }
+          return loadedMessage.messageId == fetchedMessage.messageId;
+        });
+      }).toList();
+
+      // Add the messages that are not in the Hive database to the list of messages
+      newLoadedMessages.addAll(messagesToAdd);
+
+      setState(() {
+        messages = newLoadedMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false; // Set loading to false after messages are loaded
+      });
+    } else {
+      // Save the fetched messages to the Hive database
+      await _chatStorageService.saveMessages(chatMessages, boxName);
+
+      setState(() {
+        messages = chatMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false; // Set loading to false after messages are loaded
+      });
     }
 
     // Scroll to bottom after loading messages
@@ -134,6 +218,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           form: messageJson.form != null && messageJson.form!.isNotEmpty
               ? Map<String, dynamic>.from(messageJson.form![0])
               : null,
+          callDuration: messageJson.callDuration,
+          callStatus: messageJson.callStatus,
+          callId: messageJson.callId,
+          messageId: messageJson.messageId,
+          isDeleted: messageJson.isDeleted ?? false,
         );
       }).toList();
 
@@ -153,26 +242,103 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
-    return messages.where((message) {
-      final messageId =
-          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-      if (_loadedMessageIds.contains(messageId)) {
-        return false;
+  List<ChatMessageModel> _removeDuplicates(
+      List<ChatMessageModel> messagesList) {
+    return messagesList.where((message) {
+      if (message.type == 'call') {
+        // Use callId for call messages
+        if (message.callId == null || _loadedCallIds.contains(message.callId)) {
+          return false;
+        } else {
+          _loadedCallIds.add(message.callId!);
+          return true;
+        }
       } else {
-        _loadedMessageIds.add(messageId);
-        return true;
+        // Use messageId for all other messages
+        if (message.messageId == null ||
+            _loadedMessageIds.contains(message.messageId)) {
+          return false;
+        } else {
+          _loadedMessageIds.add(message.messageId!);
+          return true;
+        }
       }
     }).toList();
   }
 
+  void _showFloatingDateHeader() {
+    setState(() {
+      _showDateHeader = true;
+    });
+
+    // Cancel existing timer if user is still scrolling
+    _dateHeaderTimer?.cancel();
+
+    // Start new timer to hide after 1 second
+    _dateHeaderTimer = Timer(Duration(seconds: 1), () {
+      setState(() {
+        _showDateHeader = false;
+      });
+    });
+  }
+
+  void _hideFloatingDateHeader() {
+    // Optionally hide immediately when scrolling down
+    setState(() {
+      _showDateHeader = false;
+    });
+
+    // Cancel the timer to avoid it interfering
+    _dateHeaderTimer?.cancel();
+  }
+
   void _handleScroll() {
-    if (_scrollController.position.atEdge) {
-      if (_scrollController.position.pixels == 0) {
-        // User has scrolled to the top
-        _loadMoreMessages();
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.forward) {
+      _showFloatingDateHeader();
+    }
+
+    // Hide header when scrolling down (optional, but could improve UX)
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse) {
+      _hideFloatingDateHeader();
+    }
+
+    // Check if at the top edge, then load more messages
+    if (_scrollController.position.atEdge &&
+        _scrollController.position.pixels == 0) {
+      _loadMoreMessages();
+    }
+
+    // Find index of first visible message and update date
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      final firstVisibleIndex = _getFirstVisibleIndex();
+      if (firstVisibleIndex != null && firstVisibleIndex < messages.length) {
+        final message = messages[firstVisibleIndex];
+        final newDate = ChatUtils().formatDateHeader(message.timestamp);
+        if (_currentTopDate.value != newDate) {
+          _currentTopDate.value = newDate;
+        }
       }
     }
+  }
+
+  int? _getFirstVisibleIndex() {
+    for (int i = 0; i < messages.length; i++) {
+      final key = ValueKey('chat-msg-$i');
+      final context = _messageKeys[key]?.currentContext;
+      if (context != null) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box != null) {
+          final pos = box.localToGlobal(Offset.zero);
+          if (pos.dy >= 0) {
+            return i;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   void _checkIfAtBottom() {
@@ -223,12 +389,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     super.initState();
     _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
-    _socketService.toggleChatPageOpen(true);
+    _socketService.setChatPageState(
+      isOpen: true,
+      customerId: widget.customerEmail, // This is targetId in incoming message
+    );
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onMessageDeleted(_handleMessageDeleted);
     _loadPreviousMessages();
     _initializeRecorder();
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
+
+    _resetMessageCount();
+  }
+
+  Future<void> _resetMessageCount() async {
+    final boxNameWithCount = '${widget.customerEmail}count';
+    final box = await Hive.openBox<int>(boxNameWithCount);
+    await box.put('count', 0);
   }
 
   @override
@@ -236,15 +414,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
     _scrollController.dispose();
-    qualityController.dispose();
-    quantityController.dispose();
-    sNoController.dispose();
-    compositionController.dispose();
     _recorder.closeRecorder();
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
     _socketService.toggleChatPageOpen(false);
+    _dateHeaderTimer?.cancel();
+
     super.dispose();
   }
 
@@ -252,37 +428,78 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _socketService.toggleChatPageOpen(false);
+      _socketService.setChatPageState(isOpen: false);
     } else if (state == AppLifecycleState.resumed) {
-      _socketService.toggleChatPageOpen(true);
+      _socketService.setChatPageState(
+        isOpen: true,
+        customerId:
+            widget.customerEmail, // This is targetId in incoming message
+      );
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final newValue = bottomInset > 0.0;
+
+    if (newValue) {
+      // Keyboard is opened
+      _scrollToBottom();
     }
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("Received Message: ${data.toString()}");
-    final currentTime = DateTime.now().toIso8601String();
+
+    DateTime timestamp;
+    try {
+      timestamp = DateTime.parse(data["timestamp"]);
+    } catch (_) {
+      timestamp = DateTime.now(); // fallback in case of bad format
+    }
+
     final message = ChatMessageModel(
       message: data["message"],
-      timestamp: DateTime.parse(currentTime),
+      timestamp: timestamp,
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
       form: data["form"],
+      messageId: data['messageId'],
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-    if (!_loadedMessageIds.contains(messageId)) {
+    if (!_loadedMessageIds.contains(message.messageId)) {
       setState(() {
         messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom(); // Scroll to bottom only when a new message is received
+        // messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
       });
 
-      // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(message, widget.customerEmail!);
-      _loadedMessageIds.add(messageId);
+      _loadedMessageIds.add(message.messageId!);
     }
+  }
+
+  void _handleMessageDeleted(String messageId) {
+    if (mounted) {
+      // Check if the widget is currently mounted
+      setState(() {
+        final index =
+            messages.indexWhere((message) => message.messageId == messageId);
+        if (index != -1) {
+          messages[index].isDeleted = true;
+          messages[index].message = "This message is deleted";
+        }
+      });
+    }
+
+    // Save the updated message state to local storage
+
+    final boxName = widget.customerEmail!;
+    _chatStorageService.saveMessage(
+        messages.firstWhere((message) => message.messageId == messageId),
+        boxName);
   }
 
   void _sendMessage({
@@ -293,23 +510,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
-    final currentTime = DateTime.now().toIso8601String();
+    final currentTime = DateTime.now();
+    final messageId = ChatUtils().generateMessageId();
     final message = ChatMessageModel(
       message: messageText,
-      timestamp: DateTime.parse(currentTime),
+      timestamp: currentTime,
       sender: widget.customerEmail!,
       type: type!,
       mediaUrl: mediaUrl,
       form: form,
+      messageId: messageId,
+      isDeleted: false,
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom(); // Scroll to bottom only when a new message is sent
+        // messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _scrollToBottom();
       });
 
       final String? name = LocalDbHelper.getProfile()?.name;
@@ -321,13 +539,62 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         type: type,
         mediaUrl: mediaUrl,
         form: form,
+        timestamp: currentTime.toIso8601String(), // ✅ Send timestamp
+        messageId: messageId,
       );
 
-      // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(message, widget.customerEmail!);
       _loadedMessageIds.add(messageId);
     }
     _chatController.clear();
+  }
+
+  void _showDeleteDialog(BuildContext context, String messageId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Unsend Message"),
+          content: const Text("Are you sure you want to unsend this message?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text("unsend"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _deleteMessage(messageId);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteMessage(String messageId) {
+    _socketService.deleteMessage(messageId, widget.customerEmail!);
+
+    // Update the local message state to reflect deletion
+    setState(() {
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+      }
+    });
+
+    // Save the updated message state to local storage
+
+    final boxName = widget.customerEmail!;
+    _chatStorageService.saveMessage(
+        messages.firstWhere((message) => message.messageId == messageId),
+        boxName);
   }
 
   void _scrollToBottom() {
@@ -371,15 +638,50 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     });
   }
 
-  Future<void> _pickAndSendImage() async {
+  void _addTemporaryMessage(String messageText) {
+    final currentTime = DateTime.now();
+    final temporaryMessage = ChatMessageModel(
+      message: messageText,
+      timestamp: currentTime,
+      sender: "",
+    );
+
+    setState(() {
+      messages.add(temporaryMessage);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    });
+
+    _scrollToBottom();
+  }
+
+  void _sendProductMessage(Product product) {
+    // Convert the product object to a JSON string
+    final productJson = jsonEncode(product.toJson());
+
+    _sendMessage(
+      messageText: productJson,
+      type: 'product',
+    );
+  }
+
+  Future<void> _pickAndSendImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
+      // Add a temporary message
+      _addTemporaryMessage("Sending image...");
+
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
+        // Remove the temporary message
+        setState(() {
+          messages
+              .removeWhere((message) => message.message == "Sending image...");
+        });
+
+        // Send the actual message
         _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
@@ -392,14 +694,40 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
 
     if (result != null) {
+      // Add a temporary message
+      _addTemporaryMessage(
+        "Sending document...",
+      );
+
       final PlatformFile file = result.files.first;
       final File documentFile = File(file.path!);
       final documentUrl = await _s3uploadService.uploadDocument(documentFile);
       if (documentUrl != null) {
+        // Remove the temporary message
+        setState(() {
+          messages.removeWhere(
+              (message) => message.message == "Sending document...");
+        });
+
+        // Send the actual message
         _sendMessage(
             messageText: "document", type: 'document', mediaUrl: documentUrl);
       }
     }
+  }
+
+  void _showProductsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return ProductsBottomSheet(
+          productsFuture: _productRepository.getProducts(),
+          onProductTap: _sendProductMessage,
+        );
+      },
+    );
   }
 
   void _showFormOverlay() {
@@ -407,117 +735,82 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        return Form(
-          key: _formKey,
-          child: Container(
-            padding: EdgeInsets.all(16.0),
-            height: Utils().height(context) * 0.8,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Please fill in the form details",
-                    style: AppTextStyles.black16_600),
-                const SizedBox(height: 10),
-                TextFormField(
-                  decoration: InputDecoration(
-                      labelText: "S.No",
-                      hintText: "fill here '01' for first form",
-                      hintStyle: AppTextStyles.grey12_600
-                          .copyWith(color: AppColors.greyAAAAAA)),
-                  controller: sNoController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'S.No';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Quality"),
-                  controller: qualityController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter quality';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Quantity"),
-                  controller: quantityController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter quantity';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Weave"),
-                  controller: weaveController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter weave';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Composition"),
-                  controller: compositionController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter composition';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  decoration: InputDecoration(labelText: "Rate"),
-                  controller: rateController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please set Rate';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                CustomButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final formData = {
-                        "S.No": sNoController.text,
-                        "quality": qualityController.text,
-                        "quantity": quantityController.text,
-                        "weave": weaveController.text,
-                        "composition": compositionController.text,
-                        "rate": rateController.text,
-                      };
-                      _sendMessage(
-                          messageText: "product", type: 'form', form: formData);
-                      Navigator.pop(context);
-                    }
-                  },
-                  textColor: Colors.white,
-                  fontSize: 14,
-                  backgroundColor: AppColors.blue,
-                  text: "Submit",
-                ),
-              ],
-            ),
-          ),
+        return FormOverlay(
+          onSubmit: (formData) {
+            _sendMessage(
+              messageText: "product",
+              type: 'form',
+              form: formData,
+            );
+          },
         );
       },
     );
   }
 
-  void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
-    _sendMessage(
-      messageText: "Form rate updated",
-      type: 'form',
-      form: updatedFormData,
+  void openFormDialogToUpdateRate(Map<String, dynamic> formData) {
+    final rateController = TextEditingController();
+
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return FormUpdateAlertDialog(
+          formId: formData["_id"],
+          quality: formData['quality'],
+          quantity: formData['quantity'],
+          weave: formData['weave'],
+          composition: formData['composition'],
+          rateController: rateController,
+          onCancel: () {
+            Navigator.of(context).pop();
+          },
+          onSubmit: () {
+            final newRate = rateController.text;
+            if (newRate.isNotEmpty) {
+              _updateFormRate(context, formData, newRate);
+              Navigator.of(context).pop();
+            }
+          },
+        );
+      },
     );
+  }
+
+  Future<void> _updateFormRate(BuildContext context,
+      Map<String, dynamic> formData, String newRate) async {
+    setState(() {
+      isFormUpdating = true;
+    });
+    final id = formData['_id']?.toString();
+    if (id == null) {
+      debugPrint(
+          "No form id is found to update: $id in the ${formData.toString()}");
+      return;
+    }
+
+    try {
+      await _chatRepository.updateInquiryFormRate(id, newRate);
+      debugPrint("Rate updated successfully");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Rate is updated: $newRate")));
+      }
+
+      final updatedFormData = Map<String, dynamic>.from(formData);
+      updatedFormData['rate'] = newRate;
+      _sendMessage(
+          messageText:
+              "Rate updated as $newRate for form with Id : ${formData["_id"]}");
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error updating rate of the form: $e');
+      }
+    } finally {
+      setState(() {
+        isFormUpdating = false;
+      });
+    }
   }
 
   String formatTimestamp(dynamic timestamp) {
@@ -527,8 +820,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     try {
       final dateTime = timestamp is DateTime
-          ? timestamp.toLocal()
-          : DateTime.parse(timestamp.toString()).toLocal();
+          ? timestamp
+          : DateTime.parse(timestamp.toString());
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
       return DateFormat('hh:mm a').format(DateTime.now());
@@ -557,34 +850,64 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           actions: [
             IconButton(
               onPressed: () async {
-                final channelName = "customerCall123";
+                final callProvider = context.read<CallProvider>();
+
                 final uid =
                     Utils().generateIntUidFromEmail(widget.customerEmail!);
-                debugPrint("Generated UID for agent (caller): $uid");
-
+                final timestamp = DateTime.now();
                 final callId = Uuid().v4();
-                // Send call data over socket to notify customer
+
+                // Unique channel name per call
+                final rawChannel = '${widget.customerEmail}_$callId';
+                final channelName =
+                    sha256.convert(utf8.encode(rawChannel)).toString();
+
+                debugPrint("📞 Customer (caller) UID: $uid");
+                debugPrint("📞 Generated Channel: $channelName");
+
+                // 1. 🔁 Send outgoing call request
                 _socketService.sendAgoraCall(
                   channelName: channelName,
                   callerId: widget.customerEmail!,
                   callerName: widget.customerName!,
                   callId: callId,
+                  timestamp: timestamp.toIso8601String(),
                 );
 
-                // Navigate agent to call screen
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AgoraAudioCallScreen(
-                      isCaller: true,
-                      channelName: channelName,
-                      uid: uid,
-                      //  remoteUserId: widget.agentEmail!,
-                      remoteUserName: widget.agentName!,
-                      messageId: callId,
-                    ),
-                  ),
+                // 2. 🚀 Start call via provider
+                await callProvider.startNewCall(
+                  channelName: channelName,
+                  remoteUserName: widget.agentName!,
+                  uid: uid,
+                  callId: callId,
+                  isCaller: true,
                 );
+
+                // 3. ⏳ Wait for call message to be available
+                void handleCallMessage(ChatMessageModel message) async {
+                  await _chatStorageService.saveMessage(
+                      message, widget.customerEmail!);
+
+                  if (!mounted) return;
+                  setState(() {
+                    messages.add(message);
+                    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                  });
+
+                  _scrollToBottom();
+                }
+
+                // 4. ✅ Listen once to callDetailsMessage
+                late final VoidCallback subscription;
+                subscription = () {
+                  final message = callProvider.callDetailsMessage;
+                  if (message != null) {
+                    handleCallMessage(message);
+                    callProvider.removeListener(subscription); // Only once
+                  }
+                };
+
+                callProvider.addListener(subscription);
               },
               icon: const Icon(Icons.call_outlined, color: Colors.black),
             ),
@@ -594,86 +917,198 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           children: [
             Column(
               children: [
-                Expanded(
-                  child: messages.isEmpty
-                      ? NoChatConversation()
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(10),
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            final msg = messages[index];
-                            if (msg.type == 'media') {
-                              return ImageMessageBubble(
-                                imageUrl: msg.mediaUrl!,
-                                isMe: msg.sender == widget.customerEmail,
-                                timestamp: formatTimestamp(msg.timestamp),
-                              );
-                            } else if (msg.type == 'form') {
-                              return FormMessageBubble(
-                                formData: msg.form!,
-                                isMe: msg.sender == widget.agentEmail,
-                                timestamp: formatTimestamp(
-                                    msg.timestamp.toIso8601String()),
-                                userRole: userRole!,
-                                onRateUpdated: _handleRateUpdated,
-                                onFormUpdateStart: () {
-                                  setState(() {
-                                    isFormUpdating = true;
-                                  });
-                                },
-                                onFormUpdateEnd: () {
-                                  setState(() {
-                                    isFormUpdating = false;
-                                  });
-                                },
-                              );
-                            } else if (msg.type == 'document') {
-                              return DocumentMessageBubble(
-                                documentUrl: msg.mediaUrl!,
-                                isMe: msg.sender == widget.customerEmail,
-                                timestamp: formatTimestamp(msg.timestamp),
-                              );
-                            } else if (msg.type == 'voice') {
-                              return VoiceMessageBubble(
-                                voiceUrl: msg.mediaUrl!,
-                                isMe: msg.sender == widget.customerEmail,
-                                timestamp: formatTimestamp(msg.timestamp),
-                              );
-                            } else if (msg.type == 'call') {
-                              return CallMessageBubble(
-                                isMe: msg.sender == widget.agentEmail,
-                                timestamp: formatTimestamp(
-                                    msg.timestamp.toIso8601String()),
-                                callStatus: msg.callStatus ?? "",
-                                callDuration: msg.callDuration ?? '',
-                              );
-                            } else if (msg.message == 'Fill details') {
-                              return FillFormButton(
-                                onSubmit: _showFormOverlay,
-                              );
-                            }
-                            return MessageBubble(
-                              text: msg.message,
-                              isMe: msg.sender == widget.customerEmail,
-                              timestamp: formatTimestamp(msg.timestamp),
-                              image: msg.sender == widget.customerEmail
-                                  ? widget.customerName ?? ""
-                                  : "Agent",
-                            );
-                          },
-                        ),
-                ),
                 if (_isLoadingMore)
                   Center(
-                    child: CircularProgressIndicator(),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 15.0),
+                      child: CircularProgressIndicator(),
+                    ),
                   ),
+                Expanded(
+                  child: _isLoading
+                      ? ShimmerMessageList()
+                      : messages.isEmpty
+                          ? NoChatConversation()
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(10),
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final msg = messages[index];
+                                final isCustomer =
+                                    msg.sender == widget.customerEmail;
+                                final valueKey = ValueKey('chat-msg-$index');
+                                final globalKey = GlobalKey();
+                                _messageKeys[valueKey] = globalKey;
+                                String? dateHeader;
+
+                                if (index == 0 ||
+                                    !ChatUtils().isSameDay(
+                                        messages[index - 1].timestamp,
+                                        msg.timestamp)) {
+                                  dateHeader = ChatUtils()
+                                      .formatDateHeader(msg.timestamp);
+                                }
+
+                                return Container(
+                                  key: globalKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (dateHeader != null)
+                                        DateHeader(date: dateHeader),
+                                      if (msg.type == 'media')
+                                        ImageMessageBubble(
+                                          imageUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
+                                        )
+                                      else if (msg.type == 'form')
+                                        FormMessageBubble(
+                                          formData: msg.form!,
+                                          isMe: msg.sender == widget.agentEmail,
+                                          timestamp: formatTimestamp(
+                                              msg.timestamp.toIso8601String()),
+                                          userRole: userRole!,
+                                        )
+                                      else if (msg.type == 'document')
+                                        DocumentMessageBubble(
+                                          documentUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
+                                        )
+                                      else if (msg.type == 'voice')
+                                        VoiceMessageBubble(
+                                          voiceUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
+                                        )
+                                      else if (msg.type == 'call')
+                                        CallMessageBubble(
+                                          isMe: msg.sender == widget.agentEmail,
+                                          timestamp: formatTimestamp(
+                                              msg.timestamp.toIso8601String()),
+                                          callStatus: msg.callStatus ?? "",
+                                          callDuration: msg.callDuration ?? '',
+                                        )
+                                      else if (msg.message == 'Fill details')
+                                        FillFormButton(
+                                          buttonText: "Fill product details",
+                                          onSubmit: _showFormOverlay,
+                                        )
+                                      else if (msg.message ==
+                                          "Update form rate")
+                                        FillFormButton(
+                                          buttonText: "Update Form",
+                                          onSubmit: () {
+                                            openFormDialogToUpdateRate(
+                                                msg.form!);
+                                          },
+                                        )
+                                      else if (msg.type == 'product')
+                                        (msg.message != null &&
+                                                msg.message!.isNotEmpty)
+                                            ? ProductMessageBubble(
+                                                productJson: msg.message!,
+                                                isMe: msg.sender ==
+                                                    widget.customerEmail,
+                                                timestamp:
+                                                    ChatUtils().formatTimestamp(
+                                                  msg.timestamp
+                                                      .toIso8601String(),
+                                                ),
+                                                onTap: () {
+                                                  final productMap =
+                                                      jsonDecode(msg.message!);
+                                                  final product =
+                                                      Product.fromJson(
+                                                          productMap);
+
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          CustomerProductDescriptionPage(
+                                                        product: product,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                                isDeleted: msg.isDeleted,
+                                                onLongPress: isCustomer
+                                                    ? () => _showDeleteDialog(
+                                                          context,
+                                                          msg.messageId!,
+                                                        )
+                                                    : null,
+                                              )
+                                            : DeletedMessageBubble(
+                                                isMe: msg.sender ==
+                                                    widget.customerEmail,
+                                                timestamp:
+                                                    ChatUtils().formatTimestamp(
+                                                  msg.timestamp
+                                                      .toIso8601String(),
+                                                ),
+                                              )
+                                      else
+                                        MessageBubble(
+                                          message: msg,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          onLongPress: isCustomer
+                                              ? () => _showDeleteDialog(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                ),
                 ChatInputField(
                   controller: _chatController,
                   onSend: () => _sendMessage(messageText: _chatController.text),
-                  onSendImage: _pickAndSendImage,
+                  onSendImage: () {
+                    _pickAndSendImage(ImageSource.gallery);
+                  },
+                  onSendImageByCamera: () {
+                    _pickAndSendImage(ImageSource.camera);
+                  },
                   onSendForm: _showFormOverlay,
                   onSendDocument: _pickAndSendDocument,
+                  onShareProduct: () => _showProductsBottomSheet(context),
                   onSendVoice: _isRecording ? _stopRecording : _startRecording,
                   isRecording: _isRecording,
                   recordedSeconds: _recordedSeconds,
@@ -692,6 +1127,22 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   child: Icon(Icons.arrow_downward_rounded),
                 ),
               ),
+            Positioned(
+              top: 10,
+              left: 0,
+              right: 0,
+              child: ValueListenableBuilder<String?>(
+                valueListenable: _currentTopDate,
+                builder: (context, date, _) {
+                  if (date == null || !_showDateHeader) {
+                    return SizedBox.shrink();
+                  }
+                  return Center(
+                    child: DateHeader(date: date),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),

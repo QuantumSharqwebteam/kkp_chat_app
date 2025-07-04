@@ -122,8 +122,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         Profile updatedProfile = Profile.fromJson(response["data"]);
 
         await LocalDbHelper.saveProfile(updatedProfile);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Profile details updated Successfully!")));
 
         // Return the updated profile and image URL to the previous screen
         if (widget.forUpdate) {

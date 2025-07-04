@@ -1,0 +1,20 @@
+{
+  "" : {
+    "const-values" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/file_saver-master.swiftconstvalues",
+    "dependencies" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/file_saver-master.d",
+    "diagnostics" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/file_saver-master.dia",
+    "emit-module-dependencies" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/file_saver-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/file_saver-master-emit-module.dia",
+    "swift-dependencies" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/file_saver-master.swiftdeps"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/file_saver-0.2.14/ios/Classes/Dialog.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/Dialog.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/Dialog.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/Dialog.o"
+  },
+  "/Users/udhai/.pub-cache/hosted/pub.dev/file_saver-0.2.14/ios/Classes/SwiftFileSaverPlugin.swift" : {
+    "index-unit-output-path" : "/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/SwiftFileSaverPlugin.o",
+    "llvm-bc" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/SwiftFileSaverPlugin.bc",
+    "object" : "/Users/udhai/StudioProjects/kkp_chat_app/ios/build/Pods.build/Release-iphoneos/file_saver.build/Objects-normal/arm64/SwiftFileSaverPlugin.o"
+  }
+}

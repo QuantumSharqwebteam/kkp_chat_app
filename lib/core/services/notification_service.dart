@@ -1,13 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
-
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:kkpchatapp/core/network/auth_api.dart';
-import 'package:kkpchatapp/core/services/chat_storage_service.dart';
+import 'package:kkpchatapp/core/services/auth_service.dart';
+//import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/models/chat_message_model.dart';
+// import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -18,7 +19,7 @@ class NotificationService with WidgetsBindingObserver {
   static bool _notificationClicked = false;
   static GlobalKey<NavigatorState>? navigatorKey;
   static Function(String?, String?, String?)? onNotificationTap;
-  static AppLifecycleState? _appLifecycleState;
+  static AppLifecycleState? appLifecycleState;
 
   // Initialize notification service
   static Future<void> init(
@@ -30,20 +31,19 @@ class NotificationService with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(NotificationService());
     await _initializeLocalNotifications();
     if (context.mounted) {
-      bool isGranted = await _requestPermission(context);
+      bool isGranted = await requestPermission(context);
       if (isGranted) {
-        await _checkAndUpdateFCMToken();
-        // _setupForegroundNotification();
+        await checkAndUpdateFCMToken();
         _setupBackgroundNotification();
         _setupTerminatedNotification();
 
         _messaging.onTokenRefresh.listen((newToken) async {
           debugPrint("🔄 [FCM Token Refreshed]: $newToken");
-          await _checkAndUpdateFCMToken(newToken: newToken);
+          await checkAndUpdateFCMToken(newToken: newToken);
         });
       } else {
         if (context.mounted) {
-          _showPermissionDialog(context);
+          showPermissionDialog();
         }
       }
     }
@@ -51,7 +51,7 @@ class NotificationService with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    _appLifecycleState = state;
+    appLifecycleState = state;
     super.didChangeAppLifecycleState(state);
   }
 
@@ -78,22 +78,22 @@ class NotificationService with WidgetsBindingObserver {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if ("0" == await LocalDbHelper.getUserType()) {
-        ChatStorageService chatStorageService =
-            ChatStorageService(); // Get the customer's email
+        // ChatStorageService chatStorageService =
+        //     ChatStorageService(); // Get the customer's email
         final customerEmail = LocalDbHelper.getEmail();
 
         if (customerEmail != null) {
           // Save the message to Hive local storage
-          final message = ChatMessageModel(
-            message: notificationData["message"],
-            timestamp: DateTime.parse(DateTime.now().toIso8601String()),
-            sender: notificationData["senderId"],
-            type: notificationData["type"],
-            mediaUrl: notificationData["mediaUrl"],
-            form: notificationData["form"],
-          );
+          // final message = ChatMessageModel(
+          //   message: notificationData["message"],
+          //   timestamp: DateTime.parse(DateTime.now().toIso8601String()),
+          //   sender: notificationData["senderId"],
+          //   type: notificationData["type"],
+          //   mediaUrl: notificationData["mediaUrl"],
+          //   form: notificationData["form"],
+          // );
 
-          chatStorageService.saveMessage(message, customerEmail);
+          //   chatStorageService.saveMessage(message, customerEmail);
         }
 
         // if (isAppInitialized) {
@@ -114,14 +114,23 @@ class NotificationService with WidgetsBindingObserver {
         await FirebaseMessaging.instance.getInitialMessage();
 
     if (message != null) {
-      debugPrint("🚀 App Opened via Notification: ${message.toMap()['data']}");
+      // debugPrint("🚀 full message data: ${message.toMap()}");
+      debugPrint(
+          "🚀@@ App Opened via Notification: ${message.toMap()['data']}");
 
-      if ("0" == await LocalDbHelper.getUserType()) {
-        handlePushNotificationClickForCustomer(
-            navigatorKey!, message.toMap()['data']);
+      final data = message.toMap()['data'];
+
+      // Check if the notification data contains a call
+      if (data != null && data['call'] == "true") {
+        // Handle the incoming call
+        handleIncomingCall(navigatorKey!, data);
       } else {
-        handlePushNotificationClickForAgent(
-            navigatorKey!, message.toMap()['data']);
+        // Handle regular notification click
+        if ("0" == await LocalDbHelper.getUserType()) {
+          handlePushNotificationClickForCustomer(navigatorKey!, data);
+        } else {
+          handlePushNotificationClickForAgent(navigatorKey!, data);
+        }
       }
     }
   }
@@ -165,8 +174,24 @@ class NotificationService with WidgetsBindingObserver {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
+    // ✅ iOS/macOS-specific initialization
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestSoundPermission: true,
+      requestBadgePermission: true,
+      defaultPresentAlert: true,
+      defaultPresentSound: true,
+      defaultPresentBadge: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
+    );
+
     const InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+    );
 
     await _localNotificationsPlugin.initialize(initializationSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
@@ -211,7 +236,7 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Request notification permission
-  static Future<bool> _requestPermission(BuildContext context) async {
+  static Future<bool> requestPermission(BuildContext context) async {
     NotificationSettings settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -224,7 +249,7 @@ class NotificationService with WidgetsBindingObserver {
     } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
       debugPrint('❌ User denied notification permission');
       if (context.mounted) {
-        _showPermissionDialog(context);
+        showPermissionDialog();
       }
       return false;
     } else if (settings.authorizationStatus ==
@@ -237,12 +262,19 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Show permission dialog if notification permissions are denied
-  static void _showPermissionDialog(BuildContext context) {
+  static void showPermissionDialog() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = navigatorKey?.currentContext;
+
+      if (context == null || !context.mounted) {
+        debugPrint(
+            "⚠️ Cannot show permission dialog: Context not ready or unmounted.");
+        return;
+      }
+
       showDialog(
         context: context,
-        barrierDismissible:
-            false, // Prevent dismissing the dialog by tapping outside
+        barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
             title: const Text("Enable Notifications"),
@@ -259,8 +291,8 @@ class NotificationService with WidgetsBindingObserver {
                 onPressed: () async {
                   PermissionStatus status =
                       await Permission.notification.status;
-                  if (status.isGranted && context.mounted) {
-                    Navigator.pop(context);
+                  if (context.mounted && status.isGranted) {
+                    Navigator.of(context).pop();
                   } else {
                     debugPrint('❌ User still denied notification permission');
                   }
@@ -274,16 +306,28 @@ class NotificationService with WidgetsBindingObserver {
     });
   }
 
-  static Future<void> _checkAndUpdateFCMToken({String? newToken}) async {
+  static Future<void> checkAndUpdateFCMToken({String? newToken}) async {
     final AuthApi auth = AuthApi();
     debugPrint("🔑 CHECKING FCM TOKEN ##########");
     try {
+      // ✅ Only for iOS: wait until APNs token is available
+      if (Platform.isIOS) {
+        String? apnsToken = await _messaging.getAPNSToken();
+        debugPrint("🍏 apn toke: $apnsToken");
+        if (apnsToken == null) {
+          debugPrint(
+              "❌ [iOS] APNs token not yet available. Aborting FCM token fetch.");
+          return; // Wait and retry later
+        }
+      }
+
       String? currentToken;
       if (newToken == null) {
         currentToken = await _messaging.getToken();
       } else {
         currentToken = newToken;
       }
+
       if (currentToken != null) {
         String? savedToken = LocalDbHelper.getFCMToken();
         if (savedToken != currentToken) {

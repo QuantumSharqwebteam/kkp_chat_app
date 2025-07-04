@@ -12,6 +12,7 @@ class LocalDbHelper {
   static const String _profile = 'profile';
   static const String _fCMToken = "FCMTOKEN";
   static const String _lastRefreshTime = 'lastRefreshTime';
+  static const String _lastMessageMapKey = 'lastMessageMap';
 
   // feed
   static const String _pinnedAgentsKey = 'pinnedAgents';
@@ -20,6 +21,9 @@ class LocalDbHelper {
   static Box<dynamic> get _box => Hive.box('CREDENTIALS');
   // for storing user last seen time or when he/ she came online
   static Box<dynamic> get _lastSeenBoxInstance => Hive.box("lastSeenTimeBox");
+
+  static Box<dynamic> get _lastMessageBoxInstance =>
+      Hive.box(_lastMessageMapKey);
 
   static Box<dynamic> get _feedBox => Hive.box('feedBox');
 
@@ -174,5 +178,20 @@ class LocalDbHelper {
         await box.add(jsonEncode(log.toJson()));
       }
     }
+  }
+
+  // Method to update the last message for a user
+  static Future<void> updateLastMessage(String email, String message) async {
+    await _lastMessageBoxInstance.put(email, message);
+  }
+
+  // Method to retrieve the last message for a user
+  static String? getLastMessage(String email) {
+    return _lastMessageBoxInstance.get(email);
+  }
+
+  // Method to clear all last messages
+  static Future<void> clearLastMessages() async {
+    await _lastMessageBoxInstance.clear();
   }
 }

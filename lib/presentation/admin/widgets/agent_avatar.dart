@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 
 class AgentAvatar extends StatelessWidget {
-  final String image;
+  final String name;
   final bool isOnline;
 
   const AgentAvatar({
     super.key,
-    required this.image,
+    required this.name,
     required this.isOnline,
   });
 
@@ -22,9 +23,9 @@ class AgentAvatar extends StatelessWidget {
           width: 3,
         ),
       ),
-      child: CircleAvatar(
-        radius: 30,
-        backgroundImage: AssetImage(image),
+      child: Initicon(
+        text: name,
+        size: 30,
       ),
     );
   }

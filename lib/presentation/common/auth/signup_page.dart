@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/logic/auth/signup_provider.dart';
@@ -60,25 +59,25 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  CustomButton(
-                    text: 'Signup with Google',
-                    fontSize: 14,
-                    height: 45,
-                    image: SvgPicture.asset('assets/icons/google.svg'),
-                    onPressed: () {},
-                    textColor: Colors.black,
-                    backgroundColor: Colors.white,
-                    borderRadius: 10,
-                    elevation: 0,
-                    borderColor: Colors.grey.shade300,
-                    borderWidth: 1,
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'OR',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  SizedBox(height: 10),
+                  // CustomButton(
+                  //   text: 'Signup with Google',
+                  //   fontSize: 14,
+                  //   height: 45,
+                  //   image: SvgPicture.asset('assets/icons/google.svg'),
+                  //   onPressed: () {},
+                  //   textColor: Colors.black,
+                  //   backgroundColor: Colors.white,
+                  //   borderRadius: 10,
+                  //   elevation: 0,
+                  //   borderColor: Colors.grey.shade300,
+                  //   borderWidth: 1,
+                  // ),
+                  // SizedBox(height: 10),
+                  // Text(
+                  //   'OR',
+                  //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  // ),
+                  // SizedBox(height: 10),
                   // Name textField
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +142,7 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         controller: _pass,
                         errorText: signupProvider.passwordError,
-                        helperText: 'Must be at least 8 characters',
+                        //helperText: 'Must be at least 6 characters',
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
@@ -169,7 +168,7 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         controller: _repass,
                         errorText: signupProvider.rePasswordError,
-                        helperText: 'Must be at least 8 characters',
+                        //helperText: 'Must be at least 6 characters',
                         borderRadius: 10,
                         height: 45,
                         maxLines: 1,

@@ -1,0 +1,4 @@
+
+module flutter_foreground_task.__Swift {
+  exclude header "flutter_foreground_task-Swift.h"
+}

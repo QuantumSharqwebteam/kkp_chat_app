@@ -1,16 +1,17 @@
-import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:kkpchatapp/core/services/auth_service.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/models/notification_model.dart';
-import 'package:kkpchatapp/data/models/profile_model.dart';
 
 class AuthRepository {
   final AuthApi _authApi;
 
   AuthRepository({AuthApi? authApi}) : _authApi = authApi ?? AuthApi();
 
-  Future<Map<String, dynamic>> signup(
-      {required String email, required String password}) {
+  Future<Map<String, dynamic>> signup({
+    required String email,
+    required String password,
+  }) {
     return _authApi.signup(email: email, password: password);
   }
 
@@ -48,8 +49,8 @@ class AuthRepository {
     return _authApi.sendOtp(email: email);
   }
 
-  Future<Profile> getUserInfo() {
-    return _authApi.getUserInfo();
+  Future<dynamic> getUserInfo() async {
+    return await _authApi.getUserInfo();
   }
 
   Future<Map<String, dynamic>> verifyOtp(
@@ -95,15 +96,19 @@ class AuthRepository {
   }
 
   Future<Map<String, dynamic>> updateFCMToken(String fcmToken) async {
-    return _authApi.updateFCMToken(fcmToken);
+    return await _authApi.updateFCMToken(fcmToken);
   }
 
   Future<Map<String, dynamic>> refreshToken(String oldToken) async {
-    return _authApi.refreshToken(oldToken);
+    return await _authApi.refreshToken(oldToken);
   }
 
   Future<List<Agent>> getAgent() async {
-    return _authApi.getAgent();
+    return await _authApi.getAgent();
+  }
+
+  Future<List<String>> fetchAssignedAgentList() async {
+    return await _authApi.fetchAssignedAgentList();
   }
 
   Future<Map<String, dynamic>> addAgent(
@@ -120,7 +125,7 @@ class AuthRepository {
   }
 
   Future<Map<String, dynamic>> deleteUserAccount(
-      String email, String password) async {
-    return _authApi.deleteUserAccount(email, password);
+      String email, String password, String feedback) async {
+    return _authApi.deleteUserAccount(email, password, feedback);
   }
 }

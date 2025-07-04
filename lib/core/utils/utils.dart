@@ -20,7 +20,7 @@ class Utils {
   void showSuccessDialog(BuildContext context, String message, bool success) {
     showDialog(
       context: context,
-      barrierDismissible: true, // Prevent manual dismissal
+      barrierDismissible: false, // Prevent manual dismissal
       builder: (context) => SuccessErrorDialog(
         message: message,
         success: success,
@@ -90,9 +90,10 @@ class Utils {
                 children: [
                   Expanded(
                     child: CustomButton(
+                        padding: const EdgeInsets.all(2),
                         onPressed: action,
                         borderColor: AppColors.inActiveRed,
-                        fontSize: 16,
+                        fontSize: 12,
                         backgroundColor: AppColors.inActiveRed,
                         text: actionButtonText),
                   ),

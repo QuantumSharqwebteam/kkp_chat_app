@@ -9,11 +9,13 @@ class ChatInputField extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final VoidCallback onSendImage;
+  final VoidCallback onSendImageByCamera;
   final VoidCallback onSendForm;
   final VoidCallback onSendDocument;
   final VoidCallback onSendVoice;
   final bool isRecording;
   final int recordedSeconds; // Add this line
+  final VoidCallback onShareProduct;
 
   const ChatInputField({
     super.key,
@@ -24,7 +26,9 @@ class ChatInputField extends StatefulWidget {
     required this.onSendDocument,
     required this.onSendVoice,
     required this.isRecording,
-    required this.recordedSeconds, // Add this line
+    required this.recordedSeconds,
+    required this.onSendImageByCamera,
+    required this.onShareProduct, // Add this line
   });
 
   @override
@@ -79,7 +83,7 @@ class _ChatInputFieldState extends State<ChatInputField>
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 23),
       child: Row(
         children: [
           IconButton(
@@ -91,9 +95,11 @@ class _ChatInputFieldState extends State<ChatInputField>
                 } else if (selectedItem == "Inquiry Form") {
                   widget.onSendForm();
                 } else if (selectedItem == "Camera") {
-                  widget.onSendImage();
+                  widget.onSendImageByCamera();
                 } else if (selectedItem == "Documents") {
                   widget.onSendDocument();
+                } else if (selectedItem == "Share Product") {
+                  widget.onShareProduct();
                 }
               });
             },
@@ -122,9 +128,8 @@ class _ChatInputFieldState extends State<ChatInputField>
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.camera_alt),
-                    onPressed: widget.onSendImage,
-                  ),
+                      icon: const Icon(Icons.camera_alt),
+                      onPressed: widget.onSendImageByCamera),
                   const SizedBox(
                     width: 10,
                   ),
@@ -197,12 +202,14 @@ final List<Map<String, String>> attachmentItems = [
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
+  {"image": ImageConstants.shareProduct, "label": "Share Product"},
 ];
 
 final List<Map<String, String>> attachmentItemsforCustomer = [
   {"image": ImageConstants.camera, "label": "Camera"},
   {"image": ImageConstants.photos, "label": "Photos"},
   {"image": ImageConstants.documents, "label": "Documents"},
+  {"image": ImageConstants.shareProduct, "label": "Share Product"},
 ];
 
 final String? currentUser = LocalDbHelper.getProfile()?.role;
@@ -246,8 +253,16 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
                     : attachmentItems[index];
                 return GestureDetector(
                   onTap: () {
-                    onItemSelected(item['label']!);
-                    Navigator.pop(context);
+                    if (item['label'] == "Share Product") {
+                      Navigator.pop(context); // Close the current bottom sheet
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        onItemSelected(
+                            item['label']!); // Open the product bottom sheet
+                      });
+                    } else {
+                      onItemSelected(item['label']!);
+                      Navigator.pop(context);
+                    }
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

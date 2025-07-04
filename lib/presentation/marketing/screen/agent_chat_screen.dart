@@ -3,26 +3,34 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/delete_dialog.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
@@ -30,9 +38,14 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_bottom_sheet.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 class AgentChatScreen extends StatefulWidget {
@@ -40,6 +53,7 @@ class AgentChatScreen extends StatefulWidget {
   final String? agentName;
   final String customerEmail;
   final String? agentEmail;
+  final bool? isAccountDeleted;
   final GlobalKey<NavigatorState> navigatorKey;
 
   const AgentChatScreen({
@@ -48,6 +62,7 @@ class AgentChatScreen extends StatefulWidget {
     this.agentName,
     required this.customerEmail,
     this.agentEmail,
+    this.isAccountDeleted = false,
     required this.navigatorKey,
   });
 
@@ -66,6 +81,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final ChatStorageService _chatStorageService = ChatStorageService();
+  final _productRepository = ProductRepository();
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
@@ -73,18 +89,31 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   Timer? _timer;
   String? userRole;
   int _currentPage = 1;
-  bool _isFetching = false;
-  Set<int> _fetchedPages = Set(); // Keep track of fetched pages
+  final bool _isFetching = false;
+  final Set<int> _fetchedPages = {}; // Keep track of fetched pages
   bool _isLoadingMore = false; // Show loading indicator when loading more
-  final Set<String> _loadedMessageIds = Set();
+  final Set<String> _loadedMessageIds = {};
+  final Set<String> _loadedCallIds = {};
   bool _isAtBottom = true; // Track if the user is at the bottom of the list
+  //bool _isViewOnlyMode = false;
+  Timer? _dateHeaderTimer;
+  bool _showDateHeader = false;
+
+  final ValueNotifier<String?> _currentTopDate = ValueNotifier(null);
+
+  final Map<Key, GlobalKey> _messageKeys = {};
 
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
     _fetchUserRole();
     super.initState();
-    _socketService.toggleChatPageOpen(true);
+
+    _socketService.setChatPageState(
+        isOpen: true, customerId: widget.customerEmail);
+
     _socketService.onReceiveMessage(_handleIncomingMessage);
+    _socketService.onMessageDeleted(_handleMessageDeleted);
     _initializeRecorder();
     _loadPreviousMessages(context);
 
@@ -95,6 +124,20 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
+    _resetMessageCount();
+  }
+
+  Future<void> _resetMessageCount() async {
+    final boxNameWithCount = '${widget.agentEmail}${widget.customerEmail}count';
+    final box = await Hive.openBox<int>(boxNameWithCount);
+    await box.put('count', 0);
+  }
+
+  Future<void> _saveLastMessageTime() async {
+    if (widget.agentEmail == null) return;
+    final timeBox = await Hive.openBox<String>(
+        '${widget.agentEmail}${widget.customerEmail}lastMessageTime');
+    await timeBox.put('lastMessageTime', DateTime.now().toIso8601String());
   }
 
   @override
@@ -106,13 +149,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
-    _socketService.toggleChatPageOpen(false);
+    _socketService.setChatPageState(
+      isOpen: false,
+    );
+    _dateHeaderTimer?.cancel();
     super.dispose();
   }
 
   @override
   void deactivate() {
-    _socketService.toggleChatPageOpen(false);
+    _socketService.setChatPageState(isOpen: false);
     super.deactivate();
   }
 
@@ -120,13 +166,29 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _socketService.toggleChatPageOpen(false);
+      // _socketService.toggleChatPageOpen(false);
+      _socketService.setChatPageState(isOpen: false);
     } else if (state == AppLifecycleState.resumed) {
-      _socketService.toggleChatPageOpen(true);
+      // _socketService.toggleChatPageOpen(true);
+      _socketService.setChatPageState(
+        isOpen: true,
+        customerId: widget.customerEmail,
+      );
       // Scroll to bottom when the app is resumed
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final newValue = bottomInset > 0.0;
+
+    if (newValue) {
+      // Keyboard is opened
+      _scrollToBottom();
     }
   }
 
@@ -146,20 +208,83 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
     bool boxExists = await Hive.boxExists(boxName);
 
-    if (!boxExists) {
-      // Fetch messages from API
-      await _fetchMessagesFromAPI(boxName, context);
-    } else {
+    // Fetch the latest 20 messages from the API
+    final List<MessageModel> fetchedMessages =
+        await _chatRepository.fetchAgentMessages(
+      agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
+      customerEmail: widget.customerEmail,
+      limit: 20,
+    );
+
+    // Convert MessageModel to ChatMessageModel
+    final chatMessages = fetchedMessages.map((messageJson) {
+      return ChatMessageModel(
+        message: messageJson.message ?? '',
+        timestamp: DateTime.parse(
+            messageJson.timestamp ?? DateTime.now().toIso8601String()),
+        sender: messageJson.senderId!,
+        type: messageJson.type,
+        mediaUrl: messageJson.mediaUrl,
+        form: messageJson.form != null && messageJson.form!.isNotEmpty
+            ? Map<String, dynamic>.from(messageJson.form![0])
+            : null,
+        callDuration: messageJson.callDuration,
+        callStatus: messageJson.callStatus,
+        callId: messageJson.callId,
+        messageId: messageJson.messageId,
+        isDeleted: messageJson.isDeleted!,
+      );
+    }).toList();
+
+    if (boxExists) {
       // Load messages from Hive
       final loadedMessages =
           await _chatStorageService.getMessages(boxName, page: _currentPage);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
+
+      // Replace local messages with fetched messages where the fetched message has an empty string
+      final messagesToReplace = chatMessages
+          .where((fetchedMessage) => fetchedMessage.message!.isEmpty)
+          .toList();
+
+      for (var fetchedMessage in messagesToReplace) {
+        final index = newLoadedMessages.indexWhere((localMessage) =>
+            localMessage.messageId == fetchedMessage.messageId);
+        if (index != -1) {
+          newLoadedMessages[index] = fetchedMessage;
+        }
+      }
+
+      // Add any new messages that are not already in the local storage
+      final uniqueFetchedMessages = _removeDuplicates(chatMessages);
+      final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
+        return !newLoadedMessages.any((loadedMessage) {
+          if (fetchedMessage.type == 'call' && loadedMessage.type == 'call') {
+            return loadedMessage.callId == fetchedMessage.callId;
+          }
+          return loadedMessage.messageId == fetchedMessage.messageId;
+        });
+      }).toList();
+
+      // Add the messages that are not in the Hive database to the list of messages
+      newLoadedMessages.addAll(messagesToAdd);
+
       setState(() {
         messages = newLoadedMessages;
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
+    } else {
+      // Save the fetched messages to the Hive database
+      await _chatStorageService.saveMessages(chatMessages, boxName);
+
+      setState(() {
+        messages = chatMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false;
+      });
     }
+    _scrollToBottom();
   }
 
   Future<void> _fetchMessagesFromAPI(String boxName, context) async {
@@ -194,6 +319,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           form: messageJson.form != null && messageJson.form!.isNotEmpty
               ? Map<String, dynamic>.from(messageJson.form![0])
               : null,
+          callDuration: messageJson.callDuration,
+          callId: messageJson.callId,
+          callStatus: messageJson.callStatus,
+          messageId: messageJson.messageId,
+          isDeleted: messageJson.isDeleted!,
         );
       }).toList();
 
@@ -209,21 +339,84 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       }
     } catch (e) {
       // Handle errors properly
-      debugPrint("Error fetching messages from API: $e");
-      // You can show a snackbar or alert dialog to inform the user about the error
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text("Failed to load messages: $e")),
-      // );
+      if (kDebugMode) {
+        debugPrint("Error fetching messages from API: $e");
+      }
     }
   }
 
+  void _showFloatingDateHeader() {
+    setState(() {
+      _showDateHeader = true;
+    });
+
+    // Cancel existing timer if user is still scrolling
+    _dateHeaderTimer?.cancel();
+
+    // Start new timer to hide after 1 second
+    _dateHeaderTimer = Timer(Duration(seconds: 1), () {
+      setState(() {
+        _showDateHeader = false;
+      });
+    });
+  }
+
+  void _hideFloatingDateHeader() {
+    // Optionally hide immediately when scrolling down
+    setState(() {
+      _showDateHeader = false;
+    });
+
+    // Cancel the timer to avoid it interfering
+    _dateHeaderTimer?.cancel();
+  }
+
   void _handleScroll() {
-    if (_scrollController.position.atEdge) {
-      if (_scrollController.position.pixels == 0) {
-        // User has scrolled to the top
-        _loadMoreMessages(context);
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.forward) {
+      _showFloatingDateHeader();
+    }
+
+    // Hide header when scrolling down (optional, but could improve UX)
+    if (_scrollController.position.userScrollDirection ==
+        ScrollDirection.reverse) {
+      _hideFloatingDateHeader();
+    }
+    // Check if at the top edge, then load more messages
+    if (_scrollController.position.atEdge &&
+        _scrollController.position.pixels == 0) {
+      _loadMoreMessages(context);
+    }
+
+    // Find index of first visible message and update date
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      final firstVisibleIndex = _getFirstVisibleIndex();
+      if (firstVisibleIndex != null && firstVisibleIndex < messages.length) {
+        final message = messages[firstVisibleIndex];
+        final newDate = ChatUtils().formatDateHeader(message.timestamp);
+        if (_currentTopDate.value != newDate) {
+          _currentTopDate.value = newDate;
+        }
       }
     }
+  }
+
+  int? _getFirstVisibleIndex() {
+    for (int i = 0; i < messages.length; i++) {
+      final key = ValueKey('chat-msg-$i');
+      final context = _messageKeys[key]?.currentContext;
+      if (context != null) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box != null) {
+          final pos = box.localToGlobal(Offset.zero);
+          if (pos.dy >= 0) {
+            return i;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   void _checkIfAtBottom() {
@@ -285,44 +478,87 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     setState(() {});
   }
 
-  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messages) {
-    return messages.where((message) {
-      final messageId =
-          '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-      if (_loadedMessageIds.contains(messageId)) {
-        return false;
+  List<ChatMessageModel> _removeDuplicates(
+      List<ChatMessageModel> messagesList) {
+    return messagesList.where((message) {
+      if (message.type == 'call') {
+        // Use callId for call messages
+        if (message.callId == null || _loadedCallIds.contains(message.callId)) {
+          return false;
+        } else {
+          _loadedCallIds.add(message.callId!);
+          return true;
+        }
       } else {
-        _loadedMessageIds.add(messageId);
-        return true;
+        // Use messageId for all other messages
+        if (message.messageId == null ||
+            _loadedMessageIds.contains(message.messageId)) {
+          return false;
+        } else {
+          _loadedMessageIds.add(message.messageId!);
+          return true;
+        }
       }
     }).toList();
   }
 
+  // In _handleIncomingMessage method
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    final currentTime = DateTime.now();
+    debugPrint("message received: ${data.toString()}");
+    // saving last seen message
+    if (data['type'] == "product") {
+      _socketService.updateLastMessage(data["senderId"], "shared product");
+    } else {
+      _socketService.updateLastMessage(data['senderId'], data['message']);
+    }
+    //converting data in to message model
     final message = ChatMessageModel(
       message: data["message"],
-      timestamp: currentTime,
+      timestamp: data["timestamp"] != null
+          ? DateTime.parse(data["timestamp"])
+          : DateTime.now(),
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
       form: data["form"],
+      messageId: data["messageId"], // Include the message ID
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
-    if (!_loadedMessageIds.contains(messageId)) {
+    if (!_loadedMessageIds.contains(message.messageId)) {
       setState(() {
-        messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        messages.add(message); // Append to the end
         _scrollToBottom();
       });
 
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(
           message, '${widget.agentEmail}${widget.customerEmail}');
-      _loadedMessageIds.add(messageId);
+      _loadedMessageIds.add(message.messageId!);
+
+      _saveLastMessageTime();
+      Provider.of<ChatRefreshProvider>(context, listen: false)
+          .markNeedsRefresh();
     }
+  }
+
+  void _handleMessageDeleted(String messageId) {
+    if (mounted) {
+      setState(() {
+        final index =
+            messages.indexWhere((message) => message.messageId == messageId);
+        if (index != -1) {
+          messages[index].isDeleted = true;
+          messages[index].message = "This message is deleted";
+        }
+      });
+    }
+
+    // Save the updated message state to local storage
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    _chatStorageService.saveMessage(
+        messages.firstWhere((message) => message.messageId == messageId),
+        boxName);
+    _socketService.updateLastMessage(widget.customerEmail, "message deleted");
   }
 
   void _sendMessage({
@@ -334,6 +570,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
 
     final currentTime = DateTime.now();
+    final messageId =
+        ChatUtils().generateMessageId(); // Generate a unique message ID
+
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
@@ -341,34 +580,100 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       type: type!,
       mediaUrl: mediaUrl,
       form: form,
+      messageId: messageId,
+      isDeleted: false,
     );
 
-    final messageId =
-        '${message.sender}_${message.timestamp.millisecondsSinceEpoch}_${message.message}';
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       });
 
       _socketService.sendMessage(
         targetEmail: widget.customerEmail,
         message: messageText,
         senderEmail: widget.agentEmail!,
-        senderName: widget.agentName!,
+        senderName: widget.agentName ?? "agent",
         type: type,
         mediaUrl: mediaUrl,
         form: form,
+        timestamp: currentTime.toIso8601String(),
+        messageId: messageId, // Include the message ID
       );
 
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(
           message, '${widget.agentEmail}${widget.customerEmail}');
+      // print("sent message saved as :${message.toString()}");
       _loadedMessageIds.add(messageId);
     }
     _scrollToBottom();
 
     _chatController.clear();
+    _saveLastMessageTime();
+    Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
+  }
+
+  void _addTemporaryMessage(String messageText) {
+    final currentTime = DateTime.now();
+    final temporaryMessage = ChatMessageModel(
+      message: messageText,
+      timestamp: currentTime,
+      sender: widget.agentEmail!,
+    );
+
+    setState(() {
+      messages.add(temporaryMessage);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    });
+
+    _scrollToBottom();
+  }
+
+  void _sendProductMessage(Product product) {
+    // Convert the product object to a JSON string
+    final productJson = jsonEncode(product.toJson());
+
+    _sendMessage(
+      messageText: productJson,
+      type: 'product',
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context, String messageId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteDialog(
+          messageId: messageId,
+          onDelete: (messageId) {
+            _deleteMessage(messageId);
+          },
+        );
+      },
+    );
+  }
+
+  void _deleteMessage(String messageId) {
+    _socketService.deleteMessage(
+        messageId, widget.agentEmail!, widget.customerEmail);
+
+    // Update the local message state to reflect deletion
+    setState(() {
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+      }
+    });
+
+    // Save the updated message state to local storage
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    _chatStorageService.saveMessage(
+        messages.firstWhere((message) => message.messageId == messageId),
+        boxName);
+    _socketService.updateLastMessage(widget.customerEmail, "message deleted");
   }
 
   void _scrollToBottom() {
@@ -413,15 +718,25 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     });
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _pickAndSendImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
+    final XFile? pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
+      // Add a temporary message
+      _addTemporaryMessage("Sending image...");
+
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
+
       if (imageUrl != null) {
+        // Remove the temporary message
+        setState(() {
+          messages
+              .removeWhere((message) => message.message == "Sending image...");
+        });
+
+        // Send the actual message
         _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
@@ -434,10 +749,22 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
 
     if (result != null) {
+      // Add a temporary message
+      _addTemporaryMessage(
+        "Sending document...",
+      );
+
       final PlatformFile file = result.files.first;
       final File documentFile = File(file.path!);
       final documentUrl = await _s3uploadService.uploadDocument(documentFile);
       if (documentUrl != null) {
+        // Remove the temporary message
+        setState(() {
+          messages.removeWhere(
+              (message) => message.message == "Sending document...");
+        });
+
+        // Send the actual message
         _sendMessage(
             messageText: "document", type: 'document', mediaUrl: documentUrl);
       }
@@ -448,6 +775,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _sendMessage(messageText: "Fill details");
   }
 
+  void sendFormToUpdateRate(Map<String, dynamic> formData) {
+    _sendMessage(
+      messageText: "Update form rate",
+      form: formData,
+    );
+  }
+
   void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
     _sendMessage(
       messageText: "Form rate updated",
@@ -456,28 +790,28 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
   }
 
-  void _handleStatusUpdated(String status, String sNo) {
+  void _handleStatusUpdated(String status, String id) {
     final messageText = status == 'Confirmed'
-        ? "Your order is confirmed with S.No: $sNo"
-        : "Your order is declined with S.No: $sNo";
+        ? "Your order is confirmed with form Id: $id"
+        : "Your order is declined with form Id: $id";
     _sendMessage(
       messageText: messageText,
       type: 'text',
     );
   }
 
-  String formatTimestamp(String? timestamp) {
-    if (timestamp == null || timestamp.isEmpty) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
-    }
-    try {
-      final dateTime = DateTime.parse(timestamp).toLocal();
-      return DateFormat('hh:mm a').format(dateTime);
-    } catch (e) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
-    }
+  void _showProductsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      backgroundColor: Colors.white,
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return ProductsBottomSheet(
+          productsFuture: _productRepository.getProducts(),
+          onProductTap: _sendProductMessage,
+        );
+      },
+    );
   }
 
   @override
@@ -516,36 +850,64 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 color: Colors.black),
           ),
           IconButton(
-            onPressed: () {
+            onPressed: () async {
+              final callProvider = context.read<CallProvider>();
+
               final channelName =
                   sha256.convert(utf8.encode(widget.agentEmail!)).toString();
-
               final uid = Utils().generateIntUidFromEmail(widget.agentEmail!);
-              debugPrint("Generated UID for agent (caller): $uid");
-
               final callId = Uuid().v4();
+              final timestamp = DateTime.now();
 
+              debugPrint("📞 Generated UID for agent (caller): $uid");
+
+              // 1. 🔁 Send outgoing call signal
               _socketService.sendAgoraCall(
                 targetId: widget.customerEmail,
                 channelName: channelName,
                 callerId: widget.agentEmail!,
                 callerName: widget.agentName!,
                 callId: callId,
+                timestamp: timestamp.toIso8601String(),
               );
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AgoraAudioCallScreen(
-                    isCaller: true,
-                    channelName: channelName,
-                    uid: uid,
-                    remoteUserId: widget.customerEmail,
-                    remoteUserName: widget.customerName!,
-                    messageId: callId,
-                  ),
-                ),
+              // 2. 🚀 Start call via Provider
+              await callProvider.startNewCall(
+                channelName: channelName,
+                remoteUserName: widget.customerName!,
+                uid: uid,
+                callId: callId,
+                isCaller: true,
               );
+
+              // 3. ⏳ Wait for call to complete and message to be returned
+              // This is done via callProvider.callDetailsMessage after call ends
+              void handleCallMessage(ChatMessageModel message) async {
+                // Save to storage
+                await _chatStorageService.saveMessage(
+                    message, '${widget.agentEmail}${widget.customerEmail}');
+
+                if (!mounted) return;
+                setState(() {
+                  messages.add(message);
+                  messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                });
+
+                _scrollToBottom();
+              }
+
+              // 4. ✅ Listen once for callDetailsMessage change
+              late final VoidCallback subscription;
+              subscription = () {
+                final message = callProvider.callDetailsMessage;
+                if (message != null) {
+                  handleCallMessage(message);
+                  callProvider
+                      .removeListener(subscription); // Remove after first call
+                }
+              };
+
+              callProvider.addListener(subscription);
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
@@ -561,9 +923,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         children: [
           Column(
             children: [
+              if (_isLoadingMore)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 15.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
               Expanded(
                 child: _isLoading
-                    ? Center(child: CircularProgressIndicator())
+                    ? ShimmerMessageList()
                     : messages.isEmpty
                         ? NoChatConversation()
                         : ListView.builder(
@@ -572,101 +941,211 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             itemCount: messages.length,
                             itemBuilder: (context, index) {
                               final msg = messages[index];
-                              if (msg.type == 'media') {
-                                return ImageMessageBubble(
-                                  imageUrl: msg.mediaUrl!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                );
-                              } else if (msg.type == 'form') {
-                                return FormMessageBubble(
-                                  formData: msg.form!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                  userRole: userRole!,
-                                  onRateUpdated: _handleRateUpdated,
-                                  onStatusUpdated: _handleStatusUpdated,
-                                  onFormUpdateStart: () {
-                                    setState(() {
-                                      _isFormUpdating = true;
-                                    });
-                                  },
-                                  onFormUpdateEnd: () {
-                                    setState(() {
-                                      _isFormUpdating = false;
-                                    });
-                                  },
-                                );
-                              } else if (msg.type == 'document') {
-                                return DocumentMessageBubble(
-                                  documentUrl: msg.mediaUrl!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                );
-                              } else if (msg.type == 'voice') {
-                                return VoiceMessageBubble(
-                                  voiceUrl: msg.mediaUrl!,
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                );
-                              } else if (msg.type == 'call') {
-                                return CallMessageBubble(
-                                  isMe: msg.sender == widget.agentEmail,
-                                  timestamp: formatTimestamp(
-                                      msg.timestamp.toIso8601String()),
-                                  callStatus: msg.callStatus ?? "",
-                                  callDuration: msg.callDuration ?? '',
-                                );
-                              } else if (msg.message == 'Fill details') {
-                                return FillFormButton(
-                                  onSubmit: () {
-                                    // Agent not allowed to fill the form
-                                  },
-                                );
+                              final isAgent = msg.sender == widget.agentEmail;
+                              final valueKey = ValueKey('chat-msg-$index');
+                              final globalKey = GlobalKey();
+                              _messageKeys[valueKey] = globalKey;
+                              String? dateHeader;
+
+                              if (index == 0 ||
+                                  !ChatUtils().isSameDay(
+                                      messages[index - 1].timestamp,
+                                      msg.timestamp)) {
+                                dateHeader =
+                                    ChatUtils().formatDateHeader(msg.timestamp);
                               }
-                              return MessageBubble(
-                                text: msg.message,
-                                isMe: msg.sender == widget.agentEmail,
-                                timestamp: formatTimestamp(
-                                    msg.timestamp.toIso8601String()),
-                                image: msg.sender == widget.agentEmail
-                                    ? widget.agentName ?? ""
-                                    : widget.customerName ?? "",
+
+                              return Container(
+                                key: globalKey,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (dateHeader != null)
+                                      DateHeader(date: dateHeader),
+                                    if (msg.type == 'media')
+                                      ImageMessageBubble(
+                                        imageUrl: msg.mediaUrl!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                          msg.timestamp.toIso8601String(),
+                                        ),
+                                        isDeleted: msg.isDeleted,
+                                        onLongPress: isAgent
+                                            ? () => _showDeleteDialog(
+                                                context, msg.messageId!)
+                                            : null,
+                                      )
+                                    else if (msg.type == 'form')
+                                      FormMessageBubble(
+                                        formData: msg.form!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                        userRole: userRole!,
+                                        onRateUpdated: _handleRateUpdated,
+                                        onStatusUpdated: _handleStatusUpdated,
+                                        onFormUpdateStart: () {
+                                          setState(() {
+                                            _isFormUpdating = true;
+                                          });
+                                        },
+                                        onFormUpdateEnd: () {
+                                          setState(() {
+                                            _isFormUpdating = false;
+                                          });
+                                        },
+                                        onAskForRateUpdate:
+                                            sendFormToUpdateRate,
+                                      )
+                                    else if (msg.type == 'document')
+                                      DocumentMessageBubble(
+                                        documentUrl: msg.mediaUrl!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                        isDeleted: msg.isDeleted,
+                                        onLongPress: isAgent
+                                            ? () => _showDeleteDialog(
+                                                context, msg.messageId!)
+                                            : null,
+                                      )
+                                    else if (msg.type == 'voice')
+                                      VoiceMessageBubble(
+                                        voiceUrl: msg.mediaUrl!,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                        isDeleted: msg.isDeleted,
+                                        onLongPress: isAgent
+                                            ? () => _showDeleteDialog(
+                                                context, msg.messageId!)
+                                            : null,
+                                      )
+                                    else if (msg.type == 'call')
+                                      CallMessageBubble(
+                                        isMe: msg.sender == widget.agentEmail,
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
+                                        callStatus: msg.callStatus ?? "",
+                                        callDuration: msg.callDuration ?? '',
+                                      )
+                                    else if (msg.message == 'Fill details')
+                                      FillFormButton(
+                                        buttonText: "Fill product details",
+                                        onSubmit: () {
+                                          // Agent not allowed to fill the form
+                                        },
+                                      )
+                                    else if (msg.message == "Update form rate")
+                                      FillFormButton(
+                                        buttonText: "Update Form",
+                                        onSubmit: () {
+                                          // Only show the widget for history, not to do anything on the agent side
+                                        },
+                                      )
+                                    else if (msg.type == 'product')
+                                      (msg.message != null &&
+                                              msg.message!.isNotEmpty)
+                                          ? ProductMessageBubble(
+                                              productJson: msg.message!,
+                                              isMe: msg.sender ==
+                                                  widget.agentEmail,
+                                              timestamp:
+                                                  ChatUtils().formatTimestamp(
+                                                msg.timestamp.toIso8601String(),
+                                              ),
+                                              isDeleted: msg.isDeleted,
+                                              onLongPress: isAgent
+                                                  ? () => _showDeleteDialog(
+                                                      context, msg.messageId!)
+                                                  : null,
+                                              onTap: () {
+                                                final productMap =
+                                                    jsonDecode(msg.message!);
+                                                final product =
+                                                    Product.fromJson(
+                                                        productMap);
+
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        CustomerProductDescriptionPage(
+                                                      product: product,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            )
+                                          : DeletedMessageBubble(
+                                              isMe: msg.sender ==
+                                                  widget.agentEmail,
+                                              timestamp:
+                                                  ChatUtils().formatTimestamp(
+                                                msg.timestamp.toIso8601String(),
+                                              ),
+                                            )
+                                    else
+                                      MessageBubble(
+                                        message: msg,
+                                        isMe: msg.sender == widget.agentEmail,
+                                        onLongPress: isAgent
+                                            ? () => _showDeleteDialog(
+                                                context, msg.messageId!)
+                                            : null,
+                                      ),
+                                  ],
+                                ),
                               );
                             },
                           ),
               ),
-              if (_isLoadingMore)
-                Center(
-                  child: CircularProgressIndicator(),
+              if (widget.isAccountDeleted == false)
+                ChatInputField(
+                  controller: _chatController,
+                  onSend: () => _sendMessage(messageText: _chatController.text),
+                  onSendImage: () {
+                    _pickAndSendImage(ImageSource.gallery);
+                  },
+                  onSendForm: sendFormButton,
+                  onSendDocument: _pickAndSendDocument,
+                  onSendImageByCamera: () {
+                    _pickAndSendImage(ImageSource.camera);
+                  },
+                  onShareProduct: () => _showProductsBottomSheet(context),
+                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                  isRecording: _isRecording,
+                  recordedSeconds: _recordedSeconds,
                 ),
-              ChatInputField(
-                controller: _chatController,
-                onSend: () => _sendMessage(messageText: _chatController.text),
-                onSendImage: _pickAndSendImage,
-                onSendForm: sendFormButton,
-                onSendDocument: _pickAndSendDocument,
-                onSendVoice: _isRecording ? _stopRecording : _startRecording,
-                isRecording: _isRecording,
-                recordedSeconds: _recordedSeconds,
-              ),
+              const SizedBox(height: 10),
             ],
           ),
           if (_isFormUpdating) FullScreenLoader(),
           if (!_isAtBottom)
             Positioned(
               bottom: 80, // Adjust the position as needed
-              right: 16, // Adjust the position as needed
+              right: 16, // Adjust the posMessageBubbleition as needed
               child: FloatingActionButton(
                 onPressed: _scrollToBottom,
                 mini: true,
                 child: Icon(Icons.arrow_downward_rounded),
               ),
             ),
+          //  Floating day/date header
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: ValueListenableBuilder<String?>(
+              valueListenable: _currentTopDate,
+              builder: (context, date, _) {
+                if (date == null || !_showDateHeader) return SizedBox.shrink();
+                return Center(
+                  child: DateHeader(date: date),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );

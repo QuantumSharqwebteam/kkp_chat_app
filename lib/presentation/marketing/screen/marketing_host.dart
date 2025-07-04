@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/core/network/auth_api.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:kkpchatapp/core/services/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -12,7 +13,9 @@ import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
-import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
+
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
@@ -21,6 +24,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_scree
 import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/marketing_nav_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
+import 'package:provider/provider.dart';
 
 class MarketingHost extends StatefulWidget {
   const MarketingHost({super.key, required this.navigatorKey});
@@ -30,7 +34,7 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost> {
+class _MarketingHostState extends State<MarketingHost> with RouteAware {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
@@ -43,6 +47,10 @@ class _MarketingHostState extends State<MarketingHost> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   OverlayEntry? _activeCallOverlay;
+
+  OverlayEntry? _disconnectOverlay;
+
+  AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
@@ -70,10 +78,23 @@ class _MarketingHostState extends State<MarketingHost> {
             token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onDisconnect(_handleDisconnect);
+        _socketService.onConnect(_handleConnect);
       } else {
         debugPrint("Skipping socket init: agentName or agentEmail is null");
       }
     });
+  }
+
+  Future<void> reinitializeHive() async {
+    await Hive.initFlutter();
+    await Future.wait([
+      Hive.openBox('CREDENTIALS'),
+      Hive.openBox("lastSeenTimeBox"),
+      Hive.openBox('feedBox'),
+      Hive.openBox("lastMessageMap"),
+      // dotenv.load(fileName: "keys.env"), // Only if required again
+    ]);
   }
 
   Future<void> _loadUserData() async {
@@ -95,20 +116,32 @@ class _MarketingHostState extends State<MarketingHost> {
       }
 
       // Load user profile
-      Profile? profile = await auth.getUserInfo();
-      await LocalDbHelper.saveProfile(profile).whenComplete(() {
-        debugPrint(
-            'Loaded profile: $profile'); // Debug print to check loaded profile
-      });
+      final Map<String, dynamic> userData = await auth.getUserInfo();
+      if (userData['message'] ==
+          "Session expired due to login on another device") {
+        await Hive.deleteFromDisk();
+        await reinitializeHive();
+        if (mounted) {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (context) {
+            return LoginPage();
+          }));
+        }
+      } else {
+        Profile? profile = Profile.fromJson(userData['message']);
+        await LocalDbHelper.saveProfile(profile).whenComplete(() {
+          debugPrint(
+              'Loaded profile: $profile'); // Debug print to check loaded profile
+        });
 
-      setState(() {
-        agentName = profile.name ?? "";
-        agentEmail = profile.email ?? ""; // Ensure email is also set
-        debugPrint(
-            'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
-      });
-
-      await _updateScreens();
+        setState(() {
+          agentName = profile.name ?? "";
+          agentEmail = profile.email ?? ""; // Ensure email is also set
+          debugPrint(
+              'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
+        });
+        await _updateScreens();
+      }
     } catch (error) {
       debugPrint('Error in _loadUserData: $error');
     }
@@ -146,25 +179,74 @@ class _MarketingHostState extends State<MarketingHost> {
     String? targetId,
   }) {
     Navigator.push(
-        widget.navigatorKey.currentContext!,
-        MaterialPageRoute(
-          builder: (_) => AgentChatScreen(
-            customerName: customername,
-            customerEmail: customeremail,
-            agentEmail: LocalDbHelper.getProfile()?.email ?? targetId,
-            navigatorKey: widget.navigatorKey,
+      widget.navigatorKey.currentContext!,
+      MaterialPageRoute(
+        builder: (_) => AgentChatScreen(
+          customerName: customername,
+          customerEmail: customeremail,
+          agentEmail: LocalDbHelper.getProfile()?.email ?? targetId,
+          navigatorKey: widget.navigatorKey,
+        ),
+      ),
+    );
+  }
+
+  void _handleConnect() {
+    if (_disconnectOverlay != null) {
+      _disconnectOverlay?.remove();
+      _disconnectOverlay = null;
+    }
+  }
+
+  void _handleDisconnect() {
+    if (_activeCallOverlay != null) {
+      _activeCallOverlay?.remove();
+      _activeCallOverlay = null;
+    }
+
+    final overlayState = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Connection Lost ',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Something went wrong. Please restart the app or check internet connection.',
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                ),
+              ],
+            ),
           ),
-        ));
+        ),
+      ),
+    );
+
+    _disconnectOverlay = overlayEntry;
+    overlayState.insert(overlayEntry);
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
-    // Handle incoming message
-    debugPrint('Incoming message: $data');
-
     _navigateToChat(
-        customeremail: data["senderId"],
-        customername: data["senderName"],
-        targetId: data['targetId']);
+      customeremail: data["senderId"],
+      customername: data["senderName"],
+      targetId: data['targetId'],
+    );
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {
@@ -182,13 +264,22 @@ class _MarketingHostState extends State<MarketingHost> {
 
     late OverlayEntry overlayEntry;
     Timer? timeoutTimer;
-    final audioPlayer = AudioPlayer();
+    _audioPlayer?.stop();
+    _audioPlayer = AudioPlayer();
 
     Future<void> stopAndRemoveOverlay() async {
-      await audioPlayer.stop();
+      try {
+        debugPrint("🛑 Stopping ringtone...");
+        await _audioPlayer?.stop();
+        debugPrint("✅ Ringtone stopped");
+      } catch (e) {
+        debugPrint("⚠️ Failed to stop ringtone: $e");
+      }
+
       timeoutTimer?.cancel();
       overlayEntry.remove();
       _activeCallOverlay = null;
+      _audioPlayer = null; // ✅ ADDED: cleanup reference
     }
 
     overlayEntry = OverlayEntry(
@@ -201,27 +292,40 @@ class _MarketingHostState extends State<MarketingHost> {
           onAnswer: () async {
             await stopAndRemoveOverlay();
             if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AgoraAudioCallScreen(
-                    isCaller: false,
-                    channelName: channelName,
-                    uid: uid,
-                    remoteUserId: callerId,
-                    remoteUserName: callerName,
-                    messageId: incomingCallId,
-                  ),
-                ),
-              );
+              // Set flag to indicate you are on a call screen
+              // Navigator.push(
+              //   context,
+              //   MaterialPageRoute(
+              //     builder: (_) => AgoraAudioCallScreen(
+              //         // isCaller: false,
+              //         // channelName: channelName,
+              //         // uid: uid,
+              //         // remoteUserId: callerId,
+              //         // remoteUserName: callerName,
+              //         // callId: incomingCallId,
+              //         // navigatorKey: navigatorKey,
+              //         ),
+              //   ),
+              // );
+              context.read<CallProvider>().startNewCall(
+                  channelName: channelName,
+                  remoteUserName: callerName,
+                  uid: uid,
+                  callId: incomingCallId,
+                  isCaller: false);
             }
           },
           onReject: () async {
             await stopAndRemoveOverlay();
-            await chatRepository.updateCallData(incomingCallId, "missed");
+            await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
+            _socketService.terminateCall(
+              targetId: callerId,
+              callId: incomingCallId,
+              channelName: channelName,
+            );
           },
-          audioPlayer: audioPlayer,
+          audioPlayer: _audioPlayer!,
         ),
       ),
     );
@@ -239,21 +343,50 @@ class _MarketingHostState extends State<MarketingHost> {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
+    return Consumer<CallProvider>(
+      builder: (context, callProvider, child) {
+        if (callProvider.callDetailsMessage != null) {
+          // Handle the call details message, e.g., save it to the chat storage
+          // and then reset the callDetailsMessage in the provider.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // _handleCallDetailsMessage(callProvider.callDetailsMessage!);
+            // callProvider.setCallDetailsMessage(null);
+          });
+        }
+
+        Widget content = GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+          },
+          child: Scaffold(
+            body: Stack(
+              children: [
+                IndexedStack(
+                  index: _selectedIndex,
+                  children: _screens,
+                ),
+                // if (callProvider.isOutgoingCallVisible)
+                //   OutgoingCallUI(
+                //     onTap: () {
+                //       callProvider.navigatorKey.currentState?.push(
+                //         MaterialPageRoute(
+                //             builder: (_) => const AgoraAudioCallScreen()),
+                //       );
+                //     },
+                //   ),
+              ],
+            ),
+            bottomNavigationBar: MarketingNavBar(
+              selectedIndex: _selectedIndex,
+              onTabSelected: _onTabSelected,
+            ),
+          ),
+        );
+
+        return BackPressHandler(
+          child: content,
+        );
       },
-      child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
-        bottomNavigationBar: MarketingNavBar(
-          selectedIndex: _selectedIndex,
-          onTabSelected: _onTabSelected,
-        ),
-      ),
     );
-    return BackPressHandler(child: content);
   }
 }

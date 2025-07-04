@@ -1,0 +1,5 @@
+
+module flutter_foreground_task.Swift {
+  header "flutter_foreground_task-Swift.h"
+  requires objc
+}

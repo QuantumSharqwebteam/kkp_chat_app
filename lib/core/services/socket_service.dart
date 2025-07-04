@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:hive/hive.dart';
+import 'package:kkpchatapp/core/services/call_overlay_service.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
+//import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/models/chat_message_model.dart';
+// import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
@@ -22,16 +25,22 @@ class SocketService {
   late io.Socket _socket;
   bool _isConnected = false;
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
-  ChatStorageService chatStorageService = ChatStorageService();
+  //ChatStorageService chatStorageService = ChatStorageService();
   int _reconnectAttempts = 0;
   final int _maxReconnectAttempts = 5;
   final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
+  Function(String)? _onMessageDeleted;
   Function(Map<String, dynamic>)? _onIncomingCall;
-  Function(Map<String, dynamic>)? _onCallAnswered;
+  // Function(Map<String, dynamic>)? _onCallAnswered;
   Function(Map<String, dynamic>)? _onCallTerminated;
-  Function(Map<String, dynamic>)? _onSignalCandidate;
+  Function? _onDisconnect;
+  Function? _onConnect;
+
   bool isChatPageOpen = false;
+  String? activeCustomerId;
+
+  Function? onMessageReceivedCallback;
 
   List<String> _roomMembers = [];
   StreamController<List<String>> _statusController =
@@ -44,6 +53,12 @@ class SocketService {
   FlutterLocalNotificationsPlugin? _notificationsPlugin;
 
   SocketService._internal();
+
+  void onMessageReceived(Function(Map<String, dynamic>) callback,
+      {Function? refreshCallback}) {
+    _onMessageReceived = callback;
+    onMessageReceivedCallback = refreshCallback;
+  }
 
   void initSocket(String userName, String userEmail, String role,
       {String? token}) {
@@ -65,6 +80,9 @@ class SocketService {
         "role": role,
         "token": token,
       });
+      if (_onConnect != null) {
+        _onConnect!(); // Trigger the connect callback
+      }
     });
 
     _socket.on('socketId', (socketId) {
@@ -76,32 +94,61 @@ class SocketService {
       _updateRoomMembers(List<String>.from(roomMembers));
     });
 
+    // _socket.on('receiveMessage', (data) {
+    //   debugPrint(data.toString());
+    //   if (isChatPageOpen && _onMessageReceived != null) {
+    //     _onMessageReceived!(data);
+    //   } else if (!isChatPageOpen && _onMessageReceived != null) {
+    //     _chatNotification(data);
+    //   } else {
+    //     return;
+    //   }
+    // });
     _socket.on('receiveMessage', (data) {
-      debugPrint(data.toString());
-      if (isChatPageOpen && _onMessageReceived != null) {
-        _onMessageReceived!(data);
-      } else if (!isChatPageOpen && _onMessageReceived != null) {
-        _chatNotification(data);
+      debugPrint("recived message socket : ${data.toString()}");
+      final String senderId = data['senderId'] ?? '';
+      final String targetId = data['targetId'] ?? '';
+
+      if (isChatPageOpen &&
+          (activeCustomerId == senderId || activeCustomerId == targetId)) {
+        _onMessageReceived?.call(data);
       } else {
-        return;
+        debugPrint("recived message socket : ${data.toString()}");
+        _chatNotification(data);
       }
     });
 
     _socket.on('incomingCall', (data) {
       debugPrint('📥 Agora incomingCall: $data');
       if (_onIncomingCall != null) {
+        CallOverlayService().startRinging();
         _onIncomingCall!(data);
       }
     });
 
-    _socket.on('callAnswered', (data) {
-      debugPrint('📥 callAnswered: $data');
-      _onCallAnswered?.call(data);
+    // _socket.on('callAnswered', (data) {
+    //   debugPrint('📥 callAnswered: $data');
+    //   _onCallAnswered?.call(data);
+    // });
+
+    // inside SocketService.initSocket after _socket.on('callTerminated' …)
+    _socket.on('callTerminated', (data) {
+      debugPrint('📥 callTerminated from server: $data');
+
+      _onCallTerminated?.call(data);
     });
 
-    _socket.on('callTerminated', (data) {
-      debugPrint('📥 callTerminated');
-      _onCallTerminated?.call(data);
+    _socket.on('messageDeleted', (data) {
+      debugPrint("socket message deleted: ${data.toString()}");
+      final messageId = data['messageId'];
+
+      if (isChatPageOpen) {
+        // If the chat page is open, call the existing callback
+        _onMessageDeleted?.call(messageId);
+      } else {
+        // If the chat page is not open, handle the deletion in the background
+        _handleBackgroundMessageDeletion(data);
+      }
     });
 
     _socket.onDisconnect((_) {
@@ -121,6 +168,71 @@ class SocketService {
     });
 
     _socket.connect();
+  }
+
+  void onDisconnect(Function callback) {
+    _onDisconnect = callback;
+  }
+
+  void onConnect(Function callback) {
+    _onConnect = callback;
+  }
+
+  void _handleBackgroundMessageDeletion(Map<String, dynamic> data) async {
+    final messageId = data['messageId'];
+    final senderId = data['senderId'];
+    final targetId = data['targetId'];
+
+    final userType = await LocalDbHelper.getUserType();
+
+    if (userType == "0") {
+      // For customers, retrieve messages using getCustomerMessages
+      final messages = await ChatStorageService().getCustomerMessages(targetId);
+      debugPrint("Retrieved messages for customer: ${messages.length}");
+
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+
+        // Save the updated message state to local storage
+        await ChatStorageService().saveMessage(messages[index], targetId);
+        debugPrint(
+            "Message marked as deleted for customer with ID: $messageId");
+
+        // Verify the message is updated in the storage
+        final updatedMessages =
+            await ChatStorageService().getCustomerMessages(targetId);
+        final updatedIndex = updatedMessages
+            .indexWhere((message) => message.messageId == messageId);
+        if (updatedIndex != -1 && updatedMessages[updatedIndex].isDeleted) {
+          debugPrint("Successfully updated message in storage for customer.");
+        } else {
+          debugPrint("Failed to update message in storage for customer.");
+        }
+      } else {
+        debugPrint("Message not found for deletion with ID: $messageId");
+      }
+    } else {
+      // For agents, the box name is a combination of targetId and senderId
+      String boxName = '$targetId$senderId';
+
+      // Retrieve and update the message in local storage
+      final messages = await ChatStorageService().getMessages(boxName);
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
+      if (index != -1) {
+        messages[index].isDeleted = true;
+        messages[index].message = "This message is deleted";
+
+        // Save the updated message state to local storage
+        await ChatStorageService().saveMessage(messages[index], boxName);
+
+        // Update the last message status
+        updateLastMessage(senderId, "message deleted");
+      }
+    }
   }
 
   void _updateRoomMembers(List<String> newRoomMembers) {
@@ -171,13 +283,17 @@ class SocketService {
     _onMessageReceived = callback;
   }
 
+  void onMessageDeleted(Function(String) callback) {
+    _onMessageDeleted = callback;
+  }
+
   void onIncomingCall(Function(Map<String, dynamic>) callback) {
     _onIncomingCall = callback;
   }
 
-  void onCallAnswered(Function(Map<String, dynamic>) callback) {
-    _onCallAnswered = callback;
-  }
+  // void onCallAnswered(Function(Map<String, dynamic>) callback) {
+  //   _onCallAnswered = callback;
+  // }
 
   void onCallTerminated(Function(Map<String, dynamic>) callback) {
     _onCallTerminated = callback;
@@ -198,17 +314,40 @@ class SocketService {
       });
     } else {
       debugPrint('🚫 Max reconnection attempts reached or user logged out.');
+      if (_onDisconnect != null) {
+        _onDisconnect!(); // Trigger the disconnect callback only when max attempts are reached
+      }
+      // Reset reconnection attempts and reinitialize the socket
+      _reconnectAttempts = 0;
+      Future.delayed(_reconnectInterval, () {
+        debugPrint('🔄 Reinitializing socket connection...');
+        _socket.connect();
+        _socket.emit(
+            'join', {'user': userName, 'userId': userEmail, "role": role});
+      });
     }
   }
 
+  void updateLastMessage(String email, String message) {
+    LocalDbHelper.updateLastMessage(email, message);
+  }
+
+  String getLastMessage(String email) {
+    String? lastMessage = LocalDbHelper.getLastMessage(email);
+    if (lastMessage == null) return "last message";
+    return lastMessage;
+  }
+
   void sendMessage({
-    String? targetEmail,
+    String? targetEmail, // email to whom we are sending the email
     String? message,
-    required String senderEmail,
+    required String senderEmail, // from which email we are sending
     required String senderName,
     String type = 'text',
     Map<String, dynamic>? form,
     String? mediaUrl,
+    String? timestamp,
+    String? messageId,
   }) {
     if (_isConnected) {
       Map<String, dynamic> messageData = {
@@ -221,10 +360,49 @@ class SocketService {
       if (message != null) messageData['message'] = message;
       if (form != null) messageData['form'] = form;
       if (mediaUrl != null) messageData['mediaUrl'] = mediaUrl;
+      if (timestamp != null) messageData['timestamp'] = timestamp;
+      if (messageId != null) messageData["messageId"] = messageId;
 
       _socket.emit('sendMessage', messageData);
+      // debugPrint("message sent :${messageData.toString()}");
+
+      // Save the last message for the user last chatted
+      if (type == "product") {
+        updateLastMessage(targetEmail ?? "", "shared product");
+      } else if (message != null &&
+          message.contains("Your order is confirmed with form Id")) {
+        // Handle order confirmation
+        updateLastMessage(targetEmail ?? "", "Order Confirmed");
+      } else if (message != null &&
+          message.contains("Your order is declined with form Id")) {
+        // Handle order decline
+        updateLastMessage(targetEmail ?? "", "Order Declined");
+      } else {
+        updateLastMessage(targetEmail ?? "", messageData['message']);
+      }
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
+    }
+  }
+
+  void deleteMessage(String messageId, String senderId, [String? targetId]) {
+    if (_isConnected) {
+      // Create a map with the required parameters
+      Map<String, dynamic> messageData = {
+        'messageId': messageId,
+        'senderId': senderId,
+      };
+
+      // Add targetId to the map if it is provided
+      if (targetId != null) {
+        messageData['targetId'] = targetId;
+      }
+
+      // Emit the deleteMessage event with the constructed map
+      _socket.emit('deleteMessage', messageData);
+      debugPrint("🗑️ Delete message event emitted: $messageId");
+    } else {
+      debugPrint('Socket is not connected. Cannot delete message.');
     }
   }
 
@@ -234,6 +412,7 @@ class SocketService {
     required String callerId,
     required String callerName,
     required String callId,
+    required String timestamp,
   }) {
     if (_isConnected) {
       final payload = {
@@ -241,6 +420,7 @@ class SocketService {
         'callerId': callerId,
         'callerName': callerName,
         'callId': callId,
+        'timestamp': timestamp,
       };
       if (targetId != null) payload['targetId'] = targetId;
       debugPrint('📤 Emitting Agora call: $payload');
@@ -250,10 +430,19 @@ class SocketService {
 
   void terminateCall({
     required String targetId,
+    required String callId,
+    String? channelName,
   }) {
     if (_isConnected) {
-      debugPrint("❌ Sending terminate call to $targetId");
-      _socket.emit('terminateCall', {'targetId': targetId});
+      final data = {
+        'targetId': targetId,
+        'callId': callId,
+      };
+      if (channelName != null) {
+        data['channelName'] = channelName;
+      }
+      debugPrint("❌ Sending terminate call: $data");
+      _socket.emit('terminateCall', data);
     }
   }
 
@@ -282,22 +471,54 @@ class SocketService {
   Future<void> _chatNotification(Map<String, dynamic> data) async {
     debugPrint('🔔 Foreground Push Notification: $data');
 
+    // 👉 Skip system/info messages that don’t have chat content
+    if (!data.containsKey('type') ||
+        !data.containsKey('senderId') ||
+        !data.containsKey('message')) {
+      debugPrint('ℹ️ Ignoring non-chat notification: $data');
+      return;
+    }
+
     final userType = await LocalDbHelper.getUserType();
 
-    final message = ChatMessageModel(
-      message: data["message"],
-      timestamp: DateTime.now(),
-      sender: data["senderId"],
-      type: data["type"] ?? "text",
-      mediaUrl: data["mediaUrl"],
-      form: data["form"],
-    );
+    // final message = ChatMessageModel(
+    //   message: data["message"] ?? "",
+    //   timestamp: DateTime.now(),
+    //   sender: data["senderId"] ?? "",
+    //   type: data["type"] ?? "text",
+    //   mediaUrl: data["mediaUrl"],
+    //   form: data["form"],
+    // );
 
     if (userType == "0") {
-      chatStorageService.saveMessage(message, data['targetId']);
+      // chatStorageService.saveMessage(message, data['targetId']);
+
+      // Store message count in Hive
+      final currentUserEmail = LocalDbHelper.getProfile()!.email;
+      final boxNameWithCount = "${currentUserEmail}count";
+      final box = await Hive.openBox<int>(boxNameWithCount);
+      int count = box.get('count', defaultValue: 0)! + 1;
+      await box.put('count', count);
+
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
     } else {
       final boxName = data['targetId'] + data['senderId'];
-      chatStorageService.saveMessage(message, boxName);
+      final boxNameWithCount = "${boxName}count";
+      final box = await Hive.openBox<int>(boxNameWithCount);
+      int count = box.get('count', defaultValue: 0)! + 1;
+      await box.put('count', count);
+      // chatStorageService.saveMessage(message, boxName);
+      // Save the last message for the
+      if (data['type'] == "product") {
+        updateLastMessage(data["senderId"], "shared product");
+      } else {
+        updateLastMessage(data['senderId'], data['message']);
+      }
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
     }
 
     if (_notificationsPlugin == null) {
@@ -321,6 +542,15 @@ class SocketService {
       await _notificationsPlugin!.initialize(initSettings,
           onDidReceiveNotificationResponse: _handleNotificationTap);
     }
+    // Request permissions for iOS
+    await _notificationsPlugin!
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
 
     const androidDetails = AndroidNotificationDetails(
       'your_channel_id',
@@ -353,6 +583,11 @@ class SocketService {
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;
+  }
+
+  void setChatPageState({required bool isOpen, String? customerId}) {
+    isChatPageOpen = isOpen;
+    activeCustomerId = isOpen ? customerId : null;
   }
 
   Future<void> _handleNotificationTap(NotificationResponse response) async {

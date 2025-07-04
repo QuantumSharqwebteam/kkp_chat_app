@@ -248,18 +248,22 @@ class ChatService {
         final data = jsonDecode(response.body);
 
         if (data["status"] == 200 && data["token"] != null) {
-          debugPrint("✅ Agora token generated:${data["token"]}");
+          if (kDebugMode) {
+            debugPrint("✅ Agora token generated:${data["token"]}");
+          }
           return data["token"];
         } else {
-          debugPrint("❌ Token not present in response: $data");
+          //   debugPrint("❌ Token not present in response: $data");
           return null;
         }
       } else {
-        debugPrint("❌ Failed to fetch token: ${response.statusCode}");
+        //  debugPrint("❌ Failed to fetch token: ${response.statusCode}");
         return null;
       }
     } catch (e) {
-      debugPrint("❌ Exception in getAgoraToken: $e");
+      if (kDebugMode) {
+        debugPrint("❌ Exception in getAgoraToken: $e");
+      }
       return null;
     }
   }
@@ -297,7 +301,9 @@ class ChatService {
       );
 
       if (response.statusCode != 200) {
-        debugPrint('Failed to update form status: ${response.body}');
+        if (kDebugMode) {
+          debugPrint('Failed to update form status: ${response.body}');
+        }
         throw Exception('Failed to update form status: ${response.body}');
       }
     } catch (e) {
@@ -319,7 +325,9 @@ class ChatService {
       final responseBody = jsonDecode(response.body);
 
       if (responseBody['status'] != 200) {
-        debugPrint("Failed to update form rate: ${response.body}");
+        if (kDebugMode) {
+          debugPrint("Failed to update form rate: ${response.body}");
+        }
         throw Exception('Failed to update form rate: ${response.body}');
       }
       // No need to throw an exception if the status is 200
@@ -344,13 +352,19 @@ class ChatService {
       );
 
       if (response.statusCode == 200) {
-        debugPrint(
-            '✅ Call data updated successfully:${response.statusCode} with status marked as:$callStatus');
+        if (kDebugMode) {
+          debugPrint(
+              '✅ Call data updated successfully:${response.statusCode} with status marked as:$callStatus');
+        }
       } else {
-        debugPrint('Failed to update call data: ${response.body}');
+        if (kDebugMode) {
+          debugPrint('Failed to update call data: ${response.body}');
+        } else {}
       }
     } catch (e) {
-      debugPrint("❌ Error updating call data: $e ");
+      if (kDebugMode) {
+        debugPrint("❌ Error updating call data: $e ");
+      }
     }
   }
 
@@ -387,13 +401,21 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
+
         final List<dynamic> messagesJson = json['messages'];
         return messagesJson
             .map((msg) => MessageModel.fromJson(msg, agentEmail))
             .toList();
-      } else {
-        throw Exception("Failed to load agent messages: ${response.body}");
+      } else if (response.statusCode == 404) {
+        final json = jsonDecode(response.body);
+        if (json['message'] == 'No conversations found for this user') {
+          return [];
+        }
+      } // Log for other status codes
+      if (kDebugMode) {
+        print("Unexpected response (${response.statusCode}): ${response.body}");
       }
+      return [];
     } catch (e) {
       throw Exception("Error fetching agent messages: $e");
     }
@@ -405,7 +427,8 @@ class ChatService {
     String? before,
   }) async {
     final url = Uri.parse(
-        "$baseUrl/chat/getUserMessages/$customerEmail?limit=$limit${before != null ? '&before=$before' : ''}");
+      "$baseUrl/chat/getUserMessages/$customerEmail?limit=$limit${before != null ? '&before=$before' : ''}",
+    );
 
     try {
       final response = await client.get(url);
@@ -416,9 +439,18 @@ class ChatService {
         return messagesJson
             .map((msg) => MessageModel.fromJson(msg, customerEmail))
             .toList();
-      } else {
-        throw Exception("Failed to load messages: ${response.body}");
+      } else if (response.statusCode == 404) {
+        final json = jsonDecode(response.body);
+        if (json['message'] == 'No conversations found for this user') {
+          return [];
+        }
       }
+
+      // Log for other status codes
+      if (kDebugMode) {
+        print("Unexpected response (${response.statusCode}): ${response.body}");
+      }
+      return [];
     } catch (e) {
       throw Exception("Error fetching messages: $e");
     }

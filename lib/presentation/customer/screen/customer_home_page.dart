@@ -1,18 +1,15 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
-import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/data/models/product_model.dart';
-import 'package:kkpchatapp/data/models/profile_model.dart';
-import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:kkpchatapp/data/repositories/product_repository.dart';
-import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
-import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:provider/provider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkpchatapp/presentation/customer/widget/custom_app_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class CustomerHomePage extends StatefulWidget {
   const CustomerHomePage({super.key});
@@ -22,31 +19,22 @@ class CustomerHomePage extends StatefulWidget {
 }
 
 class _CustomerHomePageState extends State<CustomerHomePage> {
-  final ProductRepository _productRepository = ProductRepository();
-  late Future<List<Product>> _productsFuture;
-  AuthRepository auth = AuthRepository();
-  Profile? profileData;
-  String? name;
+  late CustomerHomeProvider _provider;
+  bool _initialized = false;
+  int _currentCarouselIndex = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _productsFuture = _productRepository.getProducts();
-    _loadUserInfo();
-  }
-
-  Future<void> _loadUserInfo() async {
-    try {
-      await auth.getUserInfo().then((value) {
-        profileData = value;
-        setState(() {
-          name = profileData!.name;
-        });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _provider = Provider.of<CustomerHomeProvider>(context);
+    if (!_initialized) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _provider.loadUserInfo();
+        _provider.fetchProducts();
+        _provider.fetchPosters();
+        _provider.initSocketService();
       });
-    } catch (e) {
-      if (kDebugMode) {
-        print(e.toString());
-      }
+      _initialized = true;
     }
   }
 
@@ -57,146 +45,131 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       appBar: PreferredSize(
         preferredSize: const Size(double.infinity, 100),
         child: SafeArea(
-            child: CustomAppBar(
-          name: profileData?.name,
-        )),
+          child: CustomAppBar(
+            name: _provider.profileData?.name,
+          ),
+        ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              _carousel(),
-              const SizedBox(height: 10),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(15),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+        child: RefreshIndicator(
+          onRefresh: _provider.fetchNotificationCount,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                _carousel(),
+                const SizedBox(height: 10),
+                _buildCarouselIndicator(),
+                const SizedBox(height: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(15),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _enquirySupport(
+                        onTap: () async {
+                          await _provider.resetMessageCount();
+                          await _provider.fetchNotificationCount();
+                          _provider.navigateToChat();
+                        },
+                        notificationCount: _provider.notificationCount,
+                      ),
+                      const SizedBox(height: 20),
+                      Text('New Products',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      _provider.isLoading
+                          ? ShimmerGrid()
+                          : _provider.newProducts != null &&
+                                  _provider.previousProducts != null
+                              ? Column(
+                                  children: [
+                                    GridView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 15),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                        mainAxisExtent: 250,
+                                      ),
+                                      itemCount: _provider.newProducts!.length,
+                                      itemBuilder: (context, index) {
+                                        final product =
+                                            _provider.newProducts![index];
+                                        return ProductItem(
+                                          product: product,
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    CustomerProductDescriptionPage(
+                                                        product: product),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text('Previous Products',
+                                        style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold)),
+                                    GridView.builder(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 15),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                        mainAxisExtent: 250,
+                                      ),
+                                      itemCount:
+                                          _provider.previousProducts!.length,
+                                      itemBuilder: (context, index) {
+                                        final product =
+                                            _provider.previousProducts![index];
+                                        return ProductItem(
+                                          product: product,
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    CustomerProductDescriptionPage(
+                                                        product: product),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                )
+                              : Center(child: Text("No products available")),
+                    ],
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _enquirySupport(onTap: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
-                        return CustomerChatScreen(
-                          agentName: "Agent",
-                          customerName: name,
-                          customerEmail: profileData!.email,
-                          navigatorKey: navigatorKey,
-                        );
-                      }));
-                    }),
-                    const SizedBox(height: 20),
-
-                    //new products list
-                    Text('New Products', style: AppTextStyles.black18_600),
-
-                    FutureBuilder<List<Product>>(
-                      future: _productsFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return ShimmerGrid();
-                        } else if (snapshot.hasError) {
-                          return Center(
-                              child: Text("Error: ${snapshot.error}"));
-                        } else if (!snapshot.hasData ||
-                            snapshot.data!.isEmpty) {
-                          return const Center(
-                              child: Text("No products available"));
-                        }
-
-                        final products = snapshot.data!;
-                        final newProducts = products.length >= 2
-                            ? products.sublist(0, 2)
-                            : products;
-                        final previousProducts = products.length >= 2
-                            ? products.sublist(
-                                products.length - 2, products.length)
-                            : products;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GridView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 15),
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                                mainAxisExtent: 250,
-                              ),
-                              itemCount: newProducts.length,
-                              itemBuilder: (context, index) {
-                                final product = newProducts[index];
-                                return ProductItem(
-                                  product: product,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            CustomerProductDescriptionPage(
-                                                product: product),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 20),
-                            //previous products lists
-                            Text('Previous Products',
-                                style: AppTextStyles.black18_600),
-
-                            GridView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 15),
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                                mainAxisExtent: 250,
-                              ),
-                              itemCount: previousProducts.length,
-                              itemBuilder: (context, index) {
-                                final product = previousProducts[index];
-                                return ProductItem(
-                                  product: product,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            CustomerProductDescriptionPage(
-                                                product: product),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -204,65 +177,145 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   Widget _carousel() {
-    List<String> imageUrls = [
-      "assets/images/carousel_image1.png",
-      "assets/images/carousel_image1.png",
-      "assets/images/carousel_image1.png",
-    ];
+    final imageUrls = _provider.carouselImageUrls;
 
-    return CarouselSlider(
-      options: CarouselOptions(
-        autoPlay: true,
-        enlargeCenterPage: true,
-        aspectRatio: 16 / 6,
-        viewportFraction: 1,
-      ),
-      items: imageUrls.map((imageUrl) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset(imageUrl, fit: BoxFit.fill),
-        );
-      }).toList(),
-    );
-  }
-}
+    final double carouselHeight = MediaQuery.of(context).size.width / (16 / 6);
+    final BorderRadius borderRadius = BorderRadius.circular(10);
 
-Widget _enquirySupport({VoidCallback? onTap}) {
-  return Card(
-    color: Colors.white,
-    elevation: 5,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: ListTile(
-      onTap: onTap,
-      leading: Stack(children: [
-        const CircleAvatar(
-          radius: 25,
-          backgroundImage: AssetImage("assets/images/user4.png"),
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Material(
-            elevation: 5,
-            color: Colors.transparent,
-            type: MaterialType.circle,
-            child: Container(
-              height: 12,
-              width: 12,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(50),
-                color: AppColors.activeGreen,
+    // Show shimmer while loading
+    if (_provider.isPostersLoading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: SizedBox(
+          height: carouselHeight,
+          width: double.infinity,
+          child: ClipRRect(
+            borderRadius: borderRadius,
+            child: Shimmer.fromColors(
+              baseColor: Colors.grey.shade300,
+              highlightColor: Colors.grey.shade100,
+              child: Container(
+                color: Colors.white,
               ),
             ),
           ),
         ),
-      ]),
-      title: Text('Product Enquirers', style: AppTextStyles.black16_600),
-      subtitle: Text('How may I Help you?',
-          overflow: TextOverflow.ellipsis, style: AppTextStyles.black12_400),
-      trailing: Text('2m', style: AppTextStyles.black12_700),
-    ),
-  );
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: SizedBox(
+        height: carouselHeight,
+        width: double.infinity,
+        child: CarouselSlider(
+          options: CarouselOptions(
+            autoPlay: true,
+            enlargeCenterPage: true,
+            height: carouselHeight, // 👈 explicitly set height
+            viewportFraction: 1,
+            onPageChanged: (index, reason) {
+              setState(() {
+                _currentCarouselIndex = index;
+              });
+            },
+          ),
+          items: imageUrls.map((imageUrl) {
+            return ClipRRect(
+              borderRadius: borderRadius,
+              child: imageUrl.startsWith("http")
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey.shade300,
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey.shade300,
+                      ),
+                    )
+                  : Image.asset(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCarouselIndicator() {
+    final imageUrls = _provider.carouselImageUrls;
+
+    return imageUrls.isEmpty
+        ? const SizedBox.shrink()
+        : AnimatedSmoothIndicator(
+            activeIndex: _currentCarouselIndex,
+            count: imageUrls.length,
+            effect: WormEffect(
+              dotHeight: 8,
+              dotWidth: 8,
+              activeDotColor: AppColors.bluePrimary,
+              dotColor: Colors.grey,
+            ),
+          );
+  }
+
+  Widget _enquirySupport({VoidCallback? onTap, int? notificationCount}) {
+    return Card(
+      color: Colors.white,
+      elevation: 5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        leading: Stack(children: [
+          const CircleAvatar(
+            radius: 25,
+            backgroundImage: AssetImage("assets/images/user.jpg"),
+          ),
+          // Positioned(
+          //   bottom: 0,
+          //   right: 0,
+          //   child: Material(
+          //     elevation: 5,
+          //     color: Colors.transparent,
+          //     type: MaterialType.circle,
+          //     child: Container(
+          //       height: 12,
+          //       width: 12,
+          //       decoration: BoxDecoration(
+          //         borderRadius: BorderRadius.circular(50),
+          //         color: Colors.green,
+          //       ),
+          //     ),
+          //   ),
+          // ),
+        ]),
+        title: Text('Product Enquirers',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        subtitle: Text('How may I Help you?', style: TextStyle(fontSize: 12)),
+        trailing: notificationCount != null && notificationCount > 0
+            ? Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  notificationCount.toString(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            : SizedBox.shrink(),
+      ),
+    );
+  }
 }

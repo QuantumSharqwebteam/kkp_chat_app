@@ -59,11 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAs16XuAjCiUtr51yrE9y4FX105lS3gWsA',
-    appId: '1:840773427468:ios:2a7945653e33e1094c6929',
+    appId: '1:840773427468:ios:555e7b0f08f3ef434c6929',
     messagingSenderId: '840773427468',
     projectId: 'kkp-chat-326df',
     storageBucket: 'kkp-chat-326df.firebasestorage.app',
-    iosBundleId: 'com.kkptextile.kkpchatapp',
+    iosBundleId: 'com.hertzworkworkz.kkpgroupchatapp',
   );
-
 }
