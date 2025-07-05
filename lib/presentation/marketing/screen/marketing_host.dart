@@ -264,6 +264,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
     late OverlayEntry overlayEntry;
     Timer? timeoutTimer;
+    // ✅ Ensure previous player is stopped before creating new one
     _audioPlayer?.stop();
     _audioPlayer = AudioPlayer();
 
@@ -272,13 +273,9 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
         if (_audioPlayer != null) {
           debugPrint("🛑 Attempting to stop ringtone...");
 
-          // Avoid stopping a disposed or uninitialized player
-          final playerState = _audioPlayer!.state;
-          if (playerState != PlayerState.stopped &&
-              playerState != PlayerState.completed) {
-            await _audioPlayer!.stop();
-            debugPrint("✅ Ringtone stopped");
-          }
+          // ✅ Always try to stop the player – avoid relying on .state (iOS issues)
+          await _audioPlayer!.stop();
+          debugPrint("✅ Ringtone stopped");
 
           await _audioPlayer!.release();
           await _audioPlayer!.dispose();
