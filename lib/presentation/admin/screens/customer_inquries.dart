@@ -366,22 +366,25 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                   ),
                 if (hasInquiries) const SizedBox(height: 10),
                 if (showFilters && hasInquiries) _buildFilters(),
-              ],
-            ),
-          ),
-
-          const Divider(
-            color: AppColors.black2E2E2E,
+                if (showFilters && hasInquiries)
+                const Divider(
+            color: AppColors.greyE5E7EB,
             thickness: 0.6,
             height: 0,
           ),
-          const SizedBox(height: 8),
+        
+           if (showFilters && hasInquiries)
           Container(
             height: 5,
             color: AppColors.greyD9D9D9.withOpacity(0.3),
           ),
           const SizedBox(height: 14),
 
+              ],
+            ),
+          ),
+
+          
           Expanded(child: _buildInquiryList()),
         ],
       ),
