@@ -322,50 +322,70 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
               ]
             : [],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  if (hasInquiries)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomSearchBar(
-                            enable: true,
-                            controller: _searchController,
-                            hintText: "Search by anything...",
-                            onChanged: (value) => _applyFilters(),
-                          ),
+      body: isLoading
+    ? const Center(child: CircularProgressIndicator())
+    : Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              children: [
+                if (hasInquiries)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomSearchBar(
+                          enable: true,
+                          controller: _searchController,
+                          hintText: "Search by anything...",
+                          onChanged: (value) => _applyFilters(),
                         ),
-                        const SizedBox(width: 10),
-                        GestureDetector(
-                          onTap: toggleShowFilters,
-                          child: Container(
-                            width: 50,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                  width: 1, color: AppColors.greyB2BACD),
-                            ),
-                            child: CustomImage(
-                              imagePath: ImageConstants.filterIcon,
-                              height: 25,
-                              width: 25,
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: toggleShowFilters,
+                        child: Container(
+                          width: 56,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              width: 1,
+                              color: AppColors.greyB2BACD,
                             ),
                           ),
+                          child: CustomImage(
+                            imagePath: ImageConstants.filterIcon,
+                            height: 25,
+                            width: 25,
+                          ),
                         ),
-                      ],
-                    ),
-                  if (hasInquiries) const SizedBox(height: 20),
-                  if (showFilters && hasInquiries) _buildFilters(),
-                  Expanded(child: _buildInquiryList()),
-                ],
-              ),
+                      ),
+                    ],
+                  ),
+                if (hasInquiries) const SizedBox(height: 10),
+                if (showFilters && hasInquiries) _buildFilters(),
+              ],
+            ),
+          ),
+
+          const Divider(
+            color: AppColors.black2E2E2E,
+            thickness: 0.6,
+            height: 0,
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 5,
+            color: AppColors.greyD9D9D9.withOpacity(0.3),
+          ),
+          const SizedBox(height: 14),
+
+          Expanded(child: _buildInquiryList()),
+        ],
       ),
+
     );
   }
 

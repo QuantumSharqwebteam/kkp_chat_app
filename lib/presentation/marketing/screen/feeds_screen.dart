@@ -144,18 +144,14 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   Widget _buildFilterButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          FilterButton(icon: Icons.search_rounded),
-          FilterButton(
-            onTap: togglePinnedMessages,
-            text: "Pinned Messages",
-          ),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        FilterButton(
+          onTap: togglePinnedMessages,
+          text: "Pinned Messages",
+        ),
+      ],
     );
   }
 
