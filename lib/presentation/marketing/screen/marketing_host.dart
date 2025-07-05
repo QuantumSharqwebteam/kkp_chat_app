@@ -273,8 +273,9 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
         if (_audioPlayer != null) {
           debugPrint("🛑 Attempting to stop ringtone...");
 
-          // ✅ Always try to stop the player – avoid relying on .state (iOS issues)
           await _audioPlayer!.stop();
+          await _audioPlayer!
+              .setSource(AssetSource('')); // 👈 Important for iOS
           debugPrint("✅ Ringtone stopped");
 
           await _audioPlayer!.release();
