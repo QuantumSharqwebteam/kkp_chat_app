@@ -191,19 +191,31 @@ class _CustomerHostState extends State<CustomerHost> {
 
     Future<void> stopAndRemoveOverlay() async {
       try {
-        debugPrint("🛑 Stopping ringtone...");
-        await _audioPlayer?.stop();
-        await _audioPlayer?.release(); // 👈 Required for iOS
-        await _audioPlayer?.dispose();
-        debugPrint("✅ Ringtone stopped");
+        if (_audioPlayer != null) {
+          debugPrint("🛑 Attempting to stop ringtone...");
+
+          // Avoid stopping a disposed or uninitialized player
+          final playerState = _audioPlayer!.state;
+          if (playerState != PlayerState.stopped &&
+              playerState != PlayerState.completed) {
+            await _audioPlayer!.stop();
+            debugPrint("✅ Ringtone stopped");
+          }
+
+          await _audioPlayer!.release();
+          await _audioPlayer!.dispose();
+          debugPrint("✅ AudioPlayer released and disposed");
+        } else {
+          debugPrint("⚠️ AudioPlayer already null or disposed");
+        }
       } catch (e) {
-        debugPrint("⚠️ Failed to stop ringtone: $e");
+        debugPrint("❌ Failed to stop/release ringtone: $e");
       }
 
       timeoutTimer?.cancel();
       overlayEntry.remove();
       _activeCallOverlay = null;
-      _audioPlayer = null; // ✅ ADDED: cleanup reference
+      _audioPlayer = null;
     }
 
     overlayEntry = OverlayEntry(
@@ -248,7 +260,6 @@ class _CustomerHostState extends State<CustomerHost> {
               channelName: channelName,
             );
           },
-          audioPlayer: _audioPlayer!,
         ),
       ),
     );
