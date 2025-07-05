@@ -271,6 +271,8 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
       try {
         debugPrint("🛑 Stopping ringtone...");
         await _audioPlayer?.stop();
+        await _audioPlayer?.release(); // 👈 Required for iOS
+        await _audioPlayer?.dispose();
         debugPrint("✅ Ringtone stopped");
       } catch (e) {
         debugPrint("⚠️ Failed to stop ringtone: $e");
