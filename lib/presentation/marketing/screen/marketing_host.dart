@@ -149,6 +149,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
   @override
   void dispose() {
+    _audioPlayer?.stop();
     _socketService.disconnect(); // Disconnect when leaving the host screen
     super.dispose();
   }
@@ -264,28 +265,16 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
     late OverlayEntry overlayEntry;
     Timer? timeoutTimer;
-    // ✅ Ensure previous player is stopped before creating new one
     _audioPlayer?.stop();
     _audioPlayer = AudioPlayer();
-
     Future<void> stopAndRemoveOverlay() async {
       try {
-        if (_audioPlayer != null) {
-          debugPrint("🛑 Attempting to stop ringtone...");
+        debugPrint("🛑 Stopping ringtone...");
 
-          await _audioPlayer!.stop();
-          await _audioPlayer!
-              .setSource(AssetSource('')); // 👈 Important for iOS
-          debugPrint("✅ Ringtone stopped");
-
-          await _audioPlayer!.release();
-          await _audioPlayer!.dispose();
-          debugPrint("✅ AudioPlayer released and disposed");
-        } else {
-          debugPrint("⚠️ AudioPlayer already null or disposed");
-        }
+        await _audioPlayer?.stop();
+        debugPrint("✅ Ringtone stopped");
       } catch (e) {
-        debugPrint("❌ Failed to stop/release ringtone: $e");
+        debugPrint("⚠️ Failed to stop ringtone: $e");
       }
 
       timeoutTimer?.cancel();
@@ -304,21 +293,6 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
           onAnswer: () async {
             await stopAndRemoveOverlay();
             if (context.mounted) {
-              // Set flag to indicate you are on a call screen
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (_) => AgoraAudioCallScreen(
-              //         // isCaller: false,
-              //         // channelName: channelName,
-              //         // uid: uid,
-              //         // remoteUserId: callerId,
-              //         // remoteUserName: callerName,
-              //         // callId: incomingCallId,
-              //         // navigatorKey: navigatorKey,
-              //         ),
-              //   ),
-              // );
               context.read<CallProvider>().startNewCall(
                   channelName: channelName,
                   remoteUserName: callerName,
@@ -329,6 +303,8 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
           },
           onReject: () async {
             await stopAndRemoveOverlay();
+            await _audioPlayer?.stop();
+            await Future.delayed(const Duration(milliseconds: 100));
             await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
             _socketService.terminateCall(
@@ -337,6 +313,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
               channelName: channelName,
             );
           },
+          audioPlayer: _audioPlayer!,
         ),
       ),
     );

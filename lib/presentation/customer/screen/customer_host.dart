@@ -222,6 +222,7 @@ class _CustomerHostState extends State<CustomerHost> {
         left: 16,
         right: 16,
         child: IncomingCallWidget(
+          audioPlayer: _audioPlayer!,
           callerName: callerName,
           onAnswer: () async {
             await stopAndRemoveOverlay();

@@ -323,72 +323,67 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             : [],
       ),
       body: isLoading
-    ? const Center(child: CircularProgressIndicator())
-    : Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                if (hasInquiries)
-                  Row(
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: CustomSearchBar(
-                          enable: true,
-                          controller: _searchController,
-                          hintText: "Search by anything...",
-                          onChanged: (value) => _applyFilters(),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: toggleShowFilters,
-                        child: Container(
-                          width: 56,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              width: 1,
-                              color: AppColors.greyB2BACD,
+                      if (hasInquiries)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CustomSearchBar(
+                                enable: true,
+                                controller: _searchController,
+                                hintText: "Search by anything...",
+                                onChanged: (value) => _applyFilters(),
+                              ),
                             ),
-                          ),
-                          child: CustomImage(
-                            imagePath: ImageConstants.filterIcon,
-                            height: 25,
-                            width: 25,
-                          ),
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: toggleShowFilters,
+                              child: Container(
+                                width: 56,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    width: 1,
+                                    color: AppColors.greyB2BACD,
+                                  ),
+                                ),
+                                child: CustomImage(
+                                  imagePath: ImageConstants.filterIcon,
+                                  height: 25,
+                                  width: 25,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                      if (hasInquiries) const SizedBox(height: 10),
+                      if (showFilters && hasInquiries) _buildFilters(),
+                      if (showFilters && hasInquiries)
+                        const Divider(
+                          color: AppColors.greyE5E7EB,
+                          thickness: 0.6,
+                          height: 0,
+                        ),
+                      if (showFilters && hasInquiries)
+                        Container(
+                          height: 5,
+                          color: AppColors.greyD9D9D9.withOpacity(0.3),
+                        ),
+                      const SizedBox(height: 14),
                     ],
                   ),
-                if (hasInquiries) const SizedBox(height: 10),
-                if (showFilters && hasInquiries) _buildFilters(),
-                if (showFilters && hasInquiries)
-                const Divider(
-            color: AppColors.greyE5E7EB,
-            thickness: 0.6,
-            height: 0,
-          ),
-        
-           if (showFilters && hasInquiries)
-          Container(
-            height: 5,
-            color: AppColors.greyD9D9D9.withOpacity(0.3),
-          ),
-          const SizedBox(height: 14),
-
+                ),
+                Expanded(child: _buildInquiryList()),
               ],
             ),
-          ),
-
-          
-          Expanded(child: _buildInquiryList()),
-        ],
-      ),
-
     );
   }
 
