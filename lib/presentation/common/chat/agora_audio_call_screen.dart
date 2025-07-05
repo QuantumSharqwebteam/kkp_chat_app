@@ -46,7 +46,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     }
 
     _callProvider.endCall();
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
   }
 
   @override
