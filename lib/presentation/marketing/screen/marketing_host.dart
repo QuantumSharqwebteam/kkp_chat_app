@@ -34,7 +34,7 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost> with RouteAware {
+class _MarketingHostState extends State<MarketingHost> {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
