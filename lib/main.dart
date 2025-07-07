@@ -1,4 +1,3 @@
-import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -76,25 +75,6 @@ void main() async {
 
   // Set the global flag to true after initialization
   // isAppInitialized = true;
-  AudioPlayer.global.setAudioContext(
-    AudioContext(
-      iOS: AudioContextIOS(
-        category: AVAudioSessionCategory.playAndRecord,
-        options: {
-          AVAudioSessionOptions.defaultToSpeaker,
-          AVAudioSessionOptions.allowBluetooth,
-        },
-      ),
-      android: AudioContextAndroid(
-        isSpeakerphoneOn: true,
-        stayAwake: false,
-        contentType: AndroidContentType.music,
-        usageType: AndroidUsageType.voiceCommunication,
-        audioFocus: AndroidAudioFocus.gainTransient,
-      ),
-    ),
-  );
-
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // Handle terminated state
