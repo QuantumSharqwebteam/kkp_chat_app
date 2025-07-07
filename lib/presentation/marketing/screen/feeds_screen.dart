@@ -204,7 +204,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
 
         return FeedListCard(
           name: agent.name,
-          message: "Hi any update....",
+          message: "click to see chats....",
           time: isOnline ? "Online" : lastSeen,
           isActive: isOnline,
           isPinned: pinnedAgentsSet.contains(agent.email),
