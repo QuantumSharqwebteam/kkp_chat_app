@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
-import 'package:kkpchatapp/core/services/call_overlay_service.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 //import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
@@ -121,7 +120,7 @@ class SocketService {
     _socket.on('incomingCall', (data) {
       debugPrint('📥 Agora incomingCall: $data');
       if (_onIncomingCall != null) {
-        CallOverlayService().startRinging();
+        // CallOverlayService().startRinging();
         _onIncomingCall!(data);
       }
     });
