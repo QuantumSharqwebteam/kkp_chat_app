@@ -291,14 +291,14 @@ class _CustomerHostState extends State<CustomerHost> {
   Widget build(BuildContext context) {
     return Consumer<CallProvider>(
       builder: (context, callProvider, child) {
-        if (callProvider.callDetailsMessage != null) {
-          // Handle the call details message, e.g., save it to the chat storage
-          // and then reset the callDetailsMessage in the provider.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            // _handleCallDetailsMessage(callProvider.callDetailsMessage!);
-            // callProvider.setCallDetailsMessage(null);
-          });
-        }
+        // if (callProvider.callDetailsMessage != null) {
+        //   // Handle the call details message, e.g., save it to the chat storage
+        //   // and then reset the callDetailsMessage in the provider.
+        //   // WidgetsBinding.instance.addPostFrameCallback((_) {
+        //   //   // _handleCallDetailsMessage(callProvider.callDetailsMessage!);
+        //   //   // callProvider.setCallDetailsMessage(null);
+        //   // });
+        // }
         Widget content = GestureDetector(
           onTap: () {
             FocusScope.of(context).unfocus();
@@ -310,15 +310,6 @@ class _CustomerHostState extends State<CustomerHost> {
                   index: _selectedIndex,
                   children: _screens,
                 ),
-                // if (callProvider.isOutgoingCallVisible)
-                //   OutgoingCallUI(
-                //     onTap: () {
-                //       callProvider.navigatorKey.currentState?.push(
-                //         MaterialPageRoute(
-                //             builder: (_) => const AgoraAudioCallScreen()),
-                //       );
-                //     },
-                //   ),
               ],
             ),
             bottomNavigationBar: CustomerNavBar(

@@ -18,24 +18,15 @@ class ApiHelper {
     Map<String, String>? headers,
   }) async {
     final uri = Uri.parse('$baseUrl$endpoint');
-    final token = authorized ? await LocalDbHelper.getToken() : null;
+    final resolvedHeaders = await _buildHeaders(authorized, headers);
 
     try {
-      final response = await client.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          if (authorized && token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-      );
+      final response = await client.get(uri, headers: resolvedHeaders);
       return _handleResponse(response);
     } on SocketException {
       throw NoInternetException("No Internet connection.");
-    } on HttpException {
-      throw FetchDataException("Couldn't fetch data.");
     } on FormatException {
-      throw FetchDataException("Bad response format.");
+      throw FetchDataException("Invalid response format.");
     }
   }
 
@@ -46,25 +37,19 @@ class ApiHelper {
     Map<String, String>? headers,
   }) async {
     final uri = Uri.parse('$baseUrl$endpoint');
-    final token = authorized ? await LocalDbHelper.getToken() : null;
+    final resolvedHeaders = await _buildHeaders(authorized, headers);
 
     try {
       final response = await client.post(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          if (authorized && token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-        body: jsonEncode(body),
+        headers: resolvedHeaders,
+        body: jsonEncode(body ?? {}),
       );
       return _handleResponse(response);
     } on SocketException {
       throw NoInternetException("No Internet connection.");
-    } on HttpException {
-      throw FetchDataException("Couldn't fetch data.");
     } on FormatException {
-      throw FetchDataException("Bad response format.");
+      throw FetchDataException("Invalid response format.");
     }
   }
 
@@ -75,25 +60,19 @@ class ApiHelper {
     Map<String, String>? headers,
   }) async {
     final uri = Uri.parse('$baseUrl$endpoint');
-    final token = authorized ? await LocalDbHelper.getToken() : null;
+    final resolvedHeaders = await _buildHeaders(authorized, headers);
 
     try {
       final response = await client.put(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          if (authorized && token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-        body: jsonEncode(body),
+        headers: resolvedHeaders,
+        body: jsonEncode(body ?? {}),
       );
       return _handleResponse(response);
     } on SocketException {
       throw NoInternetException("No Internet connection.");
-    } on HttpException {
-      throw FetchDataException("Couldn't update data.");
     } on FormatException {
-      throw FetchDataException("Bad response format.");
+      throw FetchDataException("Invalid response format.");
     }
   }
 
@@ -104,30 +83,56 @@ class ApiHelper {
     Map<String, String>? headers,
   }) async {
     final uri = Uri.parse('$baseUrl$endpoint');
-    final token = authorized ? await LocalDbHelper.getToken() : null;
+    final resolvedHeaders = await _buildHeaders(authorized, headers);
 
     try {
       final response = await client.delete(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          if (authorized && token != null) 'Authorization': 'Bearer $token',
-          ...?headers,
-        },
-        body: jsonEncode(body),
+        headers: resolvedHeaders,
+        body: jsonEncode(body ?? {}),
       );
       return _handleResponse(response);
     } on SocketException {
       throw NoInternetException("No Internet connection.");
-    } on HttpException {
-      throw FetchDataException("Couldn't delete resource.");
     } on FormatException {
-      throw FetchDataException("Bad response format.");
+      throw FetchDataException("Invalid response format.");
     }
   }
 
+  // Optional: Use this for multipart/form-data if needed
+  Future<http.StreamedResponse> sendMultipartRequest(
+    http.MultipartRequest request, {
+    bool authorized = false,
+  }) async {
+    if (authorized) {
+      final token = await LocalDbHelper.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+    }
+    return await request.send();
+  }
+
+  Future<Map<String, String>> _buildHeaders(
+    bool authorized,
+    Map<String, String>? additionalHeaders,
+  ) async {
+    final token = authorized ? await LocalDbHelper.getToken() : null;
+    return {
+      'Content-Type': 'application/json',
+      if (authorized && token != null) 'Authorization': 'Bearer $token',
+      ...?additionalHeaders,
+    };
+  }
+
   Map<String, dynamic> _handleResponse(http.Response response) {
-    final decoded = jsonDecode(response.body);
+    dynamic decoded;
+
+    try {
+      decoded = jsonDecode(response.body);
+    } catch (_) {
+      throw FetchDataException("Non-JSON response: ${response.body}");
+    }
 
     switch (response.statusCode) {
       case 200:
@@ -143,8 +148,7 @@ class ApiHelper {
       case 500:
       case 502:
       case 503:
-        throw ServerException(
-            "Server error: ${decoded['message'] ?? response.body}");
+        throw ServerException(decoded['message'] ?? 'Internal Server Error');
       default:
         throw AppException("Unexpected error: ${response.statusCode}");
     }
