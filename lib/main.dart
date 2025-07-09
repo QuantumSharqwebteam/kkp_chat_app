@@ -75,7 +75,6 @@ void main() async {
 
   // Set the global flag to true after initialization
   // isAppInitialized = true;
-
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // Handle terminated state

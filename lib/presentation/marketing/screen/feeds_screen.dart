@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
-import 'package:kkpchatapp/core/services/auth_service.dart';
+import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
@@ -144,18 +144,14 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   Widget _buildFilterButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          FilterButton(icon: Icons.search_rounded),
-          FilterButton(
-            onTap: togglePinnedMessages,
-            text: "Pinned Messages",
-          ),
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        FilterButton(
+          onTap: togglePinnedMessages,
+          text: "Pinned Messages",
+        ),
+      ],
     );
   }
 
@@ -208,7 +204,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
 
         return FeedListCard(
           name: agent.name,
-          message: "Hi any update....",
+          message: "click to see chats....",
           time: isOnline ? "Online" : lastSeen,
           isActive: isOnline,
           isPinned: pinnedAgentsSet.contains(agent.email),

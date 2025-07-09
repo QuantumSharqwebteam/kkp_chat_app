@@ -4,7 +4,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:kkpchatapp/core/services/auth_service.dart';
+import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -186,22 +186,34 @@ class _CustomerHostState extends State<CustomerHost> {
 
     late OverlayEntry overlayEntry;
     Timer? timeoutTimer;
+    // ✅ Ensure previous player is stopped before creating new one
     _audioPlayer?.stop();
     _audioPlayer = AudioPlayer();
 
     Future<void> stopAndRemoveOverlay() async {
       try {
-        debugPrint("🛑 Stopping ringtone...");
-        await _audioPlayer?.stop();
-        debugPrint("✅ Ringtone stopped");
+        if (_audioPlayer != null) {
+          debugPrint("🛑 Attempting to stop ringtone...");
+
+          await _audioPlayer!.stop();
+          await _audioPlayer!
+              .setSource(AssetSource('')); // 👈 Important for iOS
+          debugPrint("✅ Ringtone stopped");
+
+          await _audioPlayer!.release();
+          await _audioPlayer!.dispose();
+          debugPrint("✅ AudioPlayer released and disposed");
+        } else {
+          debugPrint("⚠️ AudioPlayer already null or disposed");
+        }
       } catch (e) {
-        debugPrint("⚠️ Failed to stop ringtone: $e");
+        debugPrint("❌ Failed to stop/release ringtone: $e");
       }
 
       timeoutTimer?.cancel();
       overlayEntry.remove();
       _activeCallOverlay = null;
-      _audioPlayer = null; // ✅ ADDED: cleanup reference
+      _audioPlayer = null;
     }
 
     overlayEntry = OverlayEntry(
@@ -210,6 +222,7 @@ class _CustomerHostState extends State<CustomerHost> {
         left: 16,
         right: 16,
         child: IncomingCallWidget(
+          audioPlayer: _audioPlayer!,
           callerName: callerName,
           onAnswer: () async {
             await stopAndRemoveOverlay();
@@ -246,7 +259,6 @@ class _CustomerHostState extends State<CustomerHost> {
               channelName: channelName,
             );
           },
-          audioPlayer: _audioPlayer!,
         ),
       ),
     );

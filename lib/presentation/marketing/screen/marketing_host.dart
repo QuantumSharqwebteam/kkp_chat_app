@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:kkpchatapp/core/services/auth_service.dart';
+import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -34,7 +34,7 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost> with RouteAware {
+class _MarketingHostState extends State<MarketingHost> {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
@@ -149,6 +149,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
   @override
   void dispose() {
+    _audioPlayer?.stop();
     _socketService.disconnect(); // Disconnect when leaving the host screen
     super.dispose();
   }
@@ -266,10 +267,10 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
     Timer? timeoutTimer;
     _audioPlayer?.stop();
     _audioPlayer = AudioPlayer();
-
     Future<void> stopAndRemoveOverlay() async {
       try {
         debugPrint("🛑 Stopping ringtone...");
+
         await _audioPlayer?.stop();
         debugPrint("✅ Ringtone stopped");
       } catch (e) {
@@ -279,7 +280,7 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
       timeoutTimer?.cancel();
       overlayEntry.remove();
       _activeCallOverlay = null;
-      _audioPlayer = null; // ✅ ADDED: cleanup reference
+      _audioPlayer = null;
     }
 
     overlayEntry = OverlayEntry(
@@ -292,21 +293,6 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
           onAnswer: () async {
             await stopAndRemoveOverlay();
             if (context.mounted) {
-              // Set flag to indicate you are on a call screen
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (_) => AgoraAudioCallScreen(
-              //         // isCaller: false,
-              //         // channelName: channelName,
-              //         // uid: uid,
-              //         // remoteUserId: callerId,
-              //         // remoteUserName: callerName,
-              //         // callId: incomingCallId,
-              //         // navigatorKey: navigatorKey,
-              //         ),
-              //   ),
-              // );
               context.read<CallProvider>().startNewCall(
                   channelName: channelName,
                   remoteUserName: callerName,
@@ -317,6 +303,8 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
           },
           onReject: () async {
             await stopAndRemoveOverlay();
+            await _audioPlayer?.stop();
+            await Future.delayed(const Duration(milliseconds: 100));
             await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
             _socketService.terminateCall(
