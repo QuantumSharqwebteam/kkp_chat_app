@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -81,7 +80,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     try {
       if (role == "2" || role == "3" || role == "0") {
         data =
-        await _chatRepository.fetchFormDataForEnquiery(currentUserEmail!);
+            await _chatRepository.fetchFormDataForEnquiery(currentUserEmail!);
       } else if (role == "1") {
         data = await _chatRepository.fetchFormData();
       }
@@ -101,7 +100,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   void _onScroll() async {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200 &&
+            _scrollController.position.maxScrollExtent - 200 &&
         !isFetchingMore &&
         visibleItemCount < filteredInquiries.length) {
       setState(() => isFetchingMore = true);
@@ -245,7 +244,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
       final bytes = excel.save();
       final formattedDate =
-      DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+          DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
       await file.writeAsBytes(bytes!);
@@ -291,110 +290,110 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         ),
         actions: hasInquiries
             ? [
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-              onTap: isDownloading
-                  ? null
-                  : () async {
-                await downloadAsExcel(filteredInquiries);
-              },
-              child: isDownloading
-                  ? const SizedBox(
-                width: 35,
-                height: 35,
-                child: Center(
-                    child:
-                    CircularProgressIndicator(strokeWidth: 2)),
-              )
-                  : Container(
-                width: 35,
-                height: 35,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      width: 1, color: AppColors.greyB2BACD),
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GestureDetector(
+                    onTap: isDownloading
+                        ? null
+                        : () async {
+                            await downloadAsExcel(filteredInquiries);
+                          },
+                    child: isDownloading
+                        ? const SizedBox(
+                            width: 35,
+                            height: 35,
+                            child: Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
+                          )
+                        : Container(
+                            width: 35,
+                            height: 35,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                  width: 1, color: AppColors.greyB2BACD),
+                            ),
+                            child: const Icon(Icons.download),
+                          ),
+                  ),
                 ),
-                child: const Icon(Icons.download),
-              ),
-            ),
-          ),
-        ]
+              ]
             : [],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
               children: [
-                if (hasInquiries)
-                  Row(
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.grey.shade400,  // Border color
-                              width: 1.0,          // Border width
+                      if (hasInquiries)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.grey.shade400, // Border color
+                                    width: 1.0, // Border width
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                      8.0), // Rounded corners (optional)
+                                ),
+                                child: CustomSearchBar(
+                                  enable: true,
+                                  controller: _searchController,
+                                  hintText: "Search by anything...",
+                                  onChanged: (value) => _applyFilters(),
+                                ),
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(8.0), // Rounded corners (optional)
-                          ),
-                          child: CustomSearchBar(
-                            enable: true,
-                            controller: _searchController,
-                            hintText: "Search by anything...",
-                            onChanged: (value) => _applyFilters(),
-                          ),
-                        ),
-
-                      ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: toggleShowFilters,
-                        child: Container(
-                          width: 56,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              width: 1,
-                              color: AppColors.greyB2BACD,
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: toggleShowFilters,
+                              child: Container(
+                                width: 56,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    width: 1,
+                                    color: AppColors.greyB2BACD,
+                                  ),
+                                ),
+                                child: CustomImage(
+                                  imagePath: ImageConstants.filterIcon,
+                                  height: 25,
+                                  width: 25,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: CustomImage(
-                            imagePath: ImageConstants.filterIcon,
-                            height: 25,
-                            width: 25,
-                          ),
+                          ],
                         ),
-                      ),
+                      if (hasInquiries) const SizedBox(height: 10),
+                      if (showFilters && hasInquiries) _buildFilters(),
+                      if (showFilters && hasInquiries)
+                        const Divider(
+                          color: AppColors.greyE5E7EB,
+                          thickness: 0.6,
+                          height: 0,
+                        ),
+                      if (showFilters && hasInquiries)
+                        Container(
+                          height: 5,
+                          color: AppColors.greyD9D9D9.withOpacity(0.3),
+                        ),
+                      const SizedBox(height: 14),
                     ],
                   ),
-                if (hasInquiries) const SizedBox(height: 10),
-                if (showFilters && hasInquiries) _buildFilters(),
-                if (showFilters && hasInquiries)
-                  const Divider(
-                    color: AppColors.greyE5E7EB,
-                    thickness: 0.6,
-                    height: 0,
-                  ),
-                if (showFilters && hasInquiries)
-                  Container(
-                    height: 5,
-                    color: AppColors.greyD9D9D9.withOpacity(0.3),
-                  ),
-                const SizedBox(height: 14),
+                ),
+                Expanded(child: _buildInquiryList()),
               ],
             ),
-          ),
-          Expanded(child: _buildInquiryList()),
-        ],
-      ),
     );
   }
 
@@ -494,10 +493,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                 Row(
                   children: [
                     CircleAvatar(
-                    radius: 22,
-                    backgroundColor: const Color(0xFFDCFCE7), // Light green background
-                    child: Icon(Icons.person, color: Colors.green), // Optional: icon color
-                  ),
+                      radius: 22,
+                      backgroundColor:
+                          const Color(0xFFDCFCE7), // Light green background
+                      child: Icon(Icons.person,
+                          color: Colors.green), // Optional: icon color
+                    ),
 
                     const SizedBox(width: 12),
                     Expanded(
@@ -506,11 +507,13 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         children: [
                           Text(
                             inquiry.agentName,
-                            style: AppTextStyles.black14_600.copyWith(fontWeight: FontWeight.w400,fontSize: 18),
+                            style: AppTextStyles.black14_600.copyWith(
+                                fontWeight: FontWeight.w400, fontSize: 18),
                           ),
                           Text(
                             'Customer: ${inquiry.customerName}',
-                            style: AppTextStyles.black12_400.copyWith(fontSize: 14,color: Colors.black45),
+                            style: AppTextStyles.black12_400
+                                .copyWith(fontSize: 14, color: Colors.black45),
                           ),
                         ],
                       ),
@@ -520,24 +523,26 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                       children: [
                         Text(
                           _getFormattedDate(inquiry.date),
-                          style: AppTextStyles.black12_400.copyWith(
-                            color: Colors.black45
-                          ),
+                          style: AppTextStyles.black12_400
+                              .copyWith(color: Colors.black45),
                         ),
-                        SizedBox(height: 8,),
+                        SizedBox(
+                          height: 8,
+                        ),
                         // Text(
                         //   _getFormattedTime(inquiry.date),
                         //   style: AppTextStyles.black12_400,
                         // ),
                         Container(
                           margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 1),
                           decoration: BoxDecoration(
                             color: inquiry.status == "Confirmed"
-                                ?  Color(0xFFDCFCE7)
+                                ? Color(0xFFDCFCE7)
                                 : inquiry.status == "Declined"
-                                ? AppColors.inActiveRed.withOpacity(0.1)
-                                : AppColors.helperOrange.withOpacity(0.1),
+                                    ? AppColors.inActiveRed.withOpacity(0.1)
+                                    : AppColors.helperOrange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -546,8 +551,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                               color: inquiry.status == "Confirmed"
                                   ? const Color.fromARGB(255, 4, 127, 10)
                                   : inquiry.status == "Declined"
-                                  ? AppColors.inActiveRed
-                                  : AppColors.helperOrange,
+                                      ? AppColors.inActiveRed
+                                      : AppColors.helperOrange,
                               fontWeight: FontWeight.w300,
                             ),
                           ),
@@ -587,7 +592,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           lineThickness: 1.5,
           dashColor: Colors.grey,
         ),
-        SizedBox(height: 10,),
+        SizedBox(
+          height: 10,
+        ),
         _buildDetailRow('Quality', inquiry.quality),
         _buildDetailRow('Weave', inquiry.weave),
         _buildDetailRow('Quantity', inquiry.quantity),
@@ -605,9 +612,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         children: [
           Text(
             label,
-            style: AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
+            style:
+                AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
           ),
-          Text(value, style: AppTextStyles.black14_600.copyWith(color: Colors.grey.shade700,fontWeight: FontWeight.w100)),
+          Text(value,
+              style: AppTextStyles.black14_600.copyWith(
+                  color: Colors.grey.shade700, fontWeight: FontWeight.w100)),
         ],
       ),
     );
