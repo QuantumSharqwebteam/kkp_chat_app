@@ -45,6 +45,8 @@ PODS:
   - AgoraRtcEngine_iOS/VideoCodecEnc (4.5.1)
   - AgoraRtcEngine_iOS/VirtualBackground (4.5.1)
   - AgoraRtcEngine_iOS/VQA (4.5.1)
+  - audio_session (0.0.1):
+    - Flutter
   - audioplayers_darwin (0.0.1):
     - Flutter
   - DKImagePickerController/Core (4.3.9):
@@ -121,6 +123,8 @@ PODS:
     - SDWebImageWebPCoder
   - flutter_local_notifications (0.0.1):
     - Flutter
+  - flutter_native_splash (2.4.3):
+    - Flutter
   - flutter_sound (9.28.0):
     - Flutter
     - flutter_sound_core (= 9.28.0)
@@ -156,6 +160,9 @@ PODS:
     - Flutter
   - iris_method_channel (0.0.1):
     - Flutter
+  - just_audio (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - libwebp (1.5.0):
     - libwebp/demux (= 1.5.0)
     - libwebp/mux (= 1.5.0)
@@ -202,6 +209,7 @@ PODS:
 
 DEPENDENCIES:
   - agora_rtc_engine (from `.symlinks/plugins/agora_rtc_engine/ios`)
+  - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
@@ -209,9 +217,11 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
+  - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - flutter_sound (from `.symlinks/plugins/flutter_sound/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - iris_method_channel (from `.symlinks/plugins/iris_method_channel/ios`)
+  - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - open_file_ios (from `.symlinks/plugins/open_file_ios/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
@@ -245,6 +255,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   agora_rtc_engine:
     :path: ".symlinks/plugins/agora_rtc_engine/ios"
+  audio_session:
+    :path: ".symlinks/plugins/audio_session/ios"
   audioplayers_darwin:
     :path: ".symlinks/plugins/audioplayers_darwin/ios"
   file_picker:
@@ -259,12 +271,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_image_compress_common/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
+  flutter_native_splash:
+    :path: ".symlinks/plugins/flutter_native_splash/ios"
   flutter_sound:
     :path: ".symlinks/plugins/flutter_sound/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   iris_method_channel:
     :path: ".symlinks/plugins/iris_method_channel/ios"
+  just_audio:
+    :path: ".symlinks/plugins/just_audio/darwin"
   open_file_ios:
     :path: ".symlinks/plugins/open_file_ios/ios"
   path_provider_foundation:
@@ -283,6 +299,7 @@ SPEC CHECKSUMS:
   AgoraInfra_iOS: 65e11a2183ab7836258768868d06058c22701b13
   AgoraIrisRTC_iOS: dd3d957c25be6bd2b2a5d03fe706ebe8a46909f0
   AgoraRtcEngine_iOS: 5092a058c7b2842db39d8ca614d451af6f84969a
+  audio_session: 19e9480dbdd4e5f6c4543826b2e8b0e4ab6145fe
   audioplayers_darwin: 877d9a4d06331c5c374595e46e16453ac7eafa40
   DKImagePickerController: 946cec48c7873164274ecc4624d19e3da4c1ef3c
   DKPhotoGallery: b3834fecb755ee09a593d7c9e389d8b5d6deed60
@@ -297,12 +314,14 @@ SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_local_notifications: ff50f8405aaa0ccdc7dcfb9022ca192e8ad9688f
+  flutter_native_splash: f71420956eb811e6d310720fee915f1d42852e7a
   flutter_sound: 82aba29055d6feba684d08906e0623217b87bcd3
   flutter_sound_core: 427465f72d07ab8c3edbe8ffdde709ddacd3763c
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
   iris_method_channel: 0617c689164d8154c020c50f63ca79f92b8a7b9d
+  just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
