@@ -9,7 +9,6 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart';
-// import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
 
@@ -191,7 +190,6 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                         // user management , inaquiry mangement , notifications and reports and system settins tiles
                         CustomSettingsTile(
                           numberOfTiles: 1,
-                          title: Text(''),
                           titles: ['Order Enquires'],
                           leadingWidgets: [
                             CircleAvatar(
@@ -258,38 +256,34 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                         ),
                       ],
                     ),
-                    child: Column(
-                      children: [
-                        CustomSettingsTile(
-                          numberOfTiles: 1,
-                          title: Text(
-                            "Preferences",
-                            style: TextStyle(
-                                color: AppColors.grey7B7B7B,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14),
+                    child: CustomSettingsTile(
+                      numberOfTiles: 1,
+                      title: Text(
+                        "Preferences",
+                        style: TextStyle(
+                            color: AppColors.grey7B7B7B,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14),
+                      ),
+                      showDividerAfterTitle: true,
+                      titles: ['Notifications'],
+                      leadingWidgets: [
+                        CircleAvatar(
+                          backgroundColor: Colors.blue.shade50,
+                          radius: 20,
+                          child: Image.asset(
+                            'assets/icons/Vector(2).png',
+                            height: 24,
+                            width: 24,
                           ),
-                          showDividerAfterTitle: true,
-                          titles: ['Notifications'],
-                          leadingWidgets: [
-                            CircleAvatar(
-                              backgroundColor: Colors.blue.shade50,
-                              radius: 20,
-                              child: Image.asset(
-                                'assets/icons/Vector(2).png',
-                                height: 24,
-                                width: 24,
-                              ),
-                            ),
-                          ],
-                          subtitles: ["Your Notifications Hub"],
-                          onTaps: [
-                            () {
-                              Navigator.pushNamed(
-                                  context, CustomerRoutes.notificationSettings);
-                            }
-                          ],
                         ),
+                      ],
+                      subtitles: ["Your Notifications Hub"],
+                      onTaps: [
+                        () {
+                          Navigator.pushNamed(
+                              context, CustomerRoutes.notificationSettings);
+                        }
                       ],
                     ),
                   ),
@@ -319,65 +313,55 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
             //     }
             //   ],
             // ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          spreadRadius: 1,
-                          blurRadius: 6,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      spreadRadius: 1,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
                     ),
-                    child: Column(
-                      children: [
-                        CustomSettingsTile(
-                          numberOfTiles: 1,
-                          leadingWidgets: [
-                            CircleAvatar(
-                              backgroundColor: Colors.blue.shade50,
-                              radius: 20,
-                              child: Image.asset(
-                                'assets/icons/Vector(3).png',
-                                height: 24,
-                                width: 24,
-                              ),
-                            ),
-                          ],
-                          title: Text(
-                            'Terms & Policy',
-                            style: TextStyle(
-                                color: AppColors.grey7B7B7B,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14),
-                          ),
-                          showDividerAfterTitle: true,
-                          titles: ['About'],
-                          subtitles: ['Manage Terms & Policy'],
-                          onTaps: [
-                            () {
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) {
-                                return AboutUsPage();
-                              }));
-                            },
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+                child: CustomSettingsTile(
+                  numberOfTiles: 1,
+                  leadingWidgets: [
+                    CircleAvatar(
+                      backgroundColor: Colors.blue.shade50,
+                      radius: 20,
+                      child: Image.asset(
+                        'assets/icons/Vector(3).png',
+                        height: 24,
+                        width: 24,
+                      ),
+                    ),
+                  ],
+                  title: Text(
+                    'Terms & Policy',
+                    style: TextStyle(
+                        color: AppColors.grey7B7B7B,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14),
+                  ),
+                  showDividerAfterTitle: true,
+                  titles: ['About'],
+                  subtitles: ['Manage Terms & Policy'],
+                  onTaps: [
+                    () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
+                        return AboutUsPage();
+                      }));
+                    },
+                  ],
+                ),
+              ),
             ),
             // Divider(
             //   color: Colors.black,

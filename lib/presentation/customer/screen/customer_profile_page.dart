@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
@@ -28,8 +29,6 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final _streetNameController = TextEditingController();
   final _cityController = TextEditingController();
   final _pincodeController = TextEditingController();
-  final _genderController = TextEditingController(text: "Male");
-  final _stateController = TextEditingController(text: "India");
 
   String _customerType = 'Export';
 
@@ -111,9 +110,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
           _isEditing = false;
         });
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Profile updated successfully!")),
-        );
+        Utils().showSuccessDialog(context, "Profile Updated!", true);
       } else {
         _showError(response['message'] ?? "Update failed");
       }
@@ -139,8 +136,6 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     _streetNameController.dispose();
     _cityController.dispose();
     _pincodeController.dispose();
-    _genderController.dispose();
-    _stateController.dispose();
     super.dispose();
   }
 
@@ -203,29 +198,25 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   Widget _buildHeader() {
     return Container(
+      width: double.infinity,
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 130, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
       child: Column(
         children: [
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: const Color(0xFFE0E0E0),
-                child: Initicon(
-                  text: _profile?.name ?? '',
-                  size: 90,
-                ),
-              ),
-            ],
+          CircleAvatar(
+            radius: 50,
+            backgroundColor: const Color(0xFFE0E0E0),
+            child: Initicon(
+              text: _profile?.name ?? '',
+              size: 90,
+            ),
           ),
           const SizedBox(height: 10),
           Text(_profile?.name ?? '',
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           Text(_profile?.email ?? '',
-              style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );

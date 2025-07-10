@@ -304,13 +304,9 @@ class _CustomerHostState extends State<CustomerHost> {
             FocusScope.of(context).unfocus();
           },
           child: Scaffold(
-            body: Stack(
-              children: [
-                IndexedStack(
-                  index: _selectedIndex,
-                  children: _screens,
-                ),
-              ],
+            body: IndexedStack(
+              index: _selectedIndex,
+              children: _screens,
             ),
             bottomNavigationBar: CustomerNavBar(
               selectedIndex: _selectedIndex,
