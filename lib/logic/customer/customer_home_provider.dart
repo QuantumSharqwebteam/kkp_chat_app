@@ -153,4 +153,29 @@ class CustomerHomeProvider with ChangeNotifier {
       ),
     );
   }
+  Future<void> updateCustomerProfile({
+  required String name,
+  required String number,
+  required String customerType,
+  required String gstNo,
+  required String panNo,
+}) async {
+  try {
+    await _authRepository.updateUserDetails(
+      name: name,
+      number: number,
+      customerType: customerType,
+      gstNo: gstNo,
+      panNo: panNo,
+    );
+
+    await loadUserInfo(); // refresh profile data after update
+  } catch (e) {
+    if (kDebugMode) {
+      print("Failed to update profile: $e");
+    }
+    rethrow;
+  }
+}
+
 }

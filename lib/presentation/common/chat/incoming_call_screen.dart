@@ -130,7 +130,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     // Remove the incoming call screen from the navigation stack
                     _stopRingtone();
                     // Navigator.pushReplacement(
@@ -147,13 +147,17 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                     //         ),
                     //   ),
                     // );
-                    context.read<CallProvider>().startNewCall(
-                          channelName: widget.channelName,
-                          remoteUserName: widget.callerName,
-                          uid: generateUniqueId(),
-                          callId: widget.callId,
-                          isCaller: false,
-                        );
+                    Navigator.of(context).pop();
+                    await Future.delayed(const Duration(milliseconds: 150));
+                    if (context.mounted) {
+                      context.read<CallProvider>().startNewCall(
+                            channelName: widget.channelName,
+                            remoteUserName: widget.callerName,
+                            uid: generateUniqueId(),
+                            callId: widget.callId,
+                            isCaller: false,
+                          );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,

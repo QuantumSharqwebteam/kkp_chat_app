@@ -29,10 +29,17 @@ Future<void> handlePushNotificationClickForCustomer(
     Map<String, dynamic> notificationData) async {
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
+  // I/flutter ( 1646): 🚀@@ App Opened via Notification: {targetName: waxoc , senderName: Agent mohd 3,
+  // senderId: mohdshoaibrayeen3@gmail.com, mediaUrl: , targetId: waxoc97364@cristout.com, notificationId: 686e51da4013003d981995e4, type: text, message: kedkde, timestamp: 2025-07-09T16:56:16.789956}
 
   // Function to trigger navigation
   void triggerNavigation() {
-    final customerEmail = LocalDbHelper.getProfile()?.email;
+    // final customerEmail = LocalDbHelper.getProfile()?.email;
+
+    final customerEmail = notificationData["targetId"];
+    final agentEmail = notificationData["senderId"];
+    final agentName = notificationData["senderName"];
+
     // ChatStorageService chatStorageService = ChatStorageService();
     // final Map<String, dynamic> notiData = notificationData;
     // final targetId = notificationData['targetId'];
@@ -52,8 +59,9 @@ Future<void> handlePushNotificationClickForCustomer(
       navigatorKey.currentContext!,
       MaterialPageRoute(
         builder: (_) => CustomerChatScreen(
-          agentName: "Agent",
+          agentName: agentName,
           customerEmail: customerEmail,
+          agentEmail: agentEmail,
           navigatorKey: navigatorKey,
         ),
       ),
