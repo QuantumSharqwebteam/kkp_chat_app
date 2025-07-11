@@ -115,7 +115,7 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
                           crossAxisSpacing: 10,
                           mainAxisSpacing: 10,
                           maxCrossAxisExtent: 250,
-                          mainAxisExtent: 250,
+                          mainAxisExtent: 220,
                         ),
                         itemCount: _filteredProducts.length,
                         itemBuilder: (context, index) {

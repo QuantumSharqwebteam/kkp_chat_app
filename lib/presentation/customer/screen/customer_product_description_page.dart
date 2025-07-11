@@ -31,6 +31,10 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                   size: 30,
                 ),
               ),
+              Text(
+                    product.productName,
+                    style: AppTextStyles.black16_600,
+                  ),
             ],
           ),
         ),
@@ -125,13 +129,14 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                             textAlign: TextAlign.justify,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 24),
                         // Buttons
                         Center(
                           child: CustomButton(
                             text: product.stock > 0
                                 ? 'Available'
                                 : 'Out of Stock',
+                              
                             onPressed: () {},
                             width: Utils().width(context) * 0.8,
                             height: 35,
@@ -141,7 +146,8 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                                 ? AppColors.blue
                                 : Colors.grey,
                           ),
-                        )
+                        ),
+                        SizedBox(height: 40,)
                       ],
                     ),
                   )

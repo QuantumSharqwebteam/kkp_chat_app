@@ -69,6 +69,8 @@ class _MarketingProductDescrptionPageState
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(Icons.arrow_back, size: 30),
               ),
+               Text(widget.product.productName.toUpperCase(),
+                      style: AppTextStyles.black20_500),
             ],
           ),
         ),
@@ -188,7 +190,8 @@ class _MarketingProductDescrptionPageState
                         textColor: AppColors.inActiveRed,
                       ),
                     ],
-                  )
+                  ),
+                  SizedBox(height: 40,)
                 ],
               ),
             ),

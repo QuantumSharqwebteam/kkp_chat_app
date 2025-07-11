@@ -82,6 +82,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
               ),
             ],
           ),
+          SizedBox(height: 10,),
           CustomSearchBar(
             width: double.infinity,
             enable: true,
@@ -106,7 +107,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
         crossAxisSpacing: 10,
         mainAxisSpacing: 10,
         maxCrossAxisExtent: 250,
-        mainAxisExtent: 250,
+        mainAxisExtent: 220,
       ),
       itemCount: products.length,
       itemBuilder: (context, index) {
@@ -132,31 +133,40 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
     );
   }
 
-  Widget _buildFloatingActionButton(BuildContext context) {
-    return SizedBox(
-      height: 110,
-      width: 110,
-      child: FloatingActionButton(
-        elevation: 10,
-        tooltip: "Upload new product here",
-        onPressed: () async {
-          final result = await Navigator.pushNamed(
-              context, MarketingRoutes.addProductScreen);
-          if (result == true) {
-            if (context.mounted) {
-              context.read<MarketingProductProvider>().fetchProducts();
-            }
-          }
-        },
-        backgroundColor: Colors.white,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: const [
-            Icon(Icons.cloud_upload, size: 80, color: AppColors.grey7B7B7B),
-            Text("Upload Product", style: AppTextStyles.black10_600),
-          ],
-        ),
+// ─── Floating “Upload product” badge ───────────────────────────────────────────
+Widget _buildFloatingActionButton(BuildContext context) {
+  return SizedBox(
+    height: 80,
+    width: 88,
+    child: FloatingActionButton(
+      onPressed: () async {
+        final result = await Navigator.pushNamed(
+          context,
+          MarketingRoutes.addProductScreen,
+        );
+        if (result == true && context.mounted) {
+          context.read<MarketingProductProvider>().fetchProducts();
+        }
+      },
+      backgroundColor: Colors.white,
+      elevation: 8,
+      shape: const CircleBorder(),
+      tooltip: 'Upload new product',
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Icon(Icons.cloud_upload, size: 36, color: AppColors.grey7B7B7B),
+          //SizedBox(height: 6),
+          Text(
+            'Upload here',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.black10_600,
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
+
 }
