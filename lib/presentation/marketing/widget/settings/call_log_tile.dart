@@ -6,11 +6,13 @@ import 'package:kkpchatapp/data/models/call_log_model.dart';
 class CallLogTile extends StatelessWidget {
   final CallLogModel log;
   final String? currentUserId;
+  final String? role;
 
   const CallLogTile({
     super.key,
     required this.log,
     required this.currentUserId,
+    required this.role,
   });
 
   @override
@@ -28,9 +30,11 @@ class CallLogTile extends StatelessWidget {
         isAnswered && log.callDuration != null ? ': ${log.callDuration}' : null;
 
     return ListTile(
-      leading:
-          Initicon(text: otherUserName), // Your custom initials/avatar widget
-      title: Text(otherUserName),
+      leading: Initicon(
+          text: role == "0"
+              ? "Agent"
+              : otherUserName), // Your custom initials/avatar widget
+      title: Text(role == "0" ? "Agent" : otherUserName),
       subtitle: Row(
         children: [
           Icon(statusIcon, color: statusColor, size: 16),

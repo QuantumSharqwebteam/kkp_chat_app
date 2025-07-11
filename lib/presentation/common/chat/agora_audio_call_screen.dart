@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/media_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
@@ -17,11 +18,17 @@ class AgoraAudioCallScreen extends StatefulWidget {
 
 class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   late CallProvider _callProvider;
+  String? role;
 
   @override
   void initState() {
     super.initState();
     _callProvider = Provider.of<CallProvider>(context, listen: false);
+    LocalDbHelper.getUserType().then((value) {
+      setState(() {
+        role = value;
+      });
+    });
   }
 
   void _toggleMute() {
@@ -74,7 +81,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
           children: [
             const SizedBox(height: 30),
             Text(
-              call.remoteUserName ?? "",
+              role == "0" ? "Agent" : call.remoteUserName ?? "",
               style: AppTextStyles.black24_700,
             ),
             const SizedBox(height: 20),

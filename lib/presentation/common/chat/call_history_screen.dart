@@ -17,25 +17,35 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   final _chatRepo = ChatRepository();
   List<CallLogModel> callLogs = [];
   bool isLoading = true;
+  String? role;
 
   @override
   void initState() {
     super.initState();
     fetchCallLogs();
+    fetchUserRole();
+  }
+
+  void fetchUserRole() {
+    LocalDbHelper.getUserType().then((value) {
+      setState(() {
+        role = value;
+      });
+    });
   }
 
   Future<void> fetchCallLogs() async {
     final email = LocalDbHelper.getEmail();
     try {
       final fetchedLogs = await _chatRepo.fetchCallLogs(email!);
-      if (!mounted) return; 
+      if (!mounted) return;
       setState(() {
         callLogs = fetchedLogs;
         isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching call logs: $e');
-      if (!mounted) return; 
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
@@ -71,7 +81,8 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
 
       if (DateUtils.isSameDay(date, now)) {
         key = "Today";
-      } else if (DateUtils.isSameDay(date, now.subtract(const Duration(days: 1)))) {
+      } else if (DateUtils.isSameDay(
+          date, now.subtract(const Duration(days: 1)))) {
         key = "Yesterday";
       } else {
         key = "${date.day}/${date.month}/${date.year}";
@@ -98,6 +109,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
             ),
             ...entry.value.map(
               (log) => CallLogTile(
+                role: role,
                 log: log,
                 currentUserId: currentUserId!,
               ),
