@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 // import 'package:flutter_svg/svg.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
+// import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 // import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
@@ -34,11 +35,11 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
         surfaceTintColor: Colors.white,
         title: Text(
           'Settings and Activity',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: AppTextStyles.black16_500,
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 20,
@@ -80,7 +81,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                       }
                     ],
                     title: Text(
-                      'Account & your orders',
+                      'Account',
                       style: TextStyle(
                           color: AppColors.grey7B7B7B,
                           fontWeight: FontWeight.w500,
@@ -90,36 +91,36 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     titles: ['Account & Security'],
                     subtitles: ['Account management, password change'],
                   ),
-                  Divider(
-                    color: AppColors.grey7B7B7B,
-                    thickness: 1,
-                  ),
-                  CustomSettingsTile(
-                    numberOfTiles: 1,
-                    titles: ['Order Enquires'],
-                    leadingWidgets: [
-                      CircleAvatar(
-                        backgroundColor: Colors.blue.shade50,
-                        radius: 20,
-                        child: Image.asset(
-                          'assets/icons/Vector(1).png',
-                          height: 24,
-                          width: 24,
-                        ),
-                      ),
-                    ],
-                    subtitles: ["Track All Order Enquires in One Place"],
-                    onTaps: [
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CustomerInquiriesPage(),
-                          ),
-                        );
-                      }
-                    ],
-                  ),
+                  // Divider(
+                  //   color: AppColors.grey7B7B7B,
+                  //   thickness: 1,
+                  // ),
+                  // CustomSettingsTile(
+                  //   numberOfTiles: 1,
+                  //   titles: ['Order Enquires'],
+                  //   leadingWidgets: [
+                  //     CircleAvatar(
+                  //       backgroundColor: Colors.blue.shade50,
+                  //       radius: 20,
+                  //       child: Image.asset(
+                  //         'assets/icons/Vector(1).png',
+                  //         height: 24,
+                  //         width: 24,
+                  //       ),
+                  //     ),
+                  //   ],
+                  //   subtitles: ["Track All Order Enquires in One Place"],
+                  //   onTaps: [
+                  //     () {
+                  //       Navigator.push(
+                  //         context,
+                  //         MaterialPageRoute(
+                  //           builder: (context) => CustomerInquiriesPage(),
+                  //         ),
+                  //       );
+                  //     }
+                  //   ],
+                  // ),
                 ],
               ),
             ),

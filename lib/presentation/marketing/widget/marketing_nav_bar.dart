@@ -19,12 +19,14 @@ class MarketingNavBar extends StatelessWidget {
       labels: [
         "Home",
         "Feed",
+        "Inquiry", // 🔹 NEW
         "Product",
         "Profile",
       ],
       icons: [
         Icons.home_filled,
         Icons.feed,
+        Icons.live_help_outlined, // 🔹 NEW
         Icons.shopping_bag_rounded,
         Icons.person_add_alt_1,
       ],
@@ -57,6 +59,8 @@ class MarketingNavBar extends StatelessWidget {
         return "Profile";
       case 3:
         return "Feed";
+      case 4:
+        return "Inquiry";
       default:
         return "Home";
     }

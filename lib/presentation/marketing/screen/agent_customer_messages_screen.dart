@@ -8,6 +8,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
@@ -217,6 +218,20 @@ class _AgentCustomerMessagesScreenState
                                           msg.timestamp.toIso8601String()),
                                       callStatus: msg.callStatus ?? "",
                                       callDuration: msg.callDuration ?? '',
+                                    )
+                                  else if (msg.message == 'Fill details')
+                                    FillFormButton(
+                                      buttonText: "Fill product details",
+                                      onSubmit: () {
+                                        // Agent not allowed to fill the form
+                                      },
+                                    )
+                                  else if (msg.message == "Update form rate")
+                                    FillFormButton(
+                                      buttonText: "Update Form",
+                                      onSubmit: () {
+                                        // Only show the widget for history, not to do anything on the agent side
+                                      },
                                     )
                                   else if (msg.type == 'product')
                                     (msg.message != null &&

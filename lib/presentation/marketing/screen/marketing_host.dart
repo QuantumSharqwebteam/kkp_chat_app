@@ -13,6 +13,7 @@ import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
+import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 
@@ -162,6 +163,7 @@ class _MarketingHostState extends State<MarketingHost> {
         else
           AgentHomeScreen(agentEmail: agentEmail!, agentName: agentName!),
         FeedsScreen(loggedAgentEmail: agentEmail!),
+        CustomerInquiriesPage(),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
       ];

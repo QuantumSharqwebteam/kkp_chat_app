@@ -283,10 +283,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       appBar: AppBar(
         backgroundColor: AppColors.background,
         title: const Text('Customer Inquiries'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
         actions: hasInquiries
             ? [
                 Padding(
@@ -484,7 +480,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           borderRadius: BorderRadius.circular(16),
           onTap: () => toggleExpandedState(inquiry.id),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -506,8 +502,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         children: [
                           Text(
                             inquiry.agentName,
-                            style: AppTextStyles.black14_600.copyWith(
-                                fontWeight: FontWeight.w400, fontSize: 18),
+                            style: AppTextStyles.black14_600,
                           ),
                           Text(
                             'Customer: ${inquiry.customerName}',

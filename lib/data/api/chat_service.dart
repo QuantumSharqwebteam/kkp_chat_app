@@ -197,6 +197,7 @@ class ChatService {
   /// get inqury form data
   Future<List<FormDataModel>> getFormData() async {
     final url = Uri.parse('$baseUrl/chat/getFormData');
+    final token = await LocalDbHelper.getToken();
     final response = await client.get(url);
 
     if (response.statusCode == 200) {
@@ -215,8 +216,15 @@ class ChatService {
   Future<List<FormDataModel>> getFormDataForEnquiery(
       {required String email}) async {
     final url = Uri.parse('$baseUrl/chat/getFormData?email=$email');
-    final response = await client.get(url);
-    print(response.body);
+    final token = await LocalDbHelper.getToken();
+    final response = await client.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        "Authorization": "Bearer $token",
+      },
+    );
+    // print(response.body);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
 
@@ -271,9 +279,16 @@ class ChatService {
   /// **Get Admin Home Page Traffic Data**
   Future<List<Map<String, dynamic>>> getAdminGraphData() async {
     final url = Uri.parse("$baseUrl/chat/getadminGraphData");
+    final token = await LocalDbHelper.getToken();
 
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
@@ -395,9 +410,15 @@ class ChatService {
   }) async {
     final url = Uri.parse(
         "$baseUrl/chat/getAgentMessages/$customerEmail/$agentEmail?limit=$limit${before != null ? '&before=$before' : ''}");
-
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);

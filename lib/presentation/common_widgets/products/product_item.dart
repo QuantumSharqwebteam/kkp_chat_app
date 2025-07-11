@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -25,15 +23,14 @@ class ProductItem extends StatelessWidget {
         shadowColor: Colors.black12,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Container(
-          width: 180, 
+          width: 180,
           decoration: BoxDecoration(
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.shade400,
-                offset: Offset(0.2,0.4),
-                blurRadius: 1
-              )
+                  color: Colors.grey.shade400,
+                  offset: Offset(0.2, 0.4),
+                  blurRadius: 1)
             ],
             borderRadius: BorderRadius.circular(15),
           ),
@@ -47,7 +44,7 @@ class ProductItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
                     product.imageUrl,
-                    fit: BoxFit.cover,         
+                    fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
                         const Icon(Icons.broken_image, size: 60),
                   ),
@@ -73,8 +70,8 @@ class ProductItem extends StatelessWidget {
                             .copyWith(color: Colors.grey.shade500)),
                     ColoredCircles(
                       colors: product.colors
-                          .map((c) =>
-                              Color(int.parse(c.colorCode.replaceAll('#', '0xff'))))
+                          .map((c) => Color(
+                              int.parse(c.colorCode.replaceAll('#', '0xff'))))
                           .toList(),
                       size: 14,
                     ),
@@ -83,7 +80,6 @@ class ProductItem extends StatelessWidget {
               ),
               // const Spacer(),
               const SizedBox(height: 12),
-
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -117,8 +113,8 @@ class _StockDot extends StatelessWidget {
         Container(
           width: 12,
           height: 12,
-          decoration:
-              BoxDecoration(shape: BoxShape.circle, border: Border.all(color: color)),
+          decoration: BoxDecoration(
+              shape: BoxShape.circle, border: Border.all(color: color)),
           child: Center(
             child: Container(
               width: 5,

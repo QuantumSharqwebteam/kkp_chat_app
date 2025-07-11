@@ -325,15 +325,15 @@ class _AdminHomeState extends State<AdminHome> {
             borderRadius: 10,
             text: "Poster Management"),
         const SizedBox(height: 10),
-        CustomButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                  context, MarketingRoutes.customerInquriesPage);
-            },
-            height: Utils().height(context) * 0.06,
-            fontSize: 18,
-            borderRadius: 10,
-            text: "Customer Inquries"),
+        // CustomButton(
+        //     onPressed: () {
+        //       Navigator.pushNamed(
+        //           context, MarketingRoutes.customerInquriesPage);
+        //     },
+        //     height: Utils().height(context) * 0.06,
+        //     fontSize: 18,
+        //     borderRadius: 10,
+        //     text: "Customer Inquries"),
       ],
     );
   }
