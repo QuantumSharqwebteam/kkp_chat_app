@@ -5,6 +5,7 @@ class CustomButton extends StatelessWidget {
   const CustomButton({
     super.key,
     required this.text,
+    this.icon,
     this.onPressed,
     this.width = double.infinity,
     this.height = 45,
@@ -22,6 +23,7 @@ class CustomButton extends StatelessWidget {
 
   final String text;
   final VoidCallback? onPressed;
+  final IconData? icon;
   final double? width;
   final double? height;
   final Color? backgroundColor;
@@ -58,7 +60,12 @@ class CustomButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (image != null && imagePosition == ImagePosition.leading) ...[
+            if (icon != null) ...[
+              Icon(icon,
+                  color: textColor ?? Colors.white, size: fontSize ?? 20),
+              const SizedBox(width: 8),
+            ] else if (image != null &&
+                imagePosition == ImagePosition.leading) ...[
               image!,
               const SizedBox(width: 8), // Space between image and text
             ],

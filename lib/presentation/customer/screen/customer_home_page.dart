@@ -91,6 +91,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                           : _provider.newProducts != null &&
                                   _provider.previousProducts != null
                               ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     GridView.builder(
                                       padding: const EdgeInsets.symmetric(

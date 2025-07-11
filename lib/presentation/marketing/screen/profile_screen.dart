@@ -21,7 +21,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final SocketService _socketService = SocketService(navigatorKey);
   late Profile? profile;
-
+  String? selectedGender;
   @override
   void initState() {
     super.initState();
@@ -64,7 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildDetailsCard(),
             // const SizedBox(height: 10),
             // _buildSettingsSection(context),
-            const SizedBox(height: 10),
+            // const SizedBox(height: 10),
             _buildLogoutButton(),
             const SizedBox(height: 25),
           ],
@@ -78,19 +78,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.maxFinite,
       decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(width: 1, color: AppColors.dividerD9D9D9),
-          ),
+              bottom: BorderSide(width: 8, color: AppColors.backgroundDCEBFF),
+              top: BorderSide(width: 5, color: AppColors.backgroundDCEBFF)),
           color: Colors.white,
           boxShadow: [
-            BoxShadow(
-              blurRadius: 4,
-              spreadRadius: 0,
-              color: AppColors.shadowColor,
-              offset: const Offset(0, 4),
-            )
+            // BoxShadow(
+            //   blurRadius: 4,
+            //   spreadRadius: 0,
+            //   color: AppColors.shadowColor,
+            //   offset: const Offset(0, 4),
+            // )
           ]),
       child: Column(
         children: [
+          const SizedBox(
+            height: 5,
+          ),
           Initicon(
             text: profile!.name!,
             size: 100,
@@ -148,29 +151,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       decoration: BoxDecoration(color: Colors.white, boxShadow: [
         BoxShadow(
-            spreadRadius: 0,
+            spreadRadius: 6,
             blurRadius: 4,
             offset: const Offset(0, 4),
-            color: AppColors.shadowColor)
+            color: Colors.white)
       ]),
-      padding: const EdgeInsets.all(10.0),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ProfileDetailsField(
-            icon: Icons.person,
-            label: 'Name',
+            icon: Icons.person_outlined,
+            label: 'Full Name',
             value: profile?.name ?? "NA",
           ),
-          ProfileDetailsField(
-            icon: Icons.email,
-            label: 'Email',
-            value: profile?.email ?? "NA",
+          SizedBox(
+            height: 10,
           ),
           ProfileDetailsField(
-            icon: Icons.phone,
+            icon: Icons.email_outlined,
+            label: 'Email Adress',
+            value: profile?.email ?? "NA",
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          ProfileDetailsField(
+            icon: Icons.phone_outlined,
             label: 'Mobile No.',
             value: profile?.mobile.toString() ?? "",
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          ProfileDetailsField(
+            icon: Icons.male,
+            label: 'Gender',
+            value: selectedGender ?? '',
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  selectedGender = value;
+                });
+              }
+            },
           ),
         ],
       ),
@@ -253,8 +277,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
         borderWidth: 0,
         fontSize: 16,
-        backgroundColor: AppColors.marketingNavBarColor,
-        text: "Logout",
+        backgroundColor: AppColors.redF11515,
+        text: "Log Out",
+        icon: Icons.logout_outlined,
       ),
     );
   }
