@@ -118,7 +118,6 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => VerificationProvider()),
         ChangeNotifierProvider(create: (_) => ForgotPassProvider()),
         ChangeNotifierProvider(create: (_) => NewPassProvider()),
-        ChangeNotifierProvider(create: (_) => AgentHomeScreenProvider()),
         ChangeNotifierProvider(create: (_) => ChatRefreshProvider()),
         ChangeNotifierProvider(
             create: (_) => CallProvider(widget.navigatorKey)),

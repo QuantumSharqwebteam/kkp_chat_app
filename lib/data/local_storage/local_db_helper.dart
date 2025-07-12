@@ -13,6 +13,7 @@ class LocalDbHelper {
   static const String _fCMToken = "FCMTOKEN";
   static const String _lastRefreshTime = 'lastRefreshTime';
   static const String _lastMessageMapKey = 'lastMessageMap';
+  static const String unreadCountsBoxKey = 'unreadCountsBox';
 
   // feed
   static const String _pinnedAgentsKey = 'pinnedAgents';
@@ -193,5 +194,30 @@ class LocalDbHelper {
   // Method to clear all last messages
   static Future<void> clearLastMessages() async {
     await _lastMessageBoxInstance.clear();
+  }
+
+  static Future<void> updateUnreadCount(
+      String agentEmail, String customerEmail, int count) async {
+    final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
+    await box.put(customerEmail, count);
+  }
+
+  static Future<int?> getUnreadCount(
+      String agentEmail, String customerEmail) async {
+    final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
+    return box.get(customerEmail, defaultValue: 0);
+  }
+
+  static Future<void> clearUnreadCount(
+      String agentEmail, String customerEmail) async {
+    final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
+    await box.put(customerEmail, 0);
+  }
+
+  static Future<void> incrementUnreadCount(
+      String agentEmail, String customerEmail) async {
+    final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
+    final currentCount = box.get(customerEmail, defaultValue: 0);
+    await box.put(customerEmail, currentCount! + 1);
   }
 }
