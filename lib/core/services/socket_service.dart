@@ -53,7 +53,7 @@ class SocketService {
 
   SocketService._internal();
 
- void onMessageReceived(Function(Map<String, dynamic>) callback,
+  void onMessageReceived(Function(Map<String, dynamic>) callback,
       {Function? refreshCallback}) {
     _onMessageReceived = callback;
     onMessageReceivedCallback = refreshCallback;
@@ -467,103 +467,99 @@ class SocketService {
     }
   }
 
-Future<void> _chatNotification(Map<String, dynamic> data) async {
-  debugPrint('🔔 Foreground Push Notification: $data');
-  if (!data.containsKey('type') ||
-      !data.containsKey('senderId') ||
-      !data.containsKey('message')) {
-    debugPrint('ℹ️ Ignoring non-chat notification: $data');
-    return;
-  }
+  Future<void> _chatNotification(Map<String, dynamic> data) async {
+    debugPrint('🔔 Foreground Push Notification: $data');
+    if (!data.containsKey('type') ||
+        !data.containsKey('senderId') ||
+        !data.containsKey('message')) {
+      debugPrint('ℹ️ Ignoring non-chat notification: $data');
+      return;
+    }
 
-  final userType = await LocalDbHelper.getUserType();
+    final userType = await LocalDbHelper.getUserType();
 
-  if (userType == "0") {
-    // Handle customer case
-  } else {
-    final senderId = data['senderId'];
-    final targetId = data['targetId'];
-
-    // Increment unread count in the dedicated box
-    await LocalDbHelper.incrementUnreadCount(targetId, senderId);
-
-    // Also update the individual count box for backward compatibility
-    final boxNameWithCount = "${targetId}${senderId}count";
-    final box = await Hive.openBox<int>(boxNameWithCount);
-    int count = box.get('count', defaultValue: 0)! + 1;
-    await box.put('count', count);
-
-    // Update last message
-    if (data['type'] == "product") {
-      updateLastMessage(data["senderId"], "shared product");
+    if (userType == "0") {
+      // Handle customer case
     } else {
-      updateLastMessage(data['senderId'], data['message']);
+      final senderId = data['senderId'];
+      final targetId = data['targetId'];
+
+      // Increment unread count in the dedicated box
+      await LocalDbHelper.incrementUnreadCount(targetId, senderId);
+
+      // Also update the individual count box for backward compatibility
+      final boxNameWithCount = "$targetId${senderId}count";
+      final box = await Hive.openBox<int>(boxNameWithCount);
+      int count = box.get('count', defaultValue: 0)! + 1;
+      await box.put('count', count);
+
+      // Update last message
+      if (data['type'] == "product") {
+        updateLastMessage(data["senderId"], "shared product");
+      } else {
+        updateLastMessage(data['senderId'], data['message']);
+      }
+
+      // Notify the provider to update the UI
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
     }
 
-    // Notify the provider to update the UI
-    if (onMessageReceivedCallback != null) {
-      onMessageReceivedCallback!();
-    }
-  }
-
-  // Show local notification (rest of the method remains the same)
-  if (_notificationsPlugin == null) {
-    _notificationsPlugin = FlutterLocalNotificationsPlugin();
-    const androidSettings = AndroidInitializationSettings('app_logo');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestSoundPermission: true,
-      requestBadgePermission: true,
-      defaultPresentAlert: true,
-      defaultPresentSound: true,
-      defaultPresentBadge: true,
-    );
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-    await _notificationsPlugin!.initialize(initSettings,
-        onDidReceiveNotificationResponse: _handleNotificationTap);
-  }
-
-  // Request permissions for iOS
-  await _notificationsPlugin!
-      .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>()
-      ?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
+    // Show local notification (rest of the method remains the same)
+    if (_notificationsPlugin == null) {
+      _notificationsPlugin = FlutterLocalNotificationsPlugin();
+      const androidSettings = AndroidInitializationSettings('app_logo');
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestSoundPermission: true,
+        requestBadgePermission: true,
+        defaultPresentAlert: true,
+        defaultPresentSound: true,
+        defaultPresentBadge: true,
       );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
+      await _notificationsPlugin!.initialize(initSettings,
+          onDidReceiveNotificationResponse: _handleNotificationTap);
+    }
 
-  const androidDetails = AndroidNotificationDetails(
-    'your_channel_id',
-    'your_channel_name',
-    channelDescription: 'your_channel_description',
-    importance: Importance.max,
-    priority: Priority.high,
-  );
-  const iosDetails = DarwinNotificationDetails(
-    presentAlert: true,
-    presentBadge: true,
-    presentSound: true,
-  );
-  final notificationDetails =
-      NotificationDetails(android: androidDetails, iOS: iosDetails);
-  final title = "New Message from ${data['senderName']}";
-  final id = title.hashCode;
-  await _notificationsPlugin!.show(
-    id,
-    title,
-    data['message'],
-    notificationDetails,
-    payload: jsonEncode(data),
-  );
-}
+    // Request permissions for iOS
+    await _notificationsPlugin!
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
 
-
-
-
+    const androidDetails = AndroidNotificationDetails(
+      'your_channel_id',
+      'your_channel_name',
+      channelDescription: 'your_channel_description',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final notificationDetails =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final title = "New Message from ${data['senderName']}";
+    final id = title.hashCode;
+    await _notificationsPlugin!.show(
+      id,
+      title,
+      data['message'],
+      notificationDetails,
+      payload: jsonEncode(data),
+    );
+  }
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;

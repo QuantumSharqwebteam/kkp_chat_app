@@ -33,8 +33,9 @@ class AssignedCustomersProvider extends ChangeNotifier {
     });
   }
 
- Future<void> _setupUnreadCountsListener() async {
-    _unreadCountsBox = await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
+  Future<void> _setupUnreadCountsListener() async {
+    _unreadCountsBox = await Hive.openBox<int>(
+        '${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
     _unreadCountsSubscription = _unreadCountsBox.watch().listen((event) async {
       await _updateUnreadCountsFromBox();
     });
@@ -56,7 +57,8 @@ class AssignedCustomersProvider extends ChangeNotifier {
     // If this is a message to our agent
     if (targetId == agentEmail) {
       // Find the customer with this senderId in our list
-      final customerIndex = _assignedCustomers.indexWhere((c) => c['email']?.toString() == senderId);
+      final customerIndex = _assignedCustomers
+          .indexWhere((c) => c['email']?.toString() == senderId);
 
       if (customerIndex != -1) {
         // Get the current count from Hive
@@ -66,7 +68,8 @@ class AssignedCustomersProvider extends ChangeNotifier {
         _assignedCustomers[customerIndex]['notificationCount'] = count;
 
         // Also update in filtered list if present
-        final filteredIndex = _filteredCustomers.indexWhere((c) => c['email']?.toString() == senderId);
+        final filteredIndex = _filteredCustomers
+            .indexWhere((c) => c['email']?.toString() == senderId);
         if (filteredIndex != -1) {
           _filteredCustomers[filteredIndex]['notificationCount'] = count;
         }
@@ -120,8 +123,10 @@ class AssignedCustomersProvider extends ChangeNotifier {
       final countB = b['notificationCount'] ?? 0;
       if (countA != countB) return countB.compareTo(countA);
 
-      final timeA = a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB = b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeA =
+          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB =
+          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
       return timeB.compareTo(timeA);
     });
 
@@ -136,8 +141,10 @@ class AssignedCustomersProvider extends ChangeNotifier {
       final countB = b['notificationCount'] ?? 0;
       if (countA != countB) return countB.compareTo(countA);
 
-      final timeA = a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB = b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeA =
+          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB =
+          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
       return timeB.compareTo(timeA);
     });
   }
@@ -161,7 +168,8 @@ class AssignedCustomersProvider extends ChangeNotifier {
 
         // Open the time box for this customer
         try {
-          final timeBox = await Hive.openBox<String>('${agentEmail}${email}lastMessageTime');
+          final timeBox =
+              await Hive.openBox<String>('$agentEmail${email}lastMessageTime');
           final timeStr = timeBox.get('lastMessageTime');
           final lastTime = timeStr != null ? DateTime.tryParse(timeStr) : null;
           customer['lastMessageTime'] = lastTime;
@@ -193,7 +201,7 @@ class AssignedCustomersProvider extends ChangeNotifier {
     await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
 
     try {
-      final boxName = '${agentEmail}${customerEmail}count';
+      final boxName = '$agentEmail${customerEmail}count';
       final box = await Hive.openBox<int>(boxName);
       await box.put('count', 0);
     } catch (e) {
@@ -201,11 +209,13 @@ class AssignedCustomersProvider extends ChangeNotifier {
     }
 
     // Update local lists
-    final index = _assignedCustomers.indexWhere((c) => c['email']?.toString() == customerEmail);
+    final index = _assignedCustomers
+        .indexWhere((c) => c['email']?.toString() == customerEmail);
     if (index != -1) {
       _assignedCustomers[index]['notificationCount'] = 0;
     }
-    final filteredIndex = _filteredCustomers.indexWhere((c) => c['email']?.toString() == customerEmail);
+    final filteredIndex = _filteredCustomers
+        .indexWhere((c) => c['email']?.toString() == customerEmail);
     if (filteredIndex != -1) {
       _filteredCustomers[filteredIndex]['notificationCount'] = 0;
     }
@@ -226,4 +236,3 @@ class AssignedCustomersProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
-

@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
-import 'package:hive/hive.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/services/socket_service.dart';
-import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/main.dart';
@@ -166,8 +163,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
       final countA = a['notificationCount'] ?? 0;
       final countB = b['notificationCount'] ?? 0;
-      if (countA != countB)
+      if (countA != countB) {
         return countB.compareTo(countA); // Higher counts first
+      }
 
       final timeA =
           a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -204,21 +202,23 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   enableLongPress: false,
                   onTap: () async {
                     await provider.resetNotificationCount(email);
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AgentChatScreen(
-                          navigatorKey: navigatorKey,
-                          customerName: name,
-                          customerEmail: email,
-                          agentEmail: provider.agentEmail,
-                          agentName: provider.agentName,
-                          isAccountDeleted: isAccountDeleted,
+                    if (context.mounted) {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AgentChatScreen(
+                            navigatorKey: navigatorKey,
+                            customerName: name,
+                            customerEmail: email,
+                            agentEmail: provider.agentEmail,
+                            agentName: provider.agentName,
+                            isAccountDeleted: isAccountDeleted,
+                          ),
                         ),
-                      ),
-                    );
-                    if (result == true) {
-                      await provider.fetchAssignedCustomers();
+                      );
+                      if (result == true) {
+                        await provider.fetchAssignedCustomers();
+                      }
                     }
                   },
                 ),

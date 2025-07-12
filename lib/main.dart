@@ -8,7 +8,6 @@ import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
-import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
