@@ -10,6 +10,7 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
@@ -99,14 +100,11 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
 
   Future<void> _loadUserData() async {
     try {
-      // Load role and email
       role = await LocalDbHelper.getUserType();
       agentEmail = LocalDbHelper.getEmail();
 
-      debugPrint(
-          'Loaded role: $role, Loaded email: $agentEmail'); // Debug print
+      debugPrint('Loaded role: $role, Loaded email: $agentEmail');
 
-      // Determine role name
       if (role == "1") {
         rolename = "admin";
       } else if (role == "2") {
@@ -115,32 +113,50 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
         rolename = "agent Head";
       }
 
-      // Load user profile
-      final Map<String, dynamic> userData = await auth.getUserInfo();
-      if (userData['message'] ==
-          "Session expired due to login on another device") {
-        await Hive.deleteFromDisk();
-        await reinitializeHive();
-        if (mounted) {
-          Navigator.of(context)
-              .pushReplacement(MaterialPageRoute(builder: (context) {
-            return LoginPage();
-          }));
+      final userData = await auth.getUserInfo();
+
+      if (userData is Map<String, dynamic>) {
+        final message = userData['message'];
+
+        if (message == "Session expired due to login on another device") {
+          await Hive.deleteFromDisk();
+          await reinitializeHive();
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            );
+          }
+          return;
+        }
+
+        if (message == "You are Not Authorized") {
+          await Hive.deleteFromDisk();
+          await reinitializeHive();
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            );
+          }
+          return;
+        }
+
+        if (message is Map<String, dynamic>) {
+          final profile = Profile.fromJson(message);
+          await LocalDbHelper.saveProfile(profile).whenComplete(() {
+            debugPrint('Loaded profile: $profile');
+          });
+
+          setState(() {
+            agentName = profile.name ?? "";
+            agentEmail = profile.email ?? "";
+          });
+
+          await _updateScreens();
+        } else {
+          debugPrint("Unexpected message type: $message");
         }
       } else {
-        Profile? profile = Profile.fromJson(userData['message']);
-        await LocalDbHelper.saveProfile(profile).whenComplete(() {
-          debugPrint(
-              'Loaded profile: $profile'); // Debug print to check loaded profile
-        });
-
-        setState(() {
-          agentName = profile.name ?? "";
-          agentEmail = profile.email ?? ""; // Ensure email is also set
-          debugPrint(
-              'Agent Name: $agentName, Agent Email: $agentEmail'); // Debug print to check values
-        });
-        await _updateScreens();
+        debugPrint("Unexpected userData format: $userData");
       }
     } catch (error) {
       debugPrint('Error in _loadUserData: $error');
@@ -159,7 +175,18 @@ class _MarketingHostState extends State<MarketingHost> with RouteAware {
         if (role == "1")
           AdminHome()
         else
-          AgentHomeScreen(agentEmail: agentEmail!, agentName: agentName!),
+          MultiProvider(
+            providers: [
+              ChangeNotifierProvider(
+                create: (_) => AssignedCustomersProvider(
+                  agentEmail: agentEmail!,
+                  agentName: agentName!,
+                  socketService: _socketService,
+                ),
+              ),
+            ],
+            child: AgentHomeScreen(),
+          ),
         FeedsScreen(loggedAgentEmail: agentEmail!),
         MarketingProductScreen(),
         if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
