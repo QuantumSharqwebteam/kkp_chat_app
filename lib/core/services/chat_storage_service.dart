@@ -55,4 +55,18 @@ class ChatStorageService {
     }
     return allMessages.sublist(startIndex); // Fetch all remaining messages
   }
+
+  Future<void> markMessagesAsRead(String boxName, String readerId) async {
+    final box = await _openBox(boxName);
+    final allMessages = box.values
+        .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
+        .toList();
+
+    for (var message in allMessages) {
+      if (message.sender != readerId && !message.read!) {
+        message.read = true;
+        await box.put(message.timestamp.toString(), message.toMap());
+      }
+    }
+  }
 }

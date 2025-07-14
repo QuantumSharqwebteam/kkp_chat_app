@@ -100,11 +100,14 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   Widget _buildProfileSection(String? name) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      leading: Initicon(text: name ?? ""),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      leading: Initicon(
+        text: name ?? "",
+        size: 35,
+      ),
       title: Text(name ?? "", style: AppTextStyles.black16_500),
       subtitle:
-          Text("Let's find latest messages", style: AppTextStyles.black12_400),
+          Text("Let's find latest messages", style: AppTextStyles.black10_500),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
