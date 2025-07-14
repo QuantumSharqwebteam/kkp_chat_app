@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -129,6 +130,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         callId: messageJson.callId,
         messageId: messageJson.messageId,
         isDeleted: messageJson.isDeleted ?? false,
+        read: messageJson.read,
       );
     }).toList();
 
@@ -223,6 +225,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           callId: messageJson.callId,
           messageId: messageJson.messageId,
           isDeleted: messageJson.isDeleted ?? false,
+          read: messageJson.read ?? false,
         );
       }).toList();
 
@@ -389,10 +392,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     super.initState();
     _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
+
+    _socketService.markMessagesAsRead(
+      userId: widget.customerEmail!,
+      role: 'user',
+    );
+
     _socketService.setChatPageState(
       isOpen: true,
       customerId: widget.customerEmail, // This is targetId in incoming message
     );
+    _socketService.onMessagesRead(_handleMessagesRead);
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _socketService.onMessageDeleted(_handleMessageDeleted);
     _loadPreviousMessages();
@@ -449,6 +459,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
+  void _handleMessagesRead(Map<String, dynamic> data) {
+    final String readerId = data['readerId'];
+    final String boxName = widget.customerEmail!;
+
+    // Update local storage to mark messages as read
+    _chatStorageService.markMessagesAsRead(boxName, readerId);
+
+    // Update UI to show blue tick marks for read messages
+    setState(() {
+      // Update the messages list to reflect the read status
+      for (var message in messages) {
+        if (message.sender != readerId) {
+          message.read = true;
+        }
+      }
+    });
+  }
+
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("Received Message: ${data.toString()}");
 
@@ -467,6 +495,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       mediaUrl: data["mediaUrl"],
       form: data["form"],
       messageId: data['messageId'],
+      read: data["read"],
     );
 
     if (!_loadedMessageIds.contains(message.messageId)) {
@@ -549,28 +578,59 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _chatController.clear();
   }
 
-  void _showDeleteDialog(BuildContext context, String messageId) {
-    showDialog(
+  void _showMessageOptionBottomSheet(BuildContext context, String messageId,
+      {String? textToCopy, bool isMedia = false}) {
+    showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Unsend Message"),
-          content: const Text("Are you sure you want to unsend this message?"),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text("unsend"),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteMessage(messageId);
-              },
-            ),
-          ],
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Choose what to do :",
+                      style: AppTextStyles.grey12_600.copyWith(fontSize: 16),
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.clear_rounded))
+                  ],
+                ),
+              ),
+              if (textToCopy !=
+                  null) // Only show the copy option if textToCopy is not null
+                ListTile(
+                  leading: const Icon(Icons.content_copy),
+                  title: Text(
+                    isMedia ? 'Copy Media URL' : 'Copy Message',
+                    style: AppTextStyles.black15_500,
+                  ),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: textToCopy));
+                    Navigator.pop(context);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text(
+                  'Unsend Message',
+                  style: AppTextStyles.black15_500,
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(messageId);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -967,7 +1027,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -990,7 +1051,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -1005,7 +1067,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -1064,7 +1127,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                                 },
                                                 isDeleted: msg.isDeleted,
                                                 onLongPress: isCustomer
-                                                    ? () => _showDeleteDialog(
+                                                    ? () =>
+                                                        _showMessageOptionBottomSheet(
                                                           context,
                                                           msg.messageId!,
                                                         )
@@ -1085,9 +1149,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                           isMe: msg.sender ==
                                               widget.customerEmail,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
+                                                    textToCopy: msg.message,
                                                   )
                                               : null,
                                         ),

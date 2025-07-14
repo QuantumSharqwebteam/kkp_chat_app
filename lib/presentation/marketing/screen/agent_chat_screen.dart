@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:flutter_sound/public/flutter_sound_recorder.dart';
 import 'package:hive/hive.dart';
@@ -29,7 +30,6 @@ import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/delete_dialog.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
@@ -108,6 +108,15 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     WidgetsBinding.instance.addObserver(this);
     _fetchUserRole();
     super.initState();
+
+    // Initialize socket service and set up listeners
+    _socketService.onMessagesRead(_handleMessagesRead);
+
+    // Emit markAsRead event when the chat page is opened
+    _socketService.markMessagesAsRead(
+      userId: widget.customerEmail,
+      role: 'agent',
+    );
 
     _socketService.setChatPageState(
         isOpen: true, customerId: widget.customerEmail);
@@ -233,6 +242,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         callId: messageJson.callId,
         messageId: messageJson.messageId,
         isDeleted: messageJson.isDeleted!,
+        read: messageJson.read,
       );
     }).toList();
 
@@ -324,6 +334,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           callStatus: messageJson.callStatus,
           messageId: messageJson.messageId,
           isDeleted: messageJson.isDeleted!,
+          read: messageJson.read,
         );
       }).toList();
 
@@ -541,6 +552,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
+  void _handleMessagesRead(Map<String, dynamic> data) {
+    final String readerId = data['readerId'];
+    final String boxName = '${widget.agentEmail}${widget.customerEmail}';
+
+    // Update local storage to mark messages as read
+    _chatStorageService.markMessagesAsRead(boxName, readerId);
+
+    // Update UI to show blue tick marks for read messages
+    setState(() {
+      for (var message in messages) {
+        if (message.sender != readerId) {
+          message.read = true;
+        }
+      }
+    });
+  }
+
   void _handleMessageDeleted(String messageId) {
     if (mounted) {
       setState(() {
@@ -568,7 +596,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     Map<String, dynamic>? form,
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
-
+    final isRead = _socketService.isUserOnline(widget.customerEmail) &&
+        _socketService.isChatPageOpen;
     final currentTime = DateTime.now();
     final messageId =
         ChatUtils().generateMessageId(); // Generate a unique message ID
@@ -582,6 +611,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: form,
       messageId: messageId,
       isDeleted: false,
+      read: isRead ? true : false,
     );
 
     if (!_loadedMessageIds.contains(messageId)) {
@@ -640,15 +670,59 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
   }
 
-  void _showDeleteDialog(BuildContext context, String messageId) {
-    showDialog(
+  void _showMessageOptionsBottomSheet(BuildContext context, String messageId,
+      {String? textToCopy, bool isMedia = false}) {
+    showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return DeleteDialog(
-          messageId: messageId,
-          onDelete: (messageId) {
-            _deleteMessage(messageId);
-          },
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Choose what to do :",
+                      style: AppTextStyles.grey12_600.copyWith(fontSize: 16),
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.clear_rounded))
+                  ],
+                ),
+              ),
+              if (textToCopy !=
+                  null) // Only show the copy option if textToCopy is not null
+                ListTile(
+                  leading: const Icon(Icons.content_copy),
+                  title: Text(
+                    isMedia ? 'Copy Media URL' : 'Copy Message',
+                    style: AppTextStyles.black15_500,
+                  ),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: textToCopy));
+                    Navigator.pop(context);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text(
+                  'Unsend Message',
+                  style: AppTextStyles.black15_500,
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(messageId);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -971,8 +1045,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                         ),
                                         isDeleted: msg.isDeleted,
                                         onLongPress: isAgent
-                                            ? () => _showDeleteDialog(
-                                                context, msg.messageId!)
+                                            ? () =>
+                                                _showMessageOptionsBottomSheet(
+                                                    context, msg.messageId!)
                                             : null,
                                       )
                                     else if (msg.type == 'form')
@@ -1005,8 +1080,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                             msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                         onLongPress: isAgent
-                                            ? () => _showDeleteDialog(
-                                                context, msg.messageId!)
+                                            ? () =>
+                                                _showMessageOptionsBottomSheet(
+                                                    context, msg.messageId!)
                                             : null,
                                       )
                                     else if (msg.type == 'voice')
@@ -1017,8 +1093,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                             msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                         onLongPress: isAgent
-                                            ? () => _showDeleteDialog(
-                                                context, msg.messageId!)
+                                            ? () =>
+                                                _showMessageOptionsBottomSheet(
+                                                    context, msg.messageId!)
                                             : null,
                                       )
                                     else if (msg.type == 'call')
@@ -1056,8 +1133,11 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                               ),
                                               isDeleted: msg.isDeleted,
                                               onLongPress: isAgent
-                                                  ? () => _showDeleteDialog(
-                                                      context, msg.messageId!)
+                                                  ? () =>
+                                                      _showMessageOptionsBottomSheet(
+                                                        context,
+                                                        msg.messageId!,
+                                                      )
                                                   : null,
                                               onTap: () {
                                                 final productMap =
@@ -1090,8 +1170,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                         message: msg,
                                         isMe: msg.sender == widget.agentEmail,
                                         onLongPress: isAgent
-                                            ? () => _showDeleteDialog(
-                                                context, msg.messageId!)
+                                            ? () =>
+                                                _showMessageOptionsBottomSheet(
+                                                    context, msg.messageId!,
+                                                    textToCopy: msg.message!)
                                             : null,
                                       ),
                                   ],
