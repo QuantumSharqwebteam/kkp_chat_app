@@ -142,108 +142,90 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   }
 
   Widget _buildCustomerInquiriesList(AssignedCustomersProvider provider) {
-    final socket = provider.socketService;
+  final socket = provider.socketService;
 
-    // Get the list of valid customers from the provider
-    final validCustomers = provider.filteredCustomers.where((customer) {
-      final email = customer['email'];
-      final name = customer['name'];
-      final isDeleted = customer['isDeleted'] ?? false;
-      return email != null &&
-          name != null &&
-          email.toString().isNotEmpty &&
-          !isDeleted;
-    }).toList();
+  // Get the list of valid customers from the provider (already sorted by the provider)
+  final validCustomers = provider.filteredCustomers.where((customer) {
+    final email = customer['email'];
+    final name = customer['name'];
+    final isDeleted = customer['isDeleted'] ?? false;
+    return email != null &&
+        name != null &&
+        email.toString().isNotEmpty &&
+        !isDeleted;
+  }).toList();
 
-    validCustomers.sort((a, b) {
-      final isAOnline = socket.isUserOnline(a["email"]?.toString() ?? '');
-      final isBOnline = socket.isUserOnline(b["email"]?.toString() ?? '');
-      if (isAOnline && !isBOnline) return -1;
-      if (!isAOnline && isBOnline) return 1;
+  // We don't need to sort here anymore since the provider handles it
+  return RefreshIndicator(
+    onRefresh: () async => provider.fetchAssignedCustomers(),
+    child: ListView.builder(
+      itemCount: validCustomers.length,
+      physics: const AlwaysScrollableScrollPhysics(),
+      itemBuilder: (context, index) {
+        final customer = validCustomers[index];
+        final name = customer['name'] ?? "Unnamed";
+        final email = customer['email']?.toString() ?? "";
+        final isAccountDeleted = customer['isDeleted'] ?? false;
+        final isOnline = customer['isOnline'] ?? false; // Use the flag we set
+        final lastSeen = isOnline ? "Online" : socket.getLastSeenTime(email);
+        final notificationCount = customer['notificationCount'] ?? 0;
+        final lastMessage = socket.getLastMessage(email);
 
-      final countA = a['notificationCount'] ?? 0;
-      final countB = b['notificationCount'] ?? 0;
-      if (countA != countB) {
-        return countB.compareTo(countA); // Higher counts first
-      }
-
-      final timeA =
-          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB =
-          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return timeB.compareTo(timeA); // Newer messages first
-    });
-
-    return RefreshIndicator(
-      onRefresh: () async => provider.fetchAssignedCustomers(),
-      child: ListView.builder(
-        itemCount: validCustomers.length,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemBuilder: (context, index) {
-          final customer = validCustomers[index];
-          final name = customer['name'] ?? "Unnamed";
-          final email = customer['email']?.toString() ?? "";
-          final isAccountDeleted = customer['isDeleted'] ?? false;
-          final isOnline = socket.isUserOnline(email);
-          final lastSeen = socket.getLastSeenTime(email);
-          final notificationCount = customer['notificationCount'] ?? 0;
-          final lastMessage = socket.getLastMessage(email);
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Stack(
-              children: [
-                FeedListCard(
-                  name: name,
-                  message: lastMessage,
-                  isAccountDeleted: isAccountDeleted,
-                  isActive: isOnline,
-                  time: isOnline ? "Online" : lastSeen,
-                  enableLongPress: false,
-                  onTap: () async {
-                    await provider.resetNotificationCount(email);
-                    if (context.mounted) {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AgentChatScreen(
-                            navigatorKey: navigatorKey,
-                            customerName: name,
-                            customerEmail: email,
-                            agentEmail: provider.agentEmail,
-                            agentName: provider.agentName,
-                            isAccountDeleted: isAccountDeleted,
-                          ),
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Stack(
+            children: [
+              FeedListCard(
+                name: name,
+                message: lastMessage,
+                isAccountDeleted: isAccountDeleted,
+                isActive: isOnline, // Use our local flag
+                time: isOnline ? "Online" : lastSeen,
+                enableLongPress: false,
+                onTap: () async {
+                  await provider.resetNotificationCount(email);
+                  if (context.mounted) {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AgentChatScreen(
+                          navigatorKey: navigatorKey,
+                          customerName: name,
+                          customerEmail: email,
+                          agentEmail: provider.agentEmail,
+                          agentName: provider.agentName,
+                          isAccountDeleted: isAccountDeleted,
                         ),
-                      );
-                      if (result == true) {
-                        await provider.fetchAssignedCustomers();
-                      }
+                      ),
+                    );
+                    if (result == true) {
+                      await provider.fetchAssignedCustomers();
                     }
-                  },
-                ),
-                if (notificationCount > 0)
-                  Positioned(
-                    right: 10,
-                    top: 10,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        notificationCount.toString(),
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 12),
-                      ),
+                  }
+                },
+              ),
+              if (notificationCount > 0)
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      notificationCount.toString(),
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
+                ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
 }

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -10,8 +9,26 @@ import 'package:kkpchatapp/presentation/common_widgets/empty_notifications_widge
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:provider/provider.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
+
+  @override
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends State<NotificationsScreen> {
+  late NotificationProvider _notificationProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch notifications when screen is first loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notificationProvider =
+          Provider.of<NotificationProvider>(context, listen: false);
+      _notificationProvider.fetchNotifications();
+    });
+  }
 
   Map<String, List<NotificationModel>> groupNotificationsByDate(
       List<NotificationModel> notifications) {
@@ -21,11 +38,9 @@ class NotificationsScreen extends StatelessWidget {
       'Earlier': [],
     };
     final now = DateTime.now();
-
     for (final notif in notifications) {
       final date = notif.timestamp ?? DateTime.now();
       final diff = now.difference(date);
-
       if (diff.inDays == 0 && now.day == date.day) {
         grouped['Today']!.add(notif);
       } else if (diff.inDays == 1 ||
@@ -41,7 +56,6 @@ class NotificationsScreen extends StatelessWidget {
   String getFormattedTime(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inMinutes < 60) {
@@ -60,18 +74,30 @@ class NotificationsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Notifications"),
+        title: const Text(
+          "Notifications",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
         backgroundColor: Colors.white,
-        elevation: 1,
         actions: [
           if (provider.notifications.isNotEmpty)
             TextButton(
-              onPressed: provider.markAllRead,
+              onPressed: () async {
+                await provider.markAllRead();
+              },
               child: const Text(
                 "Mark all read",
-                style: TextStyle(color: Colors.blue),
+                style: TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
+          // Add a refresh button
+          // IconButton(
+          //   icon: const Icon(Icons.refresh),
+          //   onPressed: () => provider.refreshNotifications(),
+          // ),
         ],
       ),
       body: Stack(
@@ -79,7 +105,7 @@ class NotificationsScreen extends StatelessWidget {
           if (provider.isLoading)
             const FullScreenLoader()
           else if (provider.notifications.isEmpty)
-            EmptyNotificationsWidget()
+            const EmptyNotificationsWidget()
           else
             ListView(
               children: grouped.entries
@@ -99,7 +125,7 @@ class NotificationsScreen extends StatelessWidget {
       children: [
         Container(
           width: double.maxFinite,
-          color: AppColors.blue00ABE9.withValues(alpha: 0.07),
+          color: AppColors.blue00ABE9.withOpacity(0.07),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
           margin: const EdgeInsets.symmetric(vertical: 10),
           child: Text(
@@ -108,69 +134,92 @@ class NotificationsScreen extends StatelessWidget {
           ),
         ),
         ...list.map((n) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: _buildNotificationTile(context, n),
             )),
       ],
     );
   }
 
-  Widget _buildNotificationTile(BuildContext context, NotificationModel n) {
-    final provider = Provider.of<NotificationProvider>(context, listen: false);
-    final date = n.timestamp ?? DateTime.now();
+  Widget _buildNotificationTile(
+      BuildContext context, NotificationModel notification) {
+    final date = notification.timestamp ?? DateTime.now();
     final displayTime = getFormattedTime(date);
+    final provider = Provider.of<NotificationProvider>(context, listen: false);
 
-    // Check if body is a JSON string and type is 'product'
+    // Format message body
     String bodyText;
-    if (n.type == 'product') {
+    if (notification.type == 'product') {
       try {
-        final decoded = jsonDecode(n.body ?? '');
+        final decoded = jsonDecode(notification.body ?? '');
         if (decoded is Map<String, dynamic>) {
           bodyText = "shared a product with you";
         } else {
-          bodyText = n.body ?? '';
+          bodyText = notification.body ?? '';
         }
       } catch (e) {
-        bodyText = n.body ?? '';
+        bodyText = notification.body ?? '';
       }
     } else {
-      bodyText = n.body ?? '';
+      bodyText = notification.body ?? '';
     }
 
-    return ListTile(
-      onTap: () {
-        provider.markAsRead(n.id ?? '');
-      },
-      leading: Initicon(
-        text: n.senderName ?? '',
-        size: 40,
-        backgroundColor: Colors.grey.shade300,
-      ),
-      title: RichText(
-        text: TextSpan(
-          text: n.senderName ?? '',
-          style: AppTextStyles.black14_600,
-          children: [
-            TextSpan(
-              text: ' $bodyText',
-              style: AppTextStyles.black12_400,
-            ),
-          ],
-        ),
-      ),
-      subtitle: Text(
-        displayTime,
-        style: AppTextStyles.grey12_600,
-      ),
-      trailing: !(n.viewed ?? false)
-          ? const Text(
-              "Mark as read",
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.blue,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ✅ Clickable tick icon
+        Padding(
+          padding: const EdgeInsets.only(left: 16, top: 8),
+          child: GestureDetector(
+            onTap: () async {
+              if (!(notification.viewed ?? false)) {
+                await provider.markAsRead(notification.id ?? '');
+              }
+            },
+            child: CircleAvatar(
+              backgroundColor: notification.viewed ?? false
+                  ? Colors.green
+                  : Colors.grey.shade300,
+              radius: 16,
+              child: Icon(
+                Icons.check,
+                color: notification.viewed ?? false
+                    ? Colors.white
+                    : Colors.grey.shade600,
+                size: 18,
               ),
-            )
-          : null,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.senderName ?? '',
+                  style: AppTextStyles.black14_600,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  bodyText,
+                  style: AppTextStyles.black12_400,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // ⏱ Time on the right
+        Padding(
+          padding: const EdgeInsets.only(right: 16, top: 8),
+          child: Text(
+            displayTime,
+            style: AppTextStyles.grey12_600,
+          ),
+        ),
+      ],
     );
   }
 }
