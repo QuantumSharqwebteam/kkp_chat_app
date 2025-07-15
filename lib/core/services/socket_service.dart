@@ -35,7 +35,6 @@ class SocketService {
   Function(Map<String, dynamic>)? _onCallTerminated;
   Function? _onDisconnect;
   Function? _onConnect;
-  Function(Map<String, dynamic>)? _onMessagesRead;
 
   bool isChatPageOpen = false;
   String? activeCustomerId;
@@ -136,12 +135,6 @@ class SocketService {
       debugPrint('📥 callTerminated from server: $data');
 
       _onCallTerminated?.call(data);
-    });
-    _socket.on('messagesRead', (data) {
-      debugPrint("✅ message Read  data : ${data.toString()} ");
-      if (_onMessagesRead != null) {
-        _onMessagesRead!(data);
-      }
     });
 
     _socket.on('messageDeleted', (data) {
@@ -389,19 +382,6 @@ class SocketService {
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
     }
-  }
-
-  void markMessagesAsRead({required String userId, required String role}) {
-    Map<String, dynamic> data = {
-      'userId': userId,
-      'role': role,
-    };
-    _socket.emit('markAsRead', data);
-    debugPrint("✅ mark read socket : ${data.toString()}");
-  }
-
-  void onMessagesRead(Function(Map<String, dynamic>) callback) {
-    _onMessagesRead = callback;
   }
 
   void deleteMessage(String messageId, String senderId, [String? targetId]) {

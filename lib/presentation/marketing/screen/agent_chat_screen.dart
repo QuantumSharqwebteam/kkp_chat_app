@@ -109,15 +109,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _fetchUserRole();
     super.initState();
 
-    // Initialize socket service and set up listeners
-    _socketService.onMessagesRead(_handleMessagesRead);
-
-    // Emit markAsRead event when the chat page is opened
-    _socketService.markMessagesAsRead(
-      userId: widget.customerEmail,
-      role: 'agent',
-    );
-
     _socketService.setChatPageState(
         isOpen: true, customerId: widget.customerEmail);
 
@@ -334,7 +325,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           callStatus: messageJson.callStatus,
           messageId: messageJson.messageId,
           isDeleted: messageJson.isDeleted!,
-          read: messageJson.read,
         );
       }).toList();
 
@@ -552,23 +542,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }
   }
 
-  void _handleMessagesRead(Map<String, dynamic> data) {
-    final String readerId = data['readerId'];
-    final String boxName = '${widget.agentEmail}${widget.customerEmail}';
-
-    // Update local storage to mark messages as read
-    _chatStorageService.markMessagesAsRead(boxName, readerId);
-
-    // Update UI to show blue tick marks for read messages
-    setState(() {
-      for (var message in messages) {
-        if (message.sender != readerId) {
-          message.read = true;
-        }
-      }
-    });
-  }
-
   void _handleMessageDeleted(String messageId) {
     if (mounted) {
       setState(() {
@@ -596,8 +569,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     Map<String, dynamic>? form,
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
-    final isRead = _socketService.isUserOnline(widget.customerEmail) &&
-        _socketService.isChatPageOpen;
     final currentTime = DateTime.now();
     final messageId =
         ChatUtils().generateMessageId(); // Generate a unique message ID
@@ -611,7 +582,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       form: form,
       messageId: messageId,
       isDeleted: false,
-      read: isRead ? true : false,
     );
 
     if (!_loadedMessageIds.contains(messageId)) {

@@ -393,16 +393,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
 
-    _socketService.markMessagesAsRead(
-      userId: widget.customerEmail!,
-      role: 'user',
-    );
-
     _socketService.setChatPageState(
       isOpen: true,
       customerId: widget.customerEmail, // This is targetId in incoming message
     );
-    _socketService.onMessagesRead(_handleMessagesRead);
+
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _socketService.onMessageDeleted(_handleMessageDeleted);
     _loadPreviousMessages();
@@ -459,24 +454,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  void _handleMessagesRead(Map<String, dynamic> data) {
-    final String readerId = data['readerId'];
-    final String boxName = widget.customerEmail!;
-
-    // Update local storage to mark messages as read
-    _chatStorageService.markMessagesAsRead(boxName, readerId);
-
-    // Update UI to show blue tick marks for read messages
-    setState(() {
-      // Update the messages list to reflect the read status
-      for (var message in messages) {
-        if (message.sender != readerId) {
-          message.read = true;
-        }
-      }
-    });
-  }
-
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("Received Message: ${data.toString()}");
 
@@ -495,7 +472,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       mediaUrl: data["mediaUrl"],
       form: data["form"],
       messageId: data['messageId'],
-      read: data["read"],
     );
 
     if (!_loadedMessageIds.contains(message.messageId)) {
