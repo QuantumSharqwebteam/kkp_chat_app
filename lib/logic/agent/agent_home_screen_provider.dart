@@ -27,7 +27,8 @@ class AssignedCustomersProvider extends ChangeNotifier {
   }
 
   Future<void> _setupUnreadCountsListener() async {
-    _unreadCountsBox = await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
+    _unreadCountsBox = await Hive.openBox<int>(
+        '${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
     _unreadCountsSubscription = _unreadCountsBox.watch().listen((event) async {
       await _updateUnreadCountsFromBox();
     });
@@ -47,7 +48,7 @@ class AssignedCustomersProvider extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> _handleNewMessage(Map<String, dynamic> data) async {
+  Future<void> handleNewMessage(Map<String, dynamic> data) async {
     final senderId = data['senderId']?.toString();
     final targetId = data['targetId']?.toString();
     if (senderId == null || targetId == null) return;
@@ -163,8 +164,10 @@ class AssignedCustomersProvider extends ChangeNotifier {
       final countB = b['notificationCount'] ?? 0;
       if (countA != countB) return countB.compareTo(countA);
 
-      final timeA = a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB = b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeA =
+          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB =
+          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
       return timeB.compareTo(timeA);
     });
 
@@ -179,8 +182,10 @@ class AssignedCustomersProvider extends ChangeNotifier {
       final countB = b['notificationCount'] ?? 0;
       if (countA != countB) return countB.compareTo(countA);
 
-      final timeA = a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB = b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeA =
+          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB =
+          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
       return timeB.compareTo(timeA);
     });
   }
@@ -192,7 +197,8 @@ class AssignedCustomersProvider extends ChangeNotifier {
     try {
       final chatRepo = ChatRepository();
       final customers = await chatRepo.fetchAssignedCustomerList(agentEmail);
-      final onlineUsers = socketService.onlineUsers; // Get current online status
+      final onlineUsers =
+          socketService.onlineUsers; // Get current online status
 
       for (var customer in customers) {
         final email = customer['email']?.toString();
@@ -207,7 +213,8 @@ class AssignedCustomersProvider extends ChangeNotifier {
 
         // Open the time box for this customer
         try {
-          final timeBox = await Hive.openBox<String>('$agentEmail${email}lastMessageTime');
+          final timeBox =
+              await Hive.openBox<String>('$agentEmail${email}lastMessageTime');
           final timeStr = timeBox.get('lastMessageTime');
           final lastTime = timeStr != null ? DateTime.tryParse(timeStr) : null;
           customer['lastMessageTime'] = lastTime;

@@ -61,8 +61,22 @@ class NotificationService with WidgetsBindingObserver {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint(
           "🔔 Notification Clicked (Background): ${message.notification?.title}");
+      _handleBackgroundMessage(message);
       handleNotificationClick(message);
     });
+  }
+
+  static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
+    final Map<String, dynamic> notificationData = message.data;
+    debugPrint('notification: $notificationData');
+
+    // Extract necessary data from the message using the correct keys
+    final String? customerEmail = notificationData['senderId'];
+    final String? agentEmail = notificationData['targetId'];
+
+    if (customerEmail != null && agentEmail != null) {
+      await LocalDbHelper.incrementUnreadCount(agentEmail, customerEmail);
+    }
   }
 
   // Handle notification clicks (both background and terminated)
@@ -120,6 +134,8 @@ class NotificationService with WidgetsBindingObserver {
           "🚀@@ App Opened via Notification: ${message.toMap()['data']}");
 
       final data = message.toMap()['data'];
+      final customerEmail = data['targetId'];
+      final agentEmail = data["senderId"];
 
       // Check if the notification data contains a call
       if (data != null && data['call'] == "true") {
@@ -130,6 +146,7 @@ class NotificationService with WidgetsBindingObserver {
         if ("0" == await LocalDbHelper.getUserType()) {
           handlePushNotificationClickForCustomer(navigatorKey!, data);
         } else {
+          LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
           handlePushNotificationClickForAgent(navigatorKey!, data);
         }
       }

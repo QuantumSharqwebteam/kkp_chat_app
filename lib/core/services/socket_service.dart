@@ -4,11 +4,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
-//import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-// import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
@@ -35,6 +33,8 @@ class SocketService {
   Function(Map<String, dynamic>)? _onCallTerminated;
   Function? _onDisconnect;
   Function? _onConnect;
+  Function(Map<String, dynamic>)? _onChatStatus;
+  Function(Map<String, dynamic>)? _onMessagesReadUpTo;
 
   bool isChatPageOpen = false;
   String? activeCustomerId;
@@ -150,6 +150,26 @@ class SocketService {
       }
     });
 
+    _socket.on('chatStatus', (data) {
+      debugPrint("📥 chatStatus: ${data.toString()}");
+      if (isChatPageOpen) {
+        _onChatStatus?.call(data);
+      } else {
+        debugPrint("📥 Handling chatStatus in background.");
+        _handleBackgroundChatStatus(data);
+      }
+    });
+
+    _socket.on('messagesReadUpTo', (data) {
+      debugPrint("📥 messagesReadUpTo: ${data.toString()}");
+      if (isChatPageOpen) {
+        _onMessagesReadUpTo?.call(data);
+      } else {
+        debugPrint("📥 Background messagesReadUpTo: $data");
+        _handleBackgroundMessagesReadUpTo(data);
+      }
+    });
+
     _socket.onDisconnect((_) {
       _isConnected = false;
       for (String email in _roomMembers) {
@@ -175,6 +195,176 @@ class SocketService {
 
   void onConnect(Function callback) {
     _onConnect = callback;
+  }
+
+  void onChatStatus(Function(Map<String, dynamic>) callback) {
+    debugPrint("🔧 Chat status callback set");
+    _onChatStatus = callback;
+  }
+
+  void onMessagesReadUpTo(Function(Map<String, dynamic>) callback) {
+    debugPrint("🔧 Messages read up to callback set");
+    _onMessagesReadUpTo = callback;
+  }
+
+  void sendChatOpened({
+    String? agentEmail,
+    required String customerEmail,
+    required String role,
+    required String lastMessageTimestamp,
+  }) {
+    if (!_isConnected) {
+      debugPrint("⚠️ Cannot send chatOpened — socket not connected.");
+      return;
+    }
+    final payload = {
+      'customerEmail': customerEmail,
+      'role': role,
+      'lastMessageTimestamp': lastMessageTimestamp,
+    };
+    if (agentEmail != null && role == 'agent') {
+      payload['agentEmail'] = agentEmail;
+    }
+
+    _socket.emit('chatOpened', payload);
+    debugPrint("📤 Sending chatOpened event with payload: $payload");
+  }
+
+  void sendMarkAsReadUpTo({
+    String? agentEmail,
+    required String customerEmail,
+    required String role,
+    required String lastMessageTimestamp,
+  }) {
+    if (!_isConnected) {
+      debugPrint("⚠️ Cannot send markAsReadUpTo — socket not connected.");
+      return;
+    }
+    final payload = {
+      'customerEmail': customerEmail,
+      'role': role,
+      'lastMessageTimestamp': lastMessageTimestamp,
+    };
+    if (agentEmail != null && role == 'agent') {
+      payload['agentEmail'] = agentEmail;
+    }
+    debugPrint("📤 Sending markAsReadUpTo event with payload: $payload");
+    _socket.emit('markAsReadUpTo', payload);
+  }
+
+  void sendChatClosed({
+    String? agentEmail,
+    required String customerEmail,
+    required String role,
+  }) {
+    if (!_isConnected) {
+      debugPrint("⚠️ Cannot send chatClosed — socket not connected.");
+      return;
+    }
+    final payload = {
+      'customerEmail': customerEmail,
+      'role': role,
+    };
+    if (agentEmail != null && role == 'agent') {
+      payload['agentEmail'] = agentEmail;
+    }
+
+    _socket.emit('chatClosed', payload);
+    debugPrint("📤 Sending chatClosed event with payload: $payload");
+  }
+
+  void _handleBackgroundChatStatus(Map<String, dynamic> data) async {
+    debugPrint("📥 Background Chat Status : ${data.toString()}");
+    final status = data['status'];
+    final customerEmail = data['customerEmail'];
+    final lastMessageTimestampStr = data['lastMessageTimestamp'];
+    debugPrint("Background Chat Status Updated: $status");
+
+    if (status == 'opened' &&
+        lastMessageTimestampStr != null &&
+        customerEmail != null) {
+      final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
+      if (lastMessageTimestamp != null) {
+        // Set the receiver as on the chat page using LocalDbHelper
+        LocalDbHelper.saveReceiverOnChatPageStatus(true);
+
+        final userType = await LocalDbHelper.getUserType();
+        if (userType == "0") {
+          // Customer
+          final messages =
+              await ChatStorageService().getCustomerMessages(customerEmail);
+          for (var message in messages) {
+            if (message.timestamp.isBefore(lastMessageTimestamp) ||
+                message.timestamp == lastMessageTimestamp) {
+              message.read = true;
+              await ChatStorageService().saveMessage(message, customerEmail);
+            }
+          }
+          debugPrint(
+              "✅ Updated customer messages as read up to $lastMessageTimestampStr");
+        } else {
+          // Agent
+          // Required from backend
+          final agentEmail = data['agentEmail'];
+          final boxName = '$agentEmail$customerEmail';
+          final messages = await ChatStorageService().getMessages(boxName);
+          for (var message in messages) {
+            if (message.timestamp.isBefore(lastMessageTimestamp) ||
+                message.timestamp == lastMessageTimestamp) {
+              message.read = true;
+              await ChatStorageService().saveMessage(message, boxName);
+            }
+          }
+          debugPrint(
+              "✅ Updated agent messages as read up to $lastMessageTimestampStr in box: $boxName");
+        }
+      }
+    } else if (status == 'closed') {
+      // Set the receiver as not on the chat page using LocalDbHelper
+      LocalDbHelper.saveReceiverOnChatPageStatus(false);
+    }
+  }
+
+  void _handleBackgroundMessagesReadUpTo(Map<String, dynamic> data) async {
+    final customerEmail = data['customerEmail'];
+    final lastMessageTimestampStr = data['lastMessageTimestamp'];
+    if (customerEmail == null || lastMessageTimestampStr == null) return;
+
+    final userType = await LocalDbHelper.getUserType();
+    final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
+    if (lastMessageTimestamp == null) return;
+
+    if (userType == "0") {
+      // Customer
+      final messages =
+          await ChatStorageService().getCustomerMessages(customerEmail);
+      for (var message in messages) {
+        if (message.timestamp.isBefore(lastMessageTimestamp)) {
+          message.read = true;
+          await ChatStorageService().saveMessage(message, customerEmail);
+        }
+      }
+      debugPrint(
+          "✅ Updated customer messages as read up to $lastMessageTimestampStr");
+    } else {
+      // Agent
+      final agentEmail = data['agentEmail']; // Required from backend
+
+      final boxName = '$agentEmail$customerEmail';
+      final messages = await ChatStorageService().getMessages(boxName);
+      for (var message in messages) {
+        if (message.timestamp.isBefore(lastMessageTimestamp)) {
+          message.read = true;
+          await ChatStorageService().saveMessage(message, boxName);
+        }
+      }
+      debugPrint(
+          "✅ Updated agent messages as read up to $lastMessageTimestampStr in box: $boxName");
+    }
+
+    if (onMessageReceivedCallback != null) {
+      onMessageReceivedCallback!(); // Refresh UI if needed
+    }
   }
 
   void _handleBackgroundMessageDeletion(Map<String, dynamic> data) async {
@@ -338,21 +528,23 @@ class SocketService {
   }
 
   void sendMessage({
-    String? targetEmail, // email to whom we are sending the email
+    String? targetEmail,
     String? message,
-    required String senderEmail, // from which email we are sending
+    required String senderEmail,
     required String senderName,
     String type = 'text',
     Map<String, dynamic>? form,
     String? mediaUrl,
     String? timestamp,
     String? messageId,
+    bool read = false,
   }) {
     if (_isConnected) {
       Map<String, dynamic> messageData = {
         'senderId': senderEmail,
         'senderName': senderName,
         'type': type,
+        'read': read,
       };
 
       if (targetEmail != null) messageData['targetId'] = targetEmail;
@@ -479,7 +671,14 @@ class SocketService {
     final userType = await LocalDbHelper.getUserType();
 
     if (userType == "0") {
-      // Handle customer case
+      final currentUserEmail = data["targetId"];
+      final boxNameWithCount = "${currentUserEmail}count";
+      final box = await Hive.openBox<int>(boxNameWithCount);
+      int count = box.get('count', defaultValue: 0)! + 1;
+      await box.put('count', count);
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
     } else {
       final senderId = data['senderId'];
       final targetId = data['targetId'];
@@ -487,11 +686,11 @@ class SocketService {
       // Increment unread count in the dedicated box
       await LocalDbHelper.incrementUnreadCount(targetId, senderId);
 
-      // Also update the individual count box for backward compatibility
-      final boxNameWithCount = "$targetId${senderId}count";
-      final box = await Hive.openBox<int>(boxNameWithCount);
-      int count = box.get('count', defaultValue: 0)! + 1;
-      await box.put('count', count);
+      // // Also update the individual count box for backward compatibility
+      // final boxNameWithCount = "$targetId${senderId}count";
+      // final box = await Hive.openBox<int>(boxNameWithCount);
+      // int count = box.get('count', defaultValue: 0)! + 1;
+      // await box.put('count', count);
 
       // Update last message
       if (data['type'] == "product") {

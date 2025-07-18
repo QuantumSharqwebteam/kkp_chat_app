@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -41,14 +42,16 @@ class ProductItem extends StatelessWidget {
               AspectRatio(
                 aspectRatio: 1.44,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    product.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.broken_image, size: 60),
-                  ),
-                ),
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: product.imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey.shade300,
+                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.broken_image, size: 60),
+                    )),
               ),
               const SizedBox(height: 8),
 

@@ -19,6 +19,7 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRead = message.read ?? false;
     return message.isDeleted
         ? DeletedMessageBubble(
             isMe: isMe,
@@ -78,6 +79,12 @@ class MessageBubble extends StatelessWidget {
                                 .copyWith(fontSize: 8.5),
                           ),
                           // you can implemnet blue tick here
+                          if (isMe)
+                            Icon(
+                              Icons.check,
+                              color: isRead ? Colors.blue : Colors.grey,
+                              size: 16,
+                            ),
                         ],
                       ),
                     ),

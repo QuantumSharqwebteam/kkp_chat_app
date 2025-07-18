@@ -122,7 +122,7 @@ Future<void> handlePushNotificationClickForAgent(
   Timer? timer;
 
   // Function to trigger navigation
-  void triggerNavigation() {
+  void triggerNavigation() async {
     // ChatStorageService chatStorageService = ChatStorageService();
     // final Map<String, dynamic> notiData = notificationData;
     // final boxName =
@@ -144,6 +144,7 @@ Future<void> handlePushNotificationClickForAgent(
     final customerName = notificationData['senderName'];
     final agentEmail = notificationData['targetId'];
     final agentName = notificationData['targetName'];
+    await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
     Navigator.push(
       navigatorKey.currentContext!,
       MaterialPageRoute(
