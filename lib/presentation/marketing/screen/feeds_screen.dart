@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -116,20 +117,22 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   Widget _buildImageSection() {
+    final isTablet = Utils().width(context)> 600;
     return Stack(
       children: [
         Container(
-          padding: const EdgeInsets.only(top: 50),
+        padding: const EdgeInsets.only(top: 50),
+        width: double.maxFinite,
+        height: isTablet ? 500 : 241,
+        color: AppColors.background,
+        child: Image.asset(
+          "assets/images/feed.png",
+          fit: BoxFit.cover,
           width: double.infinity,
-          height: 231,
-          color: AppColors.background,
-          child: Image.asset(
-            "assets/images/feed.png",
-            height: 200,
-            width: 300,
-            fit: BoxFit.cover,
-          ),
+          height: double.infinity,
         ),
+      ),
+
         Positioned(
           top: 40,
           right: 20,

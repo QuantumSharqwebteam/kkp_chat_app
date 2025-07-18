@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/preview_image.dart';
 import 'dart:io';
@@ -34,13 +35,14 @@ class ImageMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = Utils().width(context) >= 600;
     return isDeleted
         ? DeletedMessageBubble(isMe: isMe, timestamp: timestamp)
         : Align(
             alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
+                maxWidth: isTablet? MediaQuery.of(context).size.width * 0.35:MediaQuery.of(context).size.width * 0.7,
               ),
               child: Column(
                 crossAxisAlignment:

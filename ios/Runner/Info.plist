@@ -1,90 +1,150 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
+<dict>
+
+	<!-- Allows background refresh scheduling -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.hertzworkworkz.kkpgroupchatapp.refresh</string>
+	</array>
+
+	<!-- Improves animation performance on iPhone -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+
+	<!-- Localization support -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+
+	<!-- Display name shown on the home screen -->
+	<key>CFBundleDisplayName</key>
+	<string>KKP Group</string>
+
+	<!-- App binary name -->
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+
+	<!-- App identifier -->
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+
+	<!-- Info.plist version -->
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+
+	<!-- Internal app name -->
+	<key>CFBundleName</key>
+	<string>kkpchatapp</string>
+
+	<!-- Bundle type = application -->
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+
+	<!-- App version (user-facing) -->
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+
+	<!-- App signature (can be left as ???? in dev) -->
+	<key>CFBundleSignature</key>
+	<string>????</string>
+
+	<!-- Build number (internal versioning) -->
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+
+	<!-- Disable Firebase automatic swizzling -->
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+
+	<!-- Required for all iOS apps -->
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
+	<!-- Minimum supported iOS version -->
+	<key>MinimumOSVersion</key>
+	<string>13.0</string>
+
+	<!-- App Transport Security: allows HTTP connections (not recommended for prod) -->
+	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>CADisableMinimumFrameDurationOnPhone</key>
+		<key>NSAllowArbitraryLoads</key>
 		<true/>
-		<key>CFBundleDevelopmentRegion</key>
-		<string>$(DEVELOPMENT_LANGUAGE)</string>
-		<key>CFBundleDisplayName</key>
-		<string>KKP Group</string>
-		<key>CFBundleExecutable</key>
-		<string>$(EXECUTABLE_NAME)</string>
-		<key>CFBundleIdentifier</key>
-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-		<key>CFBundleInfoDictionaryVersion</key>
-		<string>6.0</string>
-		<key>CFBundleName</key>
-		<string>kkpchatapp</string>
-		<key>CFBundlePackageType</key>
-		<string>APPL</string>
-		<key>CFBundleShortVersionString</key>
-		<string>$(FLUTTER_BUILD_NAME)</string>
-		<key>CFBundleSignature</key>
-		<string>????</string>
-		<key>CFBundleVersion</key>
-		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<key>FirebaseAppDelegateProxyEnabled</key>
-		<false/>
-		<key>LSRequiresIPhoneOS</key>
-		<true/>
-		<key>MinimumOSVersion</key>
-		<string>13.0</string>
-		<key>NSAppTransportSecurity</key>
-		<dict>
-			<key>NSAllowArbitraryLoads</key>
-			<true/>
-		</dict>
-		<!-- ✅ Added for Flutter Dart VM Service & local sockets (already present) -->
-		<key>NSLocalNetworkUsageDescription</key>
-		<string>This app uses the local network to communicate with nearby devices.</string>
-		<key>NSBonjourServices</key>
-		<array>
-			<string>_dartobservatory._tcp</string>
-		</array>
-		<!-- ✅ End of local network permission section -->
-		<key>NSCameraUsageDescription</key>
-		<string>$(PRODUCT_NAME) Camera Usage!</string>
-		<key>NSMicrophoneUsageDescription</key>
-		<string>This app needs access to your microphone to record audio for calls or voice messages.</string>
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Need permission</string>
-		<key>NSUserNotificationUsageDescription</key>
-		<string>This app needs notifications to alert you about updates.</string>
-		<key>NSUserTrackingUsageDescription</key>
-		<string>This identifier will be used to deliver personalized ads to you.</string>
-		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true/>
-		<key>UIBackgroundModes</key>
-		<array>
-			<string>audio</string>
-			<string>remote-notification</string>
-			<string>processing</string>
-		</array>
-		<key>BGTaskSchedulerPermittedIdentifiers</key>
-		<array>
-			<string>com.hertzworkworkz.kkpgroupchatapp.refresh</string>
-		</array>
-		<key>UILaunchStoryboardName</key>
-		<string>LaunchScreen</string>
-		<key>UIMainStoryboardFile</key>
-		<string>Main</string>
-		<key>UISupportedInterfaceOrientations</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UIStatusBarHidden</key>
-		<true/>
-		<key>UIViewControllerBasedStatusBarAppearance</key>
-		<false/>
 	</dict>
+
+	<!-- Bonjour service for Dart observatory (debugging) -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+	</array>
+
+	<!-- Permission to use camera (fabric QR/photo) -->
+	<key>NSCameraUsageDescription</key>
+	<string>Used to scan fabric QR codes or take fabric photos for enquiries.</string>
+
+	<!-- Permission to use local network (e.g., scanning LAN) -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app uses the local network to communicate with nearby devices.</string>
+
+	<!-- Microphone access for voice chat/help -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Used for voice chat and support queries within the app.</string>
+
+	<!-- Permission to access photo library -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Allows users to upload fabric images for product enquiries.</string>
+
+	<!-- Required for push notifications (correct key) -->
+	<key>UNUserNotificationCenterUsageDescription</key>
+	<string>This app sends alerts for order updates, restocks, and support replies.</string>
+
+	<!-- Location access to find nearby stores -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to locate nearby offline fabric stores for sampling or pickup.</string>
+
+	<!-- Enables background push and processing -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>processing</string>
+	</array>
+
+	<!-- Launch screen file -->
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+
+	<!-- Main storyboard (used by Flutter but can remain empty) -->
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+
+	<!-- Hide status bar on app start -->
+	<key>UIStatusBarHidden</key>
+	<true/>
+
+	<!-- Supported orientations on iPhone -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- Supported orientations on iPad -->
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- Allows status bar control from code -->
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+
+	<!-- Required for keyboard/mouse events on iPad -->
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+
+</dict>
 </plist>
