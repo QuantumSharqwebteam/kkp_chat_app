@@ -476,4 +476,76 @@ class ChatService {
       throw Exception("Error fetching messages: $e");
     }
   }
+
+  Future<DateTime?> getAgentLastTimestampForCustomer(
+      String customerEmail) async {
+    final url = Uri.parse("$baseUrl/chat/getUserLastTimestamp/$customerEmail");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+        if (jsonResponse["status"] == 200 &&
+            jsonResponse.containsKey("lastUserReadTimestamp")) {
+          final String lastMessageTimestampStr =
+              jsonResponse["lastUserReadTimestamp"];
+          return DateTime.parse(lastMessageTimestampStr);
+        } else {
+          throw Exception(
+              "Failed to retrieve last message timestamp: ${response.body}");
+        }
+      } else {
+        throw Exception(
+            "Failed to retrieve last message timestamp: ${response.body}");
+      }
+    } catch (e) {
+      throw Exception("Error retrieving last message timestamp: $e");
+    }
+  }
+
+  /// Get Last Message Timestamp for a Specific Email and Agent Email Combination
+  Future<Map<String, dynamic>?> getCustomerLastMessageTimestampForAgent(
+      String userEmail, String agentEmail) async {
+    final url = Uri.parse("$baseUrl/chat/getTimestamp/$userEmail/$agentEmail");
+
+    try {
+      final response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+        if (jsonResponse["status"] == 200 &&
+            jsonResponse.containsKey("lastUserReadTimestamp") &&
+            jsonResponse.containsKey("messageId")) {
+          final String lastUserReadTimestampStr =
+              jsonResponse["lastUserReadTimestamp"];
+          final DateTime lastUserReadTimestamp =
+              DateTime.parse(lastUserReadTimestampStr);
+          final String messageId = jsonResponse["messageId"];
+
+          return {
+            'lastUserReadTimestamp': lastUserReadTimestamp,
+            'messageId': messageId,
+          };
+        } else if (jsonResponse["status"] == 404) {
+          debugPrint(
+              "No read messages from this user found in this conversation");
+          return null;
+        } else {
+          debugPrint(
+              "Failed to retrieve last user read timestamp: ${response.body}");
+          return null;
+        }
+      } else {
+        debugPrint(
+            "Failed to retrieve last user read timestamp: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      debugPrint("Error retrieving last user read timestamp: $e");
+      return null;
+    }
+  }
 }

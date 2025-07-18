@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -14,6 +13,7 @@ class AssignedCustomersProvider extends ChangeNotifier {
   List<dynamic> _filteredCustomers = [];
   bool _isLoading = true;
   late StreamSubscription _unreadCountsSubscription;
+  late StreamSubscription _statusSubscription;
   late Box<int> _unreadCountsBox;
 
   AssignedCustomersProvider({
@@ -23,14 +23,7 @@ class AssignedCustomersProvider extends ChangeNotifier {
   }) {
     fetchAssignedCustomers();
     _setupUnreadCountsListener();
-
-    socketService.statusStream.listen((_) {
-      fetchAssignedCustomers();
-    });
-
-    socketService.onMessageReceived((data) {
-      _handleNewMessage(data);
-    });
+    _setupStatusListener();
   }
 
   Future<void> _setupUnreadCountsListener() async {
@@ -41,17 +34,23 @@ class AssignedCustomersProvider extends ChangeNotifier {
     });
   }
 
+  void _setupStatusListener() {
+    _statusSubscription = socketService.statusStream.listen((onlineUsers) {
+      _handleOnlineStatusUpdate(onlineUsers);
+    });
+  }
+
   @override
   void dispose() {
     _unreadCountsSubscription.cancel();
+    _statusSubscription.cancel();
     _unreadCountsBox.close();
     super.dispose();
   }
 
-  Future<void> _handleNewMessage(Map<String, dynamic> data) async {
+  Future<void> handleNewMessage(Map<String, dynamic> data) async {
     final senderId = data['senderId']?.toString();
     final targetId = data['targetId']?.toString();
-
     if (senderId == null || targetId == null) return;
 
     // If this is a message to our agent
@@ -83,13 +82,58 @@ class AssignedCustomersProvider extends ChangeNotifier {
     }
   }
 
+  // Handle online status updates
+  void _handleOnlineStatusUpdate(List<String> onlineUsers) {
+    bool needsSorting = false;
+
+    // Update online status in our local lists
+    for (var customer in _assignedCustomers) {
+      final email = customer['email']?.toString();
+      if (email != null) {
+        final wasOnline = customer['isOnline'] ?? false;
+        final isOnline = onlineUsers.contains(email);
+
+        if (wasOnline != isOnline) {
+          customer['isOnline'] = isOnline;
+          needsSorting = true;
+        }
+      }
+    }
+
+    // Also update filtered customers
+    for (var customer in _filteredCustomers) {
+      final email = customer['email']?.toString();
+      if (email != null) {
+        final wasOnline = customer['isOnline'] ?? false;
+        final isOnline = onlineUsers.contains(email);
+
+        if (wasOnline != isOnline) {
+          customer['isOnline'] = isOnline;
+        }
+      }
+    }
+
+    // Only sort and notify if something actually changed
+    if (needsSorting) {
+      _sortCustomers();
+      notifyListeners();
+    }
+  }
+
   Future<void> _updateUnreadCountsFromBox() async {
+    bool needsUpdate = false;
+
     // Update counts for all customers
     for (var customer in _assignedCustomers) {
       final email = customer['email']?.toString();
       if (email != null) {
         final count = await LocalDbHelper.getUnreadCount(agentEmail, email);
-        customer['notificationCount'] = count;
+        final currentCount = customer['notificationCount'] ?? 0;
+
+        if (count != currentCount) {
+          customer['notificationCount'] = count;
+          needsUpdate = true;
+        }
       }
     }
 
@@ -102,19 +146,16 @@ class AssignedCustomersProvider extends ChangeNotifier {
       }
     }
 
-    // Sort the lists again
-    _sortCustomers();
-
-    // Notify listeners
-    notifyListeners();
+    if (needsUpdate) {
+      _sortCustomers();
+      notifyListeners();
+    }
   }
 
   void _sortCustomers() {
-    final socket = socketService;
-
     _assignedCustomers.sort((a, b) {
-      final isAOnline = socket.isUserOnline(a["email"]?.toString() ?? '');
-      final isBOnline = socket.isUserOnline(b["email"]?.toString() ?? '');
+      final isAOnline = a['isOnline'] ?? false;
+      final isBOnline = b['isOnline'] ?? false;
       if (isAOnline && !isBOnline) return -1;
       if (!isAOnline && isBOnline) return 1;
 
@@ -131,8 +172,8 @@ class AssignedCustomersProvider extends ChangeNotifier {
     });
 
     _filteredCustomers.sort((a, b) {
-      final isAOnline = socket.isUserOnline(a["email"]?.toString() ?? '');
-      final isBOnline = socket.isUserOnline(b["email"]?.toString() ?? '');
+      final isAOnline = a['isOnline'] ?? false;
+      final isBOnline = b['isOnline'] ?? false;
       if (isAOnline && !isBOnline) return -1;
       if (!isAOnline && isBOnline) return 1;
 
@@ -156,11 +197,15 @@ class AssignedCustomersProvider extends ChangeNotifier {
     try {
       final chatRepo = ChatRepository();
       final customers = await chatRepo.fetchAssignedCustomerList(agentEmail);
+      final onlineUsers =
+          socketService.onlineUsers; // Get current online status
 
-      // Get counts from the central unread box
       for (var customer in customers) {
         final email = customer['email']?.toString();
         if (email == null) continue;
+
+        // Initialize isOnline flag
+        customer['isOnline'] = onlineUsers.contains(email);
 
         // Get count from the central unread box
         final count = await LocalDbHelper.getUnreadCount(agentEmail, email);
@@ -185,8 +230,6 @@ class AssignedCustomersProvider extends ChangeNotifier {
 
       _assignedCustomers = List.from(customers);
       _filteredCustomers = List.from(customers);
-
-      // Sort the customers
       _sortCustomers();
     } catch (e) {
       debugPrint("Error fetching assigned customers: $e");
@@ -220,9 +263,12 @@ class AssignedCustomersProvider extends ChangeNotifier {
       _filteredCustomers[filteredIndex]['notificationCount'] = 0;
     }
 
+    // Resort since notification count affects ordering
+    _sortCustomers();
     notifyListeners();
   }
 
+  // Public methods
   List<dynamic> get assignedCustomers => _assignedCustomers;
   List<dynamic> get filteredCustomers => _filteredCustomers;
   bool get isLoading => _isLoading;
@@ -230,7 +276,7 @@ class AssignedCustomersProvider extends ChangeNotifier {
   void updateSearchQuery(String query) {
     final lowerQuery = query.toLowerCase();
     _filteredCustomers = _assignedCustomers.where((customer) {
-      final name = customer["name"].toLowerCase();
+      final name = customer["name"]?.toString().toLowerCase() ?? '';
       return name.contains(lowerQuery);
     }).toList();
     notifyListeners();

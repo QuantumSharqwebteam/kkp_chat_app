@@ -100,11 +100,14 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   Widget _buildProfileSection(String? name) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      leading: Initicon(text: name ?? ""),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      leading: Initicon(
+        text: name ?? "",
+        size: 35,
+      ),
       title: Text(name ?? "", style: AppTextStyles.black16_500),
       subtitle:
-          Text("Let's find latest messages", style: AppTextStyles.black12_400),
+          Text("Let's find latest messages", style: AppTextStyles.black10_500),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -144,7 +147,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   Widget _buildCustomerInquiriesList(AssignedCustomersProvider provider) {
     final socket = provider.socketService;
 
-    // Get the list of valid customers from the provider
+    // Get the list of valid customers from the provider (already sorted by the provider)
     final validCustomers = provider.filteredCustomers.where((customer) {
       final email = customer['email'];
       final name = customer['name'];
@@ -155,25 +158,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           !isDeleted;
     }).toList();
 
-    validCustomers.sort((a, b) {
-      final isAOnline = socket.isUserOnline(a["email"]?.toString() ?? '');
-      final isBOnline = socket.isUserOnline(b["email"]?.toString() ?? '');
-      if (isAOnline && !isBOnline) return -1;
-      if (!isAOnline && isBOnline) return 1;
-
-      final countA = a['notificationCount'] ?? 0;
-      final countB = b['notificationCount'] ?? 0;
-      if (countA != countB) {
-        return countB.compareTo(countA); // Higher counts first
-      }
-
-      final timeA =
-          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB =
-          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return timeB.compareTo(timeA); // Newer messages first
-    });
-
+    // We don't need to sort here anymore since the provider handles it
     return RefreshIndicator(
       onRefresh: () async => provider.fetchAssignedCustomers(),
       child: ListView.builder(
@@ -184,8 +169,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           final name = customer['name'] ?? "Unnamed";
           final email = customer['email']?.toString() ?? "";
           final isAccountDeleted = customer['isDeleted'] ?? false;
-          final isOnline = socket.isUserOnline(email);
-          final lastSeen = socket.getLastSeenTime(email);
+          final isOnline = customer['isOnline'] ?? false; // Use the flag we set
+          final lastSeen = isOnline ? "Online" : socket.getLastSeenTime(email);
           final notificationCount = customer['notificationCount'] ?? 0;
           final lastMessage = socket.getLastMessage(email);
 
@@ -197,7 +182,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   name: name,
                   message: lastMessage,
                   isAccountDeleted: isAccountDeleted,
-                  isActive: isOnline,
+                  isActive: isOnline, // Use our local flag
                   time: isOnline ? "Online" : lastSeen,
                   enableLongPress: false,
                   onTap: () async {

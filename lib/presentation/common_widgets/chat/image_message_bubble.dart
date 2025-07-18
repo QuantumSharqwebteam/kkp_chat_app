@@ -13,6 +13,7 @@ class ImageMessageBubble extends StatelessWidget {
   final String timestamp;
   final bool uploading;
   final bool sent;
+  final bool? read;
 
   final VoidCallback? onImageLoaded;
   final VoidCallback? onLongPress;
@@ -28,6 +29,7 @@ class ImageMessageBubble extends StatelessWidget {
     this.isDeleted = false,
     this.onImageLoaded,
     this.onLongPress,
+    this.read = false,
   });
 
   bool get isLocalFile =>
@@ -36,6 +38,7 @@ class ImageMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isTablet = Utils().width(context) >= 600;
+    final isRead = read ?? false;
     return isDeleted
         ? DeletedMessageBubble(isMe: isMe, timestamp: timestamp)
         : Align(
@@ -97,12 +100,12 @@ class ImageMessageBubble extends StatelessWidget {
                         style: AppTextStyles.greyAAAAAA_10_400,
                       ),
                       const SizedBox(width: 4),
-                      if (uploading)
-                        const Icon(Icons.access_time,
-                            size: 12, color: Colors.grey)
-                      else if (sent)
-                        const Icon(Icons.done_all,
-                            size: 14, color: Colors.green),
+                      if (isMe)
+                        Icon(
+                          Icons.check,
+                          color: isRead ? Colors.blue : Colors.grey,
+                          size: 16,
+                        ),
                     ],
                   ),
                 ],

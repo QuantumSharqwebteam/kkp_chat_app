@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -129,6 +130,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         callId: messageJson.callId,
         messageId: messageJson.messageId,
         isDeleted: messageJson.isDeleted ?? false,
+        read: messageJson.read,
       );
     }).toList();
 
@@ -181,6 +183,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       });
     }
 
+    // Fetch the last message seen timestamp of the agent for customer
+    final DateTime? lastMessageTimestamp =
+        await _chatRepository.fetchUserLastTimestamp(widget.customerEmail!);
+    debugPrint(
+        "✅fetched lastMessage time stamp for customer :$lastMessageTimestamp");
+
+    // Update the read status of messages up to the lastMessageTimestamp
+    if (lastMessageTimestamp != null) {
+      _updateMessagesReadStatus(lastMessageTimestamp);
+    }
+
     // Scroll to bottom after loading messages
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
@@ -223,6 +236,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
           callId: messageJson.callId,
           messageId: messageJson.messageId,
           isDeleted: messageJson.isDeleted ?? false,
+          read: messageJson.read,
         );
       }).toList();
 
@@ -322,6 +336,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         }
       }
     }
+
+    // Emit markAsReadUpTo when user scrolls or reaches bottom
+    // if (_scrollController.position.atEdge &&
+    //     _scrollController.position.pixels != 0) {
+    //   if (messages.isNotEmpty) {
+    //     final lastVisibleMessageTimestamp =
+    //         messages.last.timestamp.toIso8601String();
+    //     _socketService.sendMarkAsReadUpTo(
+    //       customerEmail: widget.customerEmail!,
+    //       role: 'user',
+    //       lastMessageTimestamp: lastVisibleMessageTimestamp,
+    //     );
+    //   }
+    // }
   }
 
   int? _getFirstVisibleIndex() {
@@ -389,16 +417,25 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     super.initState();
     _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
+
     _socketService.setChatPageState(
       isOpen: true,
-      customerId: widget.customerEmail, // This is targetId in incoming message
+      customerId: widget.customerEmail,
     );
+
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _socketService.onMessageDeleted(_handleMessageDeleted);
+    _socketService.onChatStatus(_handleChatStatus);
+    _socketService.onMessagesReadUpTo(_handleMessagesReadUpTo);
     _loadPreviousMessages();
     _initializeRecorder();
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _emitChatOpened();
+      _scrollToBottom();
+    });
 
     _resetMessageCount();
   }
@@ -418,6 +455,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
+    _socketService.sendChatClosed(
+      customerEmail: widget.customerEmail!,
+      role: 'user',
+    );
     _socketService.toggleChatPageOpen(false);
     _dateHeaderTimer?.cancel();
 
@@ -428,6 +469,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
+      _socketService.sendChatClosed(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+      );
       _socketService.setChatPageState(isOpen: false);
     } else if (state == AppLifecycleState.resumed) {
       _socketService.setChatPageState(
@@ -435,6 +480,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         customerId:
             widget.customerEmail, // This is targetId in incoming message
       );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _emitChatOpened();
+      });
     }
   }
 
@@ -449,6 +497,95 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
+  void _updateMessagesReadStatus(DateTime lastMessageTimestamp) {
+    setState(() {
+      // Update the read status of messages up to the lastMessageTimestamp
+      for (var message in messages) {
+        if (message.timestamp.isBefore(lastMessageTimestamp) ||
+            message.timestamp == lastMessageTimestamp) {
+          message.read = true;
+        }
+      }
+    });
+
+    // Save the updated messages to local storage
+    final boxName = widget.customerEmail!;
+    for (var message in messages) {
+      if (message.timestamp.isBefore(lastMessageTimestamp) ||
+          message.timestamp == lastMessageTimestamp) {
+        _chatStorageService.saveMessage(message, boxName);
+      }
+    }
+  }
+
+  void _emitChatOpened() {
+    if (messages.isNotEmpty) {
+      final lastMessageTimestamp = messages.last.timestamp.toIso8601String();
+      _socketService.sendChatOpened(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: lastMessageTimestamp,
+      );
+      _socketService.sendMarkAsReadUpTo(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: DateTime.now().toIso8601String(),
+      );
+    } else {
+      _socketService.sendChatOpened(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: DateTime.now().toIso8601String(),
+      );
+      _socketService.sendMarkAsReadUpTo(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: DateTime.now().toIso8601String(),
+      );
+    }
+  }
+
+  void _handleChatStatus(Map<String, dynamic> data) {
+    final status = data['status'];
+    final lastMessageTimestampStr = data['lastMessageTimestamp'];
+    debugPrint("Chat Status Updated: $status");
+
+    if (status == 'opened' && lastMessageTimestampStr != null) {
+      final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
+      if (lastMessageTimestamp != null) {
+        // Set the receiver as on the chat page
+        LocalDbHelper.saveReceiverOnChatPageStatus(true);
+        // Update the read status of messages
+        _updateMessagesReadStatus(lastMessageTimestamp);
+      }
+    } else if (status == 'closed') {
+      // Set the receiver as not on the chat page
+      LocalDbHelper.saveReceiverOnChatPageStatus(false);
+    }
+  }
+
+  void _handleMessagesReadUpTo(Map<String, dynamic> data) {
+    // final customerEmail = data['customerEmail'];
+    // final lastMessageTimestampStr = data['lastMessageTimestamp'];
+    // if (customerEmail == widget.customerEmail &&
+    //     lastMessageTimestampStr != null) {
+    //   final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
+    //   if (lastMessageTimestamp != null) {
+    //     setState(() {
+    //       messages.forEach((message) {
+    //         if (message.sender == widget.agentEmail &&
+    //             (message.timestamp.isBefore(lastMessageTimestamp) ||
+    //                 message.timestamp == lastMessageTimestamp)) {
+    //           message.read = true;
+    //         }
+    //       });
+    //     });
+    //     // Save updated messages to local database
+    //     _saveMessagesToLocalDatabase();
+    //   }
+    // }
+  }
+
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("Received Message: ${data.toString()}");
 
@@ -456,7 +593,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     try {
       timestamp = DateTime.parse(data["timestamp"]);
     } catch (_) {
-      timestamp = DateTime.now(); // fallback in case of bad format
+      timestamp = DateTime.now();
     }
 
     final message = ChatMessageModel(
@@ -512,6 +649,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     final currentTime = DateTime.now();
     final messageId = ChatUtils().generateMessageId();
+    // Set the receiverIsOnChatPage to false when the app is paused or inactive
+    final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
@@ -521,6 +660,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       form: form,
       messageId: messageId,
       isDeleted: false,
+      read: isReceiverOnChatPage,
     );
 
     if (!_loadedMessageIds.contains(messageId)) {
@@ -541,6 +681,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         form: form,
         timestamp: currentTime.toIso8601String(), // ✅ Send timestamp
         messageId: messageId,
+        read: isReceiverOnChatPage ?? false,
       );
 
       _chatStorageService.saveMessage(message, widget.customerEmail!);
@@ -549,28 +690,59 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _chatController.clear();
   }
 
-  void _showDeleteDialog(BuildContext context, String messageId) {
-    showDialog(
+  void _showMessageOptionBottomSheet(BuildContext context, String messageId,
+      {String? textToCopy, bool isMedia = false}) {
+    showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Unsend Message"),
-          content: const Text("Are you sure you want to unsend this message?"),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text("unsend"),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteMessage(messageId);
-              },
-            ),
-          ],
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Choose what to do :",
+                      style: AppTextStyles.grey12_600.copyWith(fontSize: 16),
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.clear_rounded))
+                  ],
+                ),
+              ),
+              if (textToCopy !=
+                  null) // Only show the copy option if textToCopy is not null
+                ListTile(
+                  leading: const Icon(Icons.content_copy),
+                  title: Text(
+                    isMedia ? 'Copy Media URL' : 'Copy Message',
+                    style: AppTextStyles.black15_500,
+                  ),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: textToCopy));
+                    Navigator.pop(context);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text(
+                  'Unsend Message',
+                  style: AppTextStyles.black15_500,
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(messageId);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -960,6 +1132,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                         DateHeader(date: dateHeader),
                                       if (msg.type == 'media')
                                         ImageMessageBubble(
+                                          read: msg.read,
                                           imageUrl: msg.mediaUrl!,
                                           isMe: msg.sender ==
                                               widget.customerEmail,
@@ -967,7 +1140,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -990,7 +1164,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -1005,7 +1180,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                               formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -1064,7 +1240,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                                 },
                                                 isDeleted: msg.isDeleted,
                                                 onLongPress: isCustomer
-                                                    ? () => _showDeleteDialog(
+                                                    ? () =>
+                                                        _showMessageOptionBottomSheet(
                                                           context,
                                                           msg.messageId!,
                                                         )
@@ -1085,9 +1262,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                           isMe: msg.sender ==
                                               widget.customerEmail,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
+                                                    textToCopy: msg.message,
                                                   )
                                               : null,
                                         ),
@@ -1097,21 +1276,26 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                               },
                             ),
                 ),
-                ChatInputField(
-                  controller: _chatController,
-                  onSend: () => _sendMessage(messageText: _chatController.text),
-                  onSendImage: () {
-                    _pickAndSendImage(ImageSource.gallery);
-                  },
-                  onSendImageByCamera: () {
-                    _pickAndSendImage(ImageSource.camera);
-                  },
-                  onSendForm: _showFormOverlay,
-                  onSendDocument: _pickAndSendDocument,
-                  onShareProduct: () => _showProductsBottomSheet(context),
-                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
-                  isRecording: _isRecording,
-                  recordedSeconds: _recordedSeconds,
+                SafeArea(
+                  minimum: const EdgeInsets.only(bottom: 5),
+                  child: ChatInputField(
+                    controller: _chatController,
+                    onSend: () =>
+                        _sendMessage(messageText: _chatController.text),
+                    onSendImage: () {
+                      _pickAndSendImage(ImageSource.gallery);
+                    },
+                    onSendImageByCamera: () {
+                      _pickAndSendImage(ImageSource.camera);
+                    },
+                    onSendForm: _showFormOverlay,
+                    onSendDocument: _pickAndSendDocument,
+                    onShareProduct: () => _showProductsBottomSheet(context),
+                    onSendVoice:
+                        _isRecording ? _stopRecording : _startRecording,
+                    isRecording: _isRecording,
+                    recordedSeconds: _recordedSeconds,
+                  ),
                 ),
               ],
             ),

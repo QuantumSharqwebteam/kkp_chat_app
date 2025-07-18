@@ -7,7 +7,6 @@ import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/media_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:provider/provider.dart';
-import 'dart:io' show Platform;
 
 class AgoraAudioCallScreen extends StatefulWidget {
   const AgoraAudioCallScreen({super.key});
@@ -68,7 +67,8 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Platform.isIOS ? Icons.arrow_back_ios : Icons.arrow_back,
+            Icons.fullscreen_exit_rounded,
+            size: 30,
             color: Colors.black,
           ),
           onPressed: () {

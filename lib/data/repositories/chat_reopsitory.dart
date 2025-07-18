@@ -97,4 +97,16 @@ class ChatRepository {
       limit: limit,
     );
   }
+
+  /// Get agnet last seend message timestamp for customer side
+  Future<DateTime?> fetchUserLastTimestamp(String userEmail) async {
+    return await chatService.getAgentLastTimestampForCustomer(userEmail);
+  }
+
+  /// Get Last Message Timestamp of customer last seen chat messages
+  Future<Map<String, dynamic>?> fetchCustomerLastMessageTimestampForAgent(
+      {required String customerEmail, required String agentEmail}) async {
+    return await chatService.getCustomerLastMessageTimestampForAgent(
+        customerEmail, agentEmail);
+  }
 }
