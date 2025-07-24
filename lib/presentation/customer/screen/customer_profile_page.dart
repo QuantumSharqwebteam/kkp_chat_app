@@ -111,7 +111,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         });
         if (!mounted) return;
         Utils().showSuccessDialog(context, "Profile Updated!", true);
-      } else {
+        await Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) Navigator.pop(context);
+          }); 
+          } else {
         _showError(response['message'] ?? "Update failed");
       }
     } catch (e) {
