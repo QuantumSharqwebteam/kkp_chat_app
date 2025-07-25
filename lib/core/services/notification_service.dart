@@ -187,6 +187,43 @@ class NotificationService with WidgetsBindingObserver {
   //   });
   // }
 
+  // Method to show incoming call notification
+  static Future<void> showIncomingCallNotification(String callerName) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'call_channel_id',
+      'Call Notifications',
+      channelDescription:
+          'This channel is used for incoming call notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound(
+          'incoming_call'), // Use your custom sound file for Android
+    );
+
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'incoming_call.mp3', // Use your custom sound file for iOS
+    );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await _localNotificationsPlugin.show(
+      0,
+      'Incoming Call',
+      'Incoming call from $callerName',
+      platformChannelSpecifics,
+      payload: 'incoming_call',
+    );
+  }
+
   // Initialize local notifications plugin
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =

@@ -32,7 +32,8 @@ class CustomerHost extends StatefulWidget {
   State<CustomerHost> createState() => _CustomerHostState();
 }
 
-class _CustomerHostState extends State<CustomerHost> {
+class _CustomerHostState extends State<CustomerHost>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   late final SocketService _socketService;
@@ -47,6 +48,7 @@ class _CustomerHostState extends State<CustomerHost> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.removeObserver(this);
     _socketService = SocketService(widget.navigatorKey);
     _loadCurrentUserData().then((_) async {
       final token = await LocalDbHelper.getToken();
@@ -66,6 +68,11 @@ class _CustomerHostState extends State<CustomerHost> {
         initCheck();
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle changes if needed
   }
 
   void initCheck() async {
@@ -180,6 +187,7 @@ class _CustomerHostState extends State<CustomerHost> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _socketService.disconnect();
     super.dispose();
   }
@@ -275,6 +283,11 @@ class _CustomerHostState extends State<CustomerHost> {
 
     _activeCallOverlay = overlayEntry;
     overlayState.insert(overlayEntry);
+
+    // If the app is not in the foreground, also show a notification
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      NotificationService.showIncomingCallNotification(callerName);
+    }
 
     // Auto-dismiss after 30 seconds
     timeoutTimer = Timer(const Duration(seconds: 30), () async {
