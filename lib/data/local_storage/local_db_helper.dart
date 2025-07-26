@@ -235,4 +235,32 @@ class LocalDbHelper {
     debugPrint("🔍 Retrieved receiver on chat page status: $status");
     return status;
   }
+  static Future<Map<String, int>> getMergedUnreadCounts(String agentEmail) async {
+  final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
+  Map<String, int> result = {};
+
+  for (var key in box.keys) {
+    final value = box.get(key, defaultValue: 0);
+    if (value != null && value > 0) {
+      result[key] = value;
+    }
+  }
+
+  return result;
+}
+static Future<int> getUserTotalUnread(String userEmail) async {
+  final box = await Hive.openBox<int>('${userEmail}count');
+  return box.get('count', defaultValue: 0)!;
+}
+static Future<void> clearUserUnreadCount(String userEmail) async {
+  final box = await Hive.openBox<int>('${userEmail}count');
+  await box.put('count', 0);
+}
+static Future<String?> getNameFromId(String id) async {
+  // Replace with actual name mapping logic (e.g., from profile map or DB)
+  final profile = getProfile();
+  if (profile?.email == id) return profile?.name;
+  return null;
+}
+
 }
