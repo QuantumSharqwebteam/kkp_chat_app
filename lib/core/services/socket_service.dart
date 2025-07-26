@@ -812,6 +812,9 @@ Future<void> _chatNotification(Map<String, dynamic> data) async {
     } else {
       final unreadCounts = await LocalDbHelper.getMergedUnreadCounts(targetId);
       final isOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus() ?? false;
+     //
+      //final totalMessages = unreadCounts.values.fold(0, (a, b) => a + b);
+
 
       if (!isOnChatPage) {
         await _showNotification(
@@ -834,10 +837,10 @@ Future<void> _chatNotification(Map<String, dynamic> data) async {
         }
 
         await _showNotification(
-          id: 9999,
+          id : 9999,
           title: "New Messages",
           body: "$totalMessages messages from ${unreadCounts.length} chats",
-          payload: {'summary': true},
+          payload: {'summary': true, 'noop': true},
           groupKey: groupKey,
           isSummary: true,
           lines: previewLines,
@@ -893,6 +896,8 @@ Future<void> _showNotification({
     payload: jsonEncode(payload),
   );
 }
+
+
 Future<void> _initializeNotifications() async {
   if (_notificationsPlugin == null) {
     _notificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -954,7 +959,12 @@ Future<void> _initializeNotifications() async {
 
   Future<void> _handleNotificationTap(NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
-
+ final payload = jsonDecode(response.payload ?? '{}');
+        // 👇 Ignore tap on summary notifications
+    if (payload['summary'] == true || payload['noop'] == true) {
+      debugPrint("🛑 Summary notification tapped. Ignoring.");
+      return;
+    }
     if (response.payload != null) {
       // Check if the payload is the string "incoming_call"
       if (response.payload == "incoming_call") {

@@ -19,7 +19,7 @@ class ProductItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double width = Utils().width(context);
-    //final double height = Utils().height(context);
+    final double height = Utils().height(context);
     final bool isTablet = width >= 600;
     final bool isLandscape =
         MediaQuery.of(context).orientation == Orientation.landscape;
