@@ -843,7 +843,7 @@ Future<void> _chatNotification(Map<String, dynamic> data) async {
           lines: previewLines,
         );
       }
-      
+
     }
   } catch (e, st) {
     debugPrint('❌ _chatNotification Error: $e\n$st');
@@ -954,14 +954,26 @@ Future<void> _initializeNotifications() async {
 
   Future<void> _handleNotificationTap(NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
-    if (response.payload != null) {
-      final Map <String, dynamic> notificationData =
-          jsonDecode(response.payload!);
 
-      if ("0" == await LocalDbHelper.getUserType()) {
-        handleNotificationClickForCustomer(navigatorKey, notificationData);
-      } else {
-        handleNotificationClickForAgent(navigatorKey, notificationData);
+    if (response.payload != null) {
+      // Check if the payload is the string "incoming_call"
+      if (response.payload == "incoming_call") {
+        // Just open the app, no additional action needed
+        debugPrint("Incoming call notification tapped, opening the app.");
+        return; // Exit the method after handling the incoming call notification
+      }
+
+      // If not an incoming call notification, attempt to decode the payload as JSON
+      try {
+        final Map<String, dynamic> notificationData =
+            jsonDecode(response.payload!);
+        if ("0" == await LocalDbHelper.getUserType()) {
+          handleNotificationClickForCustomer(navigatorKey, notificationData);
+        } else {
+          handleNotificationClickForAgent(navigatorKey, notificationData);
+        }
+      } catch (e) {
+        debugPrint("Failed to decode JSON: $e");
       }
     }
   }
