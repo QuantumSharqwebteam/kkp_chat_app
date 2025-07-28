@@ -749,15 +749,49 @@ class SocketService {
     );
     final notificationDetails =
         NotificationDetails(android: androidDetails, iOS: iosDetails);
-    final title = "New Message from ${data['senderName']}";
-    final id = title.hashCode;
-    await _notificationsPlugin!.show(
-      id,
-      title,
-      data['message'],
-      notificationDetails,
-      payload: jsonEncode(data),
-    );
+    // final title = "New Message from ${data['senderName']}";
+    // final id = title.hashCode;
+    // await _notificationsPlugin!.show(
+    //   id,
+    //   title,
+    //   data['message'],
+    //   notificationDetails,
+    //   payload: jsonEncode(data),
+    // );
+
+    // Start of added code for consolidating notifications
+    if (userType != "0") {
+      final unreadCount = await LocalDbHelper.getUnreadCount(
+              data['targetId'], data['senderId']) ??
+          0;
+      final title = unreadCount > 1
+          ? "$unreadCount messages from ${data['senderName']}"
+          : "New Message from ${data['senderName']}";
+      final message = unreadCount > 1
+          ? "You have $unreadCount unread messages"
+          : data['message'];
+
+      final id = title.hashCode;
+
+      await _notificationsPlugin!.show(
+        id,
+        title,
+        message,
+        notificationDetails,
+        payload: jsonEncode(data),
+      );
+    } else {
+      final title = "New Message from ${data['senderName']}";
+      final id = title.hashCode;
+
+      await _notificationsPlugin!.show(
+        id,
+        title,
+        data['message'],
+        notificationDetails,
+        payload: jsonEncode(data),
+      );
+    }
   }
 
   void toggleChatPageOpen(bool toggle) {
