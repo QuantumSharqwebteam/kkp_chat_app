@@ -680,8 +680,9 @@ class SocketService {
         onMessageReceivedCallback!();
       }
     } else {
-      final senderId = data['senderId'];
-      final targetId = data['targetId'];
+      // for agent side
+      final senderId = data['senderId']; // AgentEmail
+      final targetId = data['targetId']; // customerEmail
 
       // Increment unread count in the dedicated box
       await LocalDbHelper.incrementUnreadCount(targetId, senderId);
@@ -761,28 +762,49 @@ class SocketService {
 
     // Start of added code for consolidating notifications
     if (userType != "0") {
-      final unreadCount = await LocalDbHelper.getUnreadCount(
-              data['targetId'], data['senderId']) ??
-          0;
-      final title = unreadCount > 1
-          ? "$unreadCount messages from ${data['senderName']}"
-          : "New Message from ${data['senderName']}";
-      final message = unreadCount > 1
-          ? "You have $unreadCount unread messages"
-          : data['message'];
+      // Agent-side notification logic
+      const consolidatedNotificationId = 999;
+      final box = await Hive.openBox<int>(
+          '${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
+      final totalUnreadMessages =
+          box.values.fold<int>(0, (sum, value) => sum + value);
+      final usersWithUnread = box.values.where((count) => count > 0).length;
 
-      final id = title.hashCode;
+      String title;
+      String message;
+      String payload;
+
+      if (usersWithUnread == 1) {
+        final unreadCount = await LocalDbHelper.getUnreadCount(
+                data['targetId'], data['senderId']) ??
+            0;
+
+        if (unreadCount > 1) {
+          title = "$unreadCount messages from ${data['senderName']}";
+          message = "You have $unreadCount unread messages";
+        } else {
+          title = "New message from ${data['senderName']}";
+          message = data['message'];
+        }
+
+        payload = jsonEncode(data); // Normal payload to open chat
+      } else {
+        title =
+            "$totalUnreadMessages unread messages from $usersWithUnread users";
+        message = "You have $totalUnreadMessages unread messages";
+        payload = "general_chat_summary"; // Special payload
+      }
 
       await _notificationsPlugin!.show(
-        id,
+        consolidatedNotificationId,
         title,
         message,
         notificationDetails,
-        payload: jsonEncode(data),
+        payload: payload,
       );
     } else {
-      final title = "New Message from ${data['senderName']}";
-      final id = title.hashCode;
+      final title = "New Message from Agent";
+      final id = 200;
 
       await _notificationsPlugin!.show(
         id,
@@ -812,6 +834,11 @@ class SocketService {
         // Just open the app, no additional action needed
         debugPrint("Incoming call notification tapped, opening the app.");
         return; // Exit the method after handling the incoming call notification
+      }
+
+      if (response.payload == "general_chat_summary") {
+        debugPrint("Summary notification tapped, just opening the app.");
+        return;
       }
 
       // If not an incoming call notification, attempt to decode the payload as JSON
