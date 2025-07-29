@@ -659,294 +659,162 @@ class SocketService {
     }
   }
 
-
-  // Future<void> _chatNotification(Map<String, dynamic> data) async {
-  //   debugPrint('🔔 Foreground Push Notification: $data');
-  //   if (!data.containsKey('type') ||
-  //       !data.containsKey('senderId') ||
-  //       !data.containsKey('message')) {
-  //     debugPrint('ℹ️ Ignoring non-chat notification: $data');
-  //     return;
-  //   }
-
-  //   final userType = await LocalDbHelper.getUserType();
-
-  //   if (userType == "0") {
-  //     final currentUserEmail = data["targetId"];
-  //     final boxNameWithCount = "${currentUserEmail}count";
-  //     final box = await Hive.openBox<int>(boxNameWithCount);
-  //     int count = box.get('count', defaultValue: 0)! + 1;
-  //     await box.put('count', count);
-  //     if (onMessageReceivedCallback != null) {
-  //       onMessageReceivedCallback!();
-  //     }
-  //   } else {
-  //     final senderId = data['senderId'];
-  //     final targetId = data['targetId'];
-
-  //     // Increment unread count in the dedicated box
-  //     await LocalDbHelper.incrementUnreadCount(targetId, senderId);
-
-  //     // // Also update the individual count box for backward compatibility
-  //     // final boxNameWithCount = "$targetId${senderId}count";
-  //     // final box = await Hive.openBox<int>(boxNameWithCount);
-  //     // int count = box.get('count', defaultValue: 0)! + 1;
-  //     // await box.put('count', count);
-
-  //     // Update last message
-  //     if (data['type'] == "product") {
-  //       updateLastMessage(data["senderId"], "shared product");
-  //     } else {
-  //       updateLastMessage(data['senderId'], data['message']);
-  //     }
-
-  //     // Notify the provider to update the UI
-  //     if (onMessageReceivedCallback != null) {
-  //       onMessageReceivedCallback!();
-  //     }
-  //   }
-
-  //   // Show local notification (rest of the method remains the same)
-  //   if (_notificationsPlugin == null) {
-  //     _notificationsPlugin = FlutterLocalNotificationsPlugin();
-  //     const androidSettings = AndroidInitializationSettings('app_logo');
-  //     const iosSettings = DarwinInitializationSettings(
-  //       requestAlertPermission: true,
-  //       requestSoundPermission: true,
-  //       requestBadgePermission: true,
-  //       defaultPresentAlert: true,
-  //       defaultPresentSound: true,
-  //       defaultPresentBadge: true,
-  //     );
-  //     const initSettings = InitializationSettings(
-  //       android: androidSettings,
-  //       iOS: iosSettings,
-  //     );
-  //     await _notificationsPlugin!.initialize(initSettings,
-  //         onDidReceiveNotificationResponse: _handleNotificationTap);
-  //   }
-
-  //   // Request permissions for iOS
-  //   await _notificationsPlugin!
-  //       .resolvePlatformSpecificImplementation<
-  //           IOSFlutterLocalNotificationsPlugin>()
-  //       ?.requestPermissions(
-  //         alert: true,
-  //         badge: true,
-  //         sound: true,
-  //       );
-
-  //   const androidDetails = AndroidNotificationDetails(
-  //     'your_channel_id',
-  //     'your_channel_name',
-  //     channelDescription: 'your_channel_description',
-  //     importance: Importance.max,
-  //     priority: Priority.high,
-  //   );
-  //   const iosDetails = DarwinNotificationDetails(
-  //     presentAlert: true,
-  //     presentBadge: true,
-  //     presentSound: true,
-  //   );
-  //   final notificationDetails =
-  //       NotificationDetails(android: androidDetails, iOS: iosDetails);
-  //   final title = "New Message from ${data['senderName']}";
-  //   final id = title.hashCode;
-  //   await _notificationsPlugin!.show(
-  //     id,
-  //     title,
-  //     data['message'],
-  //     notificationDetails,
-  //     payload: jsonEncode(data),
-  //   );
-  // }
-Future<void> _chatNotification(Map<String, dynamic> data) async {
-  debugPrint('🔔 Push Notification Received: $data');
-
-  if (!data.containsKey('type') ||
-      !data.containsKey('senderId') ||
-      !data.containsKey('message') ||
-      !data.containsKey('targetId')) {
-    debugPrint('ℹ️ Missing required fields. Ignoring.');
-    return;
-  }
-
-  try {
-    await _initializeNotifications();
+  Future<void> _chatNotification(Map<String, dynamic> data) async {
+    debugPrint('🔔 Foreground Push Notification: $data');
+    if (!data.containsKey('type') ||
+        !data.containsKey('senderId') ||
+        !data.containsKey('message')) {
+      debugPrint('ℹ️ Ignoring non-chat notification: $data');
+      return;
+    }
 
     final userType = await LocalDbHelper.getUserType();
-    final senderId = data['senderId'].toString();
-    final targetId = data['targetId'].toString();
-    final message = data['message'].toString();
-    final senderName = data['senderName']?.toString() ?? senderId;
-    final type = data['type'].toString();
 
-    const groupKey = 'com.yourcompany.kkpchat';
-
-    // 🧠 Local DB Update
     if (userType == "0") {
-      final box = await Hive.openBox<int>("${targetId}count");
-      final current = box.get('count', defaultValue: 0)!;
-      await box.put('count', current + 1);
-      await box.close(); // 🚨 important
+      final currentUserEmail = data["targetId"];
+      final boxNameWithCount = "${currentUserEmail}count";
+      final box = await Hive.openBox<int>(boxNameWithCount);
+      int count = box.get('count', defaultValue: 0)! + 1;
+      await box.put('count', count);
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
     } else {
+      // for agent side
+      final senderId = data['senderId']; // AgentEmail
+      final targetId = data['targetId']; // customerEmail
+
+      // Increment unread count in the dedicated box
       await LocalDbHelper.incrementUnreadCount(targetId, senderId);
-      final content = type == "product" ? "shared product" : message;
-      await LocalDbHelper.updateLastMessage(senderId, content);
-    }
 
-    // 🔁 UI update
-    onMessageReceivedCallback?.call();
+      // // Also update the individual count box for backward compatibility
+      // final boxNameWithCount = "$targetId${senderId}count";
+      // final box = await Hive.openBox<int>(boxNameWithCount);
+      // int count = box.get('count', defaultValue: 0)! + 1;
+      // await box.put('count', count);
 
-    // ✅ Local Notification
-    if (userType == "0") {
-      final count = await LocalDbHelper.getUserTotalUnread(targetId);
-      await _showNotification(
-        id: senderId.hashCode,
-        title: "New Message",
-        body: "$count unread message${count > 1 ? 's' : ''}",
-        payload: data,
-        groupKey: groupKey,
-        isSummary: true,
-      );
-    } else {
-      final unreadCounts = await LocalDbHelper.getMergedUnreadCounts(targetId);
-      final isOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus() ?? false;
-     //
-      //final totalMessages = unreadCounts.values.fold(0, (a, b) => a + b);
-
-
-      if (!isOnChatPage) {
-        await _showNotification(
-          id: senderId.hashCode,
-          title: senderName,
-          body: type == "product" ? "Shared a product" : message,
-          payload: data,
-          groupKey: groupKey,
-          isSummary: false,
-        );
+      // Update last message
+      if (data['type'] == "product") {
+        updateLastMessage(data["senderId"], "shared product");
+      } else {
+        updateLastMessage(data['senderId'], data['message']);
       }
 
-      final totalMessages = unreadCounts.values.fold(0, (a, b) => a + b);
+      // Notify the provider to update the UI
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
+    }
 
-      if (totalMessages > 0) {
-        final previewLines = <String>[];
-        for (final entry in unreadCounts.entries) {
-          final name = await LocalDbHelper.getNameFromId(entry.key) ?? entry.key;
-          previewLines.add("$name: ${entry.value} message${entry.value > 1 ? 's' : ''}");
+    // Show local notification (rest of the method remains the same)
+    if (_notificationsPlugin == null) {
+      _notificationsPlugin = FlutterLocalNotificationsPlugin();
+      const androidSettings = AndroidInitializationSettings('app_logo');
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestSoundPermission: true,
+        requestBadgePermission: true,
+        defaultPresentAlert: true,
+        defaultPresentSound: true,
+        defaultPresentBadge: true,
+      );
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
+      await _notificationsPlugin!.initialize(initSettings,
+          onDidReceiveNotificationResponse: _handleNotificationTap);
+    }
+
+    // Request permissions for iOS
+    await _notificationsPlugin!
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+    const androidDetails = AndroidNotificationDetails(
+      'your_channel_id',
+      'your_channel_name',
+      channelDescription: 'your_channel_description',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    final notificationDetails =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
+    // final title = "New Message from ${data['senderName']}";
+    // final id = title.hashCode;
+    // await _notificationsPlugin!.show(
+    //   id,
+    //   title,
+    //   data['message'],
+    //   notificationDetails,
+    //   payload: jsonEncode(data),
+    // );
+
+    // Start of added code for consolidating notifications
+    if (userType != "0") {
+      // Agent-side notification logic
+      const consolidatedNotificationId = 999;
+      final box = await Hive.openBox<int>(
+          '${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
+      final totalUnreadMessages =
+          box.values.fold<int>(0, (sum, value) => sum + value);
+      final usersWithUnread = box.values.where((count) => count > 0).length;
+
+      String title;
+      String message;
+      String payload;
+
+      if (usersWithUnread == 1) {
+        final unreadCount = await LocalDbHelper.getUnreadCount(
+                data['targetId'], data['senderId']) ??
+            0;
+
+        if (unreadCount > 1) {
+          title = "$unreadCount messages from ${data['senderName']}";
+          message = "You have $unreadCount unread messages";
+        } else {
+          title = "New message from ${data['senderName']}";
+          message = data['message'];
         }
 
-        await _showNotification(
-          id : 9999,
-          title: "New Messages",
-          body: "$totalMessages messages from ${unreadCounts.length} chats",
-          payload: {'summary': true, 'noop': true},
-          groupKey: groupKey,
-          isSummary: true,
-          lines: previewLines,
-        );
+        payload = jsonEncode(data); // Normal payload to open chat
+      } else {
+        title =
+            "$totalUnreadMessages unread messages from $usersWithUnread users";
+        message = "You have $totalUnreadMessages unread messages";
+        payload = "general_chat_summary"; // Special payload
       }
 
+      await _notificationsPlugin!.show(
+        consolidatedNotificationId,
+        title,
+        message,
+        notificationDetails,
+        payload: payload,
+      );
+    } else {
+      final title = "New Message from Agent";
+      final id = 200;
+
+      await _notificationsPlugin!.show(
+        id,
+        title,
+        data['message'],
+        notificationDetails,
+        payload: jsonEncode(data),
+      );
     }
-  } catch (e, st) {
-    debugPrint('❌ _chatNotification Error: $e\n$st');
   }
-}
-Future<void> _showNotification({
-  required int id,
-  required String title,
-  required String body,
-  required dynamic payload,
-  required String groupKey,
-  required bool isSummary,
-  List<String>? lines,
-}) async {
-  final androidDetails = AndroidNotificationDetails(
-    'high_importance_channel',
-    'Chat Notifications',
-    channelDescription: 'Important chat messages',
-    importance: Importance.max,
-    priority: Priority.high,
-    groupKey: groupKey,
-    setAsGroupSummary: isSummary,
-    enableVibration: true,
-    playSound: true,
-    visibility: NotificationVisibility.public,
-    styleInformation: lines != null && lines.isNotEmpty
-        ? InboxStyleInformation(
-            lines,
-            contentTitle: title,
-            summaryText: body,
-          )
-        : null,
-  );
-
-  const iosDetails = DarwinNotificationDetails(
-    threadIdentifier: 'com.yourcompany.kkpchat',
-    presentAlert: true,
-    presentBadge: true,
-    presentSound: true,
-  );
-
-  await _notificationsPlugin!.show(
-    id,
-    title,
-    body,
-    NotificationDetails(android: androidDetails, iOS: iosDetails),
-    payload: jsonEncode(payload),
-  );
-}
-
-
-Future<void> _initializeNotifications() async {
-  if (_notificationsPlugin == null) {
-    _notificationsPlugin = FlutterLocalNotificationsPlugin();
-
-    const androidSettings = AndroidInitializationSettings('app_logo');
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestSoundPermission: true,
-      requestBadgePermission: true,
-      defaultPresentAlert: true,
-      defaultPresentSound: true,
-      defaultPresentBadge: true,
-    );
-
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-
-    await _notificationsPlugin!.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: _handleNotificationTap,
-    );
-
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'Chat Notifications',
-      description: 'Important chat messages',
-      importance: Importance.max,
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound('notification'),
-      enableVibration: true,
-    );
-
-    await _notificationsPlugin!
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-
-    await _notificationsPlugin!
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
-  }
-}
-
-
-
-
-
-
 
   void toggleChatPageOpen(bool toggle) {
     isChatPageOpen = toggle;
@@ -959,18 +827,18 @@ Future<void> _initializeNotifications() async {
 
   Future<void> _handleNotificationTap(NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
- final payload = jsonDecode(response.payload ?? '{}');
-        // 👇 Ignore tap on summary notifications
-    if (payload['summary'] == true || payload['noop'] == true) {
-      debugPrint("🛑 Summary notification tapped. Ignoring.");
-      return;
-    }
+
     if (response.payload != null) {
       // Check if the payload is the string "incoming_call"
       if (response.payload == "incoming_call") {
         // Just open the app, no additional action needed
         debugPrint("Incoming call notification tapped, opening the app.");
         return; // Exit the method after handling the incoming call notification
+      }
+
+      if (response.payload == "general_chat_summary") {
+        debugPrint("Summary notification tapped, just opening the app.");
+        return;
       }
 
       // If not an incoming call notification, attempt to decode the payload as JSON

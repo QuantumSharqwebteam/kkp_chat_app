@@ -83,7 +83,9 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
               ),
             ],
           ),
-          SizedBox(height: 10,),
+          SizedBox(
+            height: 10,
+          ),
           CustomSearchBar(
             width: double.infinity,
             enable: true,
@@ -99,87 +101,83 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
     );
   }
 
-Widget _buildProductsList(BuildContext context, List<Product> products) {
-  final screenHeight = Utils().height(context);
-  final screenWidth = Utils().width(context);
-  final isTablet = screenWidth >= 600;
-  final isLandscape = screenWidth > screenHeight;
+  Widget _buildProductsList(BuildContext context, List<Product> products) {
+    final screenHeight = Utils().height(context);
+    final screenWidth = Utils().width(context);
+    final isTablet = screenWidth >= 600;
+    final isLandscape = screenWidth > screenHeight;
 
-  // Adaptive height logic to prevent overflow
-  double itemHeight;
-  if (isTablet) {
-    itemHeight = isLandscape ? screenHeight * 0.33 : screenHeight * 0.28;
-  } else {
-    itemHeight = screenHeight * 0.24;
+    // Adaptive height logic to prevent overflow
+    double itemHeight;
+    if (isTablet) {
+      itemHeight = isLandscape ? screenHeight * 0.33 : screenHeight * 0.28;
+    } else {
+      itemHeight = screenHeight * 0.24;
+    }
+
+    return ResponsiveGridList(
+      horizontalGridSpacing: screenWidth * 0.025,
+      verticalGridSpacing: screenHeight * 0.0125,
+      horizontalGridMargin: screenWidth * 0.01,
+      verticalGridMargin: screenHeight * 0.025,
+      minItemWidth: screenWidth * 0.42,
+      maxItemsPerRow: 4,
+      listViewBuilderOptions: ListViewBuilderOptions(
+        physics: const BouncingScrollPhysics(),
+        shrinkWrap: true,
+      ),
+      children: products.map((product) {
+        return SizedBox(
+          height: itemHeight,
+          child: ProductItem(
+            product: product,
+            onTap: () async {
+              final result = await Navigator.pushNamed(
+                context,
+                MarketingRoutes.marketingProductDescription,
+                arguments: product,
+              );
+              if (result == true && context.mounted) {
+                context.read<MarketingProductProvider>().fetchProducts();
+              }
+            },
+          ),
+        );
+      }).toList(),
+    );
   }
 
-  return ResponsiveGridList(
-    horizontalGridSpacing: screenWidth * 0.025,    
-    verticalGridSpacing: screenHeight * 0.0125,    
-    horizontalGridMargin: screenWidth * 0.025,    
-    verticalGridMargin: screenHeight * 0.025,     
-    minItemWidth: screenWidth * 0.4,              
-    maxItemsPerRow: 4,
-    listViewBuilderOptions: ListViewBuilderOptions(
-      physics: const BouncingScrollPhysics(),
-      shrinkWrap: true,
-    ),
-    children: products.map((product) {
-      return SizedBox(
-        height: itemHeight,
-        child: ProductItem(
-          product: product,
-          onTap: () async {
-            final result = await Navigator.pushNamed(
-              context,
-              MarketingRoutes.marketingProductDescription,
-              arguments: product,
-            );
-            if (result == true && context.mounted) {
-              context.read<MarketingProductProvider>().fetchProducts();
-            }
-          },
+  Widget _buildFloatingActionButton(BuildContext context) {
+    return SizedBox(
+      height: 80,
+      width: 88,
+      child: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.pushNamed(
+            context,
+            MarketingRoutes.addProductScreen,
+          );
+          if (result == true && context.mounted) {
+            context.read<MarketingProductProvider>().fetchProducts();
+          }
+        },
+        backgroundColor: Colors.white,
+        elevation: 8,
+        shape: const CircleBorder(),
+        tooltip: 'Upload new product',
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.cloud_upload, size: 36, color: AppColors.grey7B7B7B),
+            //SizedBox(height: 6),
+            Text(
+              'Upload here',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.black10_600,
+            ),
+          ],
         ),
-      );
-    }).toList(),
-  );
-}
-
-
-
-Widget _buildFloatingActionButton(BuildContext context) {
-  return SizedBox(
-    height: 80,
-    width: 88,
-    child: FloatingActionButton(
-      onPressed: () async {
-        final result = await Navigator.pushNamed(
-          context,
-          MarketingRoutes.addProductScreen,
-        );
-        if (result == true && context.mounted) {
-          context.read<MarketingProductProvider>().fetchProducts();
-        }
-      },
-      backgroundColor: Colors.white,
-      elevation: 8,
-      shape: const CircleBorder(),
-      tooltip: 'Upload new product',
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.cloud_upload, size: 36, color: AppColors.grey7B7B7B),
-          //SizedBox(height: 6),
-          Text(
-            'Upload here',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.black10_600,
-          ),
-        ],
       ),
-    ),
-  );
-}
-
-
+    );
+  }
 }

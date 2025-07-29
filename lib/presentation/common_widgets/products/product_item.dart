@@ -116,7 +116,7 @@ class ProductItem extends StatelessWidget {
                           ? AppTextStyles.greyAAAAAA_10_400
                               .copyWith(fontSize: 14)
                           : AppTextStyles.greyAAAAAA_10_400
-                              .copyWith(fontSize: 8),
+                              .copyWith(fontSize: 7),
                     ),
                 ],
               ),
@@ -140,8 +140,8 @@ class _StockDot extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: color),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/incoming_call_screen.dart';
@@ -11,6 +12,10 @@ Future<void> handleNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
 //  final customerEmail = LocalDbHelper.getProfile()?.email;
+  final customerEmail = notificationData['targetId'];
+  final boxNameWithCount = '${customerEmail}count';
+  final box = await Hive.openBox<int>(boxNameWithCount);
+  await box.put('count', 0);
 
   navigatorKey.currentState?.push(
     MaterialPageRoute(
@@ -100,7 +105,9 @@ Future<void> handleNotificationClickForAgent(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
   final customerEmail = notificationData['senderId'];
+  final agentEmail = notificationData['targetId'];
   final customerName = notificationData['senderName'];
+  await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
   navigatorKey.currentState?.push(
     MaterialPageRoute(
       builder: (_) => AgentChatScreen(
