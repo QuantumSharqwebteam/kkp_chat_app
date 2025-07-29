@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -6,6 +7,7 @@ import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/presentation/common_widgets/colored_circles.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/edit_product_screen.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../config/theme/app_text_styles.dart';
 
@@ -69,8 +71,8 @@ class _MarketingProductDescrptionPageState
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(Icons.arrow_back, size: 30),
               ),
-               Text(widget.product.productName.toUpperCase(),
-                      style: AppTextStyles.black20_500),
+              Text(widget.product.productName.toUpperCase(),
+                  style: AppTextStyles.black20_500),
             ],
           ),
         ),
@@ -79,13 +81,24 @@ class _MarketingProductDescrptionPageState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.network(
-              widget.product.imageUrl,
-              height: Utils().height(context) * 0.5,
+            CachedNetworkImage(
+              imageUrl: widget.product.imageUrl,
+              height: Utils().height(context) * 0.6,
               width: Utils().width(context),
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  height: Utils().height(context) * 0.6,
+                  width: Utils().width(context),
+                  color: Colors.white,
+                ),
+              ),
+              errorWidget: (context, url, error) =>
                   const Icon(Icons.broken_image, size: 120),
+              fadeInDuration: const Duration(milliseconds: 400),
+              fadeInCurve: Curves.easeIn,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -191,7 +204,9 @@ class _MarketingProductDescrptionPageState
                       ),
                     ],
                   ),
-                  SizedBox(height: 40,)
+                  SizedBox(
+                    height: 40,
+                  )
                 ],
               ),
             ),

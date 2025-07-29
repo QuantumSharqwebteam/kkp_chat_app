@@ -21,12 +21,12 @@ class ProductItem extends StatelessWidget {
     final double width = Utils().width(context);
     final double height = Utils().height(context);
     final bool isTablet = width >= 600;
-    final bool isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final bool isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     // Responsive container width
-    double containerWidth = isTablet
-        ? (isLandscape ? width * 0.28 : width * 0.42)
-        : width * 0.44;
+    double containerWidth =
+        isTablet ? (isLandscape ? width * 0.28 : width * 0.42) : width * 0.44;
 
     return GestureDetector(
       onTap: onTap,
@@ -113,8 +113,10 @@ class ProductItem extends StatelessWidget {
                     Text(
                       '(${product.stock} available)',
                       style: isTablet
-                          ? AppTextStyles.greyAAAAAA_10_400.copyWith(fontSize: 14)
-                          : AppTextStyles.greyAAAAAA_10_400.copyWith(fontSize: 8),
+                          ? AppTextStyles.greyAAAAAA_10_400
+                              .copyWith(fontSize: 14)
+                          : AppTextStyles.greyAAAAAA_10_400
+                              .copyWith(fontSize: 8),
                     ),
                 ],
               ),

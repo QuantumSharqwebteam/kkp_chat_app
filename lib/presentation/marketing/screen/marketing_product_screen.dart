@@ -110,7 +110,7 @@ Widget _buildProductsList(BuildContext context, List<Product> products) {
   if (isTablet) {
     itemHeight = isLandscape ? screenHeight * 0.33 : screenHeight * 0.28;
   } else {
-    itemHeight = screenHeight * 0.3;
+    itemHeight = screenHeight * 0.24;
   }
 
   return ResponsiveGridList(
