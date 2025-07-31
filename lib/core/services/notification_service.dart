@@ -225,11 +225,53 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Initialize local notifications plugin
+  // static Future<void> _initializeLocalNotifications() async {
+  //   const AndroidInitializationSettings initializationSettingsAndroid =
+  //       AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  //   // ✅ iOS/macOS-specific initialization
+  //   const DarwinInitializationSettings initializationSettingsDarwin =
+  //       DarwinInitializationSettings(
+  //     requestAlertPermission: true,
+  //     requestSoundPermission: true,
+  //     requestBadgePermission: true,
+  //     defaultPresentAlert: true,
+  //     defaultPresentSound: true,
+  //     defaultPresentBadge: true,
+  //     defaultPresentBanner: true,
+  //     defaultPresentList: true,
+  //   );
+
+  //   const InitializationSettings initializationSettings =
+  //       InitializationSettings(
+  //     android: initializationSettingsAndroid,
+  //     iOS: initializationSettingsDarwin,
+  //   );
+
+  //   await _localNotificationsPlugin.initialize(initializationSettings,
+  //       onDidReceiveNotificationResponse: (NotificationResponse response) {
+  //     _handleNotificationTap(response);
+  //   });
+
+  //   // Create notification channel for Android 8.0 and above
+  //   const AndroidNotificationChannel androidNotificationChannel =
+  //       AndroidNotificationChannel(
+  //     'high_importance_channel',
+  //     'High Importance Notifications',
+  //     description: 'This channel is for important notifications',
+  //     importance: Importance.high,
+  //   );
+
+  //   await _localNotificationsPlugin
+  //       .resolvePlatformSpecificImplementation<
+  //           AndroidFlutterLocalNotificationsPlugin>()
+  //       ?.createNotificationChannel(androidNotificationChannel);
+  // }
+
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // ✅ iOS/macOS-specific initialization
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -248,24 +290,40 @@ class NotificationService with WidgetsBindingObserver {
       iOS: initializationSettingsDarwin,
     );
 
-    await _localNotificationsPlugin.initialize(initializationSettings,
-        onDidReceiveNotificationResponse: (NotificationResponse response) {
-      _handleNotificationTap(response);
-    });
-
-    // Create notification channel for Android 8.0 and above
-    const AndroidNotificationChannel androidNotificationChannel =
-        AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is for important notifications',
-      importance: Importance.high,
+    await _localNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        _handleNotificationTap(response);
+      },
     );
 
-    await _localNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidNotificationChannel);
+    final androidPlugin =
+        _localNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidPlugin != null) {
+      // ✅ Default notification channel (optional)
+      const AndroidNotificationChannel defaultChannel =
+          AndroidNotificationChannel(
+        'high_importance_channel',
+        'High Importance Notifications',
+        description: 'This channel is for important notifications',
+        importance: Importance.high,
+      );
+      await androidPlugin.createNotificationChannel(defaultChannel);
+
+      // ✅ Call notification channel with custom sound
+      const AndroidNotificationChannel callChannel = AndroidNotificationChannel(
+        'call_channel_id',
+        'Call Notifications',
+        description: 'This channel is used for incoming call notifications',
+        importance: Importance.high,
+        sound: RawResourceAndroidNotificationSound(
+            'incoming_call'), // 👈 without .mp3
+        playSound: true,
+      );
+      await androidPlugin.createNotificationChannel(callChannel);
+    }
   }
 
   // Handle notification tap
