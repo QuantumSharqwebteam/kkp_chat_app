@@ -49,8 +49,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   // Error texts for each field
   String? _nameError;
   String? _phoneNumberError;
-  String? _gstNumberError;
-  String? _panNumberError;
   String? _houseFlatNumberError;
   String? _streetNumberError;
   String? _cityNameError;
@@ -433,7 +431,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'GST number',
+                    'GST number (optional)',
                     style: AppTextStyles.black14_600,
                   ),
                   CustomTextField(
@@ -442,7 +440,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     hintText: 'Enter GST No.',
                     keyboardType: TextInputType.text,
                     maxLength: 15,
-                    errorText: widget.forUpdate ? null : _gstNumberError,
                   ),
                 ],
               ),
@@ -451,7 +448,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'PAN number',
+                    'PAN number (optional)',
                     style: AppTextStyles.black14_600,
                   ),
                   CustomTextField(
@@ -460,7 +457,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     hintText: 'Enter PAN No.',
                     keyboardType: TextInputType.text,
                     maxLength: 10,
-                    errorText: widget.forUpdate ? null : _panNumberError,
                   ),
                 ],
               ),
@@ -587,24 +583,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         isValid = false;
       } else {
         _phoneNumberError = null;
-      }
-
-      if (_gstNumber.text.isEmpty) {
-        setState(() {
-          _gstNumberError = 'GST number is required';
-        });
-        isValid = false;
-      } else {
-        _gstNumberError = null;
-      }
-
-      if (_panNumber.text.isEmpty) {
-        setState(() {
-          _panNumberError = 'PAN number is required';
-        });
-        isValid = false;
-      } else {
-        _panNumberError = null;
       }
 
       if (_customerType == null) {
