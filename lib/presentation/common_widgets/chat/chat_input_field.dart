@@ -83,7 +83,7 @@ class _ChatInputFieldState extends State<ChatInputField>
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 23),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Row(
         children: [
           IconButton(
@@ -224,25 +224,28 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
     ),
     builder: (context) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
-        padding:
-            const EdgeInsets.all(10.0), // Adds padding inside the bottom sheet
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GridView.builder(
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20.0),
+    ),
+    margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
+    padding: const EdgeInsets.all(10.0),
+    child: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 🛑 Fix: Add SizedBox or ConstrainedBox
+          SizedBox(
+            height: 200, // Adjust height as needed (e.g., 2 rows of GridView)
+            child: GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4, // 4 items per row
+                crossAxisCount: 4,
                 crossAxisSpacing: 2,
                 mainAxisSpacing: 0,
-                childAspectRatio: 0.9, // Keeps square shape
+                childAspectRatio: 0.9,
               ),
               itemCount: currentUser == "User"
                   ? attachmentItemsforCustomer.length
@@ -253,16 +256,10 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
                     : attachmentItems[index];
                 return GestureDetector(
                   onTap: () {
-                    if (item['label'] == "Share Product") {
-                      Navigator.pop(context); // Close the current bottom sheet
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        onItemSelected(
-                            item['label']!); // Open the product bottom sheet
-                      });
-                    } else {
+                    Navigator.pop(context);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
                       onItemSelected(item['label']!);
-                      Navigator.pop(context);
-                    }
+                    });
                   },
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -270,7 +267,7 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.1),
+                          color: Colors.blue.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
                         child: Image.asset(
@@ -291,9 +288,12 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
                 );
               },
             ),
-          ],
-        ),
-      );
-    },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
   );
 }

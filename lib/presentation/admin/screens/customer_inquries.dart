@@ -72,10 +72,15 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     super.dispose();
   }
 
-  Future<void> fetchInquiries() async {
+  Future<void> fetchInquiries({bool forcedReload = false}) async {
     final role = await LocalDbHelper.getUserType();
     final currentUserEmail = LocalDbHelper.getProfile()?.email;
     List<FormDataModel> data = [];
+    if (forcedReload) {
+      setState(() {
+        isLoading = true;
+      });
+    }
     try {
       if (role == "2" || role == "3" || role == "0") {
         data =
@@ -439,24 +444,28 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
     final visibleItems = filteredInquiries.take(visibleItemCount).toList();
 
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: visibleItems.length + (isFetchingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == visibleItems.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+    return RefreshIndicator(
+      onRefresh: () async => await fetchInquiries(forcedReload: true),
+      child: ListView.builder(
+        physics: AlwaysScrollableScrollPhysics(),
+        controller: _scrollController,
+        itemCount: visibleItems.length + (isFetchingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == visibleItems.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
 
-        final inquiry = visibleItems[index];
-        return AnimatedOpacity(
-          opacity: 1,
-          duration: Duration(milliseconds: 400 + (index * 100)),
-          child: _buildInquiryCard(inquiry),
-        );
-      },
+          final inquiry = visibleItems[index];
+          return AnimatedOpacity(
+            opacity: 1,
+            duration: Duration(milliseconds: 400 + (index * 100)),
+            child: _buildInquiryCard(inquiry),
+          );
+        },
+      ),
     );
   }
 

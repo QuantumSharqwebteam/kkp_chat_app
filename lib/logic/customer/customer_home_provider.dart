@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/data/models/poster_model.dart';
@@ -104,6 +105,11 @@ class CustomerHomeProvider with ChangeNotifier {
         _newProducts = _products;
         _previousProducts = _products;
       }
+      // ✅ Preload product images to improve perceived load time
+      for (var product in _products!) {
+        final image = CachedNetworkImageProvider(product.imageUrl);
+        precacheImage(image, navigatorKey.currentContext!);
+      }
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
@@ -122,6 +128,7 @@ class CustomerHomeProvider with ChangeNotifier {
       final box = await Hive.openBox<int>(boxNameWithCount);
       _notificationCount = box.get('count', defaultValue: 0) ?? 0;
       notifyListeners();
+      debugPrint("Fetched notification count: $_notificationCount");
     }
   }
 
@@ -153,29 +160,29 @@ class CustomerHomeProvider with ChangeNotifier {
       ),
     );
   }
+
   Future<void> updateCustomerProfile({
-  required String name,
-  required String number,
-  required String customerType,
-  required String gstNo,
-  required String panNo,
-}) async {
-  try {
-    await _authRepository.updateUserDetails(
-      name: name,
-      number: number,
-      customerType: customerType,
-      gstNo: gstNo,
-      panNo: panNo,
-    );
+    required String name,
+    required String number,
+    required String customerType,
+    required String gstNo,
+    required String panNo,
+  }) async {
+    try {
+      await _authRepository.updateUserDetails(
+        name: name,
+        number: number,
+        customerType: customerType,
+        gstNo: gstNo,
+        panNo: panNo,
+      );
 
-    await loadUserInfo(); // refresh profile data after update
-  } catch (e) {
-    if (kDebugMode) {
-      print("Failed to update profile: $e");
+      await loadUserInfo(); // refresh profile data after update
+    } catch (e) {
+      if (kDebugMode) {
+        print("Failed to update profile: $e");
+      }
+      rethrow;
     }
-    rethrow;
   }
-}
-
 }

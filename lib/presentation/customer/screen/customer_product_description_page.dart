@@ -4,6 +4,8 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/presentation/common_widgets/colored_circles.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../data/models/product_model.dart';
 
@@ -32,9 +34,9 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                 ),
               ),
               Text(
-                    product.productName,
-                    style: AppTextStyles.black16_600,
-                  ),
+                product.productName,
+                style: AppTextStyles.black16_600,
+              ),
             ],
           ),
         ),
@@ -44,14 +46,24 @@ class CustomerProductDescriptionPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Display product image from API
-            Image.network(
-              product.imageUrl,
+            CachedNetworkImage(
+              imageUrl: product.imageUrl,
               height: Utils().height(context) * 0.6,
               width: Utils().width(context),
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.broken_image, size: 120);
-              },
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  height: Utils().height(context) * 0.6,
+                  width: Utils().width(context),
+                  color: Colors.white,
+                ),
+              ),
+              errorWidget: (context, url, error) =>
+                  const Icon(Icons.broken_image, size: 120),
+              fadeInDuration: const Duration(milliseconds: 400),
+              fadeInCurve: Curves.easeIn,
             ),
             Padding(
               padding:
@@ -136,7 +148,6 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                             text: product.stock > 0
                                 ? 'Available'
                                 : 'Out of Stock',
-                              
                             onPressed: () {},
                             width: Utils().width(context) * 0.8,
                             height: 35,
@@ -147,7 +158,9 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                                 : Colors.grey,
                           ),
                         ),
-                        SizedBox(height: 40,)
+                        SizedBox(
+                          height: 40,
+                        )
                       ],
                     ),
                   )

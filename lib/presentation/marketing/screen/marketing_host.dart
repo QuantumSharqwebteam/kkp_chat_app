@@ -36,7 +36,8 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost> {
+class _MarketingHostState extends State<MarketingHost>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
@@ -57,10 +58,16 @@ class _MarketingHostState extends State<MarketingHost> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.removeObserver(this);
     _loadUserDataAndInitializeSocket().then((_) {
       _initializeNotificationService().then((_) {});
     });
     initCheck();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle changes if needed
   }
 
   void initCheck() async {
@@ -166,6 +173,7 @@ class _MarketingHostState extends State<MarketingHost> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _audioPlayer?.stop();
     _socketService.disconnect(); // Disconnect when leaving the host screen
     super.dispose();
@@ -349,6 +357,10 @@ class _MarketingHostState extends State<MarketingHost> {
 
     _activeCallOverlay = overlayEntry;
     overlayState.insert(overlayEntry);
+    // If the app is not in the foreground, also show a notification
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      NotificationService.showIncomingCallNotification(callerName);
+    }
 
     // Auto-dismiss after 30 seconds
     timeoutTimer = Timer(const Duration(seconds: 30), () async {
@@ -360,50 +372,24 @@ class _MarketingHostState extends State<MarketingHost> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<CallProvider>(
-      builder: (context, callProvider, child) {
-        if (callProvider.callDetailsMessage != null) {
-          // Handle the call details message, e.g., save it to the chat storage
-          // and then reset the callDetailsMessage in the provider.
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            // _handleCallDetailsMessage(callProvider.callDetailsMessage!);
-            // callProvider.setCallDetailsMessage(null);
-          });
-        }
-
-        Widget content = GestureDetector(
-          onTap: () {
-            FocusScope.of(context).unfocus();
-          },
-          child: Scaffold(
-            body: Stack(
-              children: [
-                IndexedStack(
-                  index: _selectedIndex,
-                  children: _screens,
-                ),
-                // if (callProvider.isOutgoingCallVisible)
-                //   OutgoingCallUI(
-                //     onTap: () {
-                //       callProvider.navigatorKey.currentState?.push(
-                //         MaterialPageRoute(
-                //             builder: (_) => const AgoraAudioCallScreen()),
-                //       );
-                //     },
-                //   ),
-              ],
-            ),
-            bottomNavigationBar: MarketingNavBar(
-              selectedIndex: _selectedIndex,
-              onTabSelected: _onTabSelected,
-            ),
-          ),
-        );
-
-        return BackPressHandler(
-          child: content,
-        );
+    Widget content = GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
       },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: MarketingNavBar(
+          selectedIndex: _selectedIndex,
+          onTabSelected: _onTabSelected,
+        ),
+      ),
+    );
+
+    return BackPressHandler(
+      child: content,
     );
   }
 }

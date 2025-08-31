@@ -22,7 +22,7 @@ class _AddAgentState extends State<AddAgent> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final List<String> roles = ['AgentHead', 'Agent'];
+  final List<String> roles = ['Agent'];
   String selectedRole = 'Agent';
   bool isLoading = false;
 
@@ -200,7 +200,7 @@ class _AddAgentState extends State<AddAgent> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: const Text('Profile'),
+        title: const Text('Add Agent'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -221,10 +221,6 @@ class _AddAgentState extends State<AddAgent> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "***Only one Agent head will be there (do not make more than one head)***",
-                          style: AppTextStyles.grey12_600,
-                        ),
                         const SizedBox(height: 20),
                         Text("Full Name"),
                         CustomTextField(
@@ -267,11 +263,12 @@ class _AddAgentState extends State<AddAgent> {
                                     child: Text(role),
                                   ))
                               .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedRole = value!;
-                            });
-                          },
+                          onChanged: null,
+                          // (value) {
+                          //   setState(() {
+                          //     selectedRole = value!;
+                          //   });
+                          // },
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,

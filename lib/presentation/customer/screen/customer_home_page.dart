@@ -2,12 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:provider/provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkpchatapp/presentation/customer/widget/custom_app_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
+import 'package:responsive_grid_list/responsive_grid_list.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
@@ -40,6 +42,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    
+    final orientation = MediaQuery.of(context).orientation;
+final isLandscape = orientation == Orientation.landscape;
+        final isTablet = Utils().width(context) >= 600;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -93,76 +99,145 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                               ? Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    GridView.builder(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 5, vertical: 15),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 10,
-                                        mainAxisSpacing: 10,
-                                        mainAxisExtent: 220,
-                                      ),
-                                      itemCount: _provider.newProducts!.length,
-                                      itemBuilder: (context, index) {
-                                        final product =
-                                            _provider.newProducts![index];
-                                        return ProductItem(
-                                          product: product,
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    CustomerProductDescriptionPage(
-                                                        product: product),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
+          ResponsiveGridList(
+            horizontalGridSpacing: Utils().width(context) * 0.025,
+            verticalGridSpacing: Utils().height(context) * 0.0125,
+            horizontalGridMargin: Utils().width(context) * 0.025,
+            verticalGridMargin: Utils().height(context) * 0.015,
+
+            // ✅ Increase card width more aggressively
+            minItemWidth: isTablet
+                ? (isLandscape ? 420 : 340)  // wider for tablets
+                : 200,                       // mobile size
+
+            minItemsPerRow: isLandscape ? 1 : 2,
+            maxItemsPerRow: isLandscape ? 2 : 2,
+
+            listViewBuilderOptions:  ListViewBuilderOptions(
+              physics: NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+            ),
+            children: _provider.newProducts!.map((product) {
+              return ProductItem(
+                product: product,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          CustomerProductDescriptionPage(product: product),
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+          ),
+
+
+                                    // ResponsiveGridList(
+                                    // GridView.builder(
+                                    //   padding: const EdgeInsets.symmetric(
+                                    //       horizontal: 5, vertical: 15),
+                                    //   shrinkWrap: true,
+                                    //   physics:
+                                    //       const NeverScrollableScrollPhysics(),
+                                    //   gridDelegate:
+                                    //       const SliverGridDelegateWithFixedCrossAxisCount(
+                                    //     crossAxisCount: 2,
+                                    //     crossAxisSpacing: 10,
+                                    //     mainAxisSpacing: 10,
+                                    //     mainAxisExtent: 220,
+                                    //   ),
+                                    //   itemCount: _provider.newProducts!.length,
+                                    //   itemBuilder: (context, index) {
+                                    //     final product =
+                                    //         _provider.newProducts![index];
+                                    //     return ProductItem(
+                                    //       product: product,
+                                    //       onTap: () {
+                                    //         Navigator.push(
+                                    //           context,
+                                    //           MaterialPageRoute(
+                                    //             builder: (context) =>
+                                    //                 CustomerProductDescriptionPage(
+                                    //                     product: product),
+                                    //           ),
+                                    //         );
+                                    //       },
+                                    //     );
+                                    //   },
+                                    // ),
                                     const SizedBox(height: 20),
                                     Text('Previous Products',
                                         style: TextStyle(
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold)),
-                                    GridView.builder(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 5, vertical: 15),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 10,
-                                        mainAxisSpacing: 10,
-                                        mainAxisExtent: 220,
-                                      ),
-                                      itemCount:
-                                          _provider.previousProducts!.length,
-                                      itemBuilder: (context, index) {
-                                        final product =
-                                            _provider.previousProducts![index];
-                                        return ProductItem(
-                                          product: product,
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    CustomerProductDescriptionPage(
-                                                        product: product),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
+                                    ResponsiveGridList(
+            horizontalGridSpacing: Utils().width(context) * 0.025,
+            verticalGridSpacing: Utils().height(context) * 0.0125,
+            horizontalGridMargin: Utils().width(context) * 0.025,
+            verticalGridMargin: Utils().height(context) * 0.015,
+
+            // ✅ Increase card width more aggressively
+            minItemWidth: isTablet
+                ? (isLandscape ? 420 : 340)  // wider for tablets
+                : 200,                       // mobile size
+
+            minItemsPerRow: isLandscape ? 1 : 2,
+            maxItemsPerRow: isLandscape ? 2 : 2,
+
+            listViewBuilderOptions:  ListViewBuilderOptions(
+              physics: NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+            ),
+            children: _provider.previousProducts!.map((product) {
+              return ProductItem(
+                product: product,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          CustomerProductDescriptionPage(product: product),
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+          ),
+                                    // GridView.builder(
+                                    //   padding: const EdgeInsets.symmetric(
+                                    //       horizontal: 5, vertical: 15),
+                                    //   shrinkWrap: true,
+                                    //   physics:
+                                    //       const NeverScrollableScrollPhysics(),
+                                    //   gridDelegate:
+                                    //       const SliverGridDelegateWithFixedCrossAxisCount(
+                                    //     crossAxisCount: 2,
+                                    //     crossAxisSpacing: 10,
+                                    //     mainAxisSpacing: 10,
+                                    //     mainAxisExtent: 220,
+                                    //   ),
+                                    //   itemCount:
+                                    //       _provider.previousProducts!.length,
+                                    //   itemBuilder: (context, index) {
+                                    //     final product =
+                                    //         _provider.previousProducts![index];
+                                    //     return ProductItem(
+                                    //       product: product,
+                                    //       onTap: () {
+                                    //         Navigator.push(
+                                    //           context,
+                                    //           MaterialPageRoute(
+                                    //             builder: (context) =>
+                                    //                 CustomerProductDescriptionPage(
+                                    //                     product: product),
+                                    //           ),
+                                    //         );
+                                    //       },
+                                    //     );
+                                    //   },
+                                    // ),
                                   ],
                                 )
                               : Center(child: Text("No products available")),

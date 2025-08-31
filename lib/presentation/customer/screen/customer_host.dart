@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -32,7 +32,8 @@ class CustomerHost extends StatefulWidget {
   State<CustomerHost> createState() => _CustomerHostState();
 }
 
-class _CustomerHostState extends State<CustomerHost> {
+class _CustomerHostState extends State<CustomerHost>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   late final SocketService _socketService;
@@ -47,6 +48,7 @@ class _CustomerHostState extends State<CustomerHost> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.removeObserver(this);
     _socketService = SocketService(widget.navigatorKey);
     _loadCurrentUserData().then((_) async {
       final token = await LocalDbHelper.getToken();
@@ -66,6 +68,11 @@ class _CustomerHostState extends State<CustomerHost> {
         initCheck();
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handle app lifecycle changes if needed
   }
 
   void initCheck() async {
@@ -130,12 +137,24 @@ class _CustomerHostState extends State<CustomerHost> {
     );
   }
 
+  Future<void> reinitializeHive() async {
+    await Hive.initFlutter();
+    await Future.wait([
+      Hive.openBox('CREDENTIALS'),
+      Hive.openBox("lastSeenTimeBox"),
+      Hive.openBox('feedBox'),
+      Hive.openBox("lastMessageMap"),
+      // dotenv.load(fileName: "keys.env"), // Only if required again
+    ]);
+  }
+
   Future<void> _loadCurrentUserData() async {
     try {
-      final Map<String, dynamic> userData = await auth.getUserInfo();
+      final userData = await auth.getUserInfo();
       if (userData['message'] ==
           "Session expired due to login on another device") {
-        Hive.deleteFromDisk();
+        await Hive.deleteFromDisk();
+        await reinitializeHive();
         if (mounted) {
           Navigator.of(context)
               .pushReplacement(MaterialPageRoute(builder: (context) {
@@ -143,6 +162,18 @@ class _CustomerHostState extends State<CustomerHost> {
           }));
         }
       }
+
+      if (userData["message"] == "You are Not Authorized") {
+        await Hive.deleteFromDisk();
+        await reinitializeHive();
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+          );
+        }
+        return;
+      }
+
       profile = Profile.fromJson(userData['message']);
       if (profile != null) {
         await LocalDbHelper.saveProfile(profile!);
@@ -156,6 +187,7 @@ class _CustomerHostState extends State<CustomerHost> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _socketService.disconnect();
     super.dispose();
   }
@@ -227,20 +259,6 @@ class _CustomerHostState extends State<CustomerHost> {
           onAnswer: () async {
             await stopAndRemoveOverlay();
             if (context.mounted) {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(
-              //     builder: (_) => AgoraAudioCallScreen(
-              //         // isCaller: false,
-              //         // channelName: channelName,
-              //         // uid: uid,
-              //         // remoteUserId: callerId,
-              //         // remoteUserName: callerName,
-              //         // callId: incomingCallId,
-              //         // navigatorKey: navigatorKey,
-              //         ),
-              //   ),
-              // );
               context.read<CallProvider>().startNewCall(
                   channelName: channelName,
                   remoteUserName: callerName,
@@ -265,6 +283,11 @@ class _CustomerHostState extends State<CustomerHost> {
 
     _activeCallOverlay = overlayEntry;
     overlayState.insert(overlayEntry);
+
+    // If the app is not in the foreground, also show a notification
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      NotificationService.showIncomingCallNotification(callerName);
+    }
 
     // Auto-dismiss after 30 seconds
     timeoutTimer = Timer(const Duration(seconds: 30), () async {
@@ -291,14 +314,6 @@ class _CustomerHostState extends State<CustomerHost> {
   Widget build(BuildContext context) {
     return Consumer<CallProvider>(
       builder: (context, callProvider, child) {
-        // if (callProvider.callDetailsMessage != null) {
-        //   // Handle the call details message, e.g., save it to the chat storage
-        //   // and then reset the callDetailsMessage in the provider.
-        //   // WidgetsBinding.instance.addPostFrameCallback((_) {
-        //   //   // _handleCallDetailsMessage(callProvider.callDetailsMessage!);
-        //   //   // callProvider.setCallDetailsMessage(null);
-        //   // });
-        // }
         Widget content = GestureDetector(
           onTap: () {
             FocusScope.of(context).unfocus();

@@ -9,6 +9,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart'
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
+import 'package:responsive_grid_list/responsive_grid_list.dart';
 
 class CustomerProductsPage extends StatefulWidget {
   const CustomerProductsPage({super.key});
@@ -19,8 +20,8 @@ class CustomerProductsPage extends StatefulWidget {
 
 class _CustomerProductsPageState extends State<CustomerProductsPage> {
   final ProductRepository _productRepository = ProductRepository();
-  late Future<List<Product>> _productsFuture;
   List<Product> _allProducts = [];
+  late Future<List<Product>> _productsFuture;
   List<Product> _filteredProducts = [];
   final TextEditingController _searchController = TextEditingController();
   bool isSearching = false;
@@ -43,7 +44,7 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
   void _filterProducts(String query) {
     query = query.toLowerCase();
     setState(() {
-      isSearching = query.isNotEmpty;
+            isSearching = query.isNotEmpty;
       _filteredProducts = query.isEmpty
           ? _allProducts
           : _allProducts
@@ -55,36 +56,35 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final utils = Utils();
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
         title: Text('Product', style: AppTextStyles.black18_600),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 15),
-            child: IconButton(
-              onPressed: () {
-                Navigator.pushNamed(
-                    context, CustomerRoutes.customerNotification);
-              },
-              icon: const Icon(
-                Icons.notifications_active_outlined,
-                color: Colors.black,
-                size: 28,
-              ),
+          IconButton(
+            onPressed: () {
+              Navigator.pushNamed(context, CustomerRoutes.customerNotification);
+            },
+            icon: const Icon(
+              Icons.notifications_active_outlined,
+              color: Colors.black,
+              size: 28,
             ),
           ),
+          const SizedBox(width: 12),
         ],
       ),
       body: Column(
         children: [
           Container(
-            width: Utils().width(context),
+            width: utils.width(context),
             color: AppColors.background,
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: CustomSearchBar(
-              width: Utils().width(context),
+              width: utils.width(context),
               enable: true,
               controller: _searchController,
               hintText: 'Search Here...',
@@ -102,24 +102,24 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(child: Text("No products available"));
                 }
-
+      
                 return _filteredProducts.isEmpty
                     ? const Center(child: Text("No matching products found"))
-                    : GridView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 20),
-                        shrinkWrap: true,
-                        physics: const BouncingScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          maxCrossAxisExtent: 250,
-                          mainAxisExtent: 220,
+                    : ResponsiveGridList(
+                        minItemWidth: utils.width(context) * 0.4,
+                        maxItemsPerRow: 4,
+                        horizontalGridSpacing:
+                            utils.width(context) * 0.025,
+                        verticalGridSpacing:
+                            utils.height(context) * 0.0125,
+                        horizontalGridMargin:
+                            utils.width(context) * 0.025,
+                        verticalGridMargin:
+                            utils.height(context) * 0.025,
+                        listViewBuilderOptions:  ListViewBuilderOptions(
+                          physics: BouncingScrollPhysics(),
                         ),
-                        itemCount: _filteredProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = _filteredProducts[index];
+                        children: _filteredProducts.map((product) {
                           return ProductItem(
                             product: product,
                             onTap: () {
@@ -133,7 +133,7 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
                               );
                             },
                           );
-                        },
+                        }).toList(),
                       );
               },
             ),

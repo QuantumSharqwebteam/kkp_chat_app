@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
@@ -14,6 +15,7 @@ class LocalDbHelper {
   static const String _lastRefreshTime = 'lastRefreshTime';
   static const String _lastMessageMapKey = 'lastMessageMap';
   static const String unreadCountsBoxKey = 'unreadCountsBox';
+  static const String _receiverOnChatPageKey = 'receiverOnChatPage';
 
   // feed
   static const String _pinnedAgentsKey = 'pinnedAgents';
@@ -219,5 +221,18 @@ class LocalDbHelper {
     final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
     final currentCount = box.get(customerEmail, defaultValue: 0);
     await box.put(customerEmail, currentCount! + 1);
+  }
+
+  // Add this method to save the receiver's chat page status
+  static Future<void> saveReceiverOnChatPageStatus(bool isOnChatPage) async {
+    await _lastSeenBoxInstance.put(_receiverOnChatPageKey, isOnChatPage);
+    debugPrint("💾 Saved receiver on chat page status: $isOnChatPage");
+  }
+
+  // Add this method to retrieve the receiver's chat page status
+  static bool? getReceiverOnChatPageStatus() {
+    bool? status = _lastSeenBoxInstance.get(_receiverOnChatPageKey);
+    debugPrint("🔍 Retrieved receiver on chat page status: $status");
+    return status;
   }
 }
