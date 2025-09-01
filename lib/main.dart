@@ -10,6 +10,7 @@ import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/logic/agent/agent_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
@@ -167,6 +168,9 @@ class _MyAppState extends State<MyApp> {
                 CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
                   ..fetchPosters()
                   ..fetchProducts()),
+        ChangeNotifierProvider(
+          create: (_) => AgentProvider()..fetchAgents(),
+        ),
       ],
       child: MaterialApp(
         navigatorKey: widget.navigatorKey,
