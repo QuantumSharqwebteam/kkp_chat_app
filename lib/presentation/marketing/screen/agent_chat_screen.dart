@@ -104,12 +104,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   final Map<Key, GlobalKey> _messageKeys = {};
 
+  bool _showFormNavigationButtons = false;
+  int? _currentFormIndex;
+
   @override
   void initState() {
+    super.initState();
     WidgetsBinding.instance.addObserver(this);
     _fetchUserRole();
-    super.initState();
-
     _socketService.setChatPageState(
         isOpen: true, customerId: widget.customerEmail);
 
@@ -1028,6 +1030,137 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
   }
 
+  List<int> _getFormMessageIndices() {
+    List<int> formIndices = [];
+    for (int i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      // Check if it's a form message sent by the customer (not the agent)
+      if ((msg.type == 'form' || msg.form != null) &&
+          msg.sender == widget.customerEmail) {
+        formIndices.add(i);
+      }
+    }
+    return formIndices;
+  }
+
+  void _navigateToForm(int direction) {
+    List<int> formIndices = _getFormMessageIndices();
+
+    if (formIndices.isEmpty) {
+      // Show a message that no forms are available
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No customer forms found to navigate to'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (_currentFormIndex == null) {
+      // If no current form is selected, start from the most recent form
+      _currentFormIndex = formIndices.length - 1;
+    } else {
+      // Calculate new index based on direction (1 for next/down, -1 for previous/up)
+      int newIndex = _currentFormIndex! + direction;
+
+      // Handle wraparound or bounds
+      if (newIndex < 0) {
+        newIndex = formIndices.length - 1; // Wrap to last form
+      } else if (newIndex >= formIndices.length) {
+        newIndex = 0; // Wrap to first form
+      }
+
+      _currentFormIndex = newIndex;
+    }
+
+    // Scroll to the selected form message
+    int messageIndex = formIndices[_currentFormIndex!];
+    _scrollToMessage(messageIndex);
+
+    // Optional: Show current form position
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content:
+            Text('Form ${_currentFormIndex! + 1} of ${formIndices.length}'),
+        duration: Duration(milliseconds: 800),
+      ),
+    );
+  }
+
+  void _scrollToMessage(int index) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients && index < messages.length) {
+        final key = ValueKey('chat-msg-$index');
+        final globalKey = _messageKeys[key];
+
+        if (globalKey?.currentContext != null) {
+          final context = globalKey!.currentContext!;
+          final box = context.findRenderObject() as RenderBox?;
+          if (box != null) {
+            try {
+              // Get the position of the message
+              final position = box.localToGlobal(Offset.zero);
+              final scrollOffset = _scrollController.offset;
+              final viewportHeight =
+                  _scrollController.position.viewportDimension;
+
+              // Calculate target scroll position to center the message
+              final targetOffset =
+                  scrollOffset + position.dy - (viewportHeight / 2);
+              final clampedOffset = targetOffset.clamp(
+                _scrollController.position.minScrollExtent,
+                _scrollController.position.maxScrollExtent,
+              );
+
+              _scrollController.animateTo(
+                clampedOffset,
+                duration: Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              );
+            } catch (e) {
+              debugPrint('Error scrolling to message: $e');
+              // Fallback: scroll based on approximate item height
+              final approximatePosition =
+                  index * 100.0; // Adjust based on your average message height
+              _scrollController.animateTo(
+                approximatePosition,
+                duration: Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              );
+            }
+          }
+        } else {
+          // Fallback scrolling method
+          final approximatePosition = index * 100.0;
+          _scrollController.animateTo(
+            approximatePosition,
+            duration: Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
+  }
+
+  void _toggleFormNavigationButtons() {
+    final formIndices = _getFormMessageIndices();
+    debugPrint(
+        'Found ${formIndices.length} customer form messages at indices: $formIndices');
+
+    // Debug: Print details about each form message
+    for (int i = 0; i < formIndices.length; i++) {
+      final msgIndex = formIndices[i];
+      final msg = messages[msgIndex];
+      debugPrint(
+          'Form $i: type=${msg.type}, sender=${msg.sender}, hasForm=${msg.form != null}');
+    }
+
+    setState(() {
+      _showFormNavigationButtons = !_showFormNavigationButtons;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1351,12 +1484,31 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           if (_isFormUpdating) FullScreenLoader(),
           if (!_isAtBottom)
             Positioned(
-              bottom: 80, // Adjust the position as needed
-              right: 16, // Adjust the posMessageBubbleition as needed
-              child: FloatingActionButton(
-                onPressed: _scrollToBottom,
-                mini: true,
-                child: Icon(Icons.arrow_downward_rounded),
+              bottom: 80,
+              right: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_showFormNavigationButtons) ...[
+                    IconButton(
+                      onPressed: () => _navigateToForm(-1),
+                      icon: Icon(Icons.arrow_upward),
+                    ),
+                    IconButton(
+                      onPressed: () => _navigateToForm(1),
+                      icon: Icon(Icons.arrow_downward),
+                    ),
+                  ],
+                  IconButton(
+                    onPressed: _toggleFormNavigationButtons,
+                    icon: Icon(Icons.push_pin),
+                  ),
+                  FloatingActionButton(
+                    onPressed: _scrollToBottom,
+                    mini: true,
+                    child: Icon(Icons.arrow_downward_rounded),
+                  ),
+                ],
               ),
             ),
           //  Floating day/date header
