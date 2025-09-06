@@ -24,6 +24,7 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
@@ -995,6 +996,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       type: 'form',
       form: updatedFormData,
     );
+
+    // Trigger real-time update
+    Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
   }
 
   void _handleStatusUpdated(String status, String id) {
@@ -1005,6 +1009,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       messageText: messageText,
       type: 'text',
     );
+
+    // Trigger real-time update after status change
+    Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
   }
 
   void _showProductsBottomSheet(BuildContext context) {

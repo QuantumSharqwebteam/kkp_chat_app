@@ -8,6 +8,7 @@ import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
@@ -15,6 +16,7 @@ import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dar
 import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:open_file/open_file.dart';
+import 'package:provider/provider.dart';
 
 class CustomerInquiriesPage extends StatefulWidget {
   const CustomerInquiriesPage({super.key});
@@ -27,15 +29,14 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   final _chatRepository = ChatRepository();
+  late InquiryProvider _inquiryProvider;
 
   bool showFilters = false;
-  // String selectedAgent = 'All Agents';
   String selectedDateRange = 'Last 30 days';
   String selectedStatus = "All";
   bool isFetchingMore = false;
   bool isDownloading = false;
 
-  // List<String> agents = ['All Agents', 'Agent mohd 3', 'Unknown Agent'];
   List<String> dateRanges = [
     'Today',
     'Last Week',
@@ -44,10 +45,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   ];
   List<String> status = ["All", "Confirmed", "Processed", "Declined"];
 
-  List<FormDataModel> allInquiries = [];
   List<FormDataModel> filteredInquiries = [];
-
-  bool isLoading = true;
 
   late ScrollController _scrollController;
   int visibleItemCount = 10;
@@ -59,9 +57,29 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   @override
   void initState() {
     super.initState();
-    fetchInquiries();
+    _inquiryProvider = Provider.of<InquiryProvider>(context, listen: false);
+    _fetchInitialData();
     _searchController.addListener(_applyFilters);
     _scrollController = ScrollController()..addListener(_onScroll);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Listen for changes in the provider and apply filters when data changes
+    final provider = Provider.of<InquiryProvider>(context);
+    if (!provider.isLoading) {
+      _applyFilters();
+    }
+  }
+
+  Future<void> _fetchInitialData() async {
+    final role = await LocalDbHelper.getUserType();
+    final currentUserEmail = LocalDbHelper.getProfile()?.email;
+    await _inquiryProvider.fetchInquiries(
+      userEmail: currentUserEmail,
+      role: role,
+    );
   }
 
   @override
@@ -70,36 +88,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> fetchInquiries({bool forcedReload = false}) async {
-    final role = await LocalDbHelper.getUserType();
-    final currentUserEmail = LocalDbHelper.getProfile()?.email;
-    List<FormDataModel> data = [];
-    if (forcedReload) {
-      setState(() {
-        isLoading = true;
-      });
-    }
-    try {
-      if (role == "2" || role == "3" || role == "0") {
-        data =
-            await _chatRepository.fetchFormDataForEnquiery(currentUserEmail!);
-      } else if (role == "1") {
-        data = await _chatRepository.fetchFormData();
-      }
-
-      setState(() {
-        allInquiries = data;
-        _applyFilters();
-      });
-    } catch (e) {
-      debugPrint("Failed to fetch inquiries: $e");
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
   }
 
   void _onScroll() async {
@@ -130,10 +118,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   void _applyFilters() {
+    final allInquiries = _inquiryProvider.inquiries;
     String search = _searchController.text.toLowerCase();
     final now = DateTime.now();
 
-    filteredInquiries = allInquiries.where((item) {
+    final filtered = allInquiries.where((item) {
       final matchQuality =
           selectedStatus == 'All' || item.status.contains(selectedStatus);
 
@@ -182,17 +171,20 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     }).toList();
 
     // Sort by date and time
-    filteredInquiries.sort((a, b) {
+    filtered.sort((a, b) {
       final dateA = DateTime.tryParse(a.date);
       final dateB = DateTime.tryParse(b.date);
       if (dateA == null || dateB == null) return 0;
       return dateB.compareTo(dateA); // Newest first
     });
 
-    visibleItemCount = filteredInquiries.length > itemsPerPage
-        ? itemsPerPage
-        : filteredInquiries.length;
-    setState(() {});
+    final newVisibleCount =
+        filtered.length > itemsPerPage ? itemsPerPage : filtered.length;
+
+    setState(() {
+      filteredInquiries = filtered;
+      visibleItemCount = newVisibleCount;
+    });
   }
 
   void toggleShowFilters() {
@@ -264,17 +256,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         debugPrint("⚠️ Could not open Excel file: ${result.message}");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unable to open the file')),
+            SnackBar(content: Text('Unable to open the file')),
           );
         }
       }
     } catch (e) {
       debugPrint('Excel generation error: $e');
-      // if (mounted) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     const SnackBar(content: Text('Failed to generate Excel file')),
-      //   );
-      // }
     } finally {
       setState(() => isDownloading = false);
     }
@@ -282,14 +269,22 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   @override
   Widget build(BuildContext context) {
-    final hasInquiries = allInquiries.isNotEmpty;
+    return Consumer<InquiryProvider>(
+      builder: (context, provider, child) {
+        final hasInquiries = provider.inquiries.isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        title: const Text('Customer Inquiries'),
-        actions: hasInquiries
-            ? [
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: AppColors.background,
+            title: Text('Customer Inquiries'),
+            actions: [
+              // Refresh button
+              if (hasInquiries)
+                IconButton(
+                  onPressed: () => provider.refreshInquiries(),
+                  icon: const Icon(Icons.refresh),
+                ),
+              if (hasInquiries && !provider.isLoading)
                 Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: GestureDetector(
@@ -319,81 +314,81 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                           ),
                   ),
                 ),
-              ]
-            : [],
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    children: [
-                      if (hasInquiries)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: Colors.grey.shade400, // Border color
-                                    width: 1.0, // Border width
-                                  ),
-                                  borderRadius: BorderRadius.circular(
-                                      8.0), // Rounded corners (optional)
-                                ),
-                                child: CustomSearchBar(
-                                  enable: true,
-                                  controller: _searchController,
-                                  hintText: "Search by anything...",
-                                  onChanged: (value) => _applyFilters(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            GestureDetector(
-                              onTap: toggleShowFilters,
-                              child: Container(
-                                width: 56,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    width: 1,
-                                    color: AppColors.greyB2BACD,
+            ],
+          ),
+          body: provider.isLoading && provider.inquiries.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        children: [
+                          if (hasInquiries)
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.grey.shade400,
+                                        width: 1.0,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8.0),
+                                    ),
+                                    child: CustomSearchBar(
+                                      enable: true,
+                                      controller: _searchController,
+                                      hintText: "Search by anything...",
+                                      onChanged: (value) => _applyFilters(),
+                                    ),
                                   ),
                                 ),
-                                child: CustomImage(
-                                  imagePath: ImageConstants.filterIcon,
-                                  height: 25,
-                                  width: 25,
+                                const SizedBox(width: 10),
+                                GestureDetector(
+                                  onTap: toggleShowFilters,
+                                  child: Container(
+                                    width: 56,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        width: 1,
+                                        color: AppColors.greyB2BACD,
+                                      ),
+                                    ),
+                                    child: CustomImage(
+                                      imagePath: ImageConstants.filterIcon,
+                                      height: 25,
+                                      width: 25,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      if (hasInquiries) const SizedBox(height: 10),
-                      if (showFilters && hasInquiries) _buildFilters(),
-                      if (showFilters && hasInquiries)
-                        const Divider(
-                          color: AppColors.greyE5E7EB,
-                          thickness: 0.6,
-                          height: 0,
-                        ),
-                      if (showFilters && hasInquiries)
-                        Container(
-                          height: 5,
-                          color: AppColors.greyD9D9D9.withOpacity(0.3),
-                        ),
-                      const SizedBox(height: 14),
-                    ],
-                  ),
+                          if (hasInquiries) const SizedBox(height: 10),
+                          if (showFilters && hasInquiries) _buildFilters(),
+                          if (showFilters && hasInquiries)
+                            const Divider(
+                              color: AppColors.greyE5E7EB,
+                              thickness: 0.6,
+                              height: 0,
+                            ),
+                          if (showFilters && hasInquiries)
+                            Container(
+                              height: 5,
+                              color: AppColors.greyD9D9D9.withOpacity(0.3),
+                            ),
+                          const SizedBox(height: 14),
+                        ],
+                      ),
+                    ),
+                    Expanded(child: _buildInquiryList()),
+                  ],
                 ),
-                Expanded(child: _buildInquiryList()),
-              ],
-            ),
+        );
+      },
     );
   }
 
@@ -405,15 +400,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // CustomDropDown(
-            //   value: selectedAgent,
-            //   items: agents,
-            //   onChanged: (value) {
-            //     setState(() => selectedAgent = value!);
-            //     _applyFilters();
-            //   },
-            // ),
-            // const SizedBox(width: 10),
             CustomDropDown(
               value: selectedDateRange,
               items: dateRanges,
@@ -445,7 +431,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     final visibleItems = filteredInquiries.take(visibleItemCount).toList();
 
     return RefreshIndicator(
-      onRefresh: () async => await fetchInquiries(forcedReload: true),
+      onRefresh: () async => await _inquiryProvider.refreshInquiries(),
       child: ListView.builder(
         physics: AlwaysScrollableScrollPhysics(),
         controller: _scrollController,
@@ -503,7 +489,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                       child: Icon(Icons.person,
                           color: Colors.green), // Optional: icon color
                     ),
-
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -563,13 +548,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                       ],
                     ),
                     const SizedBox(width: 8),
-                    // Icon(
-                    //   expandedStates[inquiry.id] ?? false
-                    //       ? Icons.keyboard_arrow_up
-                    //       : Icons.keyboard_arrow_down,
-                    //   size: 24,
-                    //   color: Colors.grey[600],
-                    // ),
                   ],
                 ),
 
