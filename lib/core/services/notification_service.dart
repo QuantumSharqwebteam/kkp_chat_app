@@ -30,7 +30,7 @@ class NotificationService with WidgetsBindingObserver {
     onNotificationTap = onNotificationClick;
 
     WidgetsBinding.instance.addObserver(NotificationService());
-    await _initializeLocalNotifications();
+    await initializeLocalNotifications();
     if (context.mounted) {
       bool isGranted = await requestPermission(context);
       if (isGranted) {
@@ -225,7 +225,7 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Initialize local notifications plugin
-  static Future<void> _initializeLocalNotifications() async {
+  static Future<void> initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 

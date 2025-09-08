@@ -13,20 +13,24 @@ import UserNotifications
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // ✅ Correct override of foreground notification presentation
+  // For foreground notifications
   override func userNotificationCenter(_ center: UNUserNotificationCenter,
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
     if #available(iOS 14.0, *) {
-        completionHandler([.banner, .sound, .badge])
+      completionHandler([.banner, .sound, .badge])
     } else {
-        completionHandler([.alert, .sound, .badge])
+      completionHandler([.alert, .sound, .badge])
     }
   }
+
+  // For handling tap on notification
+  override func userNotificationCenter(_ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void) {
+    super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
+  }
 }
-
-
-
 
 
 

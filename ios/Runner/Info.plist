@@ -32,6 +32,8 @@
 	<true/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>MinimumOSVersion</key>
 	<string>13.0</string>
 	<key>NSAppTransportSecurity</key>
@@ -60,12 +62,14 @@
 		<string>remote-notification</string>
 		<string>processing</string>
 	</array>
+	<key>NSUserNotificationAlertStyle</key>
+	<string>alert</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UIStatusBarHidden</key>
-	<true/>
+	<false/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

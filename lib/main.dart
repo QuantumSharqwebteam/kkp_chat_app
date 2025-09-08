@@ -112,8 +112,23 @@ void main() async {
   // Handle terminated state
   RemoteMessage? initialMessage =
       await FirebaseMessaging.instance.getInitialMessage();
+    // 1. Show the status bar
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
 
+    // 2. Style the status bar
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+    );
+    await NotificationService.initializeLocalNotifications();
   runApp(
+
     MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
   );
 }

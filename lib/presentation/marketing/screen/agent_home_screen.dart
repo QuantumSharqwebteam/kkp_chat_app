@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -51,51 +52,57 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AssignedCustomersProvider>(context);
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildProfileSection(provider.agentName),
-            Expanded(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-                ),
-                child: provider.isLoading
-                    ? ShimmerList(itemCount: 8)
-                    : NestedScrollView(
-                        headerSliverBuilder: (context, _) => [
-                          SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSearchBar(provider),
-                                const SizedBox(height: 20),
-                                Text("Customer Inquiries",
-                                    style: AppTextStyles.black16_500),
-                              ],
-                            ),
-                          )
-                        ],
-                        body: StreamBuilder<List<String>>(
-                          stream: provider.socketService.statusStream,
-                          builder: (context, _) {
-                            return provider.filteredCustomers.isEmpty
-                                ? const NoCustomerAssignedWidget()
-                                : _buildCustomerInquiriesList(provider);
-                          },
-                        ),
-                      ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+  value: SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarBrightness: Brightness.light, // iOS: dark icons
+    statusBarIconBrightness: Brightness.dark, // Android
+  ),
+  child: Scaffold(
+    backgroundColor: Colors.white,
+    body: SafeArea(
+      child: Column(
+        children: [
+          _buildProfileSection(provider.agentName),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
               ),
+              child: provider.isLoading
+                  ? ShimmerList(itemCount: 8)
+                  : NestedScrollView(
+                      headerSliverBuilder: (context, _) => [
+                        SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSearchBar(provider),
+                              const SizedBox(height: 20),
+                              Text("Customer Inquiries",
+                                  style: AppTextStyles.black16_500),
+                            ],
+                          ),
+                        )
+                      ],
+                      body: StreamBuilder<List<String>>(
+                        stream: provider.socketService.statusStream,
+                        builder: (context, _) {
+                          return provider.filteredCustomers.isEmpty
+                              ? const NoCustomerAssignedWidget()
+                              : _buildCustomerInquiriesList(provider);
+                        },
+                      ),
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildProfileSection(String? name) {
