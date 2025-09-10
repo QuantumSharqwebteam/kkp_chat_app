@@ -23,6 +23,7 @@ import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
@@ -974,6 +975,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       _sendMessage(
           messageText:
               "Rate updated as $newRate for form with Id : ${formData["_id"]}");
+
+      // Trigger real-time update of inquiries
+      Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating rate of the form: $e');

@@ -9,8 +9,11 @@ import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/logic/agent/agent_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -112,23 +115,8 @@ void main() async {
   // Handle terminated state
   RemoteMessage? initialMessage =
       await FirebaseMessaging.instance.getInitialMessage();
-    // 1. Show the status bar
-    SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.manual,
-      overlays: SystemUiOverlay.values,
-    );
 
-    // 2. Style the status bar
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarBrightness: Brightness.light,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
-    await NotificationService.initializeLocalNotifications();
   runApp(
-
     MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
   );
 }
@@ -182,6 +170,12 @@ class _MyAppState extends State<MyApp> {
                 CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
                   ..fetchPosters()
                   ..fetchProducts()),
+        ChangeNotifierProvider(
+          create: (_) => AgentProvider()..fetchAgents(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => InquiryProvider(ChatRepository()),
+        ),
       ],
       child: MaterialApp(
         navigatorKey: widget.navigatorKey,

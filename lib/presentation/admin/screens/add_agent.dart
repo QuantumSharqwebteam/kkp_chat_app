@@ -5,8 +5,8 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
-
-import '../../../data/api/auth_service.dart';
+import 'package:kkpchatapp/logic/agent/agent_provider.dart';
+import 'package:provider/provider.dart';
 
 class AddAgent extends StatefulWidget {
   const AddAgent({super.key});
@@ -16,15 +16,13 @@ class AddAgent extends StatefulWidget {
 }
 
 class _AddAgentState extends State<AddAgent> {
-  final _auth = AuthApi();
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final List<String> roles = ['AgentHead', 'Agent'];
+  final List<String> roles = ['Agent'];
   String selectedRole = 'Agent';
-  bool isLoading = false;
 
   String? nameError;
   String? emailError;
@@ -108,22 +106,16 @@ class _AddAgentState extends State<AddAgent> {
       "password": passwordController.text
     };
 
-    setState(() {
-      isLoading = true;
-    });
-
     try {
-      final response = await _auth.addAgent(body: body);
-      setState(() {
-        isLoading = false;
-      });
+      final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+      final response = await agentProvider.addAgent(body: body);
 
       if (response['message'] == "User signed up successfully") {
         if (mounted) {
           Utils().showSuccessDialog(context, "Agent Profile created", true);
         }
 
-        await assignAgentToList(emailController.text);
+        await agentProvider.assignAgentToList(email: emailController.text);
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) Navigator.pop(context);
         });
@@ -147,42 +139,6 @@ class _AddAgentState extends State<AddAgent> {
       }
     } catch (e) {
       debugPrint("Failed to add new agent: ${e.toString()}");
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-  Future<void> assignAgentToList(String email) async {
-    try {
-      final assignResponse = await _auth.assignAgent(email: email);
-      if (assignResponse["status"] == 200 &&
-          assignResponse["message"] == "agents assigned successfully") {
-        debugPrint("✅ Agent assigned successfully");
-
-        if (mounted) {
-          Utils().showSuccessDialog(
-            context,
-            "Agent added to assigned list successfully",
-            true,
-          );
-        }
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) Navigator.pop(context);
-        });
-      } else {
-        debugPrint("⚠️ Agent assignment failed: ${assignResponse["message"]}");
-        if (mounted) {
-          Utils().showSuccessDialog(
-            context,
-            "Failed to add agent in the assigned list",
-            false,
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint("❌ Error assigning agent: ${e.toString()}");
     }
   }
 
@@ -197,16 +153,17 @@ class _AddAgentState extends State<AddAgent> {
 
   @override
   Widget build(BuildContext context) {
+    final agentProvider = Provider.of<AgentProvider>(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: const Text('Profile'),
+        title: const Text('Add Agent'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: isLoading
+      body: agentProvider.isLoading
           ? FullScreenLoader()
           : SingleChildScrollView(
               child: Padding(
@@ -221,10 +178,6 @@ class _AddAgentState extends State<AddAgent> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "***Only one Agent head will be there (do not make more than one head)***",
-                          style: AppTextStyles.grey12_600,
-                        ),
                         const SizedBox(height: 20),
                         Text("Full Name"),
                         CustomTextField(
@@ -267,11 +220,12 @@ class _AddAgentState extends State<AddAgent> {
                                     child: Text(role),
                                   ))
                               .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedRole = value!;
-                            });
-                          },
+                          onChanged: (value) {},
+                          // (value) {
+                          //   setState(() {
+                          //     selectedRole = value!;
+                          //   });
+                          // },
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: Colors.white,

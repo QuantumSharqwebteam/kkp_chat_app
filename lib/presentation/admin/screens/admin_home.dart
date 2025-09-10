@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/chart_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -16,6 +15,8 @@ import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile
 import 'package:kkpchatapp/presentation/admin/widgets/admin_home_chart.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/my_vertical_divider.dart';
+import 'package:kkpchatapp/logic/agent/agent_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AdminHome extends StatefulWidget {
@@ -26,12 +27,9 @@ class AdminHome extends StatefulWidget {
 }
 
 class _AdminHomeState extends State<AdminHome> {
-  final AuthApi _auth = AuthApi();
   final _chatRepo = ChatRepository();
   final SocketService _socketService = SocketService(navigatorKey);
-  List<Agent> _agentsList = [];
   List<Map<String, dynamic>> trafficData = [];
-  bool _isLoading = true;
   String selectedChartType = 'messages';
 
   StreamSubscription<List<String>>? _statusSubscription;
@@ -39,7 +37,10 @@ class _AdminHomeState extends State<AdminHome> {
   @override
   void initState() {
     super.initState();
-    _fetchAgents();
+    // Use addPostFrameCallback to execute after the build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+    });
     _fetchTrafficData();
     _statusSubscription = _socketService.statusStream.listen((_) {
       if (mounted) {
@@ -52,25 +53,6 @@ class _AdminHomeState extends State<AdminHome> {
   void dispose() {
     _statusSubscription?.cancel();
     super.dispose();
-  }
-
-  Future<void> _fetchAgents() async {
-    try {
-      List<Agent> agents = await _auth.getAgent();
-      if (mounted) {
-        setState(() {
-          _agentsList = agents;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching agents: $e");
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   Future<void> _fetchTrafficData() async {
@@ -339,25 +321,26 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Widget _buildAgentManagementSection() {
-    // Calculate online and offline agent counts
-    final onlineEmails = _socketService.onlineUsers;
-    final activeCount =
-        _agentsList.where((agent) => onlineEmails.contains(agent.email)).length;
-    final offlineCount = _agentsList.length - activeCount;
+    return Consumer<AgentProvider>(builder: (context, agentProvider, child) {
+      // Calculate online and offline agent counts
+      final onlineEmails = _socketService.onlineUsers;
+      final activeCount = agentProvider.agents
+          .where((agent) => onlineEmails.contains(agent.email))
+          .length;
+      final offlineCount = agentProvider.agents.length - activeCount;
 
-    return StreamBuilder<List<String>>(
-      stream: _socketService.statusStream,
-      builder: (context, snapshot) {
-        return Container(
-          padding: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      return StreamBuilder<List<String>>(
+        stream: _socketService.statusStream,
+        builder: (context, snapshot) {
+          return Container(
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -403,19 +386,20 @@ class _AdminHomeState extends State<AdminHome> {
               SizedBox(height: 10),
 
               // Agent List
-              _isLoading
+              agentProvider.isLoading
                   ? Center(child: const CircularProgressIndicator())
                   : ListView.separated(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
-                      itemCount:
-                          _agentsList.length > 5 ? 5 : _agentsList.length,
+                      itemCount: agentProvider.agents.length > 5
+                          ? 5
+                          : agentProvider.agents.length,
                       separatorBuilder: (context, index) => Divider(
                         height: 2,
                         color: AppColors.dividerD9D9D9,
                       ),
                       itemBuilder: (context, index) {
-                        final agent = _agentsList[index];
+                        final agent = agentProvider.agents[index];
                         final isOnline =
                             _socketService.isUserOnline(agent.email);
                         return AgentManagementListTile(
@@ -426,11 +410,11 @@ class _AdminHomeState extends State<AdminHome> {
                         );
                       },
                     ),
-            ],
-          ),
-        );
-      },
-    );
+            ]),
+          );
+        },
+      );
+    });
   }
 
   // Helper widget for Active/Offline status

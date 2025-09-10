@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -45,16 +46,18 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   AuthRepository auth = AuthRepository();
   String? _customerType;
   DateTime? _lastPressed;
+  String? _completePhoneNumber;
+  String? _countryCode;
 
   // Error texts for each field
   String? _nameError;
   String? _phoneNumberError;
-  String? _gstNumberError;
-  String? _panNumberError;
   String? _houseFlatNumberError;
   String? _streetNumberError;
   String? _cityNameError;
   String? _pinCodeError;
+  String? _gstNumberError;
+  String? _panNumberError;
 
   @override
   void initState() {
@@ -67,7 +70,25 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     // Initialize fields with passed arguments if updating
     if (widget.forUpdate && widget.profile != null) {
       _name.text = widget.profile!.name ?? '';
-      _phoneNumber.text = widget.profile!.mobile.toString();
+      
+      // Parse the phone number for international field
+      String phoneStr = widget.profile!.mobile.toString();
+      if (phoneStr.startsWith('+')) {
+        _completePhoneNumber = phoneStr;
+        // Extract country code and phone number
+        if (phoneStr.startsWith('+91')) {
+          _countryCode = '+91';
+          _phoneNumber.text = phoneStr.substring(3);
+        } else {
+          // For other countries, you might need more sophisticated parsing
+          _phoneNumber.text = phoneStr;
+        }
+      } else {
+        _phoneNumber.text = phoneStr;
+        _countryCode = '+91'; // Default to India
+        _completePhoneNumber = '+91$phoneStr';
+      }
+      
       _gstNumber.text = widget.profile!.gstNo ?? '';
       _panNumber.text = widget.profile!.panNo ?? '';
       if (widget.profile!.address != null &&
@@ -84,6 +105,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       // Set default customer type to Export
       _isExportSelected = true;
       _isDomesticSelected = false;
+      _countryCode = '+91'; // Default to India
     }
     _customerType = _isExportSelected ? 'Export' : 'Domestic';
   }
@@ -109,7 +131,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     try {
       final response = await auth.updateUserDetails(
         name: _name.text.isNotEmpty ? _name.text : widget.name,
-        number: _phoneNumber.text.isNotEmpty ? _phoneNumber.text : null,
+        number: _completePhoneNumber ?? _phoneNumber.text,
         customerType: _customerType,
         gstNo: _gstNumber.text.isNotEmpty ? _gstNumber.text : null,
         panNo: _panNumber.text.isNotEmpty ? _panNumber.text : null,
@@ -376,6 +398,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                                 _isDomesticSelected = !_isExportSelected;
                                 _customerType =
                                     _isExportSelected ? 'Export' : 'Domestic';
+                                // Clear GST and PAN errors when switching to Export
+                                if (_isExportSelected) {
+                                  _gstNumberError = null;
+                                  _panNumberError = null;
+                                }
                               });
                             },
                           ),
@@ -397,6 +424,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                                 _isExportSelected = !_isDomesticSelected;
                                 _customerType =
                                     _isDomesticSelected ? 'Domestic' : 'Export';
+                                // Clear GST and PAN errors when switching to Export
+                                if (_isExportSelected) {
+                                  _gstNumberError = null;
+                                  _panNumberError = null;
+                                }
                               });
                             },
                           ),
@@ -418,13 +450,33 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     'Mobile number',
                     style: AppTextStyles.black14_600,
                   ),
-                  CustomTextField(
+                  IntlPhoneField(
                     controller: _phoneNumber,
-                    height: 50,
-                    maxLength: 10,
-                    keyboardType: TextInputType.phone,
-                    hintText: 'Enter your mobile number',
-                    errorText: widget.forUpdate ? null : _phoneNumberError,
+                    decoration: InputDecoration(
+                      hintText: 'Enter your mobile number',
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(),
+                      ),
+                      errorText: widget.forUpdate ? null : _phoneNumberError,
+                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 12),
+                    ),
+                    initialCountryCode: _countryCode?.replaceAll('+', '') ?? 'IN',
+                    onChanged: (phone) {
+                      _completePhoneNumber = phone.completeNumber;
+                      _countryCode = phone.countryCode;
+                      setState(() {
+                        _phoneNumberError = null; // Clear error on change
+                      });
+                    },
+                    onCountryChanged: (country) {
+                      _countryCode = '+${country.dialCode}';
+                    },
+                    validator: (phone) {
+                      if (phone == null || phone.number.isEmpty) {
+                        return 'Mobile number is required';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -432,9 +484,23 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'GST number',
-                    style: AppTextStyles.black14_600,
+                  Row(
+                    children: [
+                      Text(
+                        'GST number',
+                        style: AppTextStyles.black14_600,
+                      ),
+                      if (_isDomesticSelected)
+                        Text(
+                          ' *',
+                          style: TextStyle(color: Colors.red, fontSize: 14),
+                        ),
+                      if (_isExportSelected)
+                        Text(
+                          ' (Optional)',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                    ],
                   ),
                   CustomTextField(
                     controller: _gstNumber,
@@ -450,9 +516,23 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'PAN number',
-                    style: AppTextStyles.black14_600,
+                  Row(
+                    children: [
+                      Text(
+                        'PAN number',
+                        style: AppTextStyles.black14_600,
+                      ),
+                      if (_isDomesticSelected)
+                        Text(
+                          ' *',
+                          style: TextStyle(color: Colors.red, fontSize: 14),
+                        ),
+                      if (_isExportSelected)
+                        Text(
+                          ' (Optional)',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                    ],
                   ),
                   CustomTextField(
                     controller: _panNumber,
@@ -577,36 +657,48 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _nameError = null;
+        setState(() {
+          _nameError = null;
+        });
       }
     } else if (_currentStep == 1) {
+      // Phone number validation
       if (_phoneNumber.text.isEmpty) {
         setState(() {
           _phoneNumberError = 'Mobile number is required';
         });
         isValid = false;
       } else {
-        _phoneNumberError = null;
+        setState(() {
+          _phoneNumberError = null;
+        });
       }
 
-      if (_gstNumber.text.isEmpty) {
+      // GST validation - mandatory for domestic, optional for export
+      if (_isDomesticSelected && _gstNumber.text.isEmpty) {
         setState(() {
-          _gstNumberError = 'GST number is required';
+          _gstNumberError = 'GST number is required for domestic customers';
         });
         isValid = false;
       } else {
-        _gstNumberError = null;
+        setState(() {
+          _gstNumberError = null;
+        });
       }
 
-      if (_panNumber.text.isEmpty) {
+      // PAN validation - mandatory for domestic, optional for export
+      if (_isDomesticSelected && _panNumber.text.isEmpty) {
         setState(() {
-          _panNumberError = 'PAN number is required';
+          _panNumberError = 'PAN number is required for domestic customers';
         });
         isValid = false;
       } else {
-        _panNumberError = null;
+        setState(() {
+          _panNumberError = null;
+        });
       }
 
+      // Customer type validation
       if (_customerType == null) {
         showDialog(
           context: context,
@@ -630,7 +722,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _houseFlatNumberError = null;
+        setState(() {
+          _houseFlatNumberError = null;
+        });
       }
 
       if (_streetNumber.text.isEmpty) {
@@ -639,7 +733,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _streetNumberError = null;
+        setState(() {
+          _streetNumberError = null;
+        });
       }
 
       if (_cityName.text.isEmpty) {
@@ -648,7 +744,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _cityNameError = null;
+        setState(() {
+          _cityNameError = null;
+        });
       }
 
       if (_pinCode.text.isEmpty) {
@@ -657,7 +755,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _pinCodeError = null;
+        setState(() {
+          _pinCodeError = null;
+        });
       }
     }
 
@@ -665,8 +765,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   }
 
   bool _isDataChanged() {
+    String currentPhone = _completePhoneNumber ?? _phoneNumber.text;
+    String originalPhone = widget.profile?.mobile.toString() ?? '';
+    
     return _name.text != widget.profile?.name ||
-        _phoneNumber.text != widget.profile?.mobile.toString() ||
+        currentPhone != originalPhone ||
         _gstNumber.text != widget.profile?.gstNo ||
         _panNumber.text != widget.profile?.panNo ||
         _houseFlatNumber.text != widget.profile?.address?[0].houseNo ||

@@ -79,6 +79,7 @@ dependencies:
   flutter_native_splash: ^2.4.4
   dotted_line: ^3.0.0
   responsive_grid_list: ^1.4.0
+  intl_phone_field: ^3.2.0
 
   
   
