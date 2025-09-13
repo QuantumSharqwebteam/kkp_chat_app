@@ -104,12 +104,8 @@ class OnboardingPage extends StatelessWidget {
                         WidgetSpan(
                           child: InkWell(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => PrivacyPage(),
-                                ),
-                              );
+                              Utils().launchURL(
+                                  'https://www.termsfeed.com/live/0e2fa12f-6123-4516-a47a-73308e7e90b8');
                             },
                             child: Text(
                               'Privacy Policy',
