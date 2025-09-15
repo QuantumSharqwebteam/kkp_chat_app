@@ -977,7 +977,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               "Rate updated as $newRate for form with Id : ${formData["_id"]}");
 
       // Trigger real-time update of inquiries
-      Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
+      if (context.mounted) {
+        Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating rate of the form: $e');

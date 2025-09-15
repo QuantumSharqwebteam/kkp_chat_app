@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-import 'package:kkpchatapp/presentation/common/privacy_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 
 class OnboardingPage extends StatelessWidget {

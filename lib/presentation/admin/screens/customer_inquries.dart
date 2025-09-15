@@ -28,7 +28,7 @@ class CustomerInquiriesPage extends StatefulWidget {
 class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
-  final _chatRepository = ChatRepository();
+  final chatRepository = ChatRepository();
   late InquiryProvider _inquiryProvider;
 
   bool showFilters = false;

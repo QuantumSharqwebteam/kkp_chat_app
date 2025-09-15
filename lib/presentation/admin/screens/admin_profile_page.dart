@@ -39,11 +39,13 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     // If we return with a successful result, refresh the agent list
     if (result == true) {
       // This will refresh the agent list
-      Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+      if (mounted) {
+        Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+      }
     }
   }
 
-  void _deleteAgent(String email) async {
+  void deleteAgent(String email) async {
     // Show confirmation dialog
     Utils().showDialogWithActions(
       context,
@@ -58,23 +60,29 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         final response = await agentProvider.deleteAgent(email: email);
 
         if (response["status"] == 200) {
-          Utils().showSuccessDialog(
-            context,
-            "Agent deleted successfully",
-            true,
-          );
+          if (mounted) {
+            Utils().showSuccessDialog(
+              context,
+              "Agent deleted successfully",
+              true,
+            );
+          }
 
           // Refresh agent list after deletion
           agentProvider.fetchAgents();
         } else {
-          Utils().showSuccessDialog(
-            context,
-            "Failed to delete agent. ${response["message"]}",
-            false,
-          );
+          if (mounted) {
+            Utils().showSuccessDialog(
+              context,
+              "Failed to delete agent. ${response["message"]}",
+              false,
+            );
+          }
         }
 
-        Navigator.pop(context); // Close dialog
+        if (mounted) {
+          Navigator.pop(context);
+        }
       },
     );
   }
@@ -83,7 +91,9 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     // Navigate to agent list page and refresh data when returning
     Navigator.pushNamed(context, MarketingRoutes.agentProfileList).then((_) {
       // Refresh agent list when returning from agent list page
-      Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+      if (mounted) {
+        Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+      }
     });
   }
 
