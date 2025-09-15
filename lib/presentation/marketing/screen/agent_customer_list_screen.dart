@@ -115,7 +115,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                             child: ListTile(
                               tileColor: Colors.white,
                               leading: Initicon(
-                                text: customer['name'],
+                                text: customer['name'] ?? "User",
                                 size: 40,
                               ),
                               title: Text(
@@ -148,8 +148,9 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                                   return AgentCustomerMessagesScreen(
                                     agentEmail: widget.agentEmail,
                                     agentName: widget.agentName,
-                                    customerEmail: customer['email'],
-                                    customerName: customer["name"],
+                                    customerEmail:
+                                        customer['email'] ?? "user@gmail.com",
+                                    customerName: customer["name"] ?? "user",
                                   );
                                 }));
                               },

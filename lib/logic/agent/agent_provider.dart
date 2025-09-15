@@ -12,7 +12,7 @@ class AgentProvider extends ChangeNotifier {
 
   Future<void> fetchAgents() async {
     // Don't update state immediately to avoid triggering a rebuild during build
-    bool localLoading = true;
+    //bool localLoading = true;
     try {
       final agents = await _authApi.getAgent();
       _agents = agents;

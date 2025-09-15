@@ -21,6 +21,7 @@ class _SplashState extends State<Splash> {
   Future<void> _checkLogin(context) async {
     String? token = await LocalDbHelper.getToken();
     final String? userType = await LocalDbHelper.getUserType();
+
     // final int? lastRefreshTime = await LocalDbHelper.getLastRefreshTime();
     // final int currentTime = DateTime.now().millisecondsSinceEpoch;
 
@@ -42,7 +43,10 @@ class _SplashState extends State<Splash> {
     if (token != null && userType != null) {
       if (userType == '0') {
         if (mounted) {
-          Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
+          Navigator.pushReplacementNamed(
+            context,
+            CustomerRoutes.customerHost,
+          );
         }
       } else if (userType == '1' || userType == '2' || userType == '3') {
         if (mounted) {

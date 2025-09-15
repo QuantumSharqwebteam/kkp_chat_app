@@ -148,21 +148,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             label: 'Mobile No.',
             value: profile?.mobile.toString() ?? "",
           ),
-          SizedBox(
-            height: 10,
-          ),
-          ProfileDetailsField(
-            icon: Icons.male,
-            label: 'Gender',
-            value: selectedGender ?? '',
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  selectedGender = value;
-                });
-              }
-            },
-          ),
         ],
       ),
     );
