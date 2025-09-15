@@ -671,6 +671,7 @@ class SocketService {
     final userType = await LocalDbHelper.getUserType();
 
     if (userType == "0") {
+      // Customer-side notification logic
       final currentUserEmail = data["targetId"];
       final boxNameWithCount = "${currentUserEmail}count";
       final box = await Hive.openBox<int>(boxNameWithCount);
@@ -679,6 +680,52 @@ class SocketService {
       if (onMessageReceivedCallback != null) {
         onMessageReceivedCallback!();
       }
+
+      // Send notification to the customer
+      final title = "New Message from Agent";
+      final id = 200;
+
+      if (_notificationsPlugin == null) {
+        _notificationsPlugin = FlutterLocalNotificationsPlugin();
+        const androidSettings = AndroidInitializationSettings('app_logo');
+        const iosSettings = DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestSoundPermission: true,
+          requestBadgePermission: true,
+          defaultPresentAlert: true,
+          defaultPresentSound: true,
+          defaultPresentBadge: true,
+        );
+        const initSettings = InitializationSettings(
+          android: androidSettings,
+          iOS: iosSettings,
+        );
+        await _notificationsPlugin!.initialize(initSettings,
+            onDidReceiveNotificationResponse: _handleNotificationTap);
+      }
+
+      const androidDetails = AndroidNotificationDetails(
+        'your_channel_id',
+        'your_channel_name',
+        channelDescription: 'your_channel_description',
+        importance: Importance.max,
+        priority: Priority.high,
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      final notificationDetails =
+          NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+      await _notificationsPlugin!.show(
+        id,
+        title,
+        data['message'],
+        notificationDetails,
+        payload: jsonEncode(data),
+      );
     } else {
       // for agent side
       final senderId = data['senderId']; // AgentEmail

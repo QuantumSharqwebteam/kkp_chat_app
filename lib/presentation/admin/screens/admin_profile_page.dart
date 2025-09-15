@@ -3,9 +3,12 @@ import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/logic/agent/agent_provider.dart';
+import 'package:provider/provider.dart';
 
 class AdminProfilePage extends StatefulWidget {
   const AdminProfilePage({super.key});
@@ -21,6 +24,67 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
   void initState() {
     super.initState();
     profile = LocalDbHelper.getProfile()!;
+
+    // Use addPostFrameCallback to ensure we're not updating during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Refresh agent list when this page loads
+      Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+    });
+  }
+
+  void _navigateToAddAgent() async {
+    // Navigate to add agent page
+    final result = await Navigator.pushNamed(context, MarketingRoutes.addAgent);
+
+    // If we return with a successful result, refresh the agent list
+    if (result == true) {
+      // This will refresh the agent list
+      Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+    }
+  }
+
+  void _deleteAgent(String email) async {
+    // Show confirmation dialog
+    Utils().showDialogWithActions(
+      context,
+      "Delete Agent",
+      icon: Icons.delete_outline,
+      "Are you sure you want to delete this agent?",
+      "Delete",
+      () async {
+        // Delete agent using provider
+        final agentProvider =
+            Provider.of<AgentProvider>(context, listen: false);
+        final response = await agentProvider.deleteAgent(email: email);
+
+        if (response["status"] == 200) {
+          Utils().showSuccessDialog(
+            context,
+            "Agent deleted successfully",
+            true,
+          );
+
+          // Refresh agent list after deletion
+          agentProvider.fetchAgents();
+        } else {
+          Utils().showSuccessDialog(
+            context,
+            "Failed to delete agent. ${response["message"]}",
+            false,
+          );
+        }
+
+        Navigator.pop(context); // Close dialog
+      },
+    );
+  }
+
+  void _navigateToAgentList() {
+    // Navigate to agent list page and refresh data when returning
+    Navigator.pushNamed(context, MarketingRoutes.agentProfileList).then((_) {
+      // Refresh agent list when returning from agent list page
+      Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+    });
   }
 
   @override
@@ -37,7 +101,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               if (value == 1) {
-                Navigator.pushNamed(context, MarketingRoutes.agentProfileList);
+                _navigateToAgentList();
               }
             },
             itemBuilder: (context) => [
@@ -151,9 +215,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
 
   Widget _buildAddAgentButton() {
     return CustomButton(
-        onPressed: () {
-          Navigator.pushNamed(context, MarketingRoutes.addAgent);
-        },
+        onPressed: _navigateToAddAgent,
         image: Icon(
           Icons.person_add_alt_1_rounded,
           color: Colors.white,

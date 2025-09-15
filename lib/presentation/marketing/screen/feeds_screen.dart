@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
-import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
@@ -11,6 +10,8 @@ import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/filter_button.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
+import 'package:kkpchatapp/logic/agent/agent_provider.dart';
+import 'package:provider/provider.dart';
 
 class FeedsScreen extends StatefulWidget {
   final String? loggedAgentEmail;
@@ -21,53 +22,32 @@ class FeedsScreen extends StatefulWidget {
 }
 
 class _FeedsScreenState extends State<FeedsScreen> {
-  final AuthApi _auth = AuthApi();
   final SocketService _socketService = SocketService(navigatorKey);
-  List<Agent> _agentsList = [];
-  bool _isLoading = true;
   Set<String> pinnedAgentsSet = {};
+  bool showPinned = false;
   StreamSubscription<List<String>>? _statusSubscription;
 
   @override
   void initState() {
     super.initState();
-    _fetchAgents();
+    // Use addPostFrameCallback to execute after the build is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AgentProvider>(context, listen: false).fetchAgents();
+    });
     pinnedAgentsSet = LocalDbHelper.getPinnedAgents();
     _statusSubscription = _socketService.statusStream.listen((_) {
       if (mounted) {
-        setState(() {}); // Forces a rebuild to reflect the new online status
+        setState(() {});
       }
     });
-    // _socketService.startRoomMembersUpdates();
   }
 
   @override
   void dispose() {
     _statusSubscription?.cancel();
-    //_socketService.stopRoomMembersUpdates();
     super.dispose();
   }
 
-  Future<void> _fetchAgents() async {
-    try {
-      List<Agent> agents = await _auth.getAgent();
-      if (mounted) {
-        setState(() {
-          _agentsList = agents;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching agents: $e");
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  bool showPinned = false;
   void togglePinnedMessages() {
     setState(() {
       showPinned = !showPinned;
@@ -99,11 +79,17 @@ class _FeedsScreenState extends State<FeedsScreen> {
                 children: [
                   _buildFilterButtons(),
                   Expanded(
-                    child: StreamBuilder<List<String>>(
-                      stream: _socketService.statusStream,
-                      builder: (context, snapshot) {
-                        // Force rebuild when the status updates
-                        return _isLoading ? ShimmerList() : _buildAgentList();
+                    child: Consumer<AgentProvider>(
+                      builder: (context, agentProvider, child) {
+                        return StreamBuilder<List<String>>(
+                          stream: _socketService.statusStream,
+                          builder: (context, snapshot) {
+                            // Force rebuild when the status updates
+                            return agentProvider.isLoading
+                                ? ShimmerList()
+                                : _buildAgentList(agentProvider.agents);
+                          },
+                        );
                       },
                     ),
                   ),
@@ -117,22 +103,21 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   Widget _buildImageSection() {
-    final isTablet = Utils().width(context)> 600;
+    final isTablet = Utils().width(context) > 600;
     return Stack(
       children: [
         Container(
-        padding: const EdgeInsets.only(top: 50),
-        width: double.maxFinite,
-        height: isTablet ? 500 : 241,
-        color: AppColors.background,
-        child: Image.asset(
-          "assets/images/feed.png",
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
+          padding: const EdgeInsets.only(top: 50),
+          width: double.maxFinite,
+          height: isTablet ? 500 : 241,
+          color: AppColors.background,
+          child: Image.asset(
+            "assets/images/feed.png",
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
         ),
-      ),
-
         Positioned(
           top: 40,
           right: 20,
@@ -158,9 +143,9 @@ class _FeedsScreenState extends State<FeedsScreen> {
     );
   }
 
-  Widget _buildAgentList() {
+  Widget _buildAgentList(List<Agent> agentsList) {
     // Create a copy of the list to avoid modifying the original list directly
-    List<Agent> displayList = List.from(_agentsList);
+    List<Agent> displayList = List.from(agentsList);
 
     if (showPinned) {
       // Filter to show only pinned agents
