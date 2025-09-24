@@ -8,9 +8,11 @@ import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/customer/customer_product_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
@@ -32,8 +34,7 @@ class CustomerHost extends StatefulWidget {
   State<CustomerHost> createState() => _CustomerHostState();
 }
 
-class _CustomerHostState extends State<CustomerHost>
-    with WidgetsBindingObserver {
+class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   late final SocketService _socketService;
@@ -48,7 +49,7 @@ class _CustomerHostState extends State<CustomerHost>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.removeObserver(this);
+
     _socketService = SocketService(widget.navigatorKey);
     _loadCurrentUserData().then((_) async {
       final token = await LocalDbHelper.getToken();
@@ -62,6 +63,9 @@ class _CustomerHostState extends State<CustomerHost>
         );
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onProductAdd(_handleProductAdd);
+        _socketService.onProductUpdate(_handleProductUpdate);
+        _socketService.onProductDelete(_handleProductDelete);
         await _initializeNotificationService();
         _handleFirebaseNotificationTaps();
 
@@ -80,10 +84,38 @@ class _CustomerHostState extends State<CustomerHost>
     isAppInitialized = true;
   }
 
+  // Handle product add event
+  void _handleProductAdd(Map<String, dynamic> productData) {
+    debugPrint("📦 [CustomerHost] New product added: ${productData['productName']}");
+    final product = Product.fromJson(productData);
+    LocalDbHelper.addOrUpdateProduct(product);
+    if (mounted) {
+      Provider.of<CustomerProductProvider>(context, listen: false).refreshProductsFromHive();
+    }
+  }
+
+  // Handle product update event
+  void _handleProductUpdate(Map<String, dynamic> productData) {
+    debugPrint("🔄 [CustomerHost] Product updated: ${productData['productName']}");
+    final product = Product.fromJson(productData);
+    LocalDbHelper.addOrUpdateProduct(product);
+    if (mounted) {
+      Provider.of<CustomerProductProvider>(context, listen: false).refreshProductsFromHive();
+    }
+  }
+
+  // Handle product delete event
+  void _handleProductDelete(String productId) {
+    debugPrint("🗑️ [CustomerHost] Product deleted: $productId");
+    LocalDbHelper.deleteProduct(productId);
+    if (mounted) {
+      Provider.of<CustomerProductProvider>(context, listen: false).refreshProductsFromHive();
+    }
+  }
+
   void _handleFirebaseNotificationTaps() {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-      debugPrint(
-          '🔔 Notification opened (background/terminated): ${message.data}');
+      debugPrint('🔔 Notification opened (background/terminated): ${message.data}');
 
       if (isAppInitialized) {
         final agentName = message.data['senderName'];
@@ -151,13 +183,11 @@ class _CustomerHostState extends State<CustomerHost>
   Future<void> _loadCurrentUserData() async {
     try {
       final userData = await auth.getUserInfo();
-      if (userData['message'] ==
-          "Session expired due to login on another device") {
+      if (userData['message'] == "Session expired due to login on another device") {
         await Hive.deleteFromDisk();
         await reinitializeHive();
         if (mounted) {
-          Navigator.of(context)
-              .pushReplacement(MaterialPageRoute(builder: (context) {
+          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) {
             return LoginPage();
           }));
         }
@@ -188,6 +218,7 @@ class _CustomerHostState extends State<CustomerHost>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Remove listener
     _socketService.disconnect();
     super.dispose();
   }
@@ -228,8 +259,7 @@ class _CustomerHostState extends State<CustomerHost>
           debugPrint("🛑 Attempting to stop ringtone...");
 
           await _audioPlayer!.stop();
-          await _audioPlayer!
-              .setSource(AssetSource('')); // 👈 Important for iOS
+          await _audioPlayer!.setSource(AssetSource('')); // 👈 Important for iOS
           debugPrint("✅ Ringtone stopped");
 
           await _audioPlayer!.release();

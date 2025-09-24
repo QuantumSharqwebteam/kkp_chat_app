@@ -36,14 +36,17 @@ class SocketService {
   Function(Map<String, dynamic>)? _onChatStatus;
   Function(Map<String, dynamic>)? _onMessagesReadUpTo;
 
+  Function(Map<String, dynamic>)? _onProductAdd;
+  Function(Map<String, dynamic>)? _onProductUpdate;
+  Function(String)? _onProductDelete;
+
   bool isChatPageOpen = false;
   String? activeCustomerId;
 
   Function? onMessageReceivedCallback;
 
   List<String> _roomMembers = [];
-  StreamController<List<String>> _statusController =
-      StreamController<List<String>>.broadcast();
+  StreamController<List<String>> _statusController = StreamController<List<String>>.broadcast();
 
   Stream<List<String>> get statusStream => _statusController.stream;
 
@@ -53,14 +56,12 @@ class SocketService {
 
   SocketService._internal();
 
-  void onMessageReceived(Function(Map<String, dynamic>) callback,
-      {Function? refreshCallback}) {
+  void onMessageReceived(Function(Map<String, dynamic>) callback, {Function? refreshCallback}) {
     _onMessageReceived = callback;
     onMessageReceivedCallback = refreshCallback;
   }
 
-  void initSocket(String userName, String userEmail, String role,
-      {String? token}) {
+  void initSocket(String userName, String userEmail, String role, {String? token}) {
     _statusController.close();
     _statusController = StreamController<List<String>>.broadcast();
     _socket = io.io(serverUrl, <String, dynamic>{
@@ -108,8 +109,7 @@ class SocketService {
       final String senderId = data['senderId'] ?? '';
       final String targetId = data['targetId'] ?? '';
 
-      if (isChatPageOpen &&
-          (activeCustomerId == senderId || activeCustomerId == targetId)) {
+      if (isChatPageOpen && (activeCustomerId == senderId || activeCustomerId == targetId)) {
         _onMessageReceived?.call(data);
       } else {
         debugPrint("recived message socket : ${data.toString()}");
@@ -170,12 +170,32 @@ class SocketService {
       }
     });
 
+    _socket.on('productAdd', (data) {
+      debugPrint("📦 [Socket] New product added: $data");
+      if (_onProductAdd != null) {
+        _onProductAdd!(data);
+      }
+    });
+
+    _socket.on('productUpdate', (data) {
+      debugPrint("🔄 [Socket] Product updated: $data");
+      if (_onProductUpdate != null) {
+        _onProductUpdate!(data);
+      }
+    });
+
+    _socket.on('productDelete', (data) {
+      debugPrint("🗑️ [Socket] Product deleted: $data");
+      if (_onProductDelete != null) {
+        _onProductDelete!(data['productId']);
+      }
+    });
+
     _socket.onDisconnect((_) {
       _isConnected = false;
       for (String email in _roomMembers) {
         LocalDbHelper.updateLastSeenTime(email);
-        debugPrint(
-            "⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
+        debugPrint("⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
       }
       debugPrint('⚠️ Disconnected from socket server');
       _attemptReconnect(userName, userEmail, role);
@@ -195,6 +215,18 @@ class SocketService {
 
   void onConnect(Function callback) {
     _onConnect = callback;
+  }
+
+  void onProductAdd(Function(Map<String, dynamic>) callback) {
+    _onProductAdd = callback;
+  }
+
+  void onProductUpdate(Function(Map<String, dynamic>) callback) {
+    _onProductUpdate = callback;
+  }
+
+  void onProductDelete(Function(String) callback) {
+    _onProductDelete = callback;
   }
 
   void onChatStatus(Function(Map<String, dynamic>) callback) {
@@ -280,9 +312,7 @@ class SocketService {
     final lastMessageTimestampStr = data['lastMessageTimestamp'];
     debugPrint("Background Chat Status Updated: $status");
 
-    if (status == 'opened' &&
-        lastMessageTimestampStr != null &&
-        customerEmail != null) {
+    if (status == 'opened' && lastMessageTimestampStr != null && customerEmail != null) {
       final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
       if (lastMessageTimestamp != null) {
         // Set the receiver as on the chat page using LocalDbHelper
@@ -291,8 +321,7 @@ class SocketService {
         final userType = await LocalDbHelper.getUserType();
         if (userType == "0") {
           // Customer
-          final messages =
-              await ChatStorageService().getCustomerMessages(customerEmail);
+          final messages = await ChatStorageService().getCustomerMessages(customerEmail);
           for (var message in messages) {
             if (message.timestamp.isBefore(lastMessageTimestamp) ||
                 message.timestamp == lastMessageTimestamp) {
@@ -300,8 +329,7 @@ class SocketService {
               await ChatStorageService().saveMessage(message, customerEmail);
             }
           }
-          debugPrint(
-              "✅ Updated customer messages as read up to $lastMessageTimestampStr");
+          debugPrint("✅ Updated customer messages as read up to $lastMessageTimestampStr");
         } else {
           // Agent
           // Required from backend
@@ -336,16 +364,14 @@ class SocketService {
 
     if (userType == "0") {
       // Customer
-      final messages =
-          await ChatStorageService().getCustomerMessages(customerEmail);
+      final messages = await ChatStorageService().getCustomerMessages(customerEmail);
       for (var message in messages) {
         if (message.timestamp.isBefore(lastMessageTimestamp)) {
           message.read = true;
           await ChatStorageService().saveMessage(message, customerEmail);
         }
       }
-      debugPrint(
-          "✅ Updated customer messages as read up to $lastMessageTimestampStr");
+      debugPrint("✅ Updated customer messages as read up to $lastMessageTimestampStr");
     } else {
       // Agent
       final agentEmail = data['agentEmail']; // Required from backend
@@ -379,22 +405,19 @@ class SocketService {
       final messages = await ChatStorageService().getCustomerMessages(targetId);
       debugPrint("Retrieved messages for customer: ${messages.length}");
 
-      final index =
-          messages.indexWhere((message) => message.messageId == messageId);
+      final index = messages.indexWhere((message) => message.messageId == messageId);
       if (index != -1) {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
 
         // Save the updated message state to local storage
         await ChatStorageService().saveMessage(messages[index], targetId);
-        debugPrint(
-            "Message marked as deleted for customer with ID: $messageId");
+        debugPrint("Message marked as deleted for customer with ID: $messageId");
 
         // Verify the message is updated in the storage
-        final updatedMessages =
-            await ChatStorageService().getCustomerMessages(targetId);
-        final updatedIndex = updatedMessages
-            .indexWhere((message) => message.messageId == messageId);
+        final updatedMessages = await ChatStorageService().getCustomerMessages(targetId);
+        final updatedIndex =
+            updatedMessages.indexWhere((message) => message.messageId == messageId);
         if (updatedIndex != -1 && updatedMessages[updatedIndex].isDeleted) {
           debugPrint("Successfully updated message in storage for customer.");
         } else {
@@ -409,8 +432,7 @@ class SocketService {
 
       // Retrieve and update the message in local storage
       final messages = await ChatStorageService().getMessages(boxName);
-      final index =
-          messages.indexWhere((message) => message.messageId == messageId);
+      final index = messages.indexWhere((message) => message.messageId == messageId);
       if (index != -1) {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
@@ -431,8 +453,7 @@ class SocketService {
 
     for (String email in previousUsers.difference(currentUsers)) {
       LocalDbHelper.updateLastSeenTime(email);
-      debugPrint(
-          "⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
+      debugPrint("⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
     }
 
     _roomMembers = newRoomMembers;
@@ -491,14 +512,12 @@ class SocketService {
   void _attemptReconnect(String userName, String userEmail, String role) {
     if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
       _reconnectAttempts++;
-      debugPrint(
-          '🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
+      debugPrint('🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
 
       Future.delayed(_reconnectInterval, () {
         if (!_isConnected) {
           _socket.connect();
-          _socket.emit(
-              'join', {'user': userName, 'userId': userEmail, "role": role});
+          _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
         }
       });
     } else {
@@ -511,8 +530,7 @@ class SocketService {
       Future.delayed(_reconnectInterval, () {
         debugPrint('🔄 Reinitializing socket connection...');
         _socket.connect();
-        _socket.emit(
-            'join', {'user': userName, 'userId': userEmail, "role": role});
+        _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
       });
     }
   }
@@ -560,12 +578,10 @@ class SocketService {
       // Save the last message for the user last chatted
       if (type == "product") {
         updateLastMessage(targetEmail ?? "", "shared product");
-      } else if (message != null &&
-          message.contains("Your order is confirmed with form Id")) {
+      } else if (message != null && message.contains("Your order is confirmed with form Id")) {
         // Handle order confirmation
         updateLastMessage(targetEmail ?? "", "Order Confirmed");
-      } else if (message != null &&
-          message.contains("Your order is declined with form Id")) {
+      } else if (message != null && message.contains("Your order is declined with form Id")) {
         // Handle order decline
         updateLastMessage(targetEmail ?? "", "Order Declined");
       } else {
@@ -700,8 +716,8 @@ class SocketService {
           android: androidSettings,
           iOS: iosSettings,
         );
-        await _notificationsPlugin!.initialize(initSettings,
-            onDidReceiveNotificationResponse: _handleNotificationTap);
+        await _notificationsPlugin!
+            .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
       }
 
       const androidDetails = AndroidNotificationDetails(
@@ -716,8 +732,7 @@ class SocketService {
         presentBadge: true,
         presentSound: true,
       );
-      final notificationDetails =
-          NotificationDetails(android: androidDetails, iOS: iosDetails);
+      final notificationDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
 
       await _notificationsPlugin!.show(
         id,
@@ -769,14 +784,13 @@ class SocketService {
         android: androidSettings,
         iOS: iosSettings,
       );
-      await _notificationsPlugin!.initialize(initSettings,
-          onDidReceiveNotificationResponse: _handleNotificationTap);
+      await _notificationsPlugin!
+          .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
     }
 
     // Request permissions for iOS
     await _notificationsPlugin!
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(
           alert: true,
           badge: true,
@@ -795,8 +809,7 @@ class SocketService {
       presentBadge: true,
       presentSound: true,
     );
-    final notificationDetails =
-        NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final notificationDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
     // final title = "New Message from ${data['senderName']}";
     // final id = title.hashCode;
     // await _notificationsPlugin!.show(
@@ -811,10 +824,9 @@ class SocketService {
     if (userType != "0") {
       // Agent-side notification logic
       const consolidatedNotificationId = 999;
-      final box = await Hive.openBox<int>(
-          '${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
-      final totalUnreadMessages =
-          box.values.fold<int>(0, (sum, value) => sum + value);
+      final box =
+          await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
+      final totalUnreadMessages = box.values.fold<int>(0, (sum, value) => sum + value);
       final usersWithUnread = box.values.where((count) => count > 0).length;
 
       String title;
@@ -822,9 +834,8 @@ class SocketService {
       String payload;
 
       if (usersWithUnread == 1) {
-        final unreadCount = await LocalDbHelper.getUnreadCount(
-                data['targetId'], data['senderId']) ??
-            0;
+        final unreadCount =
+            await LocalDbHelper.getUnreadCount(data['targetId'], data['senderId']) ?? 0;
 
         if (unreadCount > 1) {
           title = "$unreadCount messages from ${data['senderName']}";
@@ -836,8 +847,7 @@ class SocketService {
 
         payload = jsonEncode(data); // Normal payload to open chat
       } else {
-        title =
-            "$totalUnreadMessages unread messages from $usersWithUnread users";
+        title = "$totalUnreadMessages unread messages from $usersWithUnread users";
         message = "You have $totalUnreadMessages unread messages";
         payload = "general_chat_summary"; // Special payload
       }
@@ -890,8 +900,7 @@ class SocketService {
 
       // If not an incoming call notification, attempt to decode the payload as JSON
       try {
-        final Map<String, dynamic> notificationData =
-            jsonDecode(response.payload!);
+        final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
         if ("0" == await LocalDbHelper.getUserType()) {
           handleNotificationClickForCustomer(navigatorKey, notificationData);
         } else {

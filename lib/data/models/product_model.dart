@@ -22,9 +22,7 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       imageUrl: json['imageUrl'],
-      colors: (json['colors'] as List)
-          .map((color) => ProductColor.fromJson(color))
-          .toList(),
+      colors: (json['colors'] as List).map((color) => ProductColor.fromJson(color)).toList(),
       stock: json['stock'],
       sizes: List<String>.from(json['sizes']),
       price: (json['price'] as num).toDouble(),
@@ -37,13 +35,14 @@ class Product {
   // Convert Product object to JSON
   Map<String, dynamic> toJson() {
     return {
+      "productId": productId,
       "productName": productName,
       "imageUrl": imageUrl,
       "colors": colors.map((color) => color.toJson()).toList(),
       "sizes": sizes,
       "stock": stock,
       "price": price,
-      "description": description
+      "description": description,
     };
   }
 }
