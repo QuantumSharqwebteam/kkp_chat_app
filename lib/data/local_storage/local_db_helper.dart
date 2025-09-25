@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
@@ -17,6 +18,9 @@ class LocalDbHelper {
   static const String _lastMessageMapKey = 'lastMessageMap';
   static const String unreadCountsBoxKey = 'unreadCountsBox';
   static const String _receiverOnChatPageKey = 'receiverOnChatPage';
+
+  // launguage selected
+  static const String _localeKey = 'locale';
 
   // Product-related keys and methods
   static const String _productBoxKey = 'productBox';
@@ -337,5 +341,26 @@ class LocalDbHelper {
       debugPrint("❌ [LocalDbHelper] Failed to delete product: $e");
       rethrow;
     }
+  }
+
+  static Future<void> saveLocale(Locale locale) async {
+    await _box.put(_localeKey, "${locale.languageCode}_${locale.countryCode}");
+  }
+
+  static Locale? getLocale() {
+    final stored = _box.get(_localeKey);
+    if (stored != null && stored is String) {
+      final parts = stored.split("_");
+      if (parts.length == 2) {
+        return Locale(parts[0], parts[1]);
+      } else if (parts.length == 1) {
+        return Locale(parts[0]);
+      }
+    }
+    return null;
+  }
+
+  static Future<void> clearLocale() async {
+    await _box.delete(_localeKey);
   }
 }

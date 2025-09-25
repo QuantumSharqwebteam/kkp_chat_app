@@ -1,0 +1,33 @@
+{
+  "@@locale": "ta",
+  
+  "appTitle": "KKP அரட்டை பயன்பாடு",
+  "@appTitle": {
+    "description": "AppBar மற்றும் splash திரையில் காணப்படும் செயலியின் தலைப்பு"
+  },
+
+  "login": "உள்நுழைக",
+  "@login": {
+    "description": "உள்நுழைவு பொத்தானின் உரை"
+  },
+
+  "signup": "பதிவு செய்யவும்",
+  "@signup": {
+    "description": "பதிவு பொத்தானின் உரை"
+  },
+
+  "welcome": "KKP அரட்டைக்கு வரவேற்கிறோம்",
+  "@welcome": {
+    "description": "ஹோம் ஸ்கிரீனில் வரவேற்கும் செய்தி"
+  },
+
+  "logout": "வெளியேறு",
+  "@logout": {
+    "description": "வெளியேறு பொத்தானின் உரை"
+  },
+
+  "changeLanguage": "மொழியை மாற்றவும்",
+  "@changeLanguage": {
+    "description": "மொழி மாறும் Dropdown குறிச்சொல்"
+  }
+}
