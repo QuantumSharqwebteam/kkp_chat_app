@@ -13,6 +13,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 // import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/analytics_management_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/settings/manage_customers.dart';
 // import 'package:kkpchatapp/presentation/marketing/screen/settings/manage_customers.dart';
 // import 'package:kkpchatapp/presentation/marketing/widget/marketing_settings_tile.dart';
@@ -175,6 +176,52 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     ],
                   ),
 
+                  CustomSettingsTile(
+                    numberOfTiles: 1,
+                    // title: Text(
+                    //   "",
+                    //   style: TextStyle(
+                    //       color: AppColors.grey7B7B7B,
+                    //       fontWeight: FontWeight.w500,
+                    //       fontSize: 14),
+                    // ),
+                    showDividerAfterTitle: true,
+                    titles: ['Manage Analytics Data'],
+                    leadingWidgets: [
+                      CircleAvatar(
+                        backgroundColor: Colors.blue.shade50,
+                        radius: 20,
+                        child: Icon(
+                          Icons.analytics_outlined,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                    // subtitles: ["View customers"],
+                    onTaps: [
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AnalyticsManagementScreen(),
+                          ),
+                        );
+                      }
+                    ],
+                  ),
+                  // Container(
+                  //   child: ListTile(
+                  //     leading: Icon(Icons.analytics_outlined),
+                  //     title: Text("Manage Analytics Data"),
+                  //     onTap: () {
+                  //       Navigator.push(
+                  //         context,
+                  //         MaterialPageRoute(
+                  //             builder: (_) => AnalyticsManagementScreen()),
+                  //       );
+                  //     },
+                  //   ),
+                  // )
                   // user management , inaquiry mangement , notifications and reports and system settins tiles
                 ],
               ),
@@ -265,7 +312,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               borderRadius: 10,
               borderWidth: 0,
               height: 50,
-            )
+            ),
           ],
         ),
       ),
