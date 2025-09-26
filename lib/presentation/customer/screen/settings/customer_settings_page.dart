@@ -11,6 +11,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/customer_complaint_page.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
@@ -292,6 +293,58 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
             ),
 
             SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      spreadRadius: 1,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: CustomSettingsTile(
+                  numberOfTiles: 1,
+                  leadingWidgets: [
+                    CircleAvatar(
+                      backgroundColor: Colors.blue.shade50,
+                      radius: 20,
+                      child: Image.asset(
+                        'assets/icons/complaint.png',
+                        height: 24,
+                        width: 24,
+                      ),
+                    ),
+                  ],
+                  title: Text(
+                    'Complaint',
+                    style: TextStyle(
+                        color: AppColors.grey7B7B7B,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14),
+                  ),
+                  showDividerAfterTitle: true,
+                  titles: ['Complaint'],
+                  subtitles: ['Manage Complaints'],
+                  onTaps: [
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const CustomerComplaintPage()),
+                      );
+                    },
+                  ],
+                ),
+              ),
+            ),
 
             // SettingsTile(
             //   numberOfTiles: 1,

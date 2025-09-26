@@ -14,6 +14,7 @@ import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/logic/agent/agent_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
+import 'package:kkpchatapp/logic/agent/complaints_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -44,8 +45,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // final String? customerEmail = message.data['senderId'];
   // final String? agentEmail = message.data['targetId'];
 
-  final String role =
-      message.data['role'] ?? 'agent'; // Default to 'agent' if role is not specified
+  final String role = message.data['role'] ??
+      'agent'; // Default to 'agent' if role is not specified
   final String customerEmail;
   final String agentEmail;
 
@@ -65,10 +66,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     await Hive.initFlutter();
     if (role == 'User') {
-      final box = await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
+      final box = await Hive.openBox<int>(
+          '${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
       final currentCount = box.get(customerEmail, defaultValue: 0);
       await box.put(customerEmail, currentCount! + 1);
-      debugPrint("📈 Unread count incremented for customerEmail: $customerEmail");
+      debugPrint(
+          "📈 Unread count incremented for customerEmail: $customerEmail");
     } else {
       // If the role is user, save the notification in the user-specific box
       final userBoxName = '${customerEmail}count';
@@ -112,7 +115,8 @@ void main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // Handle terminated state
-  RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  RemoteMessage? initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
 
   runApp(
     MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
@@ -154,17 +158,21 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => NewPassProvider()),
         ChangeNotifierProvider(create: (_) => ChatRefreshProvider()),
         ChangeNotifierProvider(create: (_) => ChatStatusProvider()),
-        ChangeNotifierProvider(create: (_) => CallProvider(widget.navigatorKey)),
+        ChangeNotifierProvider(
+            create: (_) => CallProvider(widget.navigatorKey)),
+        ChangeNotifierProvider(create: (_) => ComplaintsProvider()),
         ChangeNotifierProvider(
           create: (_) => NotificationProvider()..fetchNotifications(),
         ),
         ChangeNotifierProvider(
-          create: (_) => MarketingProductProvider(ProductRepository())..fetchProducts(),
+          create: (_) =>
+              MarketingProductProvider(ProductRepository())..fetchProducts(),
         ),
         ChangeNotifierProvider(
-            create: (_) => CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
-              ..fetchPosters()
-              ..fetchProducts()),
+            create: (_) =>
+                CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
+                  ..fetchPosters()
+                  ..fetchProducts()),
         ChangeNotifierProvider(
           create: (_) => AgentProvider()..fetchAgents(),
         ),
