@@ -25,4 +25,22 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get changeLanguage => 'மொழியை மாற்றவும்';
+
+  @override
+  String get email => 'மின்னஞ்சல்';
+
+  @override
+  String get enterEmail => 'உங்கள் மின்னஞ்சலை உள்ளிடவும்';
+
+  @override
+  String get forgotPassword => 'கடவுச்சொல்லை மறந்துவிட்டீர்களா?';
+
+  @override
+  String get dontHaveAccount => 'கணக்கு இல்லையா?';
+
+  @override
+  String get enterYourEmail => 'உங்கள் மின்னஞ்சலை உள்ளிடவும்';
+
+  @override
+  String get enterPassword => 'உங்கள் கடவுச்சொல்லை உள்ளிடவும்';
 }

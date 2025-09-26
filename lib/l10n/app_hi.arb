@@ -1,33 +1,52 @@
 {
   "@@locale": "hi",
-  
+
   "appTitle": "केकेपी चैट ऐप",
   "@appTitle": {
     "description": "एप्लिकेशन का शीर्षक जिसे AppBar और splash स्क्रीन में दिखाया जाता है"
   },
-
   "login": "लॉगिन",
   "@login": {
     "description": "लॉगिन बटन का टेक्स्ट"
   },
-
   "signup": "साइन अप",
   "@signup": {
     "description": "साइन अप बटन का टेक्स्ट"
   },
-
   "welcome": "केकेपी चैट में आपका स्वागत है",
   "@welcome": {
     "description": "होम स्क्रीन पर स्वागत संदेश"
   },
-
   "logout": "लॉगआउट",
   "@logout": {
     "description": "लॉगआउट बटन का टेक्स्ट"
   },
-
   "changeLanguage": "भाषा बदलें",
   "@changeLanguage": {
     "description": "भाषा स्विचर ड्रॉपडाउन के लिए लेबल"
+  },
+  "email": "ईमेल",
+  "@email": {
+    "description": "ईमेल इनपुट फील्ड का लेबल"
+  },
+  "enterEmail": "अपना ईमेल दर्ज करें",
+  "@enterEmail": {
+    "description": "ईमेल इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "forgotPassword": "पासवर्ड भूल गए?",
+  "@forgotPassword": {
+    "description": "पासवर्ड भूल गए लिंक का टेक्स्ट"
+  },
+  "dontHaveAccount": "खाता नहीं है?",
+  "@dontHaveAccount": {
+    "description": "साइन-अप प्रॉम्प्ट का टेक्स्ट"
+  },
+  "enterYourEmail": "अपना ईमेल दर्ज करें",
+  "@enterYourEmail": {
+    "description": "ईमेल इनपुट फील्ड का प्लेसहोल्डर (वैकल्पिक)"
+  },
+  "enterPassword": "अपना पासवर्ड दर्ज करें",
+  "@enterPassword": {
+    "description": "पासवर्ड इनपुट फील्ड का प्लेसहोल्डर"
   }
 }

@@ -86,7 +86,7 @@ class _LoginPageState extends State<LoginPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Email',
+                          locale.signup,
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -98,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                         controller: _email,
                         maxLines: 1,
                         keyboardType: TextInputType.emailAddress,
-                        hintText: 'Enter your Email',
+                        hintText: locale.enterYourEmail,
                         onChanged: (value) => loginProvider.setEmail(value),
                       ),
                     ],
@@ -124,7 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
-                        hintText: 'Enter your Password',
+                        hintText: locale.enterPassword,
                         onChanged: (value) => loginProvider.setPassword(value),
                       ),
                     ],
@@ -142,7 +142,7 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       child: Text(
-                        'Forgot Password?',
+                        locale.forgotPassword,
                         style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                       ),
                     ),
@@ -159,7 +159,7 @@ class _LoginPageState extends State<LoginPage> {
                   SizedBox(height: 30),
                   Text.rich(
                     TextSpan(
-                      text: 'Don\'t have an Account? ',
+                      text: locale.dontHaveAccount,
                       style: AppTextStyles.black10_500,
                       children: [
                         WidgetSpan(
@@ -173,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
                               );
                             },
                             child: Text(
-                              'Signup',
+                              locale.signup,
                               style: AppTextStyles.black12_700,
                             ),
                           ),

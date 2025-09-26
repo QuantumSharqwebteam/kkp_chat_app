@@ -1,33 +1,52 @@
 {
   "@@locale": "en",
-  
+
   "appTitle": "KKP Chat App",
   "@appTitle": {
     "description": "The title of the application displayed in the AppBar and splash screen"
   },
-
   "login": "Login",
   "@login": {
     "description": "Text for the login button"
   },
-
   "signup": "Sign Up",
   "@signup": {
     "description": "Text for the sign up button"
   },
-
   "welcome": "Welcome to KKP Chat",
   "@welcome": {
     "description": "Welcome message on the home screen"
   },
-
   "logout": "Logout",
   "@logout": {
     "description": "Text for the logout button"
   },
-
   "changeLanguage": "Change Language",
   "@changeLanguage": {
     "description": "Label for language switcher dropdown"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Label for email input field"
+  },
+  "enterEmail": "Enter your email",
+  "@enterEmail": {
+    "description": "Placeholder for email input field"
+  },
+  "forgotPassword": "Forgot Password?",
+  "@forgotPassword": {
+    "description": "Text for forgot password link"
+  },
+  "dontHaveAccount": "Don't have an Account?",
+  "@dontHaveAccount": {
+    "description": "Text for sign-up prompt"
+  },
+  "enterYourEmail": "Enter your Email",
+  "@enterYourEmail": {
+    "description": "Placeholder for email input field (alternative)"
+  },
+  "enterPassword": "Enter your password",
+  "@enterPassword": {
+    "description": "Placeholder for password input field"
   }
 }

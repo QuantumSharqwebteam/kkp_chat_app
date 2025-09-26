@@ -1,33 +1,52 @@
 {
   "@@locale": "ta",
-  
+
   "appTitle": "KKP அரட்டை பயன்பாடு",
   "@appTitle": {
     "description": "AppBar மற்றும் splash திரையில் காணப்படும் செயலியின் தலைப்பு"
   },
-
   "login": "உள்நுழைக",
   "@login": {
     "description": "உள்நுழைவு பொத்தானின் உரை"
   },
-
   "signup": "பதிவு செய்யவும்",
   "@signup": {
     "description": "பதிவு பொத்தானின் உரை"
   },
-
   "welcome": "KKP அரட்டைக்கு வரவேற்கிறோம்",
   "@welcome": {
     "description": "ஹோம் ஸ்கிரீனில் வரவேற்கும் செய்தி"
   },
-
   "logout": "வெளியேறு",
   "@logout": {
     "description": "வெளியேறு பொத்தானின் உரை"
   },
-
   "changeLanguage": "மொழியை மாற்றவும்",
   "@changeLanguage": {
     "description": "மொழி மாறும் Dropdown குறிச்சொல்"
+  },
+  "email": "மின்னஞ்சல்",
+  "@email": {
+    "description": "மின்னஞ்சல் உள்ளீடு புலத்தின் லேபல்"
+  },
+  "enterEmail": "உங்கள் மின்னஞ்சலை உள்ளிடவும்",
+  "@enterEmail": {
+    "description": "மின்னஞ்சல் உள்ளீடு புலத்தின் இடமிருப்பு"
+  },
+  "forgotPassword": "கடவுச்சொல்லை மறந்துவிட்டீர்களா?",
+  "@forgotPassword": {
+    "description": "கடவுச்சொல் மறந்துவிட்டீர்களா இணைப்பின் உரை"
+  },
+  "dontHaveAccount": "கணக்கு இல்லையா?",
+  "@dontHaveAccount": {
+    "description": "பதிவு செய்ய அழைப்பின் உரை"
+  },
+  "enterYourEmail": "உங்கள் மின்னஞ்சலை உள்ளிடவும்",
+  "@enterYourEmail": {
+    "description": "மின்னஞ்சல் உள்ளீடு புலத்தின் இடமிருப்பு (மாற்று)"
+  },
+  "enterPassword": "உங்கள் கடவுச்சொல்லை உள்ளிடவும்",
+  "@enterPassword": {
+    "description": "கடவுச்சொல் உள்ளீடு புலத்தின் இடமிருப்பு"
   }
 }
