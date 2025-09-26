@@ -171,6 +171,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter your password'**
   String get enterPassword;
+
+  /// Message for password reset instruction
+  ///
+  /// In en, this message translates to:
+  /// **'No worries! Enter your email address below, and we will send you a link to reset your password'**
+  String get resetPasswordMessage;
+
+  /// Text for submit button
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// Error message for invalid email format
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email address'**
+  String get validEmailError;
+
+  /// Text for back to login link
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Login'**
+  String get backToLogin;
+
+  /// Error message for empty email field
+  ///
+  /// In en, this message translates to:
+  /// **'Email can\'t be empty'**
+  String get emailEmptyError;
+
+  /// Title for new password creation screen
+  ///
+  /// In en, this message translates to:
+  /// **'Create new Password'**
+  String get createNewPassword;
+
+  /// Rule for new password creation
+  ///
+  /// In en, this message translates to:
+  /// **'Your new password must be different from the previously used password'**
+  String get newPasswordRule;
+
+  /// Label for new password input field
+  ///
+  /// In en, this message translates to:
+  /// **'New Password'**
+  String get newPassword;
+
+  /// Label for confirm new password input field
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm New Password'**
+  String get confirmNewPassword;
+
+  /// Label for password input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Password'**
+  String get enterPasswordLabel;
+
+  /// Label for re-enter password input field
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter Password'**
+  String get reEnterPassword;
+
+  /// Text for reset password button
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Password'**
+  String get resetPassword;
+
+  /// Text for create account button
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get createAccount;
+
+  /// Label for full name input field
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name'**
+  String get fullName;
+
+  /// Placeholder for full name input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your full name'**
+  String get enterFullName;
+
+  /// Label for create password input field
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Password'**
+  String get createPassword;
+
+  /// Label for confirm password input field
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get confirmPassword;
+
+  /// Text for login prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an Account?'**
+  String get alreadyHaveAccount;
+
+  /// Title for email verification screen
+  ///
+  /// In en, this message translates to:
+  /// **'Email Verification'**
+  String get emailVerification;
+
+  /// Message for verification code sent
+  ///
+  /// In en, this message translates to:
+  /// **'We have sent the six digit verification code to'**
+  String get verificationCodeSent;
+
+  /// Error message for invalid verification code
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid code please try again'**
+  String get invalidCodeError;
+
+  /// Error message for wrong OTP code
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong OTP code, please try again'**
+  String get wrongOTPError;
+
+  /// Text for resend OTP prompt
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t receive the OTP?'**
+  String get didntReceiveOTP;
+
+  /// Text for resend OTP button
+  ///
+  /// In en, this message translates to:
+  /// **'Resend'**
+  String get resend;
+
+  /// Message for no available agents
+  ///
+  /// In en, this message translates to:
+  /// **'No agents available'**
+  String get noAgentsAvailable;
+
+  /// Label for ongoing call status
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing Call'**
+  String get ongoingCall;
+
+  /// Label for incoming call status
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming Call'**
+  String get incomingCall;
+
+  /// Label for incoming call notification
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming call from:'**
+  String get incomingCallFrom;
+
+  /// Title for call history screen
+  ///
+  /// In en, this message translates to:
+  /// **'Call History'**
+  String get callHistory;
+
+  /// Title for privacy policy
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// Text for privacy policy agreement
+  ///
+  /// In en, this message translates to:
+  /// **'By using KKP chat application, You agree to the'**
+  String get privacyPolicyAgreement;
+
+  /// Description of the app's purpose
+  ///
+  /// In en, this message translates to:
+  /// **'A smart and efficient chat-based solution that connects customer with marketing agents in real time. Instantly manage inquiries, check stock availability, and track orders- all in one place. Empowering businesses with seamless communication and actionable insights.'**
+  String get appDescription;
+
+  /// Tagline for the app
+  ///
+  /// In en, this message translates to:
+  /// **'Instant Inquiries,\nSeamless Sales.'**
+  String get appTagline;
+
+  /// Text for terms and privacy policy agreement
+  ///
+  /// In en, this message translates to:
+  /// **'By using KKP chat application, you agree\nto the Terms and Privacy Policy'**
+  String get termsAndPrivacyAgreement;
+
+  /// No description provided for @privacyPolicyFullText.
+  ///
+  /// In en, this message translates to:
+  /// **'At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.'**
+  String get privacyPolicyFullText;
 }
 
 class _AppLocalizationsDelegate
