@@ -11,6 +11,7 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/agent_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
@@ -25,6 +26,7 @@ import 'package:kkpchatapp/logic/auth/signup_provider.dart';
 import 'package:kkpchatapp/logic/auth/verification_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_product_provider.dart';
+import 'package:kkpchatapp/logic/locale/locale_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/chat_status_provider.dart';
@@ -182,34 +184,43 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(
           create: (_) => CustomerProductProvider(),
         ),
+        ChangeNotifierProvider(create: (context) => LocaleProvider()),
       ],
-      child: MaterialApp(
-        navigatorKey: widget.navigatorKey,
-        title: 'KKP Chat App',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        initialRoute: "/splash",
-        routes: {
-          "/splash": (context) => const Splash(),
-          "/login": (context) => LoginPage(),
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, child) {
+          return MaterialApp(
+            navigatorKey: widget.navigatorKey,
+            title: 'KKP Chat App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            initialRoute: "/splash",
+            routes: {
+              "/splash": (context) => const Splash(),
+              "/login": (context) => LoginPage(),
+            },
+            onGenerateRoute: (settings) {
+              if (CustomerRoutes.allRoutes.contains(settings.name)) {
+                return generateCustomerRoute(settings);
+              } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
+                return generateMarketingRoute(settings);
+              } else {
+                return null;
+              }
+            },
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+              Locale('hi'),
+              Locale('ta'),
+            ],
+            locale: localeProvider.locale,
+          );
         },
-        onGenerateRoute: (settings) {
-          if (CustomerRoutes.allRoutes.contains(settings.name)) {
-            return generateCustomerRoute(settings);
-          } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
-            return generateMarketingRoute(settings);
-          } else {
-            return null;
-          }
-        },
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('en', 'US'),
-        ],
       ),
     );
   }

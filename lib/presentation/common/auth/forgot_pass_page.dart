@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/utils/helper_functions.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -20,7 +21,7 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
   @override
   Widget build(BuildContext context) {
     final forgotPassProvider = Provider.of<ForgotPassProvider>(context);
-
+    final l = AppLocalizations.of(context)!;
     Widget content = GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -40,13 +41,12 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
                       height: 300,
                     ),
                     Text(
-                      'Forgot Password?',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      l.forgotPassword,
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10),
                     Text(
-                      'No worries! Enter your email address below, and we will send you a link to reset your password',
+                      l.resetPasswordMessage,
                       style: TextStyle(fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -57,9 +57,8 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
                         Padding(
                           padding: const EdgeInsets.only(left: 5),
                           child: Text(
-                            'Email',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
+                            l.email,
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           ),
                         ),
                         SizedBox(height: 5),
@@ -68,9 +67,8 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
                           maxLines: 1,
                           errorText: forgotPassProvider.errorText,
                           keyboardType: TextInputType.emailAddress,
-                          hintText: 'Enter your Email',
-                          onChanged: (value) =>
-                              forgotPassProvider.setEmail(value),
+                          hintText: l.enterEmail,
+                          onChanged: (value) => forgotPassProvider.setEmail(value),
                         ),
                         SizedBox(height: 40),
                         forgotPassProvider.isLoading
@@ -81,12 +79,9 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
                                 text: 'Submit',
                                 onPressed: () {
                                   if (_email.text.isEmpty) {
-                                    forgotPassProvider
-                                        .setErrorText('Email can\'t be empty');
-                                  } else if (!HelperFunctions()
-                                      .isValidEmail(_email.text)) {
-                                    forgotPassProvider.setErrorText(
-                                        'Please enter a valid email address');
+                                    forgotPassProvider.setErrorText(l.emailEmptyError);
+                                  } else if (!HelperFunctions().isValidEmail(_email.text)) {
+                                    forgotPassProvider.setErrorText(l.validEmailError);
                                   } else {
                                     forgotPassProvider.setErrorText(null);
                                     forgotPassProvider.forgetPassword(context);
@@ -107,9 +102,8 @@ class _ForgotPassPageState extends State<ForgotPassPage> {
                               ),
                               SizedBox(width: 5),
                               Text(
-                                'Back to Login',
-                                style: TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.w600),
+                                l.backToLogin,
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                               )
                             ],
                           ),

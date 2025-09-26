@@ -1,0 +1,195 @@
+{
+  "@@locale": "hi",
+
+  "appTitle": "केकेपी चैट ऐप",
+  "@appTitle": {
+    "description": "एप्लिकेशन का शीर्षक जिसे AppBar और splash स्क्रीन में दिखाया जाता है"
+  },
+  "login": "लॉगिन",
+  "@login": {
+    "description": "लॉगिन बटन का टेक्स्ट"
+  },
+  "signup": "साइन अप",
+  "@signup": {
+    "description": "साइन अप बटन का टेक्स्ट"
+  },
+  "welcome": "केकेपी चैट में आपका स्वागत है",
+  "@welcome": {
+    "description": "होम स्क्रीन पर स्वागत संदेश"
+  },
+  "logout": "लॉगआउट",
+  "@logout": {
+    "description": "लॉगआउट बटन का टेक्स्ट"
+  },
+  "changeLanguage": "भाषा बदलें",
+  "@changeLanguage": {
+    "description": "भाषा स्विचर ड्रॉपडाउन के लिए लेबल"
+  },
+  "email": "ईमेल",
+  "@email": {
+    "description": "ईमेल इनपुट फील्ड का लेबल"
+  },
+  "enterEmail": "अपना ईमेल दर्ज करें",
+  "@enterEmail": {
+    "description": "ईमेल इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "forgotPassword": "पासवर्ड भूल गए?",
+  "@forgotPassword": {
+    "description": "पासवर्ड भूल गए लिंक का टेक्स्ट"
+  },
+  "dontHaveAccount": "खाता नहीं है?",
+  "@dontHaveAccount": {
+    "description": "साइन-अप प्रॉम्प्ट का टेक्स्ट"
+  },
+  "enterYourEmail": "अपना ईमेल दर्ज करें",
+  "@enterYourEmail": {
+    "description": "ईमेल इनपुट फील्ड का प्लेसहोल्डर (वैकल्पिक)"
+  },
+  "enterPassword": "अपना पासवर्ड दर्ज करें",
+  "@enterPassword": {
+    "description": "पासवर्ड इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "resetPasswordMessage": "चिंता न करें! नीचे अपना ईमेल पता दर्ज करें, हम आपको पासवर्ड रीसेट करने का लिंक भेजेंगे",
+  "@resetPasswordMessage": {
+    "description": "पासवर्ड रीसेट निर्देश संदेश"
+  },
+  "submit": "सबमिट करें",
+  "@submit": {
+    "description": "सबमिट बटन का टेक्स्ट"
+  },
+  "validEmailError": "कृपया एक वैध ईमेल पता दर्ज करें",
+  "@validEmailError": {
+    "description": "अमान्य ईमेल प्रारूप त्रुटि संदेश"
+  },
+  "backToLogin": "लॉगिन पर वापस जाएं",
+  "@backToLogin": {
+    "description": "लॉगिन पर वापस जाने का लिंक टेक्स्ट"
+  },
+  "emailEmptyError": "ईमेल खाली नहीं हो सकता",
+  "@emailEmptyError": {
+    "description": "खाली ईमेल फील्ड त्रुटि संदेश"
+  },
+  "createNewPassword": "नया पासवर्ड बनाएं",
+  "@createNewPassword": {
+    "description": "नए पासवर्ड बनाने की स्क्रीन का शीर्षक"
+  },
+  "newPasswordRule": "आपका नया पासवर्ड पहले इस्तेमाल किए गए पासवर्ड से अलग होना चाहिए",
+  "@newPasswordRule": {
+    "description": "नए पासवर्ड बनाने का नियम"
+  },
+    "password": "पासवर्ड",
+  "@password": {
+    "description": "पासवर्ड इनपुट फील्ड का लेबल"
+  },
+  "newPassword": "नया पासवर्ड",
+  "@newPassword": {
+    "description": "नए पासवर्ड इनपुट फील्ड का लेबल"
+  },
+  "confirmNewPassword": "नया पासवर्ड पुष्टि करें",
+  "@confirmNewPassword": {
+    "description": "नए पासवर्ड पुष्टि इनपुट फील्ड का लेबल"
+  },
+  "enterPasswordLabel": "पासवर्ड दर्ज करें",
+  "@enterPasswordLabel": {
+    "description": "पासवर्ड इनपुट फील्ड का लेबल"
+  },
+  "reEnterPassword": "पासवर्ड पुनः दर्ज करें",
+  "@reEnterPassword": {
+    "description": "पासवर्ड पुनः दर्ज करने के इनपुट फील्ड का लेबल"
+  },
+  "resetPassword": "पासवर्ड रीसेट करें",
+  "@resetPassword": {
+    "description": "पासवर्ड रीसेट बटन का टेक्स्ट"
+  },
+  "createAccount": "खाता बनाएं",
+  "@createAccount": {
+    "description": "खाता बनाएं बटन का टेक्स्ट"
+  },
+  "fullName": "पूरा नाम",
+  "@fullName": {
+    "description": "पूरे नाम इनपुट फील्ड का लेबल"
+  },
+  "enterFullName": "अपना पूरा नाम दर्ज करें",
+  "@enterFullName": {
+    "description": "पूरे नाम इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "createPassword": "पासवर्ड बनाएं",
+  "@createPassword": {
+    "description": "पासवर्ड बनाएं इनपुट फील्ड का लेबल"
+  },
+  "confirmPassword": "पासवर्ड पुष्टि करें",
+  "@confirmPassword": {
+    "description": "पासवर्ड पुष्टि इनपुट फील्ड का लेबल"
+  },
+  "alreadyHaveAccount": "पहले से खाता है?",
+  "@alreadyHaveAccount": {
+    "description": "लॉगिन प्रॉम्प्ट का टेक्स्ट"
+  },
+  "emailVerification": "ईमेल सत्यापन",
+  "@emailVerification": {
+    "description": "ईमेल सत्यापन स्क्रीन का शीर्षक"
+  },
+  "verificationCodeSent": "हमने छह अंकों का सत्यापन कोड भेज दिया है",
+  "@verificationCodeSent": {
+    "description": "सत्यापन कोड भेजे जाने का संदेश"
+  },
+  "invalidCodeError": "अमान्य कोड, कृपया पुनः प्रयास करें",
+  "@invalidCodeError": {
+    "description": "अमान्य सत्यापन कोड त्रुटि संदेश"
+  },
+  "wrongOTPError": "गलत OTP कोड, कृपया पुनः प्रयास करें",
+  "@wrongOTPError": {
+    "description": "गलत OTP कोड त्रुटि संदेश"
+  },
+  "didntReceiveOTP": "OTP प्राप्त नहीं हुआ?",
+  "@didntReceiveOTP": {
+    "description": "OTP पुनः भेजने का प्रॉम्प्ट टेक्स्ट"
+  },
+  "resend": "पुनः भेजें",
+  "@resend": {
+    "description": "OTP पुनः भेजें बटन का टेक्स्ट"
+  },
+  "noAgentsAvailable": "कोई एजेंट उपलब्ध नहीं है",
+  "@noAgentsAvailable": {
+    "description": "कोई एजेंट उपलब्ध नहीं होने का संदेश"
+  },
+  "ongoingCall": "चल रही कॉल",
+  "@ongoingCall": {
+    "description": "चल रही कॉल की स्थिति का लेबल"
+  },
+  "incomingCall": "आने वाली कॉल",
+  "@incomingCall": {
+    "description": "आने वाली कॉल की स्थिति का लेबल"
+  },
+  "incomingCallFrom": "कॉल आ रही है:",
+  "@incomingCallFrom": {
+    "description": "आने वाली कॉल की सूचना का लेबल"
+  },
+  "callHistory": "कॉल इतिहास",
+  "@callHistory": {
+    "description": "कॉल इतिहास स्क्रीन का शीर्षक"
+  },
+  "privacyPolicy": "गोपनीयता नीति",
+  "@privacyPolicy": {
+    "description": "गोपनीयता नीति का शीर्षक"
+  },
+  "privacyPolicyAgreement": "केकेपी चैट एप्लिकेशन का उपयोग करके, आप सहमत होते हैं",
+  "@privacyPolicyAgreement": {
+    "description": "गोपनीयता नीति सहमति का टेक्स्ट"
+  },
+  "appDescription": "एक स्मार्ट और कुशल चैट-आधारित समाधान जो ग्राहकों को वास्तविक समय में मार्केटिंग एजेंटों से जोड़ता है। तुरंत पूछताछ प्रबंधित करें, स्टॉक उपलब्धता जांचें, और सभी ऑर्डर ट्रैक करें- एक ही जगह पर। व्यवसायों को निर्बाध संचार और कार्रवाई योग्य अंतर्दृष्टि के साथ सशक्त बनाना।",
+  "@appDescription": {
+    "description": "ऐप के उद्देश्य का वर्णन"
+  },
+  "appTagline": "तुरंत पूछताछ,\nनिर्बाध बिक्री।",
+  "@appTagline": {
+    "description": "ऐप का टैगलाइन"
+  },
+  "termsAndPrivacyAgreement": "केकेपी चैट एप्लिकेशन का उपयोग करके, आप सहमत होते हैं\nनियमों और गोपनीयता नीति के साथ",
+  "@termsAndPrivacyAgreement": {
+    "description": "नियमों और गोपनीयता नीति सहमति का टेक्स्ट"
+  },
+  "privacyPolicyFullText": "केकेपी चैट ऐप में, हम आपकी गोपनीयता का सम्मान करते हैं और आपके व्यक्तिगत जानकारी की सुरक्षा के लिए प्रतिबद्ध हैं। यह गोपनीयता नीति बताती है कि हम आपके डेटा को कैसे एकत्र, उपयोग, साझा और सुरक्षित रखते हैं जब आप हमारे चैट एप्लिकेशन का उपयोग करते हैं। हमारे सेवा का उपयोग करके, आप इस नीति में रेखांकित शर्तों से सहमत होते हैं।\n\nएकत्रित डेटा का उपयोग निर्बाध मैसेजिंग सेवा प्रदान करने, ऐप सुरक्षा बढ़ाने, उपयोग पैटर्न का विश्लेषण करने और ग्राहक सहायता में सुधार करने के लिए किया जाता है। आपके संदेशों को गोपनीयता बनाए रखने के लिए एंड-टू-एंड एन्क्रिप्टेड किया जाता है, और हम सुरक्षित क्लाउड स्टोरेज और प्रतिबंधित डेटा एक्सेस जैसे सुरक्षा उपाय लागू करते हैं ताकि आपकी जानकारी की रक्षा हो सके। हम आपका व्यक्तिगत डेटा तीसरे पक्ष के विज्ञापनदाताओं को नहीं बेचते या साझा नहीं करते। हालांकि, कानून द्वारा आवश्यक होने पर या धोखाधड़ी और सुरक्षा खतरों को रोकने के लिए डेटा को कानूनी अधिकारियों के साथ साझा किया जा सकता है।\n\nइस गोपनीयता नीति से संबंधित किसी भी प्रश्न या चिंता के लिए, आप हमें support@kkpchatapp.com पर संपर्क कर सकते हैं। केकेपी चैट ऐप का उपयोग जारी रखकर, आप इस नीति में रेखांकित शर्तों को स्वीकार करते और सहमत होते हैं।","@privacyPolicyFullText":{
+    "description": ""
+  }
+}

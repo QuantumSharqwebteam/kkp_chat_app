@@ -9,6 +9,7 @@ import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:provider/provider.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,6 +25,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final loginProvider = Provider.of<LoginProvider>(context);
+    final locale = AppLocalizations.of(context)!;
 
     Widget content = GestureDetector(
       onTap: () {
@@ -51,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 children: [
                   Text(
-                    'Login',
+                    locale.login,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -84,9 +86,8 @@ class _LoginPageState extends State<LoginPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Email',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          locale.signup,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -97,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                         controller: _email,
                         maxLines: 1,
                         keyboardType: TextInputType.emailAddress,
-                        hintText: 'Enter your Email',
+                        hintText: locale.enterYourEmail,
                         onChanged: (value) => loginProvider.setEmail(value),
                       ),
                     ],
@@ -110,9 +111,8 @@ class _LoginPageState extends State<LoginPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Password',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          locale.password,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -124,7 +124,7 @@ class _LoginPageState extends State<LoginPage> {
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
-                        hintText: 'Enter your Password',
+                        hintText: locale.enterPassword,
                         onChanged: (value) => loginProvider.setPassword(value),
                       ),
                     ],
@@ -142,9 +142,8 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       child: Text(
-                        'Forgot Password?',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12),
+                        locale.forgotPassword,
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                       ),
                     ),
                   ),
@@ -152,16 +151,15 @@ class _LoginPageState extends State<LoginPage> {
                   loginProvider.isLoading
                       ? CupertinoActivityIndicator(radius: 20)
                       : CustomButton(
-                          text: 'Login',
+                          text: locale.login,
                           onPressed: () {
-                            loginProvider.login(
-                                context, _email.text, _pass.text);
+                            loginProvider.login(context, _email.text, _pass.text);
                           },
                         ),
                   SizedBox(height: 30),
                   Text.rich(
                     TextSpan(
-                      text: 'Don\'t have an Account? ',
+                      text: locale.dontHaveAccount,
                       style: AppTextStyles.black10_500,
                       children: [
                         WidgetSpan(
@@ -175,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
                               );
                             },
                             child: Text(
-                              'Signup',
+                              locale.signup,
                               style: AppTextStyles.black12_700,
                             ),
                           ),

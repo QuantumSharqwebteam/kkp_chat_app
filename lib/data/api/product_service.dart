@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 
 class ProductService {
@@ -11,8 +12,15 @@ class ProductService {
   ProductService({http.Client? client}) : client = client ?? http.Client();
 
   Future<List<Product>> fetchProducts() async {
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(Uri.parse("$_baseUrl/getAll"));
+      final response = await client.get(
+        Uri.parse("$_baseUrl/getAll"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -29,9 +37,14 @@ class ProductService {
 
   // Delete product API
   Future<bool> deleteProduct(String productId) async {
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.delete(
         Uri.parse("$_baseUrl/delete/$productId"),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
       );
 
       if (response.statusCode == 200) {
@@ -46,11 +59,13 @@ class ProductService {
 
   // Add product API
   Future<bool> addProduct(Product product) async {
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await http.post(
         Uri.parse("$_baseUrl/add"),
         headers: {
           "Content-Type": "application/json",
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode(product.toJson()), // Convert product to JSON
       );
@@ -65,8 +80,7 @@ class ProductService {
     }
   }
 
-  Future<bool> updateProduct(
-      String productId, Map<String, dynamic> updatedData) async {
+  Future<bool> updateProduct(String productId, Map<String, dynamic> updatedData) async {
     try {
       final response = await http.put(
         Uri.parse("$_baseUrl/update/$productId"),

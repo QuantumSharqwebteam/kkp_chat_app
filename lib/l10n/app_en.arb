@@ -1,0 +1,195 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "KKP Chat App",
+  "@appTitle": {
+    "description": "The title of the application displayed in the AppBar and splash screen"
+  },
+  "login": "Login",
+  "@login": {
+    "description": "Text for the login button"
+  },
+  "signup": "Sign Up",
+  "@signup": {
+    "description": "Text for the sign up button"
+  },
+  "welcome": "Welcome to KKP Chat",
+  "@welcome": {
+    "description": "Welcome message on the home screen"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "Text for the logout button"
+  },
+  "changeLanguage": "Change Language",
+  "@changeLanguage": {
+    "description": "Label for language switcher dropdown"
+  },
+  "email": "Email",
+  "@email": {
+    "description": "Label for email input field"
+  },
+  "enterEmail": "Enter your email",
+  "@enterEmail": {
+    "description": "Placeholder for email input field"
+  },
+  "forgotPassword": "Forgot Password?",
+  "@forgotPassword": {
+    "description": "Text for forgot password link"
+  },
+  "dontHaveAccount": "Don't have an Account?",
+  "@dontHaveAccount": {
+    "description": "Text for sign-up prompt"
+  },
+  "enterYourEmail": "Enter your Email",
+  "@enterYourEmail": {
+    "description": "Placeholder for email input field (alternative)"
+  },
+  "enterPassword": "Enter your password",
+  "@enterPassword": {
+    "description": "Placeholder for password input field"
+  },
+  "resetPasswordMessage": "No worries! Enter your email address below, and we will send you a link to reset your password",
+  "@resetPasswordMessage": {
+    "description": "Message for password reset instruction"
+  },
+  "submit": "Submit",
+  "@submit": {
+    "description": "Text for submit button"
+  },
+  "validEmailError": "Please enter a valid email address",
+  "@validEmailError": {
+    "description": "Error message for invalid email format"
+  },
+  "backToLogin": "Back to Login",
+  "@backToLogin": {
+    "description": "Text for back to login link"
+  },
+  "emailEmptyError": "Email can't be empty",
+  "@emailEmptyError": {
+    "description": "Error message for empty email field"
+  },
+  "createNewPassword": "Create new Password",
+  "@createNewPassword": {
+    "description": "Title for new password creation screen"
+  },
+  "newPasswordRule": "Your new password must be different from the previously used password",
+  "@newPasswordRule": {
+    "description": "Rule for new password creation"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "Label for password input field"
+  },
+  "newPassword": "New Password",
+  "@newPassword": {
+    "description": "Label for new password input field"
+  },
+  "confirmNewPassword": "Confirm New Password",
+  "@confirmNewPassword": {
+    "description": "Label for confirm new password input field"
+  },
+  "enterPasswordLabel": "Enter Password",
+  "@enterPasswordLabel": {
+    "description": "Label for password input field"
+  },
+  "reEnterPassword": "Re-enter Password",
+  "@reEnterPassword": {
+    "description": "Label for re-enter password input field"
+  },
+  "resetPassword": "Reset Password",
+  "@resetPassword": {
+    "description": "Text for reset password button"
+  },
+  "createAccount": "Create Account",
+  "@createAccount": {
+    "description": "Text for create account button"
+  },
+  "fullName": "Full Name",
+  "@fullName": {
+    "description": "Label for full name input field"
+  },
+  "enterFullName": "Enter your full name",
+  "@enterFullName": {
+    "description": "Placeholder for full name input field"
+  },
+  "createPassword": "Create a Password",
+  "@createPassword": {
+    "description": "Label for create password input field"
+  },
+  "confirmPassword": "Confirm Password",
+  "@confirmPassword": {
+    "description": "Label for confirm password input field"
+  },
+  "alreadyHaveAccount": "Already have an Account?",
+  "@alreadyHaveAccount": {
+    "description": "Text for login prompt"
+  },
+  "emailVerification": "Email Verification",
+  "@emailVerification": {
+    "description": "Title for email verification screen"
+  },
+  "verificationCodeSent": "We have sent the six digit verification code to",
+  "@verificationCodeSent": {
+    "description": "Message for verification code sent"
+  },
+  "invalidCodeError": "Invalid code please try again",
+  "@invalidCodeError": {
+    "description": "Error message for invalid verification code"
+  },
+  "wrongOTPError": "Wrong OTP code, please try again",
+  "@wrongOTPError": {
+    "description": "Error message for wrong OTP code"
+  },
+  "didntReceiveOTP": "Didn't receive the OTP?",
+  "@didntReceiveOTP": {
+    "description": "Text for resend OTP prompt"
+  },
+  "resend": "Resend",
+  "@resend": {
+    "description": "Text for resend OTP button"
+  },
+  "noAgentsAvailable": "No agents available",
+  "@noAgentsAvailable": {
+    "description": "Message for no available agents"
+  },
+  "ongoingCall": "Ongoing Call",
+  "@ongoingCall": {
+    "description": "Label for ongoing call status"
+  },
+  "incomingCall": "Incoming Call",
+  "@incomingCall": {
+    "description": "Label for incoming call status"
+  },
+  "incomingCallFrom": "Incoming call from:",
+  "@incomingCallFrom": {
+    "description": "Label for incoming call notification"
+  },
+  "callHistory": "Call History",
+  "@callHistory": {
+    "description": "Title for call history screen"
+  },
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Title for privacy policy"
+  },
+  "privacyPolicyAgreement": "By using KKP chat application, You agree to the",
+  "@privacyPolicyAgreement": {
+    "description": "Text for privacy policy agreement"
+  },
+  "appDescription": "A smart and efficient chat-based solution that connects customer with marketing agents in real time. Instantly manage inquiries, check stock availability, and track orders- all in one place. Empowering businesses with seamless communication and actionable insights.",
+  "@appDescription": {
+    "description": "Description of the app's purpose"
+  },
+  "appTagline": "Instant Inquiries,\nSeamless Sales.",
+  "@appTagline": {
+    "description": "Tagline for the app"
+  },
+  "termsAndPrivacyAgreement": "By using KKP chat application, you agree\nto the Terms and Privacy Policy",
+  "@termsAndPrivacyAgreement": {
+    "description": "Text for terms and privacy policy agreement"
+  },
+  "privacyPolicyFullText": "At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.","@privacyPolicyFullText":{
+    "description": ""
+  }
+}

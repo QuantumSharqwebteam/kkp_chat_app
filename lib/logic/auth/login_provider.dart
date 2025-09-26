@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
@@ -46,8 +45,7 @@ class LoginProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(
-      BuildContext context, String email, String password) async {
+  Future<void> login(BuildContext context, String email, String password) async {
     setIsLoading(true);
     setEmailError('');
     setPasswordError('');
@@ -73,11 +71,11 @@ class LoginProvider with ChangeNotifier {
     try {
       await auth.login(email: email, password: password).then((value) async {
         if (value['message'] == 'User logged in successfully') {
-          if (kDebugMode) {
-            print("🪙TOKEN ${value['token']}");
-            print("🧑‍🦰ROLE ${value['role']}");
-            print("✉️EMAIL $email");
-          }
+          // if (kDebugMode) {
+          //   print("🪙TOKEN ${value['token']}");
+          //   print("🧑‍🦰ROLE ${value['role']}");
+          //   print("✉️EMAIL $email");
+          // }
           await LocalDbHelper.saveToken(value['token'].toString());
           await LocalDbHelper.saveEmail(email);
           await LocalDbHelper.saveUserType(value['role'].toString());
@@ -85,26 +83,22 @@ class LoginProvider with ChangeNotifier {
           if (value['role'].toString() == "0") {
             //customer
             if (context.mounted) {
-              Navigator.pushReplacementNamed(
-                  context, CustomerRoutes.customerHost);
+              Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
             }
           } else if (value['role'].toString() == "1") {
             //admin
             if (context.mounted) {
-              Navigator.pushReplacementNamed(
-                  context, MarketingRoutes.marketingHostScreen);
+              Navigator.pushReplacementNamed(context, MarketingRoutes.marketingHostScreen);
             }
           } else if (value['role'].toString() == "2") {
             //agent
             if (context.mounted) {
-              Navigator.pushReplacementNamed(
-                  context, MarketingRoutes.marketingHostScreen);
+              Navigator.pushReplacementNamed(context, MarketingRoutes.marketingHostScreen);
             }
           } else if (value['role'].toString() == "3") {
             //agent head
             if (context.mounted) {
-              Navigator.pushReplacementNamed(
-                  context, MarketingRoutes.marketingHostScreen);
+              Navigator.pushReplacementNamed(context, MarketingRoutes.marketingHostScreen);
             }
           } else {
             // Invalid user type

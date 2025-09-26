@@ -4,6 +4,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/api/chat_service.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 
 class TransferAgentScreen extends StatefulWidget {
   final String customerEmailId;
@@ -30,9 +31,8 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
     try {
       List<Agent> agents = await _repo.getAgent();
       // Filter agents to include only those in the assigned list
-      List<Agent> filteredAgents = agents
-          .where((agent) => _assignedAgentEmails.contains(agent.email))
-          .toList();
+      List<Agent> filteredAgents =
+          agents.where((agent) => _assignedAgentEmails.contains(agent.email)).toList();
 
       if (mounted) {
         setState(() {
@@ -104,7 +104,7 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _agentsList.isEmpty
-              ? const Center(child: Text("No agents available"))
+              ? Center(child: Text(AppLocalizations.of(context)!.noAgentsAvailable))
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: 16),
                   itemCount: _agentsList.length + 1, // +1 for the image section
