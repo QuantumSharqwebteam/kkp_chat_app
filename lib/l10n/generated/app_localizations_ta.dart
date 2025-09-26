@@ -68,6 +68,9 @@ class AppLocalizationsTa extends AppLocalizations {
       'உங்கள் புதிய கடவுச்சொல் முன்னர் பயன்படுத்திய கடவுச்சொல்லிலிருந்து வேறுபட்டதாக இருக்க வேண்டும்';
 
   @override
+  String get password => 'கடவுச்சொல்';
+
+  @override
   String get newPassword => 'புதிய கடவுச்சொல்';
 
   @override

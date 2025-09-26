@@ -214,6 +214,12 @@ abstract class AppLocalizations {
   /// **'Your new password must be different from the previously used password'**
   String get newPasswordRule;
 
+  /// Label for password input field
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get password;
+
   /// Label for new password input field
   ///
   /// In en, this message translates to:
@@ -376,7 +382,7 @@ abstract class AppLocalizations {
   /// **'By using KKP chat application, you agree\nto the Terms and Privacy Policy'**
   String get termsAndPrivacyAgreement;
 
-  /// No description provided for @privacyPolicyFullText.
+  ///
   ///
   /// In en, this message translates to:
   /// **'At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.'**

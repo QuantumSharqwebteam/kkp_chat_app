@@ -68,6 +68,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your new password must be different from the previously used password';
 
   @override
+  String get password => 'Password';
+
+  @override
   String get newPassword => 'New Password';
 
   @override

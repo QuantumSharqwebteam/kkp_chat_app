@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -9,6 +10,7 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart';
+import 'package:kkpchatapp/presentation/common_widgets/locale/locale_switcher.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
 
@@ -62,6 +64,22 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
           'Settings',
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
+        actions: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Text(
+                "Change locale: ",
+                style: AppTextStyles.black10_600,
+              ),
+              LanguageSwitcher(),
+              const SizedBox(
+                width: 16,
+              )
+            ],
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -126,8 +144,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               // mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -162,8 +179,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ],
                           onTaps: [
                             () {
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
                                 return AccountAndSecurity();
                               }));
                             }
@@ -205,8 +221,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           subtitles: ["Track All Order Enquires in One Place"],
                           onTaps: [
                             () {
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
                                 return CustomerInquiriesPage();
                               }));
                             }
@@ -240,8 +255,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -261,9 +275,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                       title: Text(
                         "Preferences",
                         style: TextStyle(
-                            color: AppColors.grey7B7B7B,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14),
+                            color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                       ),
                       showDividerAfterTitle: true,
                       titles: ['Notifications'],
@@ -281,8 +293,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                       subtitles: ["Your Notifications Hub"],
                       onTaps: [
                         () {
-                          Navigator.pushNamed(
-                              context, CustomerRoutes.notificationSettings);
+                          Navigator.pushNamed(context, CustomerRoutes.notificationSettings);
                         }
                       ],
                     ),
@@ -345,17 +356,14 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                   title: Text(
                     'Terms & Policy',
                     style: TextStyle(
-                        color: AppColors.grey7B7B7B,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14),
+                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                   ),
                   showDividerAfterTitle: true,
                   titles: ['About'],
                   subtitles: ['Manage Terms & Policy'],
                   onTaps: [
                     () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
                         return AboutUsPage();
                       }));
                     },
@@ -389,6 +397,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
             //       color: AppColors.redF11515, fontWeight: FontWeight.w600),
             //   iconColor: AppColors.redF11515,
             // ),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
               child: CustomButton(

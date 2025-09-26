@@ -68,6 +68,9 @@ class AppLocalizationsHi extends AppLocalizations {
       'आपका नया पासवर्ड पहले इस्तेमाल किए गए पासवर्ड से अलग होना चाहिए';
 
   @override
+  String get password => 'पासवर्ड';
+
+  @override
   String get newPassword => 'नया पासवर्ड';
 
   @override

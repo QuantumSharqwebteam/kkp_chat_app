@@ -111,7 +111,7 @@ class _LoginPageState extends State<LoginPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Password',
+                          locale.password,
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),

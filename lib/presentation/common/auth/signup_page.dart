@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/auth/signup_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
@@ -25,6 +26,7 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     final signupProvider = Provider.of<SignupProvider>(context);
+    final l = AppLocalizations.of(context)!;
 
     Widget content = GestureDetector(
       onTap: () {
@@ -52,7 +54,7 @@ class _SignupPageState extends State<SignupPage> {
               child: Column(
                 children: [
                   Text(
-                    'Create Account',
+                    l.createAccount,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -65,9 +67,8 @@ class _SignupPageState extends State<SignupPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Full Name',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.fullName,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -76,7 +77,7 @@ class _SignupPageState extends State<SignupPage> {
                         errorText: signupProvider.nameError,
                         maxLines: 1,
                         keyboardType: TextInputType.name,
-                        hintText: 'Enter your full name',
+                        hintText: l.enterFullName,
                         onChanged: (value) => signupProvider.setName(value),
                       ),
                     ],
@@ -89,9 +90,8 @@ class _SignupPageState extends State<SignupPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Email',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.email,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -100,7 +100,7 @@ class _SignupPageState extends State<SignupPage> {
                         controller: _email,
                         maxLines: 1,
                         keyboardType: TextInputType.emailAddress,
-                        hintText: 'Enter your Email',
+                        hintText: l.enterEmail,
                         onChanged: (value) => signupProvider.setEmail(value),
                       ),
                     ],
@@ -113,9 +113,8 @@ class _SignupPageState extends State<SignupPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Password',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.password,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -126,7 +125,7 @@ class _SignupPageState extends State<SignupPage> {
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
-                        hintText: 'Create a Password',
+                        hintText: l.createPassword,
                         onChanged: (value) => signupProvider.setPassword(value),
                       ),
                     ],
@@ -139,9 +138,8 @@ class _SignupPageState extends State<SignupPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Confirm Password',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.confirmPassword,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -154,9 +152,8 @@ class _SignupPageState extends State<SignupPage> {
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
-                        hintText: 'Confirm Password',
-                        onChanged: (value) =>
-                            signupProvider.setRePassword(value),
+                        hintText: l.confirmPassword,
+                        onChanged: (value) => signupProvider.setRePassword(value),
                       ),
                     ],
                   ),
@@ -164,7 +161,7 @@ class _SignupPageState extends State<SignupPage> {
                   signupProvider.isLoading
                       ? CupertinoActivityIndicator(radius: 20)
                       : CustomButton(
-                          text: 'Create Account',
+                          text: l.createAccount,
                           onPressed: () {
                             signupProvider.signup(context);
                           },
@@ -172,7 +169,7 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 20),
                   Text.rich(
                     TextSpan(
-                      text: 'Already have an Account? ',
+                      text: l.alreadyHaveAccount,
                       style: AppTextStyles.black10_500,
                       children: [
                         WidgetSpan(
@@ -184,7 +181,7 @@ class _SignupPageState extends State<SignupPage> {
                               }));
                             },
                             child: Text(
-                              'Login',
+                              l.login,
                               style: AppTextStyles.black12_700,
                             ),
                           ),

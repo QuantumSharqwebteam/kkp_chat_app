@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 
@@ -9,6 +10,7 @@ class OnboardingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -27,7 +29,7 @@ class OnboardingPage extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) {
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
                           return LoginPage();
                         }));
                       },
@@ -47,7 +49,7 @@ class OnboardingPage extends StatelessWidget {
                   height: 270,
                 ),
                 Text(
-                  '“Instant Inquiries,\n Seamless Sales.”',
+                  '“${l.appTagline}”',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
@@ -55,7 +57,7 @@ class OnboardingPage extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  "A smart and efficient chat-based solution that connects customer with marketing agents in real time. Instantly manage inquiries, check stock availability, and track orders- all in one place. Empowering businesses with seamless communication and actionable insights.",
+                  l.appDescription,
                   style: TextStyle(fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
@@ -63,8 +65,7 @@ class OnboardingPage extends StatelessWidget {
                 CustomButton(
                   text: 'Get Started',
                   onPressed: () {
-                    Navigator.pushReplacement(context,
-                        MaterialPageRoute(builder: (_) {
+                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
                       return LoginPage();
                     }));
                   },
@@ -81,7 +82,7 @@ class OnboardingPage extends StatelessWidget {
                   width: Utils().width(context) * 0.7,
                   child: Text.rich(
                     TextSpan(
-                      text: 'By using KKP chat application, You agree to the ',
+                      text: l.privacyPolicyAgreement,
                       style: TextStyle(fontSize: 12),
                       children: [
                         WidgetSpan(
@@ -107,11 +108,9 @@ class OnboardingPage extends StatelessWidget {
                                   'https://www.termsfeed.com/live/0e2fa12f-6123-4516-a47a-73308e7e90b8');
                             },
                             child: Text(
-                              'Privacy Policy',
+                              l.privacyPolicy,
                               style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.blue),
+                                  fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.blue),
                             ),
                           ),
                         ),

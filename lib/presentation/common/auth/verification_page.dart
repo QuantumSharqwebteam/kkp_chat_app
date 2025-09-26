@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/auth/verification_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/new_pass_page.dart';
 import 'package:kkpchatapp/presentation/common/auth/signup_page.dart';
@@ -31,6 +32,7 @@ class _VerificationPageState extends State<VerificationPage> {
   @override
   Widget build(BuildContext context) {
     final verificationProvider = Provider.of<VerificationProvider>(context);
+    final l = AppLocalizations.of(context)!;
 
     Widget content = GestureDetector(
       onTap: () {
@@ -46,13 +48,12 @@ class _VerificationPageState extends State<VerificationPage> {
                   children: [
                     SizedBox(height: 50),
                     Text(
-                      'Email Verification',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      l.emailVerification,
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10),
                     Text(
-                      'We have sent the six digit verification code to ${widget.email}',
+                      '${l.verificationCodeSent}${widget.email}',
                       style: TextStyle(fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -60,9 +61,8 @@ class _VerificationPageState extends State<VerificationPage> {
                     // pinput
                     Center(
                       child: Pinput(
-                        errorText: verificationProvider.isOtpError
-                            ? verificationProvider.errorText
-                            : '',
+                        errorText:
+                            verificationProvider.isOtpError ? verificationProvider.errorText : '',
                         forceErrorState: verificationProvider.isOtpError,
                         errorBuilder: (errorText, pin) {
                           return Padding(
@@ -79,7 +79,7 @@ class _VerificationPageState extends State<VerificationPage> {
                                   ),
                                 ),
                                 Text(
-                                  'Invalid code please try again',
+                                  l.invalidCodeError,
                                   style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -98,8 +98,7 @@ class _VerificationPageState extends State<VerificationPage> {
                         showCursor: true,
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         defaultPinTheme: PinTheme(
-                          textStyle: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w600),
+                          textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                           height: 50,
                           width: 50,
                           decoration: BoxDecoration(
@@ -108,8 +107,7 @@ class _VerificationPageState extends State<VerificationPage> {
                           ),
                         ),
                         focusedPinTheme: PinTheme(
-                          textStyle: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w600),
+                          textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                           height: 50,
                           width: 50,
                           decoration: BoxDecoration(
@@ -118,8 +116,7 @@ class _VerificationPageState extends State<VerificationPage> {
                           ),
                         ),
                         errorPinTheme: PinTheme(
-                          textStyle: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w600),
+                          textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                           height: 50,
                           width: 50,
                           decoration: BoxDecoration(
@@ -155,17 +152,13 @@ class _VerificationPageState extends State<VerificationPage> {
                             : CustomButton(
                                 text: 'Verify',
                                 onPressed: () async {
-                                  if (await verificationProvider.verifyOtp(
-                                          context, widget.email) ==
+                                  if (await verificationProvider.verifyOtp(context, widget.email) ==
                                       true) {
                                     if (widget.isNewAccount == true) {
                                       if (context.mounted) {
-                                        Navigator.pushReplacementNamed(context,
-                                            CustomerRoutes.customerProfileSetup,
-                                            arguments: {
-                                              "forUpdate": false,
-                                              "name": widget.name
-                                            });
+                                        Navigator.pushReplacementNamed(
+                                            context, CustomerRoutes.customerProfileSetup,
+                                            arguments: {"forUpdate": false, "name": widget.name});
                                       }
                                     } else {
                                       if (context.mounted) {
@@ -179,11 +172,9 @@ class _VerificationPageState extends State<VerificationPage> {
                                     }
                                   } else {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text(
-                                              'Wrong OTP code, please try again'),
+                                          content: Text(l.wrongOTPError),
                                         ),
                                       );
                                     }
@@ -197,19 +188,18 @@ class _VerificationPageState extends State<VerificationPage> {
                     SizedBox(height: 30),
                     Text.rich(
                       TextSpan(
-                        text: 'Didn\'t receive the OTP? ',
+                        text: l.didntReceiveOTP,
                         style: TextStyle(fontSize: 12),
                         children: [
                           WidgetSpan(
                             child: InkWell(
                               onTap: verificationProvider.isResendEnabled
-                                  ? () => verificationProvider
-                                      .resendOtp(widget.email)
+                                  ? () => verificationProvider.resendOtp(widget.email)
                                   : null,
                               child: Text(
                                 verificationProvider.isResendEnabled
-                                    ? 'Resend'
-                                    : 'Resend in ${verificationProvider.timerCount} seconds',
+                                    ? l.resend
+                                    : '${l.resend} in ${verificationProvider.timerCount} seconds',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: verificationProvider.isResendEnabled
