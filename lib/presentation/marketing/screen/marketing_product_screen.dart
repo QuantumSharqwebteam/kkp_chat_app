@@ -3,6 +3,7 @@ import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
@@ -39,6 +40,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     final provider = context.watch<MarketingProductProvider>();
     return Scaffold(
       appBar: _buildAppBar(context, provider),
@@ -50,8 +52,8 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
                 ? Center(
                     child: Text(
                       provider.searchQuery.isEmpty
-                          ? "No products available"
-                          : "No matching products found",
+                          ? locale.noProductsAvailable
+                          : locale.noMatchingProducts,
                     ),
                   )
                 : _buildProductsList(context, provider.filteredProducts),
@@ -62,6 +64,8 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
 
   PreferredSizeWidget _buildAppBar(
       BuildContext context, MarketingProductProvider provider) {
+    final locale = AppLocalizations.of(context)!;
+
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: MediaQuery.of(context).size.height * 0.14,
@@ -72,7 +76,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Product", style: AppTextStyles.black20_600),
+              Text(locale.product, style: AppTextStyles.black20_600),
               IconButton(
                 onPressed: () {
                   Navigator.pushNamed(
@@ -90,7 +94,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
             width: double.infinity,
             enable: true,
             controller: _searchController,
-            hintText: "Search products...",
+            hintText: locale.searchProducts,
             onChanged: (query) {
               provider.applyFilter(query);
             },
@@ -148,6 +152,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
   }
 
   Widget _buildFloatingActionButton(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return SizedBox(
       height: 80,
       width: 88,
@@ -164,14 +169,14 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
         backgroundColor: Colors.white,
         elevation: 8,
         shape: const CircleBorder(),
-        tooltip: 'Upload new product',
+        tooltip: locale.uploadNewProduct,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.cloud_upload, size: 36, color: AppColors.grey7B7B7B),
             //SizedBox(height: 6),
             Text(
-              'Upload here',
+              locale.uploadHere,
               textAlign: TextAlign.center,
               style: AppTextStyles.black10_600,
             ),

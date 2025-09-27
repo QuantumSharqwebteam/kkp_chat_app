@@ -8,6 +8,7 @@ import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/api/analytics_management_service.dart';
 import 'package:kkpchatapp/data/models/activity_model.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -110,9 +111,10 @@ class _AnalyticsManagementScreenState extends State<AnalyticsManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text("Analytics Management"),
+        title: Text(locale.analyticsManagement),
         backgroundColor: AppColors.background,
         actions: [
           Padding(
@@ -128,14 +130,13 @@ class _AnalyticsManagementScreenState extends State<AnalyticsManagementScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       // title: Text("Confirm Deletion"),
-                      content: Text(
-                          "Are you sure you want to download all the data in excel format?"),
+                      content: Text(locale.confirmDownloadExcel),
                       actions: [
                         TextButton(
                           onPressed: () {
                             Navigator.of(context).pop(); // Close the dialog
                           },
-                          child: Text("Cancel"),
+                          child: Text(locale.cancel),
                         ),
                         TextButton(
                           onPressed: () async {
@@ -151,7 +152,7 @@ class _AnalyticsManagementScreenState extends State<AnalyticsManagementScreen> {
                               });
                             }
                           },
-                          child: const Text("Confirm"),
+                          child: Text(locale.confirm),
                         ),
                       ],
                     );
@@ -188,7 +189,7 @@ class _AnalyticsManagementScreenState extends State<AnalyticsManagementScreen> {
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text("No activities found"));
+            return Center(child: Text(locale.noActivitiesFound));
           }
 
           final activities = snapshot.data!;
@@ -325,15 +326,14 @@ class _AnalyticsManagementScreenState extends State<AnalyticsManagementScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             // title: Text("Confirm Deletion"),
-                            content: Text(
-                                "Are you sure you want to delete all activities?"),
+                            content: Text(locale.confirmDeleteAllActivities),
                             actions: [
                               TextButton(
                                 onPressed: () {
                                   Navigator.of(context)
                                       .pop(); // Close the dialog
                                 },
-                                child: Text("Cancel"),
+                                child: Text(locale.cancel),
                               ),
                               TextButton(
                                   onPressed: () async {
@@ -346,9 +346,9 @@ class _AnalyticsManagementScreenState extends State<AnalyticsManagementScreen> {
                                       // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                "All data deleted successfully")),
+                                        SnackBar(
+                                            content: Text(locale
+                                                .allDataDeletedSuccessfully)),
                                       );
                                       // Refresh UI
                                       setState(() {});
@@ -356,13 +356,13 @@ class _AnalyticsManagementScreenState extends State<AnalyticsManagementScreen> {
                                       // ignore: use_build_context_synchronously
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
+                                        SnackBar(
                                             content: Text(
-                                                "Failed to delete all data")),
+                                                locale.failedToDeleteAllData)),
                                       );
                                     }
                                   },
-                                  child: Text("Confirm")),
+                                  child: Text(locale.confirm)),
                             ],
                           );
                         },

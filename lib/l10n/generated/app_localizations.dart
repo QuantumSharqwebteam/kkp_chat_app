@@ -250,7 +250,7 @@ abstract class AppLocalizations {
   /// **'Create Account'**
   String get createAccount;
 
-  /// Label for full name input field
+  /// Label for user's full name input field
   ///
   /// In en, this message translates to:
   /// **'Full Name'**
@@ -539,6 +539,25 @@ abstract class AppLocalizations {
   String get posterAdsManagement;
 
   /// Text for uploading product image
+  /// Button or label text for adding a new product
+  ///
+  /// In en, this message translates to:
+  /// **'Add Product'**
+  String get addProduct;
+
+  /// Validation message shown when user leaves fields empty or incorrect
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill all fields correctly!'**
+  String get pleaseFillAllFields;
+
+  /// Confirmation message shown when a product is added successfully
+  ///
+  /// In en, this message translates to:
+  /// **'Product added successfully!'**
+  String get productAddedSuccessfully;
+
+  /// Button or label text for uploading a product image
   ///
   /// In en, this message translates to:
   /// **'Upload Product Image'**
@@ -1172,6 +1191,19 @@ abstract class AppLocalizations {
   String get someBasicInformation;
 
   /// Label for name field
+  /// Button or label text for selecting a file
+  ///
+  /// In en, this message translates to:
+  /// **'Choose File'**
+  String get chooseFile;
+
+  /// Label for the field where the user enters the product's name
+  ///
+  /// In en, this message translates to:
+  /// **'Product Name'**
+  String get productName;
+
+  /// Label for the field where the user enters their name
   ///
   /// In en, this message translates to:
   /// **'Name'**
@@ -1302,6 +1334,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK'**
   String get ok;
+
+  /// Label for the field where the user enters the product price
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get price;
+
+  /// Label for the field where the user selects or enters the product size
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get size;
+
+  /// Label for the field where the user selects or enters the product color
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get color;
+
+  /// Label indicating the quantity of product available in stock
+  ///
+  /// In en, this message translates to:
+  /// **'Stock Available'**
+  String get stockAvailable;
+
+  /// Label for the field where the user enters the product description
+  ///
+  /// In en, this message translates to:
+
+  /// Placeholder text for the product description input field
+  ///
+  /// In en, this message translates to:
+  /// **'Describe about the product.......'**
+  String get describeProduct;
+
+  /// Placeholder or prompt text for selecting a product color
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a Color'**
+  String get pickColor;
+
+  /// Text for cancel button or action
+  ///
+  /// In en, this message translates to:
+
+  /// Text for select button or dropdown option
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get select;
+
+  /// Label or button text for updating a form
+  ///
+  /// In en, this message translates to:
+  /// **'Update Form'**
+  String get updateForm;
+
+  /// Prompt or label asking the user to fill product details
+  ///
+  /// In en, this message translates to:
+  /// **'Fill Product Details'**
+  String get fillProductDetails;
+
+  /// Message shown when there are no customer forms available for navigation
+  ///
+  /// In en, this message translates to:
+  /// **'No customer forms found to navigate to'**
+  String get noCustomerForms;
+
+  /// Message shown to confirm the order along with the form Id
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is confirmed with form Id'**
+  String get orderConfirmed;
+
+  /// Message shown when the order is declined along with the form Id
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is declined with form Id'**
+  String get orderDeclined;
+
+  /// Title for displaying the list of customers
+  ///
+  /// In en, this message translates to:
+  /// **'Customers List'**
+  String get customersList;
+
+  /// Label or title for a user
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get user;
+
+  /// Label or title for a customer
+  ///
+  /// In en, this message translates to:
+  /// **'Customer'**
+  String get customer;
+
+  /// Title or section label for customer inquiries
+  ///
+  /// In en, this message translates to:
+
+  /// Message or prompt shown when looking for the latest messages
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s find latest messages'**
+  String get findLatestMessages;
+
+  /// Label or placeholder text for search functionality
+  ///
+  /// In en, this message translates to:
+
+  /// Label used when something (like a user or item) does not have a name
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed'**
+  String get unnamed;
+
+  /// Status label indicating a user is currently active or connected
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get online;
+
+  /// Title or label for the analytics management section
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics Management'**
+  String get analyticsManagement;
+
+  /// Confirmation message shown before downloading all data in Excel format
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to download all the data in excel format?'**
+  String get confirmDownloadExcel;
+
+  /// Text for confirm button or action
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// Message displayed when no activities are available
+  ///
+  /// In en, this message translates to:
+  /// **'No activities found'**
+  String get noActivitiesFound;
+
+  /// Confirmation message shown before deleting all activities
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete all activities?'**
+  String get confirmDeleteAllActivities;
+
+  /// Message shown when all data is deleted successfully
+  ///
+  /// In en, this message translates to:
+  /// **'All data deleted successfully'**
+  String get allDataDeletedSuccessfully;
+
+  /// Message shown when deleting all data fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete all data'**
+  String get failedToDeleteAllData;
+
+  /// Text for editing a product
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Product'**
+  String get editProduct;
+
+  /// Text for updating a product
+  ///
+  /// In en, this message translates to:
+  /// **'Update Product'**
+  String get updateProduct;
+
+  /// Label for pinned messages section
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned Messages'**
+  String get pinnedMessages;
+
+  /// Message shown when no agents are available
+  ///
+  /// In en, this message translates to:
+
+  /// Prompt text shown to click and view chats
+  ///
+  /// In en, this message translates to:
+  /// **'Click to see chats....'**
+  String get clickToSeeChats;
+
+  /// Label showing the available colors of a product
+  ///
+  /// In en, this message translates to:
+
+  /// Label indicating the product is out of stock
+  ///
+  /// In en, this message translates to:
+
+  /// Label indicating how many items are left in stock
+  ///
+  /// In en, this message translates to:
+  /// **'Left in Stock'**
+  String get leftInStock;
+
+  /// Label indicating limitation or exclusivity, e.g., 'Only 2 left'
+  ///
+  /// In en, this message translates to:
+  /// **'Only'**
+  String get only;
+
+  /// Label or button text for removing an item or product
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get remove;
+
+  /// Message shown when no products match the search/filter criteria
+  ///
+  /// In en, this message translates to:
+  /// **'No matching products found'**
+  String get noMatchingProducts;
+
+  /// Placeholder text for product search input field
+  ///
+  /// In en, this message translates to:
+  /// **'Search products...'**
+  String get searchProducts;
+
+  /// Button or label text for uploading a new product
+  ///
+  /// In en, this message translates to:
+  /// **'Upload new product'**
+  String get uploadNewProduct;
+
+  /// Prompt text for uploading a file or product
+  ///
+  /// In en, this message translates to:
+  /// **'Upload here'**
+  String get uploadHere;
+
+  /// Button or action to mark all notifications/messages as read
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get markAllRead;
+
+  /// Label or title for user's account section
+  ///
+  /// In en, this message translates to:
+  /// **'My Account'**
+  String get myAccount;
+
+  /// Confirmation message shown when user tries to log out
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out?'**
+  String get confirmLogout;
+
+  /// Message shown when there are no customers available
+  ///
+  /// In en, this message translates to:
+  /// **'No customers available'**
+  String get noCustomersAvailable;
+
+  /// Placeholder text for searching a customer
+  ///
+  /// In en, this message translates to:
+  /// **'Search customer...'**
+  String get searchCustomer;
+
+  /// Label for manage action or button
+  ///
+  /// In en, this message translates to:
+  /// **'Manage'**
+  String get manage;
+
+  /// Label for settings and activity section
+  ///
+  /// In en, this message translates to:
+  /// **'Settings and Activity'**
+  String get settingsAndActivity;
+
+  /// Label for account section
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// Label for account and security settings section
+
+  /// Label describing account management and password change options
+  ///
+  /// In en, this message translates to:
+  /// **'Account management, password change'**
+  String get accountManagementPasswordChange;
+
+  /// Label for management
+  ///
+  /// In en, this message translates to:
+  /// **'Management'**
+  String get management;
+
+  /// Label for user management section
+  ///
+  /// In en, this message translates to:
+  /// **'User Management'**
+  String get userManagement;
+
+  /// Label for viewing customer list
+  ///
+  /// In en, this message translates to:
+  /// **'View customers'**
+  String get viewCustomers;
+
+  /// Label for managing analytics data
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Analytics Data'**
+  String get manageAnalyticsData;
+
+  /// Label for terms and policy section
+  ///
+  /// In en, this message translates to:
+  /// **'Terms & Policy'**
+  String get termsPolicy;
+
+  /// Label for managing terms and policy section
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Terms & Policy'**
+  String get manageTermsPolicy;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -32,13 +32,14 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
   final SocketService _socketService = SocketService(navigatorKey);
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     // final searchController = TextEditingController();
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         title: Text(
-          'Settings and Activity',
+          locale.settingsAndActivity,
           style: AppTextStyles.black16_500,
         ),
         actions: [
@@ -100,13 +101,13 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                       }
                     ],
                     title: Text(
-                      'Account',
+                      locale.account,
                       style: TextStyle(
                           color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                     ),
                     showDividerAfterTitle: true,
-                    titles: ['Account & Security'],
-                    subtitles: ['Account management, password change'],
+                    titles: [locale.accountAndSecurity],
+                    subtitles: [locale.accountManagementPasswordChange],
                   ),
                   // Divider(
                   //   color: AppColors.grey7B7B7B,
@@ -161,12 +162,12 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   CustomSettingsTile(
                     numberOfTiles: 1,
                     title: Text(
-                      "Management",
+                      locale.management,
                       style: TextStyle(
                           color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                     ),
                     showDividerAfterTitle: true,
-                    titles: ['User Management'],
+                    titles: [locale.userManagement],
                     leadingWidgets: [
                       CircleAvatar(
                         backgroundColor: Colors.blue.shade50,
@@ -177,7 +178,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                         ),
                       ),
                     ],
-                    subtitles: ["View customers"],
+                    subtitles: [locale.viewCustomers],
                     onTaps: [
                       () {
                         Navigator.push(
@@ -200,7 +201,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     //       fontSize: 14),
                     // ),
                     showDividerAfterTitle: true,
-                    titles: ['Manage Analytics Data'],
+                    titles: [locale.manageAnalyticsData],
                     leadingWidgets: [
                       CircleAvatar(
                         backgroundColor: Colors.blue.shade50,
@@ -321,13 +322,13 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   ),
                 ],
                 title: Text(
-                  'Terms & Policy',
+                  locale.termsPolicy,
                   style: TextStyle(
                       color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                 ),
                 showDividerAfterTitle: true,
-                titles: ['About'],
-                subtitles: ['Manage Terms & Policy'],
+                titles: [locale.about],
+                subtitles: [locale.manageTermsPolicy],
                 onTaps: [
                   () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) {
@@ -342,9 +343,9 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               onPressed: () {
                 Utils().showDialogWithActions(
                   context,
-                  "Log Out",
-                  "Are you sure you want to logout?",
-                  "Log out",
+                  locale.logout,
+                  locale.confirmLogout,
+                  locale.logout,
                   () async {
                     await LocalDbHelper.removeToken();
                     await LocalDbHelper.removeUserType();
@@ -362,7 +363,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   icon: Icons.logout_outlined,
                 );
               },
-              text: "Log Out",
+              text: locale.logout,
               icon: Icons.logout_outlined,
               backgroundColor: AppColors.redF11515,
               textColor: Colors.white,

@@ -548,6 +548,19 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get someBasicInformation => 'शुरुआत करने के लिए कुछ मूल जानकारी।';
+  String get addProduct => 'उत्पाद जोड़ें';
+
+  @override
+  String get pleaseFillAllFields => 'कृपया सभी फ़ील्ड सही से भरें!';
+
+  @override
+  String get productAddedSuccessfully => 'उत्पाद सफलतापूर्वक जोड़ा गया!';
+
+  @override
+  String get chooseFile => 'फ़ाइल चुनें';
+
+  @override
+  String get productName => 'उत्पाद का नाम';
 
   @override
   String get name => 'नाम';
@@ -614,4 +627,156 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ok => 'ठीक है';
+  String get price => 'मूल्य';
+
+  @override
+  String get size => 'आकार';
+
+  @override
+  String get color => 'रंग';
+
+  @override
+  String get stockAvailable => 'स्टॉक उपलब्ध है';
+
+  @override
+  String get describeProduct => 'उत्पाद के बारे में विवरण दें.......';
+
+  @override
+  String get pickColor => 'रंग चुनें';
+
+  @override
+  String get select => 'चुनें';
+
+  @override
+  String get updateForm => 'फॉर्म अपडेट करें';
+
+  @override
+  String get fillProductDetails => 'उत्पाद विवरण भरें';
+
+  @override
+  String get noCustomerForms => 'नेविगेट करने के लिए कोई ग्राहक फॉर्म नहीं मिला';
+
+  @override
+  String get orderConfirmed => 'आपका ऑर्डर फॉर्म आईडी के साथ पुष्टि हो गई है';
+
+  @override
+  String get orderDeclined => 'आपका ऑर्डर फॉर्म आईडी के साथ अस्वीकार कर दिया गया है';
+
+  @override
+  String get customersList => 'ग्राहकों की सूची';
+
+  @override
+  String get user => 'उपयोगकर्ता';
+
+  @override
+  String get customer => 'ग्राहक';
+
+  @override
+  String get findLatestMessages => 'आइए नवीनतम संदेश ढूंढते हैं';
+
+  @override
+  String get unnamed => 'बेनाम';
+
+  @override
+  String get online => 'ऑनलाइन';
+
+  @override
+  String get analyticsManagement => 'विश्लेषण प्रबंधन';
+
+  @override
+  String get confirmDownloadExcel =>
+      'क्या आप सुनिश्चित हैं कि आप सभी डेटा को एक्सेल फ़ॉर्मेट में डाउनलोड करना चाहते हैं?';
+
+  @override
+  String get confirm => 'पुष्टि करें';
+
+  @override
+  String get noActivitiesFound => 'कोई गतिविधियाँ नहीं मिलीं';
+
+  @override
+  String get confirmDeleteAllActivities => 'क्या आप वाकई सभी गतिविधियाँ हटाना चाहते हैं?';
+
+  @override
+  String get allDataDeletedSuccessfully => 'सारी जानकारी सफलतापूर्वक हटा दी गई';
+
+  @override
+  String get failedToDeleteAllData => 'सारी जानकारी हटाने में असफल';
+
+  @override
+  String get editProduct => 'उत्पाद संपादित करें';
+
+  @override
+  String get updateProduct => 'उत्पाद अपडेट करें';
+
+  @override
+  String get pinnedMessages => 'पिन किए गए संदेश';
+
+  @override
+  String get clickToSeeChats => 'चैट देखने के लिए क्लिक करें....';
+
+  @override
+  String get leftInStock => 'शेष स्टॉक';
+
+  @override
+  String get only => 'केवल';
+
+  @override
+  String get remove => 'हटाएँ';
+
+  @override
+  String get noMatchingProducts => 'कोई मेल खाने वाला उत्पाद नहीं मिला';
+
+  @override
+  String get searchProducts => 'उत्पाद खोजें...';
+
+  @override
+  String get uploadNewProduct => 'नया उत्पाद अपलोड करें';
+
+  @override
+  String get uploadHere => 'यहाँ अपलोड करें';
+
+  @override
+  String get markAllRead => 'सभी पढ़ा हुआ मार्क करें';
+
+  @override
+  String get myAccount => 'मेरा खाता';
+
+  @override
+  String get confirmLogout => 'क्या आप वाकई लॉगआउट करना चाहते हैं?';
+
+  @override
+  String get noCustomersAvailable => 'कोई ग्राहक उपलब्ध नहीं हैं';
+
+  @override
+  String get searchCustomer => 'ग्राहक खोजें...';
+
+  @override
+  String get manage => 'प्रबंधित करें';
+
+  @override
+  String get settingsAndActivity => 'सेटिंग्स और गतिविधियाँ';
+
+  @override
+  String get account => 'खाता';
+
+  @override
+  String get accountManagementPasswordChange => 'खाता प्रबंधन, पासवर्ड बदलें';
+
+  @override
+  String get management => 'प्रबंधन';
+
+  @override
+  String get userManagement => 'उपयोगकर्ता प्रबंधन';
+
+  @override
+  String get viewCustomers => 'ग्राहक देखें';
+
+  @override
+  String get manageAnalyticsData => 'एनालिटिक्स डेटा प्रबंधित करें';
+
+  @override
+  String get termsPolicy => 'नियम और नीति';
+
+  @override
+  String get manageTermsPolicy => 'नियम और नीति प्रबंधित करें';
 }

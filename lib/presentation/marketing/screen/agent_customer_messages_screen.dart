@@ -4,6 +4,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
@@ -127,6 +128,7 @@ class _AgentCustomerMessagesScreenState
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -134,7 +136,7 @@ class _AgentCustomerMessagesScreenState
             Initicon(text: widget.customerName ?? ""),
             const SizedBox(width: 5),
             Text(
-              widget.customerName ?? "Customer",
+              widget.customerName ?? locale.customer,
               style: AppTextStyles.black12_700,
             ),
           ],
@@ -221,14 +223,14 @@ class _AgentCustomerMessagesScreenState
                                     )
                                   else if (msg.message == 'Fill details')
                                     FillFormButton(
-                                      buttonText: "Fill product details",
+                                      buttonText: locale.fillProductDetails,
                                       onSubmit: () {
                                         // Agent not allowed to fill the form
                                       },
                                     )
                                   else if (msg.message == "Update form rate")
                                     FillFormButton(
-                                      buttonText: "Update Form",
+                                      buttonText: locale.updateForm,
                                       onSubmit: () {
                                         // Only show the widget for history, not to do anything on the agent side
                                       },

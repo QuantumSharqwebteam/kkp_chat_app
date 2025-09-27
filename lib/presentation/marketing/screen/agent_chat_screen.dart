@@ -23,6 +23,7 @@ import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/main.dart';
@@ -1163,6 +1164,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1382,14 +1384,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                       )
                                     else if (msg.message == 'Fill details')
                                       FillFormButton(
-                                        buttonText: "Fill product details",
+                                        buttonText: locale.fillProductDetails,
                                         onSubmit: () {
                                           // Agent not allowed to fill the form
                                         },
                                       )
                                     else if (msg.message == "Update form rate")
                                       FillFormButton(
-                                        buttonText: "Update Form",
+                                        buttonText: locale.updateForm,
                                         onSubmit: () {
                                           // Only show the widget for history, not to do anything on the agent side
                                         },

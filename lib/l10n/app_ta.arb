@@ -104,10 +104,7 @@
   "@createAccount": {
     "description": "கணக்கு உருவாக்க பொத்தானின் உரை"
   },
-  "fullName": "முழு பெயர்",
-  "@fullName": {
-    "description": "முழு பெயர் உள்ளீடு புலத்தின் லேபல்"
-  },
+ 
   "enterFullName": "உங்கள் முழு பெயரை உள்ளிடவும்",
   "@enterFullName": {
     "description": "முழு பெயர் உள்ளீடு புலத்தின் இடமிருப்பு"
@@ -281,10 +278,7 @@
   "@agentNotEligibleToChat": {
     "description": "முகவர் அரட்டை தகுதியற்றது குறித்த செய்தி"
   },
-  "noAgentsFound": "முகவர்கள் எதுவும் கிடைக்கவில்லை",
-  "@noAgentsFound": {
-    "description": "முகவர்கள் எதுவும் கிடைக்காத செய்தி"
-  },
+  
   "searchByAnything": "எதையும் தேடவும்...",
   "@searchByAnything": {
     "description": "தேடல் உள்ளீடு புலத்தின் இடமிருப்பு"
@@ -293,10 +287,7 @@
   "@posterAdsManagement": {
     "description": "போஸ்டர் விளம்பர மேலாண்மை பகுதியின் தலைப்பு"
   },
-  "uploadProductImage": "பொருள் படத்தை பதிவேற்றவும்",
-  "@uploadProductImage": {
-    "description": "பொருள் படத்தை பதிவேற்றும் உரை"
-  },
+
   "uploadPoster": "போஸ்டரை பதிவேற்றவும்",
   "@uploadPoster": {
     "description": "போஸ்டரை பதிவேற்றும் உரை"
@@ -320,9 +311,6 @@
   "@messages": {
     "description": "செய்திகள் எண்ணிக்கை அல்லது பகுதியின் லேபல்"
   },
-  "customerInquiries": "வாடிக்கையாளர் விசாரணைகள்",
-  "@customerInquiries": {
-    "description": "வாடிக்கையாளர் விசாரணைகள் பகுதியின் லேபல்"},
   "chooseWhatToDo": "செய்ய வேண்டியதை தேர்வு செய்யவும்:",
   "@chooseWhatToDo": {
     "description": "பயனர் செயலை தேர்வு செய்ய அழைப்பு"
@@ -500,10 +488,7 @@
   "@subject": {
     "description": "புகார்களில் பொருள் புலத்திற்கான லேபல்"
   },
-  "description": "விவரம்",
-  "@description": {
-    "description": "புகார்களில் விவரம் புலத்திற்கான லேபல்"
-  },
+
   "submitComplaint": "புகாரை சமர்ப்பிக்கவும்",
   "@submitComplaint": {
     "description": "புகாரை சமர்ப்பிக்கும் பொத்தானுக்கான லேபல்"
@@ -519,10 +504,6 @@
   "accountAndOrders": "கணக்கு & உங்கள் ஆர்டர்கள்",
   "@accountAndOrders": {
     "description": "கணக்கு மற்றும் ஆர்டர்கள் பகுதியின் தலைப்பு"
-  },
-  "accountAndSecurity": "கணக்கு & பாதுகாப்பு",
-  "@accountAndSecurity": {
-    "description": "கணக்கு மற்றும் பாதுகாப்பு பகுதியின் தலைப்பு"
   },
   "accountManagement": "கணக்கு மேலாண்மை",
   "@accountManagement": {
@@ -544,10 +525,7 @@
   "@preferences": {
     "description": "விருப்பத்தேர்வுகள் பகுதியின் தலைப்பு"
   },
-  "notifications": "அறிவிப்புகள்",
-  "@notifications": {
-    "description": "அறிவிப்புகள் பகுதியின் தலைப்பு"
-  },
+
   "yourNotificationsHub": "உங்கள் அறிவிப்பு மையம்",
   "@yourNotificationsHub": {
     "description": "அறிவிப்பு மையத்தின் விளக்கம்"
@@ -564,10 +542,7 @@
   "@termsAndPolicy": {
     "description": "விதிமுறைகள் மற்றும் கொள்கை பகுதியின் தலைப்பு"
   },
-  "about": "பற்றி",
-  "@about": {
-    "description": "பற்றி பகுதியின் தலைப்பு"
-  },
+
   "manageTermsAndPolicy": "விதிமுறைகள் & கொள்கையை மேலாண்மை செய்யவும்",
   "@manageTermsAndPolicy": {
     "description": "விதிமுறைகள் மற்றும் கொள்கை மேலாண்மையின் தலைப்பு"
@@ -608,10 +583,7 @@
   "@orderEnquiries": {
     "description": "ஆர்டர் விசாரணைகள் பகுதியின் தலைப்பு"
   },
-  "search": "தேடு",
-  "@search": {
-    "description": "தேடல் செயல்பாட்டுக்கான லேபல்"
-  },
+
   "cottonTShirt": "பருத்தி டி-ஷர்ட்",
   "@cottonTShirt": {
     "description": "பருத்தி டி-ஷர்ட் பொருளின் பெயர்"
@@ -624,10 +596,7 @@
   "@previousProducts": {
     "description": "முன்னைய பொருட்கள் பகுதியின் தலைப்பு"
   },
-  "noProductsAvailable": "பொருட்கள் எதுவும் கிடைக்கவில்லை",
-  "@noProductsAvailable": {
-    "description": "பொருட்கள் எதுவும் கிடைக்காதபோது செய்தி"
-  },
+
   "productEnquirers": "பொருள் விசாரணைகள்",
   "@productEnquirers": {
     "description": "பொருள் விசாரணைகள் பகுதியின் தலைப்பு"
@@ -636,22 +605,8 @@
   "@howMayIHelpYou": {
     "description": "வாடிக்கையாளர் சேவை வரவேற்பு செய்தி"
   },
-  "availableColors": "கிடைக்கக்கூடிய நிறங்கள்",
-  "@availableColors": {
-    "description": "பொருளின் கிடைக்கக்கூடிய நிறங்களை காட்டுவதற்கான லேபல்"
-  },
-  "notAvailable": "கிடைக்கவில்லை",
-  "@notAvailable": {
-    "description": "கிடைக்காத பொருட்களுக்கான லேபல்"
-  },
-  "outOfStock": "கையிருப்பில் இல்லை",
-  "@outOfStock": {
-    "description": "கையிருப்பில் இல்லாத பொருட்களுக்கான லேபல்"
-  },
-  "product": "பொருள்",
-  "@product": {
-    "description": "பொருளுக்கான லேபல்"
-  },
+ 
+
   "searchHere": "இங்கே தேடு...",
   "@searchHere": {
     "description": "பொருள் தேடல் உள்ளீடு புலத்திற்கான இடமிருப்பு"
@@ -664,14 +619,8 @@
   "@profile": {
     "description": "பயனர் சுயவிவர பகுதிக்கான லேபல்"
   },
-  "cancel": "ரத்துசெய்",
-  "@cancel": {
-    "description": "ஒரு செயலை ரத்துசெய்ய பொத்தானின் லேபல்"
-  },
-  "edit": "திருத்து",
-  "@edit": {
-    "description": "தகவல்களை திருத்த பொத்தானின் லேபல்"
-  },
+  
+ 
   "saveChanges": "மாற்றங்களை சேமி",
   "@saveChanges": {
     "description": "மாற்றங்களை சேமிக்க பொத்தானின் லேபல்"
@@ -716,10 +665,7 @@
   "@someBasicInformation": {
     "description": "சுயவிவர அமைப்புக்கான அறிமுக உரை"
   },
-  "name": "பெயர்",
-  "@name": {
-    "description": "பெயர் புலத்திற்கான லேபல்"
-  },
+ 
   "enterYourName": "உங்கள் பெயரை உள்ளிடவும்",
   "@enterYourName": {
     "description": "பெயர் உள்ளீடு புலத்திற்கான இடமிருப்பு"
@@ -803,6 +749,299 @@
   "ok": "சரி",
   "@ok": {
     "description": "உறுதிப்படுத்தல் பொத்தானின் லேபல்"
+  }
+,
+  "addProduct": "பொருள் சேர்",
+"@addProduct": {
+  "description": "புதிய பொருளைச் சேர்க்கும் பொத்தான் அல்லது லேபல் உரை"
+},
+"pleaseFillAllFields": "தயவுசெய்து அனைத்து புலங்களையும் சரியாக நிரப்பவும்!",
+"@pleaseFillAllFields": {
+  "description": "பயனர் புலங்களை காலியாகவோ அல்லது தவறாகவோ நிரப்பும்போது காட்டப்படும் செய்தி"
+},
+"productAddedSuccessfully": "பொருள் வெற்றிகரமாக சேர்க்கப்பட்டது!",
+"@productAddedSuccessfully": {
+  "description": "ஒரு பொருள் வெற்றிகரமாக சேர்க்கப்படும் போது காட்டப்படும் உறுதிப்படுத்தும் செய்தி"
+},
+"uploadProductImage": "பொருள் படத்தை பதிவேற்றவும்",
+"@uploadProductImage": {
+  "description": "பொருளின் படத்தை பதிவேற்றும் பொத்தான் அல்லது லேபல் உரை"
+},
+"chooseFile": "கோப்பை தேர்ந்தெடுக்கவும்",
+"@chooseFile": {
+  "description": "கோப்பைத் தேர்வுசெய்யும் பொத்தான் அல்லது லேபல் உரை"
+},
+
+"name": "பெயர்",
+"@name": {
+  "description": "பயனர் தனது பெயரை உள்ளிடும் புலத்தின் லேபல்"
+},
+"price": "விலை",
+"@price": {
+  "description": "பயனர் பொருளின் விலையை உள்ளிடும் புலத்தின் லேபல்"
+},
+"size": "அளவு",
+"@size": {
+  "description": "பயனர் பொருளின் அளவை தேர்வு செய்யும் அல்லது உள்ளிடும் புலத்தின் லேபல்"
+},
+"color": "நிறம்",
+"@color": {
+  "description": "பயனர் பொருளின் நிறத்தை தேர்வு செய்யும் அல்லது உள்ளிடும் புலத்தின் லேபல்"
+},
+"stockAvailable": "கையிருப்பு உள்ளது",
+"@stockAvailable": {
+  "description": "பொருளின் கிடைக்கும் கையிருப்பு அளவை குறிக்கும் லேபல்"
+},
+"description": "விவரம்",
+"@description": {
+  "description": "பயனர் பொருளின் விளக்கத்தை உள்ளிடும் புலத்தின் லேபல்"
+},
+"describeProduct": "பொருளைப் பற்றி விவரிக்கவும்.......",
+"@describeProduct": {
+  "description": "பொருள் விளக்கம் உள்ளீடு புலத்திற்கு இடமிருப்பு உரை"
+},
+"pickColor": "நிறத்தை தேர்ந்தெடுக்கவும்",
+"@pickColor": {
+  "description": "பொருளின் நிறத்தை தேர்வு செய்யும் இடமிருப்பு அல்லது கேள்வி உரை"
+},
+"cancel": "ரத்து செய்",
+"@cancel": {
+  "description": "ரத்து செய்யும் பொத்தான் அல்லது செயலுக்கு உரை"
+},
+"select": "தேர்வு செய்க",
+"@select": {
+  "description": "தேர்வு பொத்தான் அல்லது Dropdown விருப்பத்திற்கு உரை"
+},
+"updateForm": "படிவத்தை புதுப்பிக்கவும்",
+"@updateForm": {
+  "description": "Label or button text for updating a form in Tamil"
+},
+"fillProductDetails": "உற்பத்தியின் விவரங்களை நிரப்பவும்",
+"@fillProductDetails": {
+  "description": "Prompt or label asking the user to fill product details in Tamil"
+},
+"noCustomerForms": "நேவிகேஷன் செய்ய எந்தவொரு வாடிக்கையாளர் படிவங்களும் கிடைக்கவில்லை",
+"@noCustomerForms": {
+  "description": "Message shown when there are no customer forms available for navigation in Tamil"
+},
+"orderConfirmed": "உங்கள் ஆர்டர் பூரணமாகும் பை பாகுபடுத்தப்பட்ட படிவ ID உடன்",
+"@orderConfirmed": {
+  "description": "Message shown to confirm the order along with the form Id in Tamil"
+},
+"orderDeclined": "உங்கள் ஆர்டர் பூரணமாக மறுக்கப்பட்டுள்ளது படிவ ID உடன்",
+"@orderDeclined": {
+  "description": "Message shown when the order is declined along with the form Id in Tamil"
+},
+"customersList": "வாடிக்கையாளர்கள் பட்டியல்",
+"@customersList": {
+  "description": "Title for displaying the list of customers in Tamil"
+},
+"user": "பயனர்",
+"@user": {
+  "description": "Label or title for a user in Tamil"
+},
+"customer": "வாடிக்கையாளர்",
+"@customer": {
+  "description": "Label or title for a customer in Tamil"
+},
+"customerInquiries": "வாடிக்கையாளர் விசாரணைகள்",
+"@customerInquiries": {
+  "description": "Title or section label for customer inquiries in Tamil"
+},
+"findLatestMessages": "சமீபத்திய செய்திகளை கண்டுபிடிப்போம்",
+"@findLatestMessages": {
+  "description": "Message or prompt shown when looking for the latest messages in Tamil"
+},
+"search": "தேடல்",
+"@search": {
+  "description": "Label or placeholder text for search functionality in Tamil"
+},
+"unnamed": "பெயரிடப்படாதது",
+"@unnamed": {
+  "description": "Label used when something (like a user or item) does not have a name in Tamil"
+},
+"online": "ஆன்லைன்",
+"@online": {
+  "description": "Status label indicating a user is currently active or connected in Tamil"
+},
+"analyticsManagement": "அனலிடிக்ஸ் மேலாண்மை",
+"@analyticsManagement": {
+  "description": "Title or label for the analytics management section in Tamil"
+},
+"confirmDownloadExcel": "எல்லா தரவையும் எக்செல் வடிவில் பதிவிறக்கம் செய்ய விரும்புகிறீர்களா?",
+"@confirmDownloadExcel": {
+  "description": "Confirmation message shown before downloading all data in Excel format in Tamil"
+},"confirm": "உறுதிப்படுத்தவும்",
+"@confirm": {
+  "description": "Text for confirm button or action in Tamil"
+},
+"noActivitiesFound": "செயல்பாடுகள் எதுவும் கிடைக்கவில்லை",
+"@noActivitiesFound": {
+  "description": "Message displayed when no activities are available in Tamil"
+},
+"confirmDeleteAllActivities": "நீங்கள் அனைத்து செயல்பாடுகளையும் நீக்க விரும்புகிறீர்களா?",
+"@confirmDeleteAllActivities": {
+  "description": "Confirmation message shown before deleting all activities in Tamil"
+},
+"allDataDeletedSuccessfully": "அனைத்து தரவுகளும் வெற்றிகரமாக நீக்கப்பட்டன",
+"@allDataDeletedSuccessfully": {
+  "description": "Message shown when all data is deleted successfully in Tamil"
+},
+"failedToDeleteAllData": "அனைத்து தரவுகளையும் நீக்க முடியவில்லை",
+"@failedToDeleteAllData": {
+  "description": "Message shown when deleting all data fails in Tamil"
+},
+"editProduct": "தயாரிப்பை தொகுக்கவும்",
+"@editProduct": {
+  "description": "Text for editing a product in Tamil"
+},
+"updateProduct": "தயாரிப்பை புதுப்பிக்கவும்",
+"@updateProduct": {
+  "description": "Text for updating a product in Tamil"
+},
+"productName": "தயாரிப்பின் பெயர்",
+"@productName": {
+  "description": "Label for the product name field in Tamil"
+},
+"pinnedMessages": "இணைக்கப்பட்ட செய்திகள்",
+"@pinnedMessages": {
+  "description": "Label for pinned messages section in Tamil"
+},
+"noAgentsFound": "எந்த முகவர்கள் கிடைக்கவில்லை",
+"@noAgentsFound": {
+  "description": "Message shown when no agents are available in Tamil"
+},
+"clickToSeeChats": "சாட்களை பார்க்க கிளிக் செய்க....",
+"@clickToSeeChats": {
+  "description": "Prompt text in Tamil to click and view chats"
+},
+"availableColors": "கிடைக்கும் நிறங்கள்:",
+"@availableColors": {
+  "description": "Label in Tamil showing the available colors of a product"
+},
+"outOfStock": "பங்கு இல்லை",
+"@outOfStock": {
+  "description": "Label in Tamil indicating the product is out of stock"
+},
+"leftInStock": "மீதமுள்ள பங்கு",
+"@leftInStock": {
+  "description": "Label in Tamil indicating remaining stock"
+},
+"only": "மட்டுமே",
+"@only": {
+  "description": "Label in Tamil indicating limitation, e.g., 'மட்டுமே 2 மீதி'"
+},
+"notAvailable": "கிடைக்கவில்லை",
+"@notAvailable": {
+  "description": "Label in Tamil indicating item/product is not available"
+},
+"edit": "தொகுப்பி மாற்று",
+"@edit": {
+  "description": "Label in Tamil for editing an item or product"
+},
+"remove": "அகற்று",
+"@remove": {
+  "description": "Label in Tamil for removing an item or product"
+},
+"noProductsAvailable": "பொருட்கள் இல்லை",
+"@noProductsAvailable": {
+  "description": "Message in Tamil when no products are available"
+},
+"noMatchingProducts": "பொருட்கள் பொருந்தவில்லை",
+"@noMatchingProducts": {
+  "description": "Message in Tamil when no products match the search/filter criteria"
+},
+"searchProducts": "பொருட்களைத் தேடுங்கள்...",
+"@searchProducts": {
+  "description": "Message in Tamil for product search input field"
+},
+"uploadNewProduct": "புதிய பொருளை பதிவேற்றுக",
+"@uploadNewProduct": {
+  "description": "Tamil translation for uploading a new product"
+},
+"uploadHere": "இங்கே பதிவேற்றுக",
+"@uploadHere": {
+  "description": "Tamil translation for uploading a file or product"
+},
+"product": "உருப்படி",
+"@product": {
+  "description": "Tamil translation for product"
+},
+"notifications": "அறிவிப்புகள்",
+"@notifications": {
+  "description": "Tamil translation for notifications"
+},
+"markAllRead": "அனைத்தையும் வாசித்ததாக குறிக்கவும்",
+"@markAllRead": {
+  "description": "Tamil translation for marking all notifications/messages as read"
+},
+"myAccount": "எனது கணக்கு",
+"@myAccount": {
+  "description": "Tamil translation for user's account section"
+},
+"fullName": "முழு பெயர்",
+"@fullName": {
+  "description": "Tamil translation for user's full name input field"
+},
+"confirmLogout": "நீங்கள் வெளியேறவிரும்புகிறீர்களா?",
+"@confirmLogout": {
+  "description": "Tamil translation for logout confirmation message"
+},
+"noCustomersAvailable": "பார்வையாளர்கள் இல்லை",
+"@noCustomersAvailable": {
+  "description": "Tamil translation for no customers available message"
+},
+"searchCustomer": "வாடிக்கையாளர் தேடவும்...",
+"@searchCustomer": {
+  "description": "Tamil placeholder text for searching a customer"
+},
+"manage": "முன்னணியில் நிர்வகிக்கவும்",
+"@manage": {
+  "description": "Tamil label for manage action or button"
+},
+"account": "खाता",
+"@account": {
+  "description": "Hindi label for account section"
+},
+"accountAndSecurity": "கணக்கு மற்றும் பாதுகாப்பு",
+"@accountAndSecurity": {
+  "description": "Tamil label for account and security settings section"
+},
+"accountManagementPasswordChange": "கணக்கு மேலாண்மை, கடவுச்சொல் மாற்றம்",
+"@accountManagementPasswordChange": {
+  "description": "Tamil label describing account management and password change options"
+},
+"management": "மேலாண்மை",
+"@management": {
+  "description": "Tamil label for management"
+},
+"userManagement": "பயனர் மேலாண்மை",
+"@userManagement": {
+  "description": "Tamil label for user management section"
+},
+"viewCustomers": "வாடிக்கையாளர்களை பார்க்கவும்",
+"@viewCustomers": {
+  "description": "Tamil label for viewing customer list"
+},
+"manageAnalyticsData": "புள்ளிவிவர தரவுகளை நிர்வகிக்கவும்",
+"@manageAnalyticsData": {
+  "description": "Tamil label for managing analytics data"
+},
+"termsPolicy": "விதிமுறைகள் & கொள்கை",
+"@termsPolicy": {
+  "description": "Tamil label for terms and policy section"
+},
+"about": "பற்றி",
+"@about": {
+  "description": "Tamil label for about section"
+},
+"manageTermsPolicy": "விதிகள் மற்றும் கொள்கைகளை நிர்வகிக்கவும்",
+"@manageTermsPolicy": {
+  "description": "Tamil label for managing terms and policy section"
+},
+"settingsAndActivity": "அமைப்புகள் மற்றும் செயல்பாடுகள்",
+  "@settingsAndActivity": {
+    "description": "அமைப்புகள் மற்றும் செயல்பாடுகள் பகுதியின் லேபல்"
   }
 
 
