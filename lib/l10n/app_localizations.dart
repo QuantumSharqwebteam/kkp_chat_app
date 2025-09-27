@@ -19,7 +19,7 @@ import 'app_localizations_ta.dart';
 /// `supportedLocales` list. For example:
 ///
 /// ```dart
-/// import 'generated/app_localizations.dart';
+/// import 'l10n/app_localizations.dart';
 ///
 /// return MaterialApp(
 ///   localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -63,8 +63,7 @@ import 'app_localizations_ta.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -72,8 +71,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -85,8 +83,7 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -855,262 +852,9 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'How may I help you?'**
   String get howMayIHelpYou;
-
-  /// Label for displaying available product colors
-  ///
-  /// In en, this message translates to:
-  /// **'Available Colors'**
-  String get availableColors;
-
-  /// Label for unavailable items/products
-  ///
-  /// In en, this message translates to:
-  /// **'Not Available'**
-  String get notAvailable;
-
-  /// Label for items/products that are out of stock
-  ///
-  /// In en, this message translates to:
-  /// **'Out of Stock'**
-  String get outOfStock;
-
-  /// Label for product
-  ///
-  /// In en, this message translates to:
-  /// **'Product'**
-  String get product;
-
-  /// Placeholder for product search input field
-  ///
-  /// In en, this message translates to:
-  /// **'Search Here...'**
-  String get searchHere;
-
-  /// Message when no products match the search criteria
-  ///
-  /// In en, this message translates to:
-  /// **'No matching products found'**
-  String get noMatchingProductsFound;
-
-  /// Label for user profile section
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-  String get profile;
-
-  /// Button label for canceling an action
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get cancel;
-
-  /// Button label for editing information
-  ///
-  /// In en, this message translates to:
-  /// **'Edit'**
-  String get edit;
-
-  /// Button label for saving changes
-  ///
-  /// In en, this message translates to:
-  /// **'Save Changes'**
-  String get saveChanges;
-
-  /// Title for address details section
-  ///
-  /// In en, this message translates to:
-  /// **'Address Details'**
-  String get addressDetails;
-
-  /// Title for business details section
-  ///
-  /// In en, this message translates to:
-  /// **'Business Details'**
-  String get businessDetails;
-
-  /// Success message after profile update
-  ///
-  /// In en, this message translates to:
-  /// **'Profile details updated successfully!'**
-  String get profileDetailsUpdatedSuccessfully;
-
-  /// Generic label for messages
-  ///
-  /// In en, this message translates to:
-  /// **'Message'**
-  String get message;
-
-  /// Button label for updating profile
-  ///
-  /// In en, this message translates to:
-  /// **'Update Profile'**
-  String get updateProfile;
-
-  /// Button label for going back
-  ///
-  /// In en, this message translates to:
-  /// **'Back'**
-  String get back;
-
-  /// Button label for completing a process
-  ///
-  /// In en, this message translates to:
-  /// **'Finish'**
-  String get finish;
-
-  /// Button label for moving to next step
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get next;
-
-  /// Confirmation message for app exit
-  ///
-  /// In en, this message translates to:
-  /// **'Press back again to exit'**
-  String get pressBackAgainToExit;
-
-  /// Introductory text for profile setup
-  ///
-  /// In en, this message translates to:
-  /// **'Some basic information to get you started.'**
-  String get someBasicInformation;
-
-  /// Label for name field
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get name;
-
-  /// Placeholder for name input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your name'**
-  String get enterYourName;
-
-  /// Label for customer type selection
-  ///
-  /// In en, this message translates to:
-  /// **'Customer Type'**
-  String get customerType;
-
-  /// Option for export customer type
-  ///
-  /// In en, this message translates to:
-  /// **'Export'**
-  String get export;
-
-  /// Option for domestic customer type
-  ///
-  /// In en, this message translates to:
-  /// **'Domestic'**
-  String get domestic;
-
-  /// Label for mobile number field
-  ///
-  /// In en, this message translates to:
-  /// **'Mobile number'**
-  String get mobileNumber;
-
-  /// Placeholder for mobile number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your mobile number'**
-  String get enterYourMobileNumber;
-
-  /// Label for GST number field
-  ///
-  /// In en, this message translates to:
-  /// **'GST number'**
-  String get gstNumber;
-
-  /// Placeholder for GST number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter GST No.'**
-  String get enterGSTNo;
-
-  /// Label for PAN number field
-  ///
-  /// In en, this message translates to:
-  /// **'PAN number'**
-  String get panNumber;
-
-  /// Placeholder for PAN number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter PAN No.'**
-  String get enterPANNo;
-
-  /// Label for house/flat number field
-  ///
-  /// In en, this message translates to:
-  /// **'House/Flat No.'**
-  String get houseFlatNo;
-
-  /// Placeholder for house/flat number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter house/flat no.'**
-  String get enterHouseFlatNo;
-
-  /// Label for street name field
-  ///
-  /// In en, this message translates to:
-  /// **'Street Name'**
-  String get streetName;
-
-  /// Placeholder for street name input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter Street Name'**
-  String get enterStreetName;
-
-  /// Label for city name field
-  ///
-  /// In en, this message translates to:
-  /// **'City Name'**
-  String get cityName;
-
-  /// Placeholder for city name input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter City Name'**
-  String get enterCityName;
-
-  /// Label for pincode field
-  ///
-  /// In en, this message translates to:
-  /// **'Pin Code'**
-  String get pinCode;
-
-  /// Placeholder for pincode input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter Pincode'**
-  String get enterPincode;
-
-  /// Title for validation error messages
-  ///
-  /// In en, this message translates to:
-  /// **'Validation Error'**
-  String get validationError;
-
-  /// Error message when customer type is not selected
-  ///
-  /// In en, this message translates to:
-  /// **'Please select a customer type.'**
-  String get pleaseSelectCustomerType;
-
-  /// Button label for confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'OK'**
-  String get ok;
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -1119,27 +863,26 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['en', 'hi', 'ta'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en', 'hi', 'ta'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
-    case 'hi':
-      return AppLocalizationsHi();
-    case 'ta':
-      return AppLocalizationsTa();
+    case 'en': return AppLocalizationsEn();
+    case 'hi': return AppLocalizationsHi();
+    case 'ta': return AppLocalizationsTa();
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
 }

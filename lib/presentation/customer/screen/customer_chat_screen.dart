@@ -49,6 +49,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
+
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
   final String? agentName;
@@ -707,7 +709,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      "Choose what to do :",
+                      AppLocalizations.of(context)!.chooseWhatToDo,
                       style: AppTextStyles.grey12_600.copyWith(fontSize: 16),
                     ),
                     IconButton(
@@ -733,8 +735,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 ),
               ListTile(
                 leading: const Icon(Icons.delete),
-                title: const Text(
-                  'Unsend Message',
+                title: Text(
+                  AppLocalizations.of(context)!.unsendMessage,
+                  // 'Unsend Message',
                   style: AppTextStyles.black15_500,
                 ),
                 onTap: () {
@@ -1017,10 +1020,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         appBar: AppBar(
           title: Row(
             children: [
-              Initicon(text: "Agent"),
+              Initicon(text: AppLocalizations.of(context)!.agent),
               const SizedBox(width: 5),
               Text(
-                widget.agentName ?? "Agent",
+                widget.agentName ?? AppLocalizations.of(context)!.agent,
                 style: AppTextStyles.black14_400,
               ),
             ],

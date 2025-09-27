@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationSettings extends StatefulWidget {
@@ -41,14 +42,16 @@ class _NotificationSettingsState extends State<NotificationSettings> {
       setState(() => isPushNotificationEnabled = true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Push notifications enabled.')),
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.pushNotificationsEnabled)),
         );
       }
     } else {
       setState(() => isPushNotificationEnabled = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Permission denied. Please enable from settings.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.permissionDenied),
           backgroundColor: Colors.red,
         ),
       );
@@ -59,7 +62,7 @@ class _NotificationSettingsState extends State<NotificationSettings> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notification Settings'),
+        title: Text(AppLocalizations.of(context)!.notificationSettings),
       ),
       body: isPushNotificationEnabled == null
           ? const Center(child: CircularProgressIndicator())
@@ -68,17 +71,19 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Push Notifications for messages',
+                    AppLocalizations.of(context)!.pushNotificationsForMessages,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
 
                 // 🔔 Push Notification Permission Switch
                 ListTile(
-                  title: const Text('Enable Push Notifications'),
+                  title: Text(
+                      AppLocalizations.of(context)!.enablePushNotifications),
                   subtitle: !isPushNotificationEnabled!
-                      ? const Text(
-                          'Push notifications are disabled. Enable to receive alerts.',
+                      ? Text(
+                          AppLocalizations.of(context)!
+                              .pushNotificationsDisabled,
                           style: TextStyle(color: Colors.red),
                         )
                       : null,
@@ -91,8 +96,9 @@ class _NotificationSettingsState extends State<NotificationSettings> {
                         final opened = await openAppSettings();
                         if (!opened && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Could not open app settings.'),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context)!
+                                  .couldNotOpenAppSettings),
                             ),
                           );
                         }

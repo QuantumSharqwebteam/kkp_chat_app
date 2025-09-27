@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 
+import '../../../../l10n/generated/app_localizations.dart';
+
 class CustomerComplaintPage extends StatefulWidget {
   const CustomerComplaintPage({super.key});
 
@@ -21,10 +23,11 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
     if (subjectController.text.isEmpty || descriptionController.text.isEmpty) {
       setState(() {
         if (subjectController.text.isEmpty) {
-          subjectError = "Subject cannot be empty";
+          subjectError = AppLocalizations.of(context)!.subjectCannotBeEmpty;
         }
         if (descriptionController.text.isEmpty) {
-          descriptionError = "Description cannot be empty";
+          descriptionError =
+              AppLocalizations.of(context)!.descriptionCannotBeEmpty;
         }
       });
       return;
@@ -51,7 +54,9 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Complaint submitted successfully")),
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .complaintSubmittedSuccessfully)),
         );
         subjectController.clear();
         descriptionController.clear();
@@ -71,7 +76,7 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Complaints")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.complaints)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -81,7 +86,7 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Subject",
+                  Text(AppLocalizations.of(context)!.subject,
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w500)),
                   TextFormField(
@@ -114,7 +119,7 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Description",
+                  Text(AppLocalizations.of(context)!.description,
                       style: const TextStyle(
                           fontSize: 14, fontWeight: FontWeight.w500)),
                   TextFormField(
@@ -149,7 +154,7 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: submitComplaint,
-                    child: const Text("Submit Complaint"),
+                    child: Text(AppLocalizations.of(context)!.submitComplaint),
                   ),
           ],
         ),

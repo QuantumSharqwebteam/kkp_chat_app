@@ -11,6 +11,7 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
@@ -50,13 +51,17 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Account & Security', style: AppTextStyles.black20_500),
+              Text(AppLocalizations.of(context)!.accountAndSecurity,
+                  style: AppTextStyles.black20_500),
               SizedBox(height: 16),
-              Text('Login & recovery', style: AppTextStyles.black16_500),
+              Text(AppLocalizations.of(context)!.loginAndRecovery,
+                  style: AppTextStyles.black16_500),
               Text(
-                'Manage your password, login preference and recovery methods',
+                AppLocalizations.of(context)!.manageYourPassword,
                 style: AppTextStyles.black14_400,
               ),
+              Text(AppLocalizations.of(context)!.loginPreferenceAndRecovery,
+                  style: AppTextStyles.black14_400),
               SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
@@ -64,7 +69,7 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: SettingsTile(
-                  titles: ['Change password'],
+                  titles: [AppLocalizations.of(context)!.changePassword],
                   numberOfTiles: 1,
                   isDense: true,
                   onTaps: [
@@ -83,7 +88,9 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: SettingsTile(
-                    titles: ['Delete Account Permanently'],
+                    titles: [
+                      AppLocalizations.of(context)!.deleteAccountPermanently
+                    ],
                     tileTitleStyle: TextStyle(
                         color: Colors.red,
                         fontSize: 16,
@@ -206,19 +213,20 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(height: 10),
-            Text("Confirm Account Deletion", style: AppTextStyles.black18_600),
+            Text(AppLocalizations.of(context)!.confirmAccountDeletion,
+                style: AppTextStyles.black18_600),
             SizedBox(height: 10),
             SizedBox(
               width: Utils().width(context) * 0.9,
               child: Text(
-                "By entering email and password you confirm that this account can be permanently deleted, and cannot be recovered in any way.",
+                AppLocalizations.of(context)!.deleteAccountConfirmation,
                 style: AppTextStyles.black14_400,
               ),
             ),
             SizedBox(height: 10),
             CustomTextField(
               controller: email,
-              hintText: "Email",
+              hintText: AppLocalizations.of(context)!.emailLabel,
               errorText: emailError,
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.emailAddress,
@@ -227,7 +235,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             CustomTextField(
               controller: password,
               errorText: passwordError,
-              hintText: "Password",
+              hintText: AppLocalizations.of(context)!.emailLabel,
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.visiblePassword,
               isPassword: true,
@@ -236,7 +244,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             CustomTextField(
               controller: feedback,
               errorText: feedbackError,
-              hintText: "Reason for deleting the account ",
+              hintText: AppLocalizations.of(context)!.reasonForDeleting,
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.text,
               isPassword: false,
@@ -245,7 +253,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             isLoading
                 ? CupertinoActivityIndicator(radius: 20)
                 : CustomButton(
-                    text: "Confirm Delete",
+                    text: AppLocalizations.of(context)!.confirmDelete,
                     onPressed: isLoading
                         ? null
                         : () {
