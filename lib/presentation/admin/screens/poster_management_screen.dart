@@ -7,6 +7,7 @@ import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/poster_model.dart';
 import 'package:kkpchatapp/data/repositories/poster_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'dart:io';
@@ -55,8 +56,7 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
 
   Future<void> _uploadPoster() async {
     if (_selectedImage == null) {
-      Utils().showSuccessDialog(
-          context, "Please pick and select an image to upload!", false);
+      Utils().showSuccessDialog(context, AppLocalizations.of(context)!.uploadProductImage, false);
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
           Navigator.pop(context); // Close dialog
@@ -74,8 +74,7 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
       if (imageUrl != null) {
         bool success = await _posterRepository.addPoster(imageUrl);
         if (success && mounted) {
-          Utils().showSuccessDialog(
-              context, "Poster uploaded successfully!", true);
+          Utils().showSuccessDialog(context, "Poster uploaded successfully!", true);
           Future.delayed(const Duration(seconds: 1), () {
             if (mounted) {
               Navigator.pop(context); // Close dialog
@@ -85,8 +84,7 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
           _selectedImage = null;
         } else {
           if (mounted) {
-            Utils()
-                .showSuccessDialog(context, "Failed to upload poster.", false);
+            Utils().showSuccessDialog(context, "Failed to upload poster.", false);
           }
         }
       }
@@ -105,8 +103,7 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
     try {
       bool success = await _posterRepository.deletePoster(posterId);
       if (success && mounted) {
-        Utils()
-            .showSuccessDialog(context, "Poster deleted successfully!", true);
+        Utils().showSuccessDialog(context, "Poster deleted successfully!", true);
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
             Navigator.pop(context); // Close dialog
@@ -135,8 +132,8 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Poster Ads Management',
+        title: Text(
+          AppLocalizations.of(context)!.posterAdsManagement,
           style: AppTextStyles.black15_500,
         ),
       ),
@@ -172,8 +169,7 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
       width: double.maxFinite,
       child: GestureDetector(
         onTap: () async {
-          final pickedFile =
-              await ImagePicker().pickImage(source: ImageSource.gallery);
+          final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
           if (pickedFile != null) {
             _pickImage(File(pickedFile.path)); // Directly call the method
           }
@@ -202,7 +198,7 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
                                 const Icon(Icons.cloud_upload_rounded,
                                     size: 50, color: Colors.grey),
                                 Text(
-                                  "Upload Product Image",
+                                  AppLocalizations.of(context)!.uploadProductImage,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
@@ -226,11 +222,10 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.only(left: 20.0, right: 20, bottom: 10),
+                padding: const EdgeInsets.only(left: 20.0, right: 20, bottom: 10),
                 child: CustomButton(
                   onPressed: _isUploading ? null : _uploadPoster,
-                  text: 'Upload Poster',
+                  text: AppLocalizations.of(context)!.uploadPoster,
                 ),
               ),
             ],
@@ -271,7 +266,7 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
             padding: const EdgeInsets.all(8.0),
             child: CustomButton(
               textColor: Colors.white,
-              text: "Delete Poster ",
+              text: AppLocalizations.of(context)!.deletePoster,
               onPressed: () => _deletePoster(poster.id),
             ),
           ),

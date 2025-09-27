@@ -157,4 +157,111 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get privacyPolicyFullText =>
       'केकेपी चैट ऐप में, हम आपकी गोपनीयता का सम्मान करते हैं और आपके व्यक्तिगत जानकारी की सुरक्षा के लिए प्रतिबद्ध हैं। यह गोपनीयता नीति बताती है कि हम आपके डेटा को कैसे एकत्र, उपयोग, साझा और सुरक्षित रखते हैं जब आप हमारे चैट एप्लिकेशन का उपयोग करते हैं। हमारे सेवा का उपयोग करके, आप इस नीति में रेखांकित शर्तों से सहमत होते हैं।\n\nएकत्रित डेटा का उपयोग निर्बाध मैसेजिंग सेवा प्रदान करने, ऐप सुरक्षा बढ़ाने, उपयोग पैटर्न का विश्लेषण करने और ग्राहक सहायता में सुधार करने के लिए किया जाता है। आपके संदेशों को गोपनीयता बनाए रखने के लिए एंड-टू-एंड एन्क्रिप्टेड किया जाता है, और हम सुरक्षित क्लाउड स्टोरेज और प्रतिबंधित डेटा एक्सेस जैसे सुरक्षा उपाय लागू करते हैं ताकि आपकी जानकारी की रक्षा हो सके। हम आपका व्यक्तिगत डेटा तीसरे पक्ष के विज्ञापनदाताओं को नहीं बेचते या साझा नहीं करते। हालांकि, कानून द्वारा आवश्यक होने पर या धोखाधड़ी और सुरक्षा खतरों को रोकने के लिए डेटा को कानूनी अधिकारियों के साथ साझा किया जा सकता है।\n\nइस गोपनीयता नीति से संबंधित किसी भी प्रश्न या चिंता के लिए, आप हमें support@kkpchatapp.com पर संपर्क कर सकते हैं। केकेपी चैट ऐप का उपयोग जारी रखकर, आप इस नीति में रेखांकित शर्तों को स्वीकार करते और सहमत होते हैं।';
+
+  @override
+  String get nameMinLengthError => 'नाम कम से कम 3 अक्षर का होना चाहिए';
+
+  @override
+  String get phoneNumberLengthError => 'फोन नंबर 10 अंक का होना चाहिए';
+
+  @override
+  String get passwordMinLengthError => 'पासवर्ड कम से कम 6 अक्षर का होना चाहिए';
+
+  @override
+  String get agentProfileCreated => 'एजेंट प्रोफाइल बनाई गई';
+
+  @override
+  String get failedToAddAgent =>
+      'एजेंट जोड़ने में विफल, बाद में पुनः प्रयास करें!';
+
+  @override
+  String get phoneNumber => 'फोन नंबर';
+
+  @override
+  String get enterPhoneNumber => 'फोन नंबर दर्ज करें';
+
+  @override
+  String get role => 'भूमिका';
+
+  @override
+  String get addAgent => 'एजेंट जोड़ें';
+
+  @override
+  String get seeMoreDataInWeb => 'वेब में और डेटा देखें';
+
+  @override
+  String get userTrafficAnalytics => 'यूजर ट्रैफिक विश्लेषण';
+
+  @override
+  String get agentManagement => 'एजेंट प्रबंधन';
+
+  @override
+  String get posterManagement => 'पोस्टर प्रबंधन';
+
+  @override
+  String get agent => 'एजेंट';
+
+  @override
+  String get offline => 'ऑफलाइन';
+
+  @override
+  String get active => 'सक्रिय';
+
+  @override
+  String get confirmDeleteAgent =>
+      'क्या आप इस एजेंट को डिलीट करना निश्चित रूप से चाहते हैं?';
+
+  @override
+  String get deleteAgent => 'एजेंट डिलीट करें';
+
+  @override
+  String get agentDeletedSuccessfully => 'एजेंट सफलतापूर्वक डिलीट हो गया';
+
+  @override
+  String get profile => 'प्रोफाइल';
+
+  @override
+  String get addNewAgent => 'नया एजेंट जोड़ें';
+
+  @override
+  String get agentEligibleToChat =>
+      '**यह एजेंट ग्राहकों के साथ चैट करने के योग्य है।**';
+
+  @override
+  String get agentNotEligibleToChat =>
+      '**यह एजेंट ग्राहकों के साथ चैट करने के योग्य नहीं है।**';
+
+  @override
+  String get noAgentsFound => 'कोई एजेंट नहीं मिला';
+
+  @override
+  String get searchByAnything => 'कुछ भी खोजें...';
+
+  @override
+  String get posterAdsManagement => 'पोस्टर विज्ञापन प्रबंधन';
+
+  @override
+  String get uploadProductImage => 'उत्पाद छवि अपलोड करें';
+
+  @override
+  String get uploadPoster => 'पोस्टर अपलोड करें';
+
+  @override
+  String get deletePoster => 'पोस्टर डिलीट करें';
+
+  @override
+  String get selectImageToUpload =>
+      'कृपया अपलोड करने के लिए एक छवि चुनें और सेलेक्ट करें!';
+
+  @override
+  String get adminDashboard => 'एडमिन डैशबोर्ड';
+
+  @override
+  String get visitors => 'आगंतुक';
+
+  @override
+  String get messages => 'संदेश';
+
+  @override
+  String get customerInquiries => 'ग्राहक पूछताछ';
 }

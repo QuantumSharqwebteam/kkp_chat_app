@@ -6,6 +6,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/logic/agent/agent_provider.dart';
 import 'package:provider/provider.dart';
@@ -49,21 +50,20 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     // Show confirmation dialog
     Utils().showDialogWithActions(
       context,
-      "Delete Agent",
+      AppLocalizations.of(context)!.deleteAgent,
       icon: Icons.delete_outline,
-      "Are you sure you want to delete this agent?",
-      "Delete",
+      AppLocalizations.of(context)!.confirmDeleteAgent,
+      AppLocalizations.of(context)!.deleteAgent,
       () async {
         // Delete agent using provider
-        final agentProvider =
-            Provider.of<AgentProvider>(context, listen: false);
+        final agentProvider = Provider.of<AgentProvider>(context, listen: false);
         final response = await agentProvider.deleteAgent(email: email);
 
         if (response["status"] == 200) {
           if (mounted) {
             Utils().showSuccessDialog(
               context,
-              "Agent deleted successfully",
+              AppLocalizations.of(context)!.confirmDeleteAgent,
               true,
             );
           }
@@ -103,7 +103,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
-        title: const Text('Profile'),
+        title: Text(AppLocalizations.of(context)!.profile),
         actions: [
           PopupMenuButton<int>(
             color: Colors.white,
@@ -177,6 +177,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
   }
 
   Widget _buildDetailsCard() {
+    final l = AppLocalizations.of(context)!;
     return Card(
       color: Colors.white,
       surfaceTintColor: Colors.white,
@@ -186,10 +187,9 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInputField(Icons.person, 'Name', profile?.name ?? "NA"),
-            _buildInputField(Icons.email, 'Email', profile?.email ?? "NA"),
-            _buildInputField(Icons.phone, 'Enter Your Mobile No.',
-                profile?.mobile.toString() ?? "0"),
+            _buildInputField(Icons.person, l.fullName, profile?.name ?? "NA"),
+            _buildInputField(Icons.email, l.email, profile?.email ?? "NA"),
+            _buildInputField(Icons.phone, l.phoneNumber, profile?.mobile.toString() ?? "0"),
           ],
         ),
       ),
@@ -234,6 +234,6 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
         backgroundColor: AppColors.blue00ABE9,
         fontSize: 18,
         borderColor: AppColors.blue00ABE9,
-        text: "Add new agent");
+        text: AppLocalizations.of(context)!.addAgent);
   }
 }

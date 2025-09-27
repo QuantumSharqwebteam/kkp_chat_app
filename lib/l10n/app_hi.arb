@@ -191,5 +191,143 @@
   },
   "privacyPolicyFullText": "केकेपी चैट ऐप में, हम आपकी गोपनीयता का सम्मान करते हैं और आपके व्यक्तिगत जानकारी की सुरक्षा के लिए प्रतिबद्ध हैं। यह गोपनीयता नीति बताती है कि हम आपके डेटा को कैसे एकत्र, उपयोग, साझा और सुरक्षित रखते हैं जब आप हमारे चैट एप्लिकेशन का उपयोग करते हैं। हमारे सेवा का उपयोग करके, आप इस नीति में रेखांकित शर्तों से सहमत होते हैं।\n\nएकत्रित डेटा का उपयोग निर्बाध मैसेजिंग सेवा प्रदान करने, ऐप सुरक्षा बढ़ाने, उपयोग पैटर्न का विश्लेषण करने और ग्राहक सहायता में सुधार करने के लिए किया जाता है। आपके संदेशों को गोपनीयता बनाए रखने के लिए एंड-टू-एंड एन्क्रिप्टेड किया जाता है, और हम सुरक्षित क्लाउड स्टोरेज और प्रतिबंधित डेटा एक्सेस जैसे सुरक्षा उपाय लागू करते हैं ताकि आपकी जानकारी की रक्षा हो सके। हम आपका व्यक्तिगत डेटा तीसरे पक्ष के विज्ञापनदाताओं को नहीं बेचते या साझा नहीं करते। हालांकि, कानून द्वारा आवश्यक होने पर या धोखाधड़ी और सुरक्षा खतरों को रोकने के लिए डेटा को कानूनी अधिकारियों के साथ साझा किया जा सकता है।\n\nइस गोपनीयता नीति से संबंधित किसी भी प्रश्न या चिंता के लिए, आप हमें support@kkpchatapp.com पर संपर्क कर सकते हैं। केकेपी चैट ऐप का उपयोग जारी रखकर, आप इस नीति में रेखांकित शर्तों को स्वीकार करते और सहमत होते हैं।","@privacyPolicyFullText":{
     "description": ""
+  },
+    "nameMinLengthError": "नाम कम से कम 3 अक्षर का होना चाहिए",
+  "@nameMinLengthError": {
+    "description": "नाम की न्यूनतम लंबाई के लिए त्रुटि संदेश"
+  },
+  "phoneNumberLengthError": "फोन नंबर 10 अंक का होना चाहिए",
+  "@phoneNumberLengthError": {
+    "description": "फोन नंबर की लंबाई के लिए त्रुटि संदेश"
+  },
+  "passwordMinLengthError": "पासवर्ड कम से कम 6 अक्षर का होना चाहिए",
+  "@passwordMinLengthError": {
+    "description": "पासवर्ड की न्यूनतम लंबाई के लिए त्रुटि संदेश"
+  },
+  "agentProfileCreated": "एजेंट प्रोफाइल बनाई गई",
+  "@agentProfileCreated": {
+    "description": "एजेंट प्रोफाइल बनने का सफलता संदेश"
+  },
+  "failedToAddAgent": "एजेंट जोड़ने में विफल, बाद में पुनः प्रयास करें!",
+  "@failedToAddAgent": {
+    "description": "एजेंट जोड़ने में विफलता का त्रुटि संदेश"
+  },
+  "phoneNumber": "फोन नंबर",
+  "@phoneNumber": {
+    "description": "फोन नंबर इनपुट फील्ड का लेबल"
+  },
+  "enterPhoneNumber": "फोन नंबर दर्ज करें",
+  "@enterPhoneNumber": {
+    "description": "फोन नंबर इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "role": "भूमिका",
+  "@role": {
+    "description": "भूमिका चयन का लेबल"
+  },
+  "addAgent": "एजेंट जोड़ें",
+  "@addAgent": {
+    "description": "एजेंट जोड़ने के बटन का टेक्स्ट"
+  },
+  "seeMoreDataInWeb": "वेब में और डेटा देखें",
+  "@seeMoreDataInWeb": {
+    "description": "वेब पर अधिक डेटा देखने का टेक्स्ट"
+  },
+  "userTrafficAnalytics": "यूजर ट्रैफिक विश्लेषण",
+  "@userTrafficAnalytics": {
+    "description": "यूजर ट्रैफिक विश्लेषण अनुभाग का शीर्षक"
+  },
+  "agentManagement": "एजेंट प्रबंधन",
+  "@agentManagement": {
+    "description": "एजेंट प्रबंधन अनुभाग का शीर्षक"
+  },
+  "posterManagement": "पोस्टर प्रबंधन",
+  "@posterManagement": {
+    "description": "पोस्टर प्रबंधन अनुभाग का शीर्षक"
+  },
+  "agent": "एजेंट",
+  "@agent": {
+    "description": "एजेंट का लेबल"
+  },
+  "offline": "ऑफलाइन",
+  "@offline": {
+    "description": "ऑफलाइन एजेंट्स के लिए स्टेटस लेबल"
+  },
+  "active": "सक्रिय",
+  "@active": {
+    "description": "सक्रिय एजेंट्स के लिए स्टेटस लेबल"
+  },
+  "confirmDeleteAgent": "क्या आप इस एजेंट को डिलीट करना निश्चित रूप से चाहते हैं?",
+  "@confirmDeleteAgent": {
+    "description": "एजेंट डिलीट करने की पुष्टि संदेश"
+  },
+  "deleteAgent": "एजेंट डिलीट करें",
+  "@deleteAgent": {
+    "description": "एजेंट डिलीट बटन का टेक्स्ट"
+  },
+  "agentDeletedSuccessfully": "एजेंट सफलतापूर्वक डिलीट हो गया",
+  "@agentDeletedSuccessfully": {
+    "description": "एजेंट डिलीट होने का सफलता संदेश"
+  },
+  "profile": "प्रोफाइल",
+  "@profile": {
+    "description": "प्रोफाइल अनुभाग का लेबल"
+  },
+  "addNewAgent": "नया एजेंट जोड़ें",
+  "@addNewAgent": {
+    "description": "नया एजेंट जोड़ने का टेक्स्ट"
+  },
+  "agentEligibleToChat": "**यह एजेंट ग्राहकों के साथ चैट करने के योग्य है।**",
+  "@agentEligibleToChat": {
+    "description": "एजेंट चैट योग्यता का संदेश"
+  },
+  "agentNotEligibleToChat": "**यह एजेंट ग्राहकों के साथ चैट करने के योग्य नहीं है।**",
+  "@agentNotEligibleToChat": {
+    "description": "एजेंट चैट अयोग्यता का संदेश"
+  },
+  "noAgentsFound": "कोई एजेंट नहीं मिला",
+  "@noAgentsFound": {
+    "description": "कोई एजेंट नहीं मिलने का संदेश"
+  },
+  "searchByAnything": "कुछ भी खोजें...",
+  "@searchByAnything": {
+    "description": "खोज इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "posterAdsManagement": "पोस्टर विज्ञापन प्रबंधन",
+  "@posterAdsManagement": {
+    "description": "पोस्टर विज्ञापन प्रबंधन अनुभाग का शीर्षक"
+  },
+  "uploadProductImage": "उत्पाद छवि अपलोड करें",
+  "@uploadProductImage": {
+    "description": "उत्पाद छवि अपलोड करने का टेक्स्ट"
+  },
+  "uploadPoster": "पोस्टर अपलोड करें",
+  "@uploadPoster": {
+    "description": "पोस्टर अपलोड करने का टेक्स्ट"
+  },
+  "deletePoster": "पोस्टर डिलीट करें",
+  "@deletePoster": {
+    "description": "पोस्टर डिलीट करने का टेक्स्ट"
+  },
+  "selectImageToUpload": "कृपया अपलोड करने के लिए एक छवि चुनें और सेलेक्ट करें!",
+  "@selectImageToUpload": {
+    "description": "अपलोड करने के लिए छवि चुनने का प्रॉम्प्ट"
+  },
+    "adminDashboard": "एडमिन डैशबोर्ड",
+  "@adminDashboard": {
+    "description": "एडमिन डैशबोर्ड का शीर्षक"
+  },
+  "visitors": "आगंतुक",
+  "@visitors": {
+    "description": "आगंतुकों की गिनती या अनुभाग का लेबल"
+  },
+  "messages": "संदेश",
+  "@messages": {
+    "description": "संदेशों की गिनती या अनुभाग का लेबल"
+  },
+  "customerInquiries": "ग्राहक पूछताछ",
+  "@customerInquiries": {
+    "description": "ग्राहक पूछताछ अनुभाग का लेबल"
   }
+
+
 }

@@ -8,6 +8,7 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:shimmer/shimmer.dart';
 // Import reusable shimmer list
@@ -35,8 +36,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
 
   Future<void> _fetchAssignedAgentList() async {
     try {
-      List<String> assignedAgents =
-          await authRepository.fetchAssignedAgentList();
+      List<String> assignedAgents = await authRepository.fetchAssignedAgentList();
       setState(() {
         _assignedAgentEmails = assignedAgents;
       });
@@ -73,9 +73,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
       if (result['status'] == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(
-                    "✅ ${result['message']} for getting transfered customers")),
+            SnackBar(content: Text("✅ ${result['message']} for getting transfered customers")),
           );
         }
 
@@ -168,8 +166,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Expanded(
               child: _isLoading
-                  ? const ShimmerList(
-                      itemCount: 4) // 🔥 Using reusable shimmer list
+                  ? const ShimmerList(itemCount: 4) // 🔥 Using reusable shimmer list
                   : _buildAgentList(),
             ),
           ],
@@ -180,17 +177,14 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
 
   Widget _buildStatsSection() {
     int totalAgents = _agentsList.length;
-    int assignedAgents = _agentsList
-        .where((agent) => _assignedAgentEmails.contains(agent.email))
-        .length;
+    int assignedAgents =
+        _agentsList.where((agent) => _assignedAgentEmails.contains(agent.email)).length;
 
     return Row(
       children: [
         Expanded(child: _buildStatCard("Total Agents", totalAgents.toString())),
         const SizedBox(width: 10),
-        Expanded(
-            child:
-                _buildStatCard("Assigned Agents", assignedAgents.toString())),
+        Expanded(child: _buildStatCard("Assigned Agents", assignedAgents.toString())),
       ],
     );
   }
@@ -203,10 +197,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
-          BoxShadow(
-              color: Colors.grey.withValues(alpha: .2),
-              spreadRadius: 2,
-              blurRadius: 4),
+          BoxShadow(color: Colors.grey.withValues(alpha: .2), spreadRadius: 2, blurRadius: 4),
         ],
       ),
       child: Column(
@@ -225,8 +216,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
   void _showAgentDetailDialog(BuildContext context, Agent agent) {
     bool isAssigned = _assignedAgentEmails.contains(agent.email);
     DateTime createdAtDate = DateTime.parse(agent.createdAt);
-    String formattedDate =
-        "${createdAtDate.day}/${createdAtDate.month}/${createdAtDate.year}";
+    String formattedDate = "${createdAtDate.day}/${createdAtDate.month}/${createdAtDate.year}";
 
     showDialog(
       context: context,
@@ -247,8 +237,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   children: [
                     TextSpan(
                       text: 'Email: ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     TextSpan(
                       text: agent.email,
@@ -263,8 +252,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   children: [
                     TextSpan(
                       text: 'Role: ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     TextSpan(
                       text: agent.role,
@@ -279,8 +267,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   children: [
                     TextSpan(
                       text: 'mobile: ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     TextSpan(
                       text: agent.mobile.toString(),
@@ -295,8 +282,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   children: [
                     TextSpan(
                       text: 'Created At: ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     TextSpan(
                       text: formattedDate,
@@ -311,8 +297,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   children: [
                     TextSpan(
                       text: 'Status: ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.black),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
                     ),
                     TextSpan(
                       text: isAssigned ? "Assigned" : "Not Assigned",
@@ -327,8 +312,8 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
               SizedBox(height: 8),
               Text(
                 isAssigned
-                    ? "**This agent is eligible to chat with customers."
-                    : "**This agent is not eligible to chat with customers.",
+                    ? AppLocalizations.of(context)!.agentEligibleToChat
+                    : AppLocalizations.of(context)!.agentNotEligibleToChat,
                 style: AppTextStyles.black14_400,
               ),
               // Add more details as needed
@@ -349,14 +334,14 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
 
   Widget _buildAgentList() {
     if (_agentsList.isEmpty) {
-      return const Center(child: Text("No agents found"));
+      return Center(child: Text(AppLocalizations.of(context)!.noAgentsFound));
     }
 
     // Fetch the current user's role
     String currentUserRole =
         LocalDbHelper.getProfile()?.role ?? ""; // Fetch the current user's role
-    String currentUserEmail = LocalDbHelper.getProfile()?.email ??
-        ''; // Fetch the current user's email
+    String currentUserEmail =
+        LocalDbHelper.getProfile()?.email ?? ''; // Fetch the current user's email
 
     return ListView.builder(
       itemCount: _agentsList.length,
@@ -393,8 +378,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                             ),
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                 color: Colors.green.shade100,
                                 borderRadius: BorderRadius.circular(12),
@@ -421,9 +405,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                     child: Text(
                       isAssigned ? "Assigned" : "Not Assigned",
                       style: TextStyle(
-                        color: isAssigned
-                            ? AppColors.activeGreen
-                            : AppColors.inActiveRed,
+                        color: isAssigned ? AppColors.activeGreen : AppColors.inActiveRed,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -462,8 +444,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   if (currentUserRole == 'Admin') {
                     // Admin can delete any agent profile
                     menuItems.add('Delete Agent Profile');
-                  } else if (currentUserRole == 'AgentHead' &&
-                      agent.email != currentUserEmail) {
+                  } else if (currentUserRole == 'AgentHead' && agent.email != currentUserEmail) {
                     // AgentHead can delete other agents but not themselves
                     menuItems.add('Delete Agent Profile');
                   }

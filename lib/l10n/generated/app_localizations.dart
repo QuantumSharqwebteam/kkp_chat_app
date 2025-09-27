@@ -387,6 +387,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.'**
   String get privacyPolicyFullText;
+
+  /// Error message for name minimum length
+  ///
+  /// In en, this message translates to:
+  /// **'Name should be at least 3 characters'**
+  String get nameMinLengthError;
+
+  /// Error message for phone number length
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number should be 10 digits'**
+  String get phoneNumberLengthError;
+
+  /// Error message for password minimum length
+  ///
+  /// In en, this message translates to:
+  /// **'Password should be at least 6 characters'**
+  String get passwordMinLengthError;
+
+  /// Success message for agent profile creation
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Profile created'**
+  String get agentProfileCreated;
+
+  /// Error message for failed agent addition
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add Agent, Try again later!'**
+  String get failedToAddAgent;
+
+  /// Label for phone number input field
+  ///
+  /// In en, this message translates to:
+  /// **'Phone number'**
+  String get phoneNumber;
+
+  /// Placeholder for phone number input field
+  ///
+  /// In en, this message translates to:
+  /// **'Enter phone number'**
+  String get enterPhoneNumber;
+
+  /// Label for role selection
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get role;
+
+  /// Text for add agent button
+  ///
+  /// In en, this message translates to:
+  /// **'Add Agent'**
+  String get addAgent;
+
+  /// Text for viewing more data on web
+  ///
+  /// In en, this message translates to:
+  /// **'See more data in web'**
+  String get seeMoreDataInWeb;
+
+  /// Title for user traffic analytics section
+  ///
+  /// In en, this message translates to:
+  /// **'User Traffic Analytics'**
+  String get userTrafficAnalytics;
+
+  /// Title for agent management section
+  ///
+  /// In en, this message translates to:
+  /// **'Agent Management'**
+  String get agentManagement;
+
+  /// Title for poster management section
+  ///
+  /// In en, this message translates to:
+  /// **'Poster Management'**
+  String get posterManagement;
+
+  /// Label for agent
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get agent;
+
+  /// Status label for offline agents
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get offline;
+
+  /// Status label for active agents
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get active;
+
+  /// Confirmation message for deleting an agent
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this agent?'**
+  String get confirmDeleteAgent;
+
+  /// Text for delete agent button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Agent'**
+  String get deleteAgent;
+
+  /// Success message for agent deletion
+  ///
+  /// In en, this message translates to:
+  /// **'Agent deleted successfully'**
+  String get agentDeletedSuccessfully;
+
+  /// Label for profile section
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// Text for adding a new agent
+  ///
+  /// In en, this message translates to:
+  /// **'Add new agent'**
+  String get addNewAgent;
+
+  /// Message indicating agent eligibility to chat
+  ///
+  /// In en, this message translates to:
+  /// **'**This agent is eligible to chat with customers.**'**
+  String get agentEligibleToChat;
+
+  /// Message indicating agent ineligibility to chat
+  ///
+  /// In en, this message translates to:
+  /// **'**This agent is not eligible to chat with customers.**'**
+  String get agentNotEligibleToChat;
+
+  /// Message when no agents are found
+  ///
+  /// In en, this message translates to:
+  /// **'No agents found'**
+  String get noAgentsFound;
+
+  /// Placeholder for search input field
+  ///
+  /// In en, this message translates to:
+  /// **'Search by anything...'**
+  String get searchByAnything;
+
+  /// Title for poster ads management section
+  ///
+  /// In en, this message translates to:
+  /// **'Poster Ads Management'**
+  String get posterAdsManagement;
+
+  /// Text for uploading product image
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Product Image'**
+  String get uploadProductImage;
+
+  /// Text for uploading poster
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Poster'**
+  String get uploadPoster;
+
+  /// Text for deleting poster
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Poster'**
+  String get deletePoster;
+
+  /// Prompt to select an image for upload
+  ///
+  /// In en, this message translates to:
+  /// **'Please pick and select an image to upload!'**
+  String get selectImageToUpload;
+
+  /// Title for the admin dashboard
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Dashboard'**
+  String get adminDashboard;
+
+  /// Label for visitors count or section
+  ///
+  /// In en, this message translates to:
+  /// **'Visitors'**
+  String get visitors;
+
+  /// Label for messages count or section
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get messages;
+
+  /// Label for customer inquiries section
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Inquiries'**
+  String get customerInquiries;
 }
 
 class _AppLocalizationsDelegate

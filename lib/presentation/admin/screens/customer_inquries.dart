@@ -8,6 +8,7 @@ import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
@@ -37,12 +38,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   bool isFetchingMore = false;
   bool isDownloading = false;
 
-  List<String> dateRanges = [
-    'Today',
-    'Last Week',
-    'Last Month',
-    'Last 30 days'
-  ];
+  List<String> dateRanges = ['Today', 'Last Week', 'Last Month', 'Last 30 days'];
   List<String> status = ["All", "Confirmed", "Processed", "Declined"];
 
   List<FormDataModel> filteredInquiries = [];
@@ -91,15 +87,13 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   void _onScroll() async {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 200 &&
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
         !isFetchingMore &&
         visibleItemCount < filteredInquiries.length) {
       setState(() => isFetchingMore = true);
       await Future.delayed(const Duration(milliseconds: 500)); // Simulate fetch
       setState(() {
-        visibleItemCount = (visibleItemCount + itemsPerPage)
-            .clamp(0, filteredInquiries.length);
+        visibleItemCount = (visibleItemCount + itemsPerPage).clamp(0, filteredInquiries.length);
         isFetchingMore = false;
       });
     }
@@ -123,16 +117,13 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     final now = DateTime.now();
 
     final filtered = allInquiries.where((item) {
-      final matchQuality =
-          selectedStatus == 'All' || item.status.contains(selectedStatus);
+      final matchQuality = selectedStatus == 'All' || item.status.contains(selectedStatus);
 
       final dateTime = DateTime.tryParse(item.date);
-      final formattedDate = dateTime != null
-          ? DateFormat('MMMM d, yyyy').format(dateTime).toLowerCase()
-          : '';
-      final formattedTime = dateTime != null
-          ? DateFormat('h:mm a').format(dateTime).toLowerCase()
-          : '';
+      final formattedDate =
+          dateTime != null ? DateFormat('MMMM d, yyyy').format(dateTime).toLowerCase() : '';
+      final formattedTime =
+          dateTime != null ? DateFormat('h:mm a').format(dateTime).toLowerCase() : '';
 
       final matchSearch = item.customerName.toLowerCase().contains(search) ||
           item.agentName.toLowerCase().contains(search) ||
@@ -149,20 +140,17 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       if (dateTime != null) {
         switch (selectedDateRange) {
           case 'Today':
-            matchDate = dateTime.day == now.day &&
-                dateTime.month == now.month &&
-                dateTime.year == now.year;
+            matchDate =
+                dateTime.day == now.day && dateTime.month == now.month && dateTime.year == now.year;
             break;
           case 'Last Week':
             matchDate = dateTime.isAfter(now.subtract(const Duration(days: 7)));
             break;
           case 'Last Month':
-            matchDate =
-                dateTime.isAfter(DateTime(now.year, now.month - 1, now.day));
+            matchDate = dateTime.isAfter(DateTime(now.year, now.month - 1, now.day));
             break;
           case 'Last 30 days':
-            matchDate =
-                dateTime.isAfter(now.subtract(const Duration(days: 30)));
+            matchDate = dateTime.isAfter(now.subtract(const Duration(days: 30)));
             break;
         }
       }
@@ -178,8 +166,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       return dateB.compareTo(dateA); // Newest first
     });
 
-    final newVisibleCount =
-        filtered.length > itemsPerPage ? itemsPerPage : filtered.length;
+    final newVisibleCount = filtered.length > itemsPerPage ? itemsPerPage : filtered.length;
 
     setState(() {
       filteredInquiries = filtered;
@@ -239,8 +226,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       }
 
       final bytes = excel.save();
-      final formattedDate =
-          DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final formattedDate = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
       await file.writeAsBytes(bytes!);
@@ -276,7 +262,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         return Scaffold(
           appBar: AppBar(
             backgroundColor: AppColors.background,
-            title: Text('Customer Inquiries'),
+            title: Text(AppLocalizations.of(context)!.customerInquiries),
             actions: [
               // Refresh button
               if (hasInquiries)
@@ -297,9 +283,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         ? const SizedBox(
                             width: 35,
                             height: 35,
-                            child: Center(
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2)),
+                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
                           )
                         : Container(
                             width: 35,
@@ -307,8 +291,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                  width: 1, color: AppColors.greyB2BACD),
+                              border: Border.all(width: 1, color: AppColors.greyB2BACD),
                             ),
                             child: const Icon(Icons.download),
                           ),
@@ -339,7 +322,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                                     child: CustomSearchBar(
                                       enable: true,
                                       controller: _searchController,
-                                      hintText: "Search by anything...",
+                                      hintText: AppLocalizations.of(context)!.searchByAnything,
                                       onChanged: (value) => _applyFilters(),
                                     ),
                                   ),
@@ -484,10 +467,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                   children: [
                     CircleAvatar(
                       radius: 22,
-                      backgroundColor:
-                          const Color(0xFFDCFCE7), // Light green background
-                      child: Icon(Icons.person,
-                          color: Colors.green), // Optional: icon color
+                      backgroundColor: const Color(0xFFDCFCE7), // Light green background
+                      child: Icon(Icons.person, color: Colors.green), // Optional: icon color
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -511,8 +492,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                       children: [
                         Text(
                           _getFormattedDate(inquiry.date),
-                          style: AppTextStyles.black12_400
-                              .copyWith(color: Colors.black45),
+                          style: AppTextStyles.black12_400.copyWith(color: Colors.black45),
                         ),
                         SizedBox(
                           height: 8,
@@ -523,8 +503,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         // ),
                         Container(
                           margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 1),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                           decoration: BoxDecoration(
                             color: inquiry.status == "Confirmed"
                                 ? Color(0xFFDCFCE7)
@@ -593,12 +572,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         children: [
           Text(
             label,
-            style:
-                AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
+            style: AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
           ),
           Text(value,
-              style: AppTextStyles.black14_600.copyWith(
-                  color: Colors.grey.shade700, fontWeight: FontWeight.w100)),
+              style: AppTextStyles.black14_600
+                  .copyWith(color: Colors.grey.shade700, fontWeight: FontWeight.w100)),
         ],
       ),
     );

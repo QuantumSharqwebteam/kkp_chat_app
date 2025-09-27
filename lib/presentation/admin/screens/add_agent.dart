@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
@@ -32,7 +33,7 @@ class _AddAgentState extends State<AddAgent> {
   bool validateName(String name) {
     if (name.length < 3) {
       setState(() {
-        nameError = "Name should be at least 3 characters";
+        nameError = AppLocalizations.of(context)!.nameMinLengthError;
       });
       return false;
     } else {
@@ -47,7 +48,7 @@ class _AddAgentState extends State<AddAgent> {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(email)) {
       setState(() {
-        emailError = "Please enter a valid email address";
+        emailError = AppLocalizations.of(context)!.validEmailError;
       });
       return false;
     } else {
@@ -61,7 +62,7 @@ class _AddAgentState extends State<AddAgent> {
   bool validatePhone(String phone) {
     if (phone.length != 10 || int.tryParse(phone) == null) {
       setState(() {
-        phoneError = "Phone number should be 10 digits";
+        phoneError = AppLocalizations.of(context)!.phoneNumberLengthError;
       });
       return false;
     } else {
@@ -75,7 +76,7 @@ class _AddAgentState extends State<AddAgent> {
   bool validatePassword(String password) {
     if (password.length < 6) {
       setState(() {
-        passwordError = "Password should be at least 6 characters";
+        passwordError = AppLocalizations.of(context)!.passwordMinLengthError;
       });
       return false;
     } else {
@@ -112,7 +113,8 @@ class _AddAgentState extends State<AddAgent> {
 
       if (response['message'] == "User signed up successfully") {
         if (mounted) {
-          Utils().showSuccessDialog(context, "Agent Profile created", true);
+          Utils()
+              .showSuccessDialog(context, AppLocalizations.of(context)!.agentProfileCreated, true);
         }
 
         await agentProvider.assignAgentToList(email: emailController.text);
@@ -133,8 +135,7 @@ class _AddAgentState extends State<AddAgent> {
         }
       } else {
         if (mounted) {
-          Utils().showSuccessDialog(
-              context, "Failed to add Agent, Try again later!", false);
+          Utils().showSuccessDialog(context, AppLocalizations.of(context)!.failedToAddAgent, false);
         }
       }
     } catch (e) {
@@ -154,10 +155,11 @@ class _AddAgentState extends State<AddAgent> {
   @override
   Widget build(BuildContext context) {
     final agentProvider = Provider.of<AgentProvider>(context);
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: const Text('Add Agent'),
+        title: Text(l.addAgent),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -167,8 +169,7 @@ class _AddAgentState extends State<AddAgent> {
           ? FullScreenLoader()
           : SingleChildScrollView(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 40),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 40),
                 child: Card(
                   color: Colors.white,
                   elevation: 10,
@@ -179,39 +180,39 @@ class _AddAgentState extends State<AddAgent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-                        Text("Full Name"),
+                        Text(l.fullName),
                         CustomTextField(
                           controller: fullNameController,
-                          hintText: 'Enter full name',
+                          hintText: l.enterFullName,
                           prefixIcon: const Icon(Icons.person),
                           errorText: nameError,
                         ),
-                        Text("Email Address"),
+                        Text(l.email),
                         CustomTextField(
                           controller: emailController,
-                          hintText: 'Enter email address',
+                          hintText: l.enterEmail,
                           keyboardType: TextInputType.emailAddress,
                           prefixIcon: const Icon(Icons.email),
                           errorText: emailError,
                         ),
-                        Text("Phone number"),
+                        Text(l.phoneNumber),
                         CustomTextField(
                           controller: phoneController,
-                          hintText: 'Enter phone number',
+                          hintText: l.enterPhoneNumber,
                           keyboardType: TextInputType.phone,
                           prefixIcon: const Icon(Icons.phone),
                           maxLength: 10,
                           errorText: phoneError,
                         ),
-                        Text("Password"),
+                        Text(l.password),
                         CustomTextField(
                           controller: passwordController,
-                          hintText: 'Create Password',
+                          hintText: l.createPassword,
                           isPassword: true,
                           prefixIcon: const Icon(Icons.lock),
                           errorText: passwordError,
                         ),
-                        Text("Role"),
+                        Text(l.role),
                         DropdownButtonFormField<String>(
                           value: selectedRole,
                           items: roles
@@ -231,8 +232,7 @@ class _AddAgentState extends State<AddAgent> {
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade400),
+                              borderSide: BorderSide(color: Colors.grey.shade400),
                             ),
                             prefixIcon: const Icon(Icons.person_outline),
                           ),
@@ -242,7 +242,7 @@ class _AddAgentState extends State<AddAgent> {
                           onPressed: signUpNewAgent,
                           fontSize: 18,
                           backgroundColor: AppColors.blue00ABE9,
-                          text: "Add Agent",
+                          text: l.addAgent,
                         ),
                       ],
                     ),

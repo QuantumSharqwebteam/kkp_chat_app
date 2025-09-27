@@ -8,6 +8,7 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/chart_utils.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/poster_management_screen.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile.dart';
@@ -56,8 +57,7 @@ class _AdminHomeState extends State<AdminHome> {
 
   Future<void> _fetchTrafficData() async {
     try {
-      List<Map<String, dynamic>> fetchData =
-          await _chatRepo.fetchTrafficChartData();
+      List<Map<String, dynamic>> fetchData = await _chatRepo.fetchTrafficChartData();
       if (mounted) {
         setState(() {
           trafficData = fetchData;
@@ -69,8 +69,7 @@ class _AdminHomeState extends State<AdminHome> {
   }
 
   Future<void> _launchURL() async {
-    final Uri url =
-        Uri.parse('https://development.d3uxrpw60z2zmg.amplifyapp.com');
+    final Uri url = Uri.parse('https://development.d3uxrpw60z2zmg.amplifyapp.com');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (kDebugMode) {
         print('Could not launch $url');
@@ -80,21 +79,21 @@ class _AdminHomeState extends State<AdminHome> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: AppColors.background,
-        title: const Text(
-          "Admin Dashboard",
+        title: Text(
+          l.adminDashboard,
           style: AppTextStyles.black18_600,
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_active_outlined),
             onPressed: () {
-              Navigator.pushNamed(
-                  context, MarketingRoutes.marketingNotifications);
+              Navigator.pushNamed(context, MarketingRoutes.marketingNotifications);
             },
           ),
           IconButton(
@@ -124,7 +123,7 @@ class _AdminHomeState extends State<AdminHome> {
 
   Widget _buildSeeMoreAdminDataButton() {
     return TextButton(
-        onPressed: _launchURL, child: Text("See more data in web"));
+        onPressed: _launchURL, child: Text(AppLocalizations.of(context)!.seeMoreDataInWeb));
   }
 
   Widget _buildTrafficChart() {
@@ -138,16 +137,14 @@ class _AdminHomeState extends State<AdminHome> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "User Traffic Analytics",
-              style: AppTextStyles.black16_600
-                  .copyWith(color: Colors.black.withAlpha(150)),
+              AppLocalizations.of(context)!.userTrafficAnalytics,
+              style: AppTextStyles.black16_600.copyWith(color: Colors.black.withAlpha(150)),
             ),
             Text.rich(
               TextSpan(
                 children: [
                   TextSpan(
-                    text:
-                        "${selectedChartType == 'messages' ? 'Messages' : 'Active Users'}\n"
+                    text: "${selectedChartType == 'messages' ? 'Messages' : 'Active Users'}\n"
                         "${ChartUtils().getDateRange(trafficData)}   ",
                     style: const TextStyle(fontSize: 10, color: Colors.grey),
                   ),
@@ -158,17 +155,13 @@ class _AdminHomeState extends State<AdminHome> {
                   ),
                   TextSpan(
                     text: ChartUtils().getPercentageChange(
-                        selectedChartType == 'messages'
-                            ? 'totalMessages'
-                            : 'activeUsers',
+                        selectedChartType == 'messages' ? 'totalMessages' : 'activeUsers',
                         trafficData),
                     style: TextStyle(
                       fontSize: 10,
                       color: ChartUtils()
                               .getPercentageChange(
-                                  selectedChartType == 'messages'
-                                      ? 'totalMessages'
-                                      : 'activeUsers',
+                                  selectedChartType == 'messages' ? 'totalMessages' : 'activeUsers',
                                   trafficData)
                               .contains('-')
                           ? Colors.red
@@ -228,12 +221,10 @@ class _AdminHomeState extends State<AdminHome> {
     final utils = ChartUtils();
 
     final totalVisitors = utils.getTotalCount('activeUsers', trafficData);
-    final visitorsChange =
-        utils.getPercentageChange('activeUsers', trafficData);
+    final visitorsChange = utils.getPercentageChange('activeUsers', trafficData);
 
     final totalMessages = utils.getTotalCount('totalMessages', trafficData);
-    final messagesChange =
-        utils.getPercentageChange('totalMessages', trafficData);
+    final messagesChange = utils.getPercentageChange('totalMessages', trafficData);
 
     return Container(
       decoration: BoxDecoration(
@@ -247,13 +238,13 @@ class _AdminHomeState extends State<AdminHome> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildStatItem(
-              "Visitors",
+              AppLocalizations.of(context)!.visitors,
               totalVisitors.toString(),
               visitorsChange,
             ),
             MyVerticalDivider(height: 80),
             _buildStatItem(
-              "Messages",
+              AppLocalizations.of(context)!.messages,
               totalMessages.toString(),
               messagesChange,
             ),
@@ -280,9 +271,7 @@ class _AdminHomeState extends State<AdminHome> {
               fontSize: 12,
               color: ChartUtils()
                       .getPercentageChange(
-                          selectedChartType == 'messages'
-                              ? 'totalMessages'
-                              : 'activeUsers',
+                          selectedChartType == 'messages' ? 'totalMessages' : 'activeUsers',
                           trafficData)
                       .contains('-')
                   ? Colors.red
@@ -323,9 +312,8 @@ class _AdminHomeState extends State<AdminHome> {
     return Consumer<AgentProvider>(builder: (context, agentProvider, child) {
       // Calculate online and offline agent counts
       final onlineEmails = _socketService.onlineUsers;
-      final activeCount = agentProvider.agents
-          .where((agent) => onlineEmails.contains(agent.email))
-          .length;
+      final activeCount =
+          agentProvider.agents.where((agent) => onlineEmails.contains(agent.email)).length;
       final offlineCount = agentProvider.agents.length - activeCount;
 
       return StreamBuilder<List<String>>(
@@ -338,21 +326,18 @@ class _AdminHomeState extends State<AdminHome> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey[300]!),
             ),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Agent Management",
-                    style: AppTextStyles.black16_700
-                        .copyWith(color: AppColors.black60opac),
+                    AppLocalizations.of(context)!.agentManagement,
+                    style: AppTextStyles.black16_700.copyWith(color: AppColors.black60opac),
                   ),
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(
-                          context, MarketingRoutes.agentProfileList);
+                      Navigator.pushNamed(context, MarketingRoutes.agentProfileList);
                     },
                     child: Text(
                       "See All",
@@ -376,8 +361,9 @@ class _AdminHomeState extends State<AdminHome> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildStatusItem(
-                        "Active", activeCount, AppColors.activeGreen),
-                    _buildStatusItem("Offline", offlineCount, AppColors.blue),
+                        AppLocalizations.of(context)!.active, activeCount, AppColors.activeGreen),
+                    _buildStatusItem(
+                        AppLocalizations.of(context)!.offline, offlineCount, AppColors.blue),
                   ],
                 ),
               ),
@@ -390,17 +376,14 @@ class _AdminHomeState extends State<AdminHome> {
                   : ListView.separated(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
-                      itemCount: agentProvider.agents.length > 5
-                          ? 5
-                          : agentProvider.agents.length,
+                      itemCount: agentProvider.agents.length > 5 ? 5 : agentProvider.agents.length,
                       separatorBuilder: (context, index) => Divider(
                         height: 2,
                         color: AppColors.dividerD9D9D9,
                       ),
                       itemBuilder: (context, index) {
                         final agent = agentProvider.agents[index];
-                        final isOnline =
-                            _socketService.isUserOnline(agent.email);
+                        final isOnline = _socketService.isUserOnline(agent.email);
                         return AgentManagementListTile(
                           title: agent.name,
                           subtitle: agent.role,
