@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "appTitle": "KKP Chat App",
   "@appTitle": {
     "description": "The title of the application displayed in the AppBar and splash screen"
@@ -129,11 +128,11 @@
   "@emailVerification": {
     "description": "Title for email verification screen"
   },
-  "verificationCodeSent": "We have sent the six digit verification code to",
+  "verificationCodeSent": "We have sent the six-digit verification code to",
   "@verificationCodeSent": {
     "description": "Message for verification code sent"
   },
-  "invalidCodeError": "Invalid code please try again",
+  "invalidCodeError": "Invalid code, please try again",
   "@invalidCodeError": {
     "description": "Error message for invalid verification code"
   },
@@ -173,11 +172,11 @@
   "@privacyPolicy": {
     "description": "Title for privacy policy"
   },
-  "privacyPolicyAgreement": "By using KKP chat application, You agree to the",
+  "privacyPolicyAgreement": "By using KKP chat application, you agree to the",
   "@privacyPolicyAgreement": {
     "description": "Text for privacy policy agreement"
   },
-  "appDescription": "A smart and efficient chat-based solution that connects customer with marketing agents in real time. Instantly manage inquiries, check stock availability, and track orders- all in one place. Empowering businesses with seamless communication and actionable insights.",
+  "appDescription": "A smart and efficient chat-based solution that connects customers with marketing agents in real time. Instantly manage inquiries, check stock availability, and track orders—all in one place. Empowering businesses with seamless communication and actionable insights.",
   "@appDescription": {
     "description": "Description of the app's purpose"
   },
@@ -185,11 +184,12 @@
   "@appTagline": {
     "description": "Tagline for the app"
   },
-  "termsAndPrivacyAgreement": "By using KKP chat application, you agree\nto the Terms and Privacy Policy",
+  "termsAndPrivacyAgreement": "By using KKP chat application, you agree to the Terms and Privacy Policy",
   "@termsAndPrivacyAgreement": {
     "description": "Text for terms and privacy policy agreement"
   },
-  "privacyPolicyFullText": "At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.","@privacyPolicyFullText":{
+  "privacyPolicyFullText": "At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.",
+  "@privacyPolicyFullText": {
     "description": ""
   },
     "nameMinLengthError": "Name should be at least 3 characters",
@@ -325,7 +325,484 @@
   },
     "customerInquiries": "Customer Inquiries",
   "@customerInquiries": {
-    "description": "Label for customer inquiries section"
+    "description": "Label for customer inquiries section"},
+  "chooseWhatToDo": "Choose what to do:",
+  "@chooseWhatToDo": {
+    "description": "Prompt for user to choose an action"
+  },
+  "unsendMessage": "Unsend Message",
+  "@unsendMessage": {
+    "description": "Option to unsend a message"
+  },
+  "aboutUs": "About Us",
+  "@aboutUs": {
+    "description": "Title for the About Us section"
+  },
+  "kKP": "KKP",
+  "@kKP": {
+    "description": "Company name"
+  },
+  "kKPDescription": "KKP is a leading name in the textile industry, known for quality yarn production and smart supply chain management. With years of trusted service, we bring transparency, innovation, and reliability to every process.",
+  "@kKPDescription": {
+    "description": "Description of KKP company"
+  },
+  "whoWeAre": "Who We Are",
+  "@whoWeAre": {
+    "description": "Title for Who We Are section"
+  },
+  "whoWeAreDescription": "We’re a textile-focused company delivering:",
+  "@whoWeAreDescription": {
+    "description": "Introduction for Who We Are section"
+  },
+  "premiumQualityYarn": "• Premium quality yarn",
+  "@premiumQualityYarn": {
+    "description": "Bullet point for premium quality yarn"
+  },
+  "timelyDeliveries": "• Timely deliveries",
+  "@timelyDeliveries": {
+    "description": "Bullet point for timely deliveries"
+  },
+  "transparentOperations": "• Transparent operations",
+  "@transparentOperations": {
+    "description": "Bullet point for transparent operations"
+  },
+  "platformDescription": "Our platform connects agents, buyers, and mills in one unified system—making order management easier than ever.",
+  "@platformDescription": {
+    "description": "Description of the platform's purpose"
+  },
+  "ourMission": "Our Mission",
+  "@ourMission": {
+    "description": "Title for Our Mission section"
+  },
+  "missionStatement": "To simplify textile operations with speed, clarity, and digital tools.",
+  "@missionStatement": {
+    "description": "Statement of the company's mission"
+  },
+  "ourVision": "Our Vision",
+  "@ourVision": {
+    "description": "Title for Our Vision section"
+  },
+  "visionStatement": "To be the leading tech-powered solution in the textile industry.",
+  "@visionStatement": {
+    "description": "Statement of the company's vision"
+  },
+  "about": "About",
+  "@about": {
+    "description": "Label for the About section"
+  },
+  "john": "John",
+  "@john": {
+    "description": "Example user name"
+  },
+  "accountAuthenticityInfo": "To help keep our community authentic, we’re showing information about accounts on KKP app. People can see this by tapping on your profile and choosing 'About this account'.",
+  "@accountAuthenticityInfo": {
+    "description": "Information about account authenticity"
+  },
+  "dateJoined": "Date joined",
+  "@dateJoined": {
+    "description": "Label for date joined"
+  },
+  "february2025": "February 2025",
+  "@february2025": {
+    "description": "Example date joined"
+  },
+  "accountAndSecurity": "Account & Security",
+  "@accountAndSecurity": {
+    "description": "Title for the Account & Security section"
+  },
+  "loginAndRecovery": "Login & Recovery",
+  "@loginAndRecovery": {
+    "description": "Title for the Login & Recovery section"
+  },
+  "manageYourPassword": "Manage your password",
+  "@manageYourPassword": {
+    "description": "Label for managing password"
+  },
+  "loginPreferenceAndRecovery": ", Login preference and recovery methods",
+  "@loginPreferenceAndRecovery": {
+    "description": "Label for login preference and recovery methods"
+  },
+  "changePassword": "Change Password",
+  "@changePassword": {
+    "description": "Label for changing password"
+  },
+  "deleteAccountPermanently": "Delete Account Permanently",
+  "@deleteAccountPermanently": {
+    "description": "Label for permanently deleting account"
+  },
+  "confirmAccountDeletion": "Confirm Account Deletion",
+  "@confirmAccountDeletion": {
+    "description": "Title for confirming account deletion"
+  },
+  "reasonForDeleting": "Reason for deleting the account",
+  "@reasonForDeleting": {
+    "description": "Label for reason for deleting the account"
+  },
+  "confirmDelete": "Confirm Delete",
+  "@confirmDelete": {
+    "description": "Label for confirming deletion"
+  },
+   "deleteAccountConfirmation": "By entering email and password you confirm that this account can be permanently deleted, and cannot be recovered in any way.",
+   "@deleteAccountConfirmation": {
+    "description": "Confirmation message for permanent account deletion"
+  },
+  "emailLabel": "Email",
+  "@emailLabel": {
+    "description": "Label for email input field in account deletion"
+  },
+  "passwordLabel": "Password",
+  "@passwordLabel": {
+    "description": "Label for password input field in account deletion"
+  },
+  "archive": "Archive",
+  "@archive": {
+    "description": "Label for archive action"
+  },
+  "searchPlaceholder": "Search...",
+  "@searchPlaceholder": {
+    "description": "Placeholder for search input field"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Label for delete action"
+  },
+    "fieldsCannotBeEmpty": "Fields cannot be empty!",
+  "@fieldsCannotBeEmpty": {
+    "description": "Error message for empty fields"
+  },
+  "passwordChangedSuccessfully": "Password changed successfully!",
+  "@passwordChangedSuccessfully": {
+    "description": "Success message for password change"
+  },
+  "pleaseWaitPasswordChange": "Please wait while the password is being changed.",
+  "@pleaseWaitPasswordChange": {
+    "description": "Loading message during password change"
+  },
+  "passwordAndSecurity": "Password and Security",
+  "@passwordAndSecurity": {
+    "description": "Title for password and security section"
+  },
+  "currentPassword": "Current Password",
+  "@currentPassword": {
+    "description": "Label for current password field"
+  },
+
+  "retypeNewPassword": "Retype New Password",
+  "@retypeNewPassword": {
+    "description": "Label for retype new password field"
+  },
+
+   "subjectCannotBeEmpty": "Subject cannot be empty",
+  "@subjectCannotBeEmpty": {
+    "description": "Error message for empty subject field in complaints"
+  },
+  "descriptionCannotBeEmpty": "Description cannot be empty",
+  "@descriptionCannotBeEmpty": {
+    "description": "Error message for empty description field in complaints"
+  },
+  "complaintSubmittedSuccessfully": "Complaint submitted successfully",
+  "@complaintSubmittedSuccessfully": {
+    "description": "Success message for complaint submission"
+  },
+  "complaints": "Complaints",
+  "@complaints": {
+    "description": "Title for complaints section"
+  },
+  "subject": "Subject",
+  "@subject": {
+    "description": "Label for subject field in complaints"
+  },
+  "description": "Description",
+  "@description": {
+    "description": "Label for description field in complaints"
+  },
+  "submitComplaint": "Submit Complaint",
+  "@submitComplaint": {
+    "description": "Button label for submitting complaint"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Title for settings section"
+  },
+  "changeLocale": "Change locale:",
+  "@changeLocale": {
+    "description": "Label for language/locale selection"
+  },
+  "accountAndOrders": "Account & your orders",
+  "@accountAndOrders": {
+    "description": "Title for account and orders section"
+  },
+ 
+  "accountManagement": "Account Management",
+  "@accountManagement": {
+    "description": "Title for account management section"
+  },
+  "passwordChange": "Password Change",
+  "@passwordChange": {
+    "description": "Title for password change section"
+  },
+  "orderEnquires": "Order Enquires",
+  "@orderEnquires": {
+    "description": "Title for order enquiries section"
+  },
+  "trackAllOrderEnquires": "Track All Order Enquires in One Place",
+  "@trackAllOrderEnquires": {
+    "description": "Description for order enquiries tracking feature"
+  },
+  "preferences": "Preferences",
+  "@preferences": {
+    "description": "Title for preferences section"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Title for notifications section"
+  },
+  "yourNotificationsHub": "Your Notifications Hub",
+  "@yourNotificationsHub": {
+    "description": "Description for notifications hub"
+  },
+
+  "manageComplaints": "Manage Complaints",
+  "@manageComplaints": {
+    "description": "Title for complaints management"
+  },
+  "termsAndPolicy": "Terms & Policy",
+  "@termsAndPolicy": {
+    "description": "Title for terms and policy section"
+  },
+ 
+  "manageTermsAndPolicy": "Manage Terms & Policy",
+  "@manageTermsAndPolicy": {
+    "description": "Title for terms and policy management"
+  },
+  "logOut": "Log Out",
+  "@logOut": {
+    "description": "Button label for logging out"
+  },
+  "pushNotificationsEnabled": "Push notifications enabled.",
+  "@pushNotificationsEnabled": {
+    "description": "Confirmation message when push notifications are enabled"
+  },
+  "permissionDenied": "Permission denied. Please enable from settings.",
+  "@permissionDenied": {
+    "description": "Error message when notification permission is denied"
+  },
+  "notificationSettings": "Notification Settings",
+  "@notificationSettings": {
+    "description": "Title for notification settings section"
+  },
+  "pushNotificationsForMessages": "Push Notifications for messages",
+  "@pushNotificationsForMessages": {
+    "description": "Label for push notifications toggle for messages"
+  },
+  "enablePushNotifications": "Enable Push Notifications",
+  "@enablePushNotifications": {
+    "description": "Button label to enable push notifications"
+  },
+  "pushNotificationsDisabled": "Push notifications are disabled. Enable to receive alerts.",
+  "@pushNotificationsDisabled": {
+    "description": "Message when push notifications are disabled"
+  },
+  "couldNotOpenAppSettings": "Could not open app settings.",
+  "@couldNotOpenAppSettings": {
+    "description": "Error message when unable to open app settings"
+  },
+  "orderEnquiries": "Order Enquiries",
+  "@orderEnquiries": {
+    "description": "Title for order enquiries section"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Label for search functionality"
+  },
+  "cottonTShirt": "Cotton T-Shirt",
+  "@cottonTShirt": {
+    "description": "Product name for cotton t-shirt"
+  },
+   "newProducts": "New Products",
+   "@newProducts": {
+    "description": "Title for new products section"
+  },
+  "previousProducts": "Previous Products",
+  "@previousProducts": {
+    "description": "Title for previous products section"
+  },
+  "noProductsAvailable": "No products available",
+  "@noProductsAvailable": {
+    "description": "Message when no products are available"
+  },
+  "productEnquirers": "Product Enquiries",
+  "@productEnquirers": {
+    "description": "Title for product enquiries section"
+  },
+  "howMayIHelpYou": "How may I help you?",
+  "@howMayIHelpYou": {
+    "description": "Customer service greeting message"
+  },
+  "availableColors": "Available Colors",
+  "@availableColors": {
+    "description": "Label for displaying available product colors"
+  },
+  "notAvailable": "Not Available",
+  "@notAvailable": {
+    "description": "Label for unavailable items/products"
+  },
+  "outOfStock": "Out of Stock",
+  "@outOfStock": {
+    "description": "Label for items/products that are out of stock"
+  },
+  "product": "Product",
+  "@product": {
+    "description": "Label for product"
+  },
+  "searchHere": "Search Here...",
+  "@searchHere": {
+    "description": "Placeholder for product search input field"
+  },
+  "noMatchingProductsFound": "No matching products found",
+  "@noMatchingProductsFound": {
+    "description": "Message when no products match the search criteria"
+  },
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Button label for canceling an action"
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Button label for editing information"
+  },
+  "saveChanges": "Save Changes",
+  "@saveChanges": {
+    "description": "Button label for saving changes"
+  },
+  "addressDetails": "Address Details",
+  "@addressDetails": {
+    "description": "Title for address details section"
+  },
+  "businessDetails": "Business Details",
+  "@businessDetails": {
+    "description": "Title for business details section"
+  },
+  "profileDetailsUpdatedSuccessfully": "Profile details updated successfully!",
+  "@profileDetailsUpdatedSuccessfully": {
+    "description": "Success message after profile update"
+  },
+  "message": "Message",
+  "@message": {
+    "description": "Generic label for messages"
+  },
+  "updateProfile": "Update Profile",
+  "@updateProfile": {
+    "description": "Button label for updating profile"
+  },
+  "back": "Back",
+  "@back": {
+    "description": "Button label for going back"
+  },
+  "finish": "Finish",
+  "@finish": {
+    "description": "Button label for completing a process"
+  },
+  "next": "Next",
+  "@next": {
+    "description": "Button label for moving to next step"
+  },
+  "pressBackAgainToExit": "Press back again to exit",
+  "@pressBackAgainToExit": {
+    "description": "Confirmation message for app exit"
+  },
+  "someBasicInformation": "Some basic information to get you started.",
+  "@someBasicInformation": {
+    "description": "Introductory text for profile setup"
+  },
+  "name": "Name",
+  "@name": {
+    "description": "Label for name field"
+  },
+  "enterYourName": "Enter your name",
+  "@enterYourName": {
+    "description": "Placeholder for name input field"
+  },
+  "customerType": "Customer Type",
+  "@customerType": {
+    "description": "Label for customer type selection"
+  },
+  "export": "Export",
+  "@export": {
+    "description": "Option for export customer type"
+  },
+  "domestic": "Domestic",
+  "@domestic": {
+    "description": "Option for domestic customer type"
+  },
+  "mobileNumber": "Mobile number",
+  "@mobileNumber": {
+    "description": "Label for mobile number field"
+  },
+  "enterYourMobileNumber": "Enter your mobile number",
+  "@enterYourMobileNumber": {
+    "description": "Placeholder for mobile number input field"
+  },
+  "gstNumber": "GST number",
+  "@gstNumber": {
+    "description": "Label for GST number field"
+  },
+  "enterGSTNo": "Enter GST No.",
+  "@enterGSTNo": {
+    "description": "Placeholder for GST number input field"
+  },
+  "panNumber": "PAN number",
+  "@panNumber": {
+    "description": "Label for PAN number field"
+  },
+  "enterPANNo": "Enter PAN No.",
+  "@enterPANNo": {
+    "description": "Placeholder for PAN number input field"
+  },
+  "houseFlatNo": "House/Flat No.",
+  "@houseFlatNo": {
+    "description": "Label for house/flat number field"
+  },
+  "enterHouseFlatNo": "Enter house/flat no.",
+  "@enterHouseFlatNo": {
+    "description": "Placeholder for house/flat number input field"
+  },
+  "streetName": "Street Name",
+  "@streetName": {
+    "description": "Label for street name field"
+  },
+  "enterStreetName": "Enter Street Name",
+  "@enterStreetName": {
+    "description": "Placeholder for street name input field"
+  },
+  "cityName": "City Name",
+  "@cityName": {
+    "description": "Label for city name field"
+  },
+  "enterCityName": "Enter City Name",
+  "@enterCityName": {
+    "description": "Placeholder for city name input field"
+  },
+  "pinCode": "Pin Code",
+  "@pinCode": {
+    "description": "Label for pincode field"
+  },
+  "enterPincode": "Enter Pincode",
+  "@enterPincode": {
+    "description": "Placeholder for pincode input field"
+  },
+  "validationError": "Validation Error",
+  "@validationError": {
+    "description": "Title for validation error messages"
+  },
+  "pleaseSelectCustomerType": "Please select a customer type.",
+  "@pleaseSelectCustomerType": {
+    "description": "Error message when customer type is not selected"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "Button label for confirmation"
   }
 
 

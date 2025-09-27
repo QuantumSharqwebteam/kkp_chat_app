@@ -6,6 +6,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 
 class CustomerProfilePage extends StatefulWidget {
@@ -113,8 +114,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         Utils().showSuccessDialog(context, "Profile Updated!", true);
         await Future.delayed(const Duration(seconds: 1), () {
           if (mounted) Navigator.pop(context);
-          }); 
-          } else {
+        });
+      } else {
         _showError(response['message'] ?? "Update failed");
       }
     } catch (e) {
@@ -147,7 +148,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 233, 239, 243),
       appBar: AppBar(
-        title: const Text('Profile',
+        title: Text(AppLocalizations.of(context)!.profile,
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -155,7 +156,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
           TextButton(
             onPressed: () => setState(() => _isEditing = !_isEditing),
             child: Text(
-              _isEditing ? "Cancel" : "Edit",
+              _isEditing
+                  ? AppLocalizations.of(context)!.cancel
+                  : AppLocalizations.of(context)!.edit,
               style: const TextStyle(color: Colors.blue),
             ),
           )
@@ -239,9 +242,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       child: Row(
         children: [
           Icon(
-            title == "Address Details"
+            title == AppLocalizations.of(context)!.addressDetails
                 ? Icons.location_on
-                : title == "Business Details"
+                : title == AppLocalizations.of(context)!.businessDetails
                     ? Icons.badge
                     : Icons.person,
             size: 20,
@@ -348,8 +351,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             elevation: 2,
           ),
           onPressed: _saveChanges,
-          child: const Text(
-            'Save Changes',
+          child: Text(
+            AppLocalizations.of(context)!.saveChanges,
             style: TextStyle(
                 fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
           ),

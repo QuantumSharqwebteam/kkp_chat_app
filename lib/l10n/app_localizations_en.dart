@@ -45,8 +45,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterPassword => 'Enter your password';
 
   @override
-  String get resetPasswordMessage =>
-      'No worries! Enter your email address below, and we will send you a link to reset your password';
+  String get resetPasswordMessage => 'No worries! Enter your email address below, and we will send you a link to reset your password';
 
   @override
   String get submit => 'Submit';
@@ -64,8 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createNewPassword => 'Create new Password';
 
   @override
-  String get newPasswordRule =>
-      'Your new password must be different from the previously used password';
+  String get newPasswordRule => 'Your new password must be different from the previously used password';
 
   @override
   String get password => 'Password';
@@ -143,76 +141,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacyPolicyAgreement => 'By using KKP chat application, you agree to the';
 
   @override
-  String get appDescription =>
-      'A smart and efficient chat-based solution that connects customers with marketing agents in real time. Instantly manage inquiries, check stock availability, and track orders—all in one place. Empowering businesses with seamless communication and actionable insights.';
+  String get appDescription => 'A smart and efficient chat-based solution that connects customers with marketing agents in real time. Instantly manage inquiries, check stock availability, and track orders—all in one place. Empowering businesses with seamless communication and actionable insights.';
 
   @override
   String get appTagline => 'Instant Inquiries,\nSeamless Sales.';
 
   @override
-  String get termsAndPrivacyAgreement =>
-      'By using KKP chat application, you agree to the Terms and Privacy Policy';
+  String get termsAndPrivacyAgreement => 'By using KKP chat application, you agree to the Terms and Privacy Policy';
 
   @override
-  String get privacyPolicyFullText =>
-      'At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.';
-
-  @override
-  String get nameMinLengthError => 'Name should be at least 3 characters';
-
-  @override
-  String get phoneNumberLengthError => 'Phone number should be 10 digits';
-
-  @override
-  String get passwordMinLengthError => 'Password should be at least 6 characters';
-
-  @override
-  String get agentProfileCreated => 'Agent Profile created';
-
-  @override
-  String get failedToAddAgent => 'Failed to add Agent, Try again later!';
-
-  @override
-  String get phoneNumber => 'Phone number';
-
-  @override
-  String get enterPhoneNumber => 'Enter phone number';
-
-  @override
-  String get role => 'Role';
-
-  @override
-  String get addAgent => 'Add Agent';
-
-  @override
-  String get seeMoreDataInWeb => 'See more data in web';
-
-  @override
-  String get userTrafficAnalytics => 'User Traffic Analytics';
-
-  @override
-  String get agentManagement => 'Agent Management';
-
-  @override
-  String get posterManagement => 'Poster Management';
+  String get privacyPolicyFullText => 'At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.';
 
   @override
   String get agent => 'Agent';
-
-  @override
-  String get offline => 'Offline';
-
-  @override
-  String get active => 'Active';
-
-  @override
-  String get confirmDeleteAgent => 'Are you sure you want to delete this agent?';
-
-  @override
-  String get deleteAgent => 'Delete Agent';
-
-  @override
-  String get agentDeletedSuccessfully => 'Agent deleted successfully';
 
   @override
   String get chooseWhatToDo => 'Choose what to do:';
@@ -227,8 +168,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kKP => 'KKP';
 
   @override
-  String get kKPDescription =>
-      'KKP is a leading name in the textile industry, known for quality yarn production and smart supply chain management. With years of trusted service, we bring transparency, innovation, and reliability to every process.';
+  String get kKPDescription => 'KKP is a leading name in the textile industry, known for quality yarn production and smart supply chain management. With years of trusted service, we bring transparency, innovation, and reliability to every process.';
 
   @override
   String get whoWeAre => 'Who We Are';
@@ -246,15 +186,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get transparentOperations => '• Transparent operations';
 
   @override
-  String get platformDescription =>
-      'Our platform connects agents, buyers, and mills in one unified system—making order management easier than ever.';
+  String get platformDescription => 'Our platform connects agents, buyers, and mills in one unified system—making order management easier than ever.';
 
   @override
   String get ourMission => 'Our Mission';
 
   @override
-  String get missionStatement =>
-      'To simplify textile operations with speed, clarity, and digital tools.';
+  String get missionStatement => 'To simplify textile operations with speed, clarity, and digital tools.';
 
   @override
   String get ourVision => 'Our Vision';
@@ -269,8 +207,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get john => 'John';
 
   @override
-  String get accountAuthenticityInfo =>
-      'To help keep our community authentic, we’re showing information about accounts on KKP app. People can see this by tapping on your profile and choosing \'About this account\'.';
+  String get accountAuthenticityInfo => 'To help keep our community authentic, we’re showing information about accounts on KKP app. People can see this by tapping on your profile and choosing \'About this account\'.';
 
   @override
   String get dateJoined => 'Date joined';
@@ -306,8 +243,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmDelete => 'Confirm Delete';
 
   @override
-  String get deleteAccountConfirmation =>
-      'By entering email and password you confirm that this account can be permanently deleted, and cannot be recovered in any way.';
+  String get deleteAccountConfirmation => 'By entering email and password you confirm that this account can be permanently deleted, and cannot be recovered in any way.';
 
   @override
   String get emailLabel => 'Email';
@@ -421,8 +357,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enablePushNotifications => 'Enable Push Notifications';
 
   @override
-  String get pushNotificationsDisabled =>
-      'Push notifications are disabled. Enable to receive alerts.';
+  String get pushNotificationsDisabled => 'Push notifications are disabled. Enable to receive alerts.';
 
   @override
   String get couldNotOpenAppSettings => 'Could not open app settings.';
@@ -450,170 +385,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get howMayIHelpYou => 'How may I help you?';
-
-  @override
-  String get availableColors => 'Available Colors';
-
-  @override
-  String get notAvailable => 'Not Available';
-
-  @override
-  String get outOfStock => 'Out of Stock';
-
-  @override
-  String get product => 'Product';
-
-  @override
-  String get searchHere => 'Search Here...';
-
-  @override
-  String get noMatchingProductsFound => 'No matching products found';
-
-  @override
-  String get profile => 'Profile';
-
-  @override
-  String get addNewAgent => 'Add new agent';
-
-  @override
-  String get agentEligibleToChat => '**This agent is eligible to chat with customers.**';
-
-  @override
-  String get agentNotEligibleToChat => '**This agent is not eligible to chat with customers.**';
-
-  @override
-  String get noAgentsFound => 'No agents found';
-
-  @override
-  String get searchByAnything => 'Search by anything...';
-
-  @override
-  String get posterAdsManagement => 'Poster Ads Management';
-
-  @override
-  String get uploadProductImage => 'Upload Product Image';
-
-  @override
-  String get uploadPoster => 'Upload Poster';
-
-  @override
-  String get deletePoster => 'Delete Poster';
-
-  @override
-  String get selectImageToUpload => 'Please pick and select an image to upload!';
-
-  @override
-  String get adminDashboard => 'Admin Dashboard';
-
-  @override
-  String get visitors => 'Visitors';
-
-  @override
-  String get messages => 'Messages';
-
-  @override
-  String get customerInquiries => 'Customer Inquiries';
-  String get cancel => 'Cancel';
-
-  @override
-  String get edit => 'Edit';
-
-  @override
-  String get saveChanges => 'Save Changes';
-
-  @override
-  String get addressDetails => 'Address Details';
-
-  @override
-  String get businessDetails => 'Business Details';
-
-  @override
-  String get profileDetailsUpdatedSuccessfully => 'Profile details updated successfully!';
-
-  @override
-  String get message => 'Message';
-
-  @override
-  String get updateProfile => 'Update Profile';
-
-  @override
-  String get back => 'Back';
-
-  @override
-  String get finish => 'Finish';
-
-  @override
-  String get next => 'Next';
-
-  @override
-  String get pressBackAgainToExit => 'Press back again to exit';
-
-  @override
-  String get someBasicInformation => 'Some basic information to get you started.';
-
-  @override
-  String get name => 'Name';
-
-  @override
-  String get enterYourName => 'Enter your name';
-
-  @override
-  String get customerType => 'Customer Type';
-
-  @override
-  String get export => 'Export';
-
-  @override
-  String get domestic => 'Domestic';
-
-  @override
-  String get mobileNumber => 'Mobile number';
-
-  @override
-  String get enterYourMobileNumber => 'Enter your mobile number';
-
-  @override
-  String get gstNumber => 'GST number';
-
-  @override
-  String get enterGSTNo => 'Enter GST No.';
-
-  @override
-  String get panNumber => 'PAN number';
-
-  @override
-  String get enterPANNo => 'Enter PAN No.';
-
-  @override
-  String get houseFlatNo => 'House/Flat No.';
-
-  @override
-  String get enterHouseFlatNo => 'Enter house/flat no.';
-
-  @override
-  String get streetName => 'Street Name';
-
-  @override
-  String get enterStreetName => 'Enter Street Name';
-
-  @override
-  String get cityName => 'City Name';
-
-  @override
-  String get enterCityName => 'Enter City Name';
-
-  @override
-  String get pinCode => 'Pin Code';
-
-  @override
-  String get enterPincode => 'Enter Pincode';
-
-  @override
-  String get validationError => 'Validation Error';
-
-  @override
-  String get pleaseSelectCustomerType => 'Please select a customer type.';
-
-  @override
-  String get ok => 'OK';
 }

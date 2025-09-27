@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/colored_circles.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -107,7 +108,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                         SizedBox(height: 8),
                         // Available Colors
                         Text(
-                          'Available Colors',
+                          AppLocalizations.of(context)!.availableColors,
                           style: AppTextStyles.black16_500.copyWith(
                             color: Colors.black,
                             fontSize: 17,
@@ -136,7 +137,8 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
-                            product.description ?? "Not Available ",
+                            product.description ??
+                                AppLocalizations.of(context)!.notAvailable,
                             style: AppTextStyles.black60alpha_12_500,
                             textAlign: TextAlign.justify,
                           ),
@@ -146,8 +148,8 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                         Center(
                           child: CustomButton(
                             text: product.stock > 0
-                                ? 'Available'
-                                : 'Out of Stock',
+                                ? AppLocalizations.of(context)!.availableColors
+                                : AppLocalizations.of(context)!.outOfStock,
                             onPressed: () {},
                             width: Utils().width(context) * 0.8,
                             height: 35,

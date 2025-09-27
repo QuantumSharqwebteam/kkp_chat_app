@@ -6,6 +6,7 @@ import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -13,6 +14,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart
 import 'package:kkpchatapp/presentation/common_widgets/locale/locale_switcher.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/customer_complaint_page.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
@@ -61,7 +63,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         title: Text(
-          'Settings',
+          AppLocalizations.of(context)!.settings,
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         actions: [
@@ -70,7 +72,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
-                "Change locale: ",
+                AppLocalizations.of(context)!.changeLocale,
                 style: AppTextStyles.black10_600,
               ),
               LanguageSwitcher(),
@@ -144,7 +146,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               // mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -179,21 +182,26 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ],
                           onTaps: [
                             () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) {
                                 return AccountAndSecurity();
                               }));
                             }
                           ],
                           title: Text(
-                            'Account & your orders',
+                            AppLocalizations.of(context)!.accountAndOrders,
                             style: TextStyle(
                                 color: AppColors.grey7B7B7B,
                                 fontWeight: FontWeight.w500,
                                 fontSize: 14),
                           ),
                           showDividerAfterTitle: true,
-                          titles: ['Account & Security'],
-                          subtitles: ['Account management, password change'],
+                          titles: [
+                            AppLocalizations.of(context)!.accountAndSecurity
+                          ],
+                          subtitles: [
+                            AppLocalizations.of(context)!.accountManagement
+                          ],
                         ),
                         // SizedBox(
                         //   height: 10,
@@ -206,7 +214,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                         // user management , inaquiry mangement , notifications and reports and system settins tiles
                         CustomSettingsTile(
                           numberOfTiles: 1,
-                          titles: ['Order Enquires'],
+                          titles: [AppLocalizations.of(context)!.orderEnquires],
                           leadingWidgets: [
                             CircleAvatar(
                               backgroundColor: Colors.blue.shade50,
@@ -218,10 +226,13 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                               ),
                             ),
                           ],
-                          subtitles: ["Track All Order Enquires in One Place"],
+                          subtitles: [
+                            AppLocalizations.of(context)!.trackAllOrderEnquires
+                          ],
                           onTaps: [
                             () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) {
                                 return CustomerInquiriesPage();
                               }));
                             }
@@ -255,7 +266,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -273,12 +285,14 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                     child: CustomSettingsTile(
                       numberOfTiles: 1,
                       title: Text(
-                        "Preferences",
+                        AppLocalizations.of(context)!.preferences,
                         style: TextStyle(
-                            color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                            color: AppColors.grey7B7B7B,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14),
                       ),
                       showDividerAfterTitle: true,
-                      titles: ['Notifications'],
+                      titles: [AppLocalizations.of(context)!.notifications],
                       leadingWidgets: [
                         CircleAvatar(
                           backgroundColor: Colors.blue.shade50,
@@ -290,10 +304,13 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ),
                         ),
                       ],
-                      subtitles: ["Your Notifications Hub"],
+                      subtitles: [
+                        AppLocalizations.of(context)!.yourNotificationsHub
+                      ],
                       onTaps: [
                         () {
-                          Navigator.pushNamed(context, CustomerRoutes.notificationSettings);
+                          Navigator.pushNamed(
+                              context, CustomerRoutes.notificationSettings);
                         }
                       ],
                     ),
@@ -303,6 +320,58 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
             ),
 
             SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      spreadRadius: 1,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: CustomSettingsTile(
+                  numberOfTiles: 1,
+                  leadingWidgets: [
+                    CircleAvatar(
+                      backgroundColor: Colors.blue.shade50,
+                      radius: 20,
+                      child: Image.asset(
+                        'assets/icons/complaint.png',
+                        height: 24,
+                        width: 24,
+                      ),
+                    ),
+                  ],
+                  title: Text(
+                    AppLocalizations.of(context)!.complaints,
+                    style: TextStyle(
+                        color: AppColors.grey7B7B7B,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14),
+                  ),
+                  showDividerAfterTitle: true,
+                  titles: [AppLocalizations.of(context)!.complaints],
+                  subtitles: [AppLocalizations.of(context)!.manageComplaints],
+                  onTaps: [
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const CustomerComplaintPage()),
+                      );
+                    },
+                  ],
+                ),
+              ),
+            ),
 
             // SettingsTile(
             //   numberOfTiles: 1,
@@ -354,16 +423,21 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                     ),
                   ],
                   title: Text(
-                    'Terms & Policy',
+                    AppLocalizations.of(context)!.termsAndPolicy,
                     style: TextStyle(
-                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                        color: AppColors.grey7B7B7B,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14),
                   ),
                   showDividerAfterTitle: true,
-                  titles: ['About'],
-                  subtitles: ['Manage Terms & Policy'],
+                  titles: [AppLocalizations.of(context)!.about],
+                  subtitles: [
+                    AppLocalizations.of(context)!.manageTermsAndPolicy
+                  ],
                   onTaps: [
                     () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return AboutUsPage();
                       }));
                     },
@@ -411,7 +485,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                     icon: Icons.logout_outlined,
                   );
                 },
-                text: "Log Out",
+                text: AppLocalizations.of(context)!.logOut,
                 icon: Icons.logout_outlined,
                 backgroundColor: AppColors.redF11515,
                 textColor: Colors.white,

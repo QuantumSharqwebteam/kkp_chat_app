@@ -11,6 +11,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
@@ -70,7 +71,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     // Initialize fields with passed arguments if updating
     if (widget.forUpdate && widget.profile != null) {
       _name.text = widget.profile!.name ?? '';
-      
+
       // Parse the phone number for international field
       String phoneStr = widget.profile!.mobile.toString();
       if (phoneStr.startsWith('+')) {
@@ -88,7 +89,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         _countryCode = '+91'; // Default to India
         _completePhoneNumber = '+91$phoneStr';
       }
-      
+
       _gstNumber.text = widget.profile!.gstNo ?? '';
       _panNumber.text = widget.profile!.panNo ?? '';
       if (widget.profile!.address != null &&
@@ -144,8 +145,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         Profile updatedProfile = Profile.fromJson(response["data"]);
 
         await LocalDbHelper.saveProfile(updatedProfile);
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Profile details updated Successfully!")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .profileDetailsUpdatedSuccessfully)));
 
         // Return the updated profile and image URL to the previous screen
         if (widget.forUpdate) {
@@ -156,8 +158,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       } else {
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(response[AppLocalizations.of(context)!.message])));
       }
     } catch (e) {
       if (!mounted) return;
@@ -188,7 +190,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     Navigator.pop(context);
                   },
                 ),
-                title: Text('Update Profile'),
+                title: Text(AppLocalizations.of(context)!.updateProfile),
               )
             : null,
         persistentFooterAlignment: AlignmentDirectional.center,
@@ -199,7 +201,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               children: [
                 if (_currentStep > 0)
                   CustomButton(
-                    text: 'Back',
+                    text: AppLocalizations.of(context)!.back,
                     backgroundColor: Colors.white,
                     textColor: AppColors.blue,
                     width: Utils().width(context) * 0.4,
@@ -268,7 +270,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 _lastPressed = now;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("Press back again to exit"),
+                    content: Text(
+                        AppLocalizations.of(context)!.pressBackAgainToExit),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -287,7 +290,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 _lastPressed = now;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("Press back again to exit"),
+                    content: Text(
+                        AppLocalizations.of(context)!.pressBackAgainToExit),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -318,7 +322,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 width: Utils().width(context) * 0.7,
                 child: Text(
                   textAlign: TextAlign.center,
-                  'Some basic information to get you started.',
+                  AppLocalizations.of(context)!.someBasicInformation,
                   style: AppTextStyles.black22_600,
                 ),
               ),
@@ -340,14 +344,14 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Name',
+                    AppLocalizations.of(context)!.name,
                     style: AppTextStyles.black14_600,
                   ),
                   CustomTextField(
                     controller: _name,
                     height: 50,
                     keyboardType: TextInputType.name,
-                    hintText: 'Enter your name',
+                    hintText: AppLocalizations.of(context)!.enterYourName,
                     errorText: widget.forUpdate ? null : _nameError,
                   ),
                 ],
@@ -371,7 +375,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 width: Utils().width(context) * 0.7,
                 child: Text(
                   textAlign: TextAlign.center,
-                  'Some basic information to get you started.',
+                  AppLocalizations.of(context)!.someBasicInformation,
                   style: AppTextStyles.black22_600,
                 ),
               ),
@@ -380,7 +384,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Customer Type',
+                    AppLocalizations.of(context)!.customerType,
                     style: AppTextStyles.black14_600,
                   ),
                   Row(
@@ -407,7 +411,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                             },
                           ),
                           Text(
-                            'Export',
+                            AppLocalizations.of(context)!.export,
                             style: AppTextStyles.black14_600,
                           ),
                         ],
@@ -433,7 +437,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                             },
                           ),
                           Text(
-                            'Domestic',
+                            AppLocalizations.of(context)!.domestic,
                             style: AppTextStyles.black14_600,
                           ),
                         ],
@@ -447,20 +451,23 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mobile number',
+                    AppLocalizations.of(context)!.mobileNumber,
                     style: AppTextStyles.black14_600,
                   ),
                   IntlPhoneField(
                     controller: _phoneNumber,
                     decoration: InputDecoration(
-                      hintText: 'Enter your mobile number',
+                      hintText:
+                          AppLocalizations.of(context)!.enterYourMobileNumber,
                       border: OutlineInputBorder(
                         borderSide: BorderSide(),
                       ),
                       errorText: widget.forUpdate ? null : _phoneNumberError,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 12),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 15, horizontal: 12),
                     ),
-                    initialCountryCode: _countryCode?.replaceAll('+', '') ?? 'IN',
+                    initialCountryCode:
+                        _countryCode?.replaceAll('+', '') ?? 'IN',
                     onChanged: (phone) {
                       _completePhoneNumber = phone.completeNumber;
                       _countryCode = phone.countryCode;
@@ -487,7 +494,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   Row(
                     children: [
                       Text(
-                        'GST number',
+                        AppLocalizations.of(context)!.gstNumber,
                         style: AppTextStyles.black14_600,
                       ),
                       if (_isDomesticSelected)
@@ -505,7 +512,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   CustomTextField(
                     controller: _gstNumber,
                     height: 50,
-                    hintText: 'Enter GST No.',
+                    hintText: AppLocalizations.of(context)!.enterGSTNo,
                     keyboardType: TextInputType.text,
                     maxLength: 15,
                     errorText: widget.forUpdate ? null : _gstNumberError,
@@ -519,7 +526,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   Row(
                     children: [
                       Text(
-                        'PAN number',
+                        AppLocalizations.of(context)!.panNumber,
                         style: AppTextStyles.black14_600,
                       ),
                       if (_isDomesticSelected)
@@ -537,7 +544,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   CustomTextField(
                     controller: _panNumber,
                     height: 50,
-                    hintText: 'Enter PAN No.',
+                    hintText: AppLocalizations.of(context)!.enterPANNo,
                     keyboardType: TextInputType.text,
                     maxLength: 10,
                     errorText: widget.forUpdate ? null : _panNumberError,
@@ -560,7 +567,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
             width: Utils().width(context) * 0.7,
             child: Text(
               textAlign: TextAlign.center,
-              'Some basic information to get you started.',
+              AppLocalizations.of(context)!.someBasicInformation,
               style: AppTextStyles.black22_600,
             ),
           ),
@@ -573,13 +580,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'House/Flat No.',
+                      AppLocalizations.of(context)!.houseFlatNo,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _houseFlatNumber,
                       height: 50,
-                      hintText: 'Enter house/flat no.',
+                      hintText: AppLocalizations.of(context)!.enterHouseFlatNo,
                       keyboardType: TextInputType.text,
                       errorText:
                           widget.forUpdate ? null : _houseFlatNumberError,
@@ -591,13 +598,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Street Name',
+                      AppLocalizations.of(context)!.streetName,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _streetNumber,
                       height: 50,
-                      hintText: 'Enter Street Name',
+                      hintText: AppLocalizations.of(context)!.enterStreetName,
                       keyboardType: TextInputType.text,
                       errorText: widget.forUpdate ? null : _streetNumberError,
                     ),
@@ -608,13 +615,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'City Name',
+                      AppLocalizations.of(context)!.cityName,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _cityName,
                       height: 50,
-                      hintText: 'Enter City Name',
+                      hintText: AppLocalizations.of(context)!.enterCityName,
                       errorText: widget.forUpdate ? null : _cityNameError,
                       keyboardType: TextInputType.text,
                     ),
@@ -625,14 +632,14 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pin Code',
+                      AppLocalizations.of(context)!.pinCode,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _pinCode,
                       height: 50,
                       maxLength: 6,
-                      hintText: 'Enter Pincode',
+                      hintText: AppLocalizations.of(context)!.enterPincode,
                       errorText: widget.forUpdate ? null : _pinCodeError,
                       keyboardType: TextInputType.number,
                     ),
@@ -703,12 +710,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Validation Error'),
-            content: Text('Please select a customer type.'),
+            title: Text(AppLocalizations.of(context)!.validationError),
+            content:
+                Text(AppLocalizations.of(context)!.pleaseSelectCustomerType),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('OK'),
+                child: Text(AppLocalizations.of(context)!.ok),
               ),
             ],
           ),
@@ -767,7 +775,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   bool _isDataChanged() {
     String currentPhone = _completePhoneNumber ?? _phoneNumber.text;
     String originalPhone = widget.profile?.mobile.toString() ?? '';
-    
+
     return _name.text != widget.profile?.name ||
         currentPhone != originalPhone ||
         _gstNumber.text != widget.profile?.gstNo ||

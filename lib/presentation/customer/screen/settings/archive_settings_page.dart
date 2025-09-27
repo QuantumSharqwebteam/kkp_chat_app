@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -48,7 +49,7 @@ class _ArchiveSettingsPageState extends State<ArchiveSettingsPage>
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
         title: Text(
-          'Archive',
+          AppLocalizations.of(context)!.archive,
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         bottom: PreferredSize(
@@ -95,7 +96,7 @@ class _ArchiveSettingsPageState extends State<ArchiveSettingsPage>
                   width: Utils().width(context),
                   enable: true,
                   controller: _searchController,
-                  hintText: 'Search...',
+                  hintText: AppLocalizations.of(context)!.searchPlaceholder,
                 ),
               ),
               Expanded(
@@ -114,7 +115,7 @@ class _ArchiveSettingsPageState extends State<ArchiveSettingsPage>
                             backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
                             icon: Icons.archive,
-                            label: 'Archive',
+                            label: AppLocalizations.of(context)!.archive,
                           ),
                         ],
                       ),
@@ -127,7 +128,7 @@ class _ArchiveSettingsPageState extends State<ArchiveSettingsPage>
                             backgroundColor: AppColors.redF11515,
                             foregroundColor: Colors.white,
                             icon: Icons.delete,
-                            label: 'Delete',
+                            label: AppLocalizations.of(context)!.delete,
                           ),
                         ],
                       ),

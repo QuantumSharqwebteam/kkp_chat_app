@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 
 class AboutSettingsPage extends StatelessWidget {
   const AboutSettingsPage({super.key});
@@ -13,7 +14,7 @@ class AboutSettingsPage extends StatelessWidget {
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
         title: Text(
-          'About',
+          AppLocalizations.of(context)!.about,
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
@@ -30,12 +31,12 @@ class AboutSettingsPage extends StatelessWidget {
               ),
               SizedBox(height: 5),
               Text(
-                'John',
+                AppLocalizations.of(context)!.john,
                 style: AppTextStyles.black18_600,
               ),
               Text(
                 textAlign: TextAlign.center,
-                'To help keep our community authentic,we’re showing information about accounts on KKP app.People can see this by tapping on the your profile choosing about this account',
+                AppLocalizations.of(context)!.accountAuthenticityInfo,
                 style:
                     AppTextStyles.black12_400.copyWith(color: Colors.black54),
               ),
@@ -61,12 +62,12 @@ class AboutSettingsPage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Date joined',
+                              AppLocalizations.of(context)!.dateJoined,
                               style: AppTextStyles.black12_400
                                   .copyWith(fontWeight: FontWeight.w500),
                             ),
                             Text(
-                              'February 2025',
+                              AppLocalizations.of(context)!.february2025,
                               style: AppTextStyles.black12_400,
                             )
                           ],

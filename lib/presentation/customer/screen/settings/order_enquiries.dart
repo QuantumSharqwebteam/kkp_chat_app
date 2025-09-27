@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 
 class OrderEnquiries extends StatelessWidget {
@@ -14,7 +15,7 @@ class OrderEnquiries extends StatelessWidget {
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
         title: Text(
-          'Order Enquiries',
+          AppLocalizations.of(context)!.orderEnquires,
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
@@ -31,7 +32,7 @@ class OrderEnquiries extends StatelessWidget {
                 width: Utils().width(context),
                 enable: true,
                 controller: _searchController,
-                hintText: 'Search',
+                hintText: AppLocalizations.of(context)!.search,
               ),
             ),
             ListTile(
@@ -43,7 +44,7 @@ class OrderEnquiries extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
               title: Text(
-                'Cotton T-Shirt',
+                AppLocalizations.of(context)!.cottonTShirt,
                 style: AppTextStyles.black16_600,
               ),
               subtitle: Text(
@@ -64,7 +65,7 @@ class OrderEnquiries extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
               title: Text(
-                'Cotton T-Shirt',
+                AppLocalizations.of(context)!.cottonTShirt,
                 style: AppTextStyles.black16_600,
               ),
               subtitle: Text(

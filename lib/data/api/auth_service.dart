@@ -200,7 +200,7 @@ class AuthApi {
       {required String password, required String email}) async {
     const endPoint = 'user/changePassword';
     final url = Uri.parse("$baseUrl$endPoint");
-
+    final token = await LocalDbHelper.getToken();
     try {
       final body = {
         "email": email,
@@ -210,7 +210,8 @@ class AuthApi {
       final response = await client.post(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -269,11 +270,15 @@ class AuthApi {
   Future<Map<String, dynamic>> sendOtp({required String email}) async {
     const endPoint = "user/getOTP/";
     final url = Uri.parse('$baseUrl$endPoint$email');
-
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url, headers: {
-        "Content-Type": "application/json",
-      });
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
@@ -315,12 +320,14 @@ class AuthApi {
       "otp": otp,
     });
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await http.Client().post(
         url,
         body: body,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -339,8 +346,15 @@ class AuthApi {
     const endPoint = 'user/getAgent';
     final url = Uri.parse("$baseUrl$endPoint");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         return parseAgents(response.body);
@@ -358,8 +372,15 @@ class AuthApi {
     const endPoint = 'user/getAssignedAgent';
     final url = Uri.parse("$baseUrl$endPoint");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
@@ -378,11 +399,14 @@ class AuthApi {
       {required Map<String, dynamic> body}) async {
     const endPoint = 'user/signup';
     final url = Uri.parse("$baseUrl$endPoint");
+
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.post(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -406,11 +430,15 @@ class AuthApi {
       "agentNames": [email]
     };
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.post(
         url,
         body: jsonEncode(body),
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
       );
 
       final jsonResponse = jsonDecode(response.body);
@@ -427,12 +455,14 @@ class AuthApi {
       "agentNames": [email]
     };
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.put(
         url,
         body: jsonEncode(body),
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -455,11 +485,13 @@ class AuthApi {
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {"role": role};
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.post(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -480,11 +512,13 @@ class AuthApi {
     final endPoint = 'user/getUsersByAgentId/$agentEmail';
     final url = Uri.parse("$baseUrl$endPoint");
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.get(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -500,14 +534,12 @@ class AuthApi {
   }
 
   Future<Map<String, dynamic>> deleteUserAccount(
-    String email, String password , String feedback) async {
+      String email, String password, String feedback) async {
     final endPoint = "user/deleteUserAccount";
     final url = Uri.parse("$baseUrl$endPoint");
     final token = await LocalDbHelper.getToken();
-    final body = jsonEncode({
-      "email": email,
-       "password": password,
-       "feedback":feedback});
+    final body = jsonEncode(
+        {"email": email, "password": password, "feedback": feedback});
     try {
       final response = await client.delete(url,
           headers: {
@@ -515,7 +547,7 @@ class AuthApi {
             "Authorization": "Bearer $token",
           },
           body: body);
-          debugPrint("Response : ${response.body.toString()}");
+      debugPrint("Response : ${response.body.toString()}");
       return json.decode(response.body);
     } catch (e) {
       throw Exception(e);

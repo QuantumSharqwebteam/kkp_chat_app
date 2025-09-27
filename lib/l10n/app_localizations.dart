@@ -19,7 +19,7 @@ import 'app_localizations_ta.dart';
 /// `supportedLocales` list. For example:
 ///
 /// ```dart
-/// import 'generated/app_localizations.dart';
+/// import 'l10n/app_localizations.dart';
 ///
 /// return MaterialApp(
 ///   localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -83,8 +83,7 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
     delegate,
     GlobalMaterialLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
@@ -92,7 +91,11 @@ abstract class AppLocalizations {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('hi'), Locale('ta')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('hi'),
+    Locale('ta')
+  ];
 
   /// The title of the application displayed in the AppBar and splash screen
   ///
@@ -382,213 +385,11 @@ abstract class AppLocalizations {
   /// **'At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.'**
   String get privacyPolicyFullText;
 
-  /// Error message for name minimum length
-  ///
-  /// In en, this message translates to:
-  /// **'Name should be at least 3 characters'**
-  String get nameMinLengthError;
-
-  /// Error message for phone number length
-  ///
-  /// In en, this message translates to:
-  /// **'Phone number should be 10 digits'**
-  String get phoneNumberLengthError;
-
-  /// Error message for password minimum length
-  ///
-  /// In en, this message translates to:
-  /// **'Password should be at least 6 characters'**
-  String get passwordMinLengthError;
-
-  /// Success message for agent profile creation
-  ///
-  /// In en, this message translates to:
-  /// **'Agent Profile created'**
-  String get agentProfileCreated;
-
-  /// Error message for failed agent addition
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to add Agent, Try again later!'**
-  String get failedToAddAgent;
-
-  /// Label for phone number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Phone number'**
-  String get phoneNumber;
-
-  /// Placeholder for phone number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter phone number'**
-  String get enterPhoneNumber;
-
-  /// Label for role selection
-  ///
-  /// In en, this message translates to:
-  /// **'Role'**
-  String get role;
-
-  /// Text for add agent button
-  ///
-  /// In en, this message translates to:
-  /// **'Add Agent'**
-  String get addAgent;
-
-  /// Text for viewing more data on web
-  ///
-  /// In en, this message translates to:
-  /// **'See more data in web'**
-  String get seeMoreDataInWeb;
-
-  /// Title for user traffic analytics section
-  ///
-  /// In en, this message translates to:
-  /// **'User Traffic Analytics'**
-  String get userTrafficAnalytics;
-
-  /// Title for agent management section
-  ///
-  /// In en, this message translates to:
-  /// **'Agent Management'**
-  String get agentManagement;
-
-  /// Title for poster management section
-  ///
-  /// In en, this message translates to:
-  /// **'Poster Management'**
-  String get posterManagement;
-
   /// Label for agent
   ///
   /// In en, this message translates to:
   /// **'Agent'**
   String get agent;
-
-  /// Status label for offline agents
-  ///
-  /// In en, this message translates to:
-  /// **'Offline'**
-  String get offline;
-
-  /// Status label for active agents
-  ///
-  /// In en, this message translates to:
-  /// **'Active'**
-  String get active;
-
-  /// Confirmation message for deleting an agent
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete this agent?'**
-  String get confirmDeleteAgent;
-
-  /// Text for delete agent button
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Agent'**
-  String get deleteAgent;
-
-  /// Success message for agent deletion
-  ///
-  /// In en, this message translates to:
-  /// **'Agent deleted successfully'**
-  String get agentDeletedSuccessfully;
-
-  /// Label for profile section
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-  String get profile;
-
-  /// Text for adding a new agent
-  ///
-  /// In en, this message translates to:
-  /// **'Add new agent'**
-  String get addNewAgent;
-
-  /// Message indicating agent eligibility to chat
-  ///
-  /// In en, this message translates to:
-  /// **'**This agent is eligible to chat with customers.**'**
-  String get agentEligibleToChat;
-
-  /// Message indicating agent ineligibility to chat
-  ///
-  /// In en, this message translates to:
-  /// **'**This agent is not eligible to chat with customers.**'**
-  String get agentNotEligibleToChat;
-
-  /// Message when no agents are found
-  ///
-  /// In en, this message translates to:
-  /// **'No agents found'**
-  String get noAgentsFound;
-
-  /// Placeholder for search input field
-  ///
-  /// In en, this message translates to:
-  /// **'Search by anything...'**
-  String get searchByAnything;
-
-  /// Title for poster ads management section
-  ///
-  /// In en, this message translates to:
-  /// **'Poster Ads Management'**
-  String get posterAdsManagement;
-
-  /// Text for uploading product image
-  ///
-  /// In en, this message translates to:
-  /// **'Upload Product Image'**
-  String get uploadProductImage;
-
-  /// Text for uploading poster
-  ///
-  /// In en, this message translates to:
-  /// **'Upload Poster'**
-  String get uploadPoster;
-
-  /// Text for deleting poster
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Poster'**
-  String get deletePoster;
-
-  /// Prompt to select an image for upload
-  ///
-  /// In en, this message translates to:
-  /// **'Please pick and select an image to upload!'**
-  String get selectImageToUpload;
-
-  /// Title for the admin dashboard
-  ///
-  /// In en, this message translates to:
-  /// **'Admin Dashboard'**
-  String get adminDashboard;
-
-  /// Label for visitors count or section
-  ///
-  /// In en, this message translates to:
-  /// **'Visitors'**
-  String get visitors;
-
-  /// Label for messages count or section
-  ///
-  /// In en, this message translates to:
-  /// **'Messages'**
-  String get messages;
-
-  /// Label for customer inquiries section
-  ///
-  /// In en, this message translates to:
-  /// **'Customer Inquiries'**
-  String get customerInquiries;
-
-  /// Label for agent
-  ///
-  /// In en, this message translates to:
 
   /// Prompt for user to choose an action
   ///
@@ -1051,257 +852,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'How may I help you?'**
   String get howMayIHelpYou;
-
-  /// Label for displaying available product colors
-  ///
-  /// In en, this message translates to:
-  /// **'Available Colors'**
-  String get availableColors;
-
-  /// Label for unavailable items/products
-  ///
-  /// In en, this message translates to:
-  /// **'Not Available'**
-  String get notAvailable;
-
-  /// Label for items/products that are out of stock
-  ///
-  /// In en, this message translates to:
-  /// **'Out of Stock'**
-  String get outOfStock;
-
-  /// Label for product
-  ///
-  /// In en, this message translates to:
-  /// **'Product'**
-  String get product;
-
-  /// Placeholder for product search input field
-  ///
-  /// In en, this message translates to:
-  /// **'Search Here...'**
-  String get searchHere;
-
-  /// Message when no products match the search criteria
-  ///
-  /// In en, this message translates to:
-  /// **'No matching products found'**
-  String get noMatchingProductsFound;
-
-  /// Label for user profile section
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-
-  /// Button label for canceling an action
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get cancel;
-
-  /// Button label for editing information
-  ///
-  /// In en, this message translates to:
-  /// **'Edit'**
-  String get edit;
-
-  /// Button label for saving changes
-  ///
-  /// In en, this message translates to:
-  /// **'Save Changes'**
-  String get saveChanges;
-
-  /// Title for address details section
-  ///
-  /// In en, this message translates to:
-  /// **'Address Details'**
-  String get addressDetails;
-
-  /// Title for business details section
-  ///
-  /// In en, this message translates to:
-  /// **'Business Details'**
-  String get businessDetails;
-
-  /// Success message after profile update
-  ///
-  /// In en, this message translates to:
-  /// **'Profile details updated successfully!'**
-  String get profileDetailsUpdatedSuccessfully;
-
-  /// Generic label for messages
-  ///
-  /// In en, this message translates to:
-  /// **'Message'**
-  String get message;
-
-  /// Button label for updating profile
-  ///
-  /// In en, this message translates to:
-  /// **'Update Profile'**
-  String get updateProfile;
-
-  /// Button label for going back
-  ///
-  /// In en, this message translates to:
-  /// **'Back'**
-  String get back;
-
-  /// Button label for completing a process
-  ///
-  /// In en, this message translates to:
-  /// **'Finish'**
-  String get finish;
-
-  /// Button label for moving to next step
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get next;
-
-  /// Confirmation message for app exit
-  ///
-  /// In en, this message translates to:
-  /// **'Press back again to exit'**
-  String get pressBackAgainToExit;
-
-  /// Introductory text for profile setup
-  ///
-  /// In en, this message translates to:
-  /// **'Some basic information to get you started.'**
-  String get someBasicInformation;
-
-  /// Label for name field
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get name;
-
-  /// Placeholder for name input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your name'**
-  String get enterYourName;
-
-  /// Label for customer type selection
-  ///
-  /// In en, this message translates to:
-  /// **'Customer Type'**
-  String get customerType;
-
-  /// Option for export customer type
-  ///
-  /// In en, this message translates to:
-  /// **'Export'**
-  String get export;
-
-  /// Option for domestic customer type
-  ///
-  /// In en, this message translates to:
-  /// **'Domestic'**
-  String get domestic;
-
-  /// Label for mobile number field
-  ///
-  /// In en, this message translates to:
-  /// **'Mobile number'**
-  String get mobileNumber;
-
-  /// Placeholder for mobile number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your mobile number'**
-  String get enterYourMobileNumber;
-
-  /// Label for GST number field
-  ///
-  /// In en, this message translates to:
-  /// **'GST number'**
-  String get gstNumber;
-
-  /// Placeholder for GST number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter GST No.'**
-  String get enterGSTNo;
-
-  /// Label for PAN number field
-  ///
-  /// In en, this message translates to:
-  /// **'PAN number'**
-  String get panNumber;
-
-  /// Placeholder for PAN number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter PAN No.'**
-  String get enterPANNo;
-
-  /// Label for house/flat number field
-  ///
-  /// In en, this message translates to:
-  /// **'House/Flat No.'**
-  String get houseFlatNo;
-
-  /// Placeholder for house/flat number input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter house/flat no.'**
-  String get enterHouseFlatNo;
-
-  /// Label for street name field
-  ///
-  /// In en, this message translates to:
-  /// **'Street Name'**
-  String get streetName;
-
-  /// Placeholder for street name input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter Street Name'**
-  String get enterStreetName;
-
-  /// Label for city name field
-  ///
-  /// In en, this message translates to:
-  /// **'City Name'**
-  String get cityName;
-
-  /// Placeholder for city name input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter City Name'**
-  String get enterCityName;
-
-  /// Label for pincode field
-  ///
-  /// In en, this message translates to:
-  /// **'Pin Code'**
-  String get pinCode;
-
-  /// Placeholder for pincode input field
-  ///
-  /// In en, this message translates to:
-  /// **'Enter Pincode'**
-  String get enterPincode;
-
-  /// Title for validation error messages
-  ///
-  /// In en, this message translates to:
-  /// **'Validation Error'**
-  String get validationError;
-
-  /// Error message when customer type is not selected
-  ///
-  /// In en, this message translates to:
-  /// **'Please select a customer type.'**
-  String get pleaseSelectCustomerType;
-
-  /// Button label for confirmation
-  ///
-  /// In en, this message translates to:
-  /// **'OK'**
-  String get ok;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -1320,19 +870,19 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
-    case 'hi':
-      return AppLocalizationsHi();
-    case 'ta':
-      return AppLocalizationsTa();
+    case 'en': return AppLocalizationsEn();
+    case 'hi': return AppLocalizationsHi();
+    case 'ta': return AppLocalizationsTa();
   }
 
   throw FlutterError(
-      'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
-      'an issue with the localizations generation tool. Please file an issue '
-      'on GitHub with a reproducible sample app and the gen-l10n configuration '
-      'that was used.');
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.'
+  );
 }

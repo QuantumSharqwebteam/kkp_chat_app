@@ -38,8 +38,15 @@ class ChatService {
   }) async {
     final url = Uri.parse("$baseUrl/api/chat/$customerEmail/$agentEmail");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -60,8 +67,15 @@ class ChatService {
       String agentEmail) async {
     final Uri url = Uri.parse("$baseUrl/user/getUsersByAgentId/$agentEmail");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
 
       if (response.statusCode == 200 && jsonResponse["message"] is List) {
@@ -86,8 +100,15 @@ class ChatService {
   Future<List<Map<String, dynamic>>> getAgentUserList(String agentId) async {
     final url = Uri.parse("$baseUrl/chat/getAgentUserList/$agentId");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
@@ -127,8 +148,15 @@ class ChatService {
   Future<List<Map<String, dynamic>>> getChattedUserList() async {
     final url = Uri.parse("$baseUrl/chat/getUserList");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
@@ -197,8 +225,14 @@ class ChatService {
   /// get inqury form data
   Future<List<FormDataModel>> getFormData() async {
     final url = Uri.parse('$baseUrl/chat/getFormData');
-    // final token = await LocalDbHelper.getToken();
-    final response = await client.get(url);
+    final token = await LocalDbHelper.getToken();
+    final response = await client.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        "Authorization": "Bearer $token",
+      },
+    );
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -245,10 +279,14 @@ class ChatService {
   }) async {
     final url = Uri.parse("$baseUrl/chat/getCallToken");
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
         body: jsonEncode({"channelName": channelName, "uid": uid}),
       );
 
@@ -329,11 +367,15 @@ class ChatService {
   /// Update form rate
   Future<void> updateFormRate(
       {required String formId, required String rate}) async {
+    final token = await LocalDbHelper.getToken();
     try {
       final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
       final response = await client.put(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
         body: jsonEncode({"rate": rate}),
       );
 
@@ -359,10 +401,14 @@ class ChatService {
         ? {'callStatus': callStatus, 'callDuration': callDuration}
         : {'callStatus': callStatus};
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.put(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
         body: jsonEncode(body),
       );
 
@@ -386,9 +432,15 @@ class ChatService {
   //  get all call logs of user :
   Future<List<CallLogModel>> getCallLogs(String email) async {
     final url = Uri.parse("$baseUrl/chat/getCallLog/$email");
-
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -451,8 +503,15 @@ class ChatService {
       "$baseUrl/chat/getUserMessages/$customerEmail?limit=$limit${before != null ? '&before=$before' : ''}",
     );
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -481,8 +540,15 @@ class ChatService {
       String customerEmail) async {
     final url = Uri.parse("$baseUrl/chat/getUserLastTimestamp/$customerEmail");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
@@ -510,8 +576,15 @@ class ChatService {
       String userEmail, String agentEmail) async {
     final url = Uri.parse("$baseUrl/chat/getTimestamp/$userEmail/$agentEmail");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
