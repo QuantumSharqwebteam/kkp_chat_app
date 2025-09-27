@@ -8,6 +8,7 @@ import 'package:kkpchatapp/data/api/product_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
@@ -141,11 +142,12 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
-        title: const Text("Edit Product"),
+        title: Text(locale.editProduct),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -164,7 +166,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 const SizedBox(height: 20),
                 CustomButton(
                   onPressed: updateProduct,
-                  text: "Update Product",
+                  text: locale.updateProduct,
                   fontSize: 18,
                   borderColor: AppColors.blue00ABE9,
                   backgroundColor: AppColors.blue00ABE9,
@@ -179,6 +181,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   Widget _buildProductDetails() {
+    final locale = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -197,20 +200,20 @@ class _EditProductScreenState extends State<EditProductScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           //product name
-          Text("Product Name", style: AppTextStyles.black14_600),
+          Text(locale.productName, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: nameController,
-            hintText: 'Name',
+            hintText: locale.name,
           ),
           // price and review textfields
           Row(
             spacing: 10,
             children: [
               Expanded(
-                child: Text("Price", style: AppTextStyles.black14_600),
+                child: Text(locale.price, style: AppTextStyles.black14_600),
               ),
               Expanded(
-                child: Text("Size", style: AppTextStyles.black14_600),
+                child: Text(locale.size, style: AppTextStyles.black14_600),
               ),
             ],
           ),
@@ -229,10 +232,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
               ),
             ],
           ),
-          Text("Color", style: AppTextStyles.black14_600),
+          Text(locale.color, style: AppTextStyles.black14_600),
           //color selector list
           _buildColorPickerWidget(),
-          Text("Stock Availaible", style: AppTextStyles.black14_600),
+          Text(locale.stockAvailable, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: stockController,
             hintText: "2000 Stocks Available",
@@ -240,10 +243,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           //description field
-          Text("Description", style: AppTextStyles.black14_600),
+          Text(locale.description, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: descriptionController,
-            hintText: "Describe about the product....... ",
+            hintText: locale.describeProduct,
             maxLines: 16,
             minLines: 2,
             height: 120,
@@ -312,6 +315,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   Widget _buildImagePickerContainer(
       File? selectedImage, VoidCallback pickImage) {
+    final locale = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: pickImage,
       child: Card(
@@ -334,10 +338,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       children: [
                         const Icon(Icons.cloud_upload_rounded,
                             size: 50, color: Colors.grey),
-                        const Text("Upload Product Image"),
+                        Text(locale.uploadProductImage),
                         ElevatedButton(
                           onPressed: pickImage,
-                          child: const Text("Choose File"),
+                          child: Text(locale.chooseFile),
                         ),
                       ],
                     ))

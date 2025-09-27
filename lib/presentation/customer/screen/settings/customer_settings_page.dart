@@ -13,12 +13,25 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart
 import 'package:kkpchatapp/presentation/common_widgets/locale/locale_switcher.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
 
   @override
   State<CustomerSettingsPage> createState() => _CustomerSettingsPageState();
+}
+
+Future<void> _launchDialer(BuildContext context, String phoneNumber) async {
+  final Uri uri = Uri(scheme: 'tel', path: phoneNumber);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  } else {
+    if (context.mounted) {
+      Utils.showCustomToast(context,
+          title: 'Error', subtitle: 'No Supported App Found');
+    }
+  }
 }
 
 class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
@@ -144,7 +157,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               // mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -179,7 +193,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ],
                           onTaps: [
                             () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) {
                                 return AccountAndSecurity();
                               }));
                             }
@@ -221,10 +236,32 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           subtitles: ["Track All Order Enquires in One Place"],
                           onTaps: [
                             () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) {
                                 return CustomerInquiriesPage();
                               }));
                             }
+                          ],
+                        ),
+                        Divider(
+                          thickness: 1,
+                          height: 0,
+                          color: AppColors.greyE5E7EB, // light gray
+                        ),
+                        // user management , inaquiry mangement , notifications and reports and system settins tiles
+                        CustomSettingsTile(
+                          numberOfTiles: 1,
+                          titles: ['Contact Us'],
+                          leadingWidgets: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue.shade50,
+                              radius: 20,
+                              child: Icon(Icons.phone_android),
+                            ),
+                          ],
+                          subtitles: ["Tap To Get Help"],
+                          onTaps: [
+                            () => _launchDialer(context, "+91 9789965789"),
                           ],
                         ),
                       ],
@@ -255,7 +292,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -275,7 +313,9 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                       title: Text(
                         "Preferences",
                         style: TextStyle(
-                            color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                            color: AppColors.grey7B7B7B,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14),
                       ),
                       showDividerAfterTitle: true,
                       titles: ['Notifications'],
@@ -293,7 +333,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                       subtitles: ["Your Notifications Hub"],
                       onTaps: [
                         () {
-                          Navigator.pushNamed(context, CustomerRoutes.notificationSettings);
+                          Navigator.pushNamed(
+                              context, CustomerRoutes.notificationSettings);
                         }
                       ],
                     ),
@@ -356,14 +397,17 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                   title: Text(
                     'Terms & Policy',
                     style: TextStyle(
-                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                        color: AppColors.grey7B7B7B,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14),
                   ),
                   showDividerAfterTitle: true,
                   titles: ['About'],
                   subtitles: ['Manage Terms & Policy'],
                   onTaps: [
                     () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return AboutUsPage();
                       }));
                     },

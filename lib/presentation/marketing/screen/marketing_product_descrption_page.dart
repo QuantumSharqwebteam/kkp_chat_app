@@ -4,6 +4,7 @@ import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/colored_circles.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/edit_product_screen.dart';
@@ -59,6 +60,7 @@ class _MarketingProductDescrptionPageState
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: Size(double.infinity, 100),
@@ -112,11 +114,12 @@ class _MarketingProductDescrptionPageState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Price : ₹${widget.product.price}",
+                      Text("${locale.price} : ₹${widget.product.price}",
                           style: AppTextStyles.black16_700),
                       Row(
                         children: [
-                          Text("Sizes: ", style: AppTextStyles.black16_500),
+                          Text("${locale.size}: ",
+                              style: AppTextStyles.black16_500),
                           ...widget.product.sizes.map((size) => Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 3),
@@ -130,7 +133,7 @@ class _MarketingProductDescrptionPageState
                   const SizedBox(height: 5),
 
                   Text(
-                    'Available Colors:',
+                    locale.availableColors,
                     style: AppTextStyles.black16_500
                         .copyWith(color: Colors.black, fontSize: 17),
                   ),
@@ -147,8 +150,8 @@ class _MarketingProductDescrptionPageState
 
                   Text(
                     widget.product.stock > 0
-                        ? 'Only ${widget.product.stock} left in Stock'
-                        : 'Out of Stock',
+                        ? '${locale.only} ${widget.product.stock} ${locale.leftInStock}'
+                        : locale.outOfStock,
                     style: AppTextStyles.black12_400.copyWith(
                       color: widget.product.stock > 0
                           ? AppColors.activeGreen
@@ -156,11 +159,11 @@ class _MarketingProductDescrptionPageState
                     ),
                   ),
                   Text(
-                    "Description:",
+                    locale.description,
                     style: AppTextStyles.black16_500,
                   ),
                   Text(
-                    widget.product.description ?? "Not Available ",
+                    widget.product.description ?? locale.notAvailable,
                     style: AppTextStyles.black60alpha_12_500,
                     textAlign: TextAlign.justify,
                   ),
@@ -170,7 +173,7 @@ class _MarketingProductDescrptionPageState
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       CustomButton(
-                        text: 'Edit',
+                        text: locale.edit,
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -191,7 +194,7 @@ class _MarketingProductDescrptionPageState
                         textColor: AppColors.blue0056FB,
                       ),
                       CustomButton(
-                        text: 'Remove',
+                        text: locale.remove,
                         onPressed: _removeProduct,
                         image: Icon(Icons.delete,
                             color: AppColors.inActiveRed, size: 20),

@@ -3,6 +3,7 @@ import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 //import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 //import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
@@ -58,6 +59,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -85,7 +87,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
               bottom: 20,
             ),
             child: Text(
-              "Customers List",
+              locale.customersList,
               style: AppTextStyles.blue4A76CD_24_600.copyWith(
                 color: AppColors.grey525252,
               ),
@@ -115,15 +117,15 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                             child: ListTile(
                               tileColor: Colors.white,
                               leading: Initicon(
-                                text: customer['name'] ?? "User",
+                                text: customer['name'] ?? locale.user,
                                 size: 40,
                               ),
                               title: Text(
-                                customer['name'] ?? "User",
+                                customer['name'] ?? locale.user,
                                 style: AppTextStyles.black14_600,
                               ),
                               subtitle: Text(
-                                customer['role'] ?? "Customer",
+                                customer['role'] ?? locale.customer,
                                 style: AppTextStyles.grey12_600,
                               ),
                               trailing: Icon(Icons.arrow_forward_ios),

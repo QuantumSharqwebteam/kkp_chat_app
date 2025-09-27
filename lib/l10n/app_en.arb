@@ -191,5 +191,301 @@
   },
   "privacyPolicyFullText": "At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.","@privacyPolicyFullText":{
     "description": ""
-  }
+  },
+  "addProduct": "Add Product",
+  "@addProduct": {
+    "description": "Button or label text for adding a new product"
+  },
+  "pleaseFillAllFields": "Please fill all fields correctly!",
+  "@pleaseFillAllFields": {
+    "description": "Validation message shown when user leaves fields empty or incorrect"
+  },
+  "productAddedSuccessfully": "Product added successfully!",
+  "@productAddedSuccessfully": {
+    "description": "Confirmation message shown when a product is added successfully"
+  },
+  "uploadProductImage": "Upload Product Image",
+  "@uploadProductImage": {
+    "description": "Button or label text for uploading a product image"
+  },
+  "chooseFile": "Choose File",
+  "@chooseFile": {
+    "description": "Button or label text for selecting a file"
+  },
+  "productName": "Product Name",
+  "@productName": {
+    "description": "Label for the field where the user enters the product's name"
+  },
+  "name": "Name",
+  "@name": {
+    "description": "Label for the field where the user enters their name"
+  },
+  "price": "Price",
+  "@price": {
+    "description": "Label for the field where the user enters the product price"
+  },
+  "size": "Size",
+  "@size": {
+    "description": "Label for the field where the user selects or enters the product size"
+  },
+  "color": "Color",
+  "@color": {
+    "description": "Label for the field where the user selects or enters the product color"
+  },
+  "stockAvailable": "Stock Available",
+  "@stockAvailable": {
+    "description": "Label indicating the quantity of product available in stock"
+  },
+  "description": "Description",
+  "@description": {
+    "description": "Label for the field where the user enters the product description"
+  },
+  "describeProduct": "Describe about the product.......",
+  "@describeProduct": {
+    "description": "Placeholder text for the product description input field"
+  },
+  "pickColor": "Pick a Color",
+  "@pickColor": {
+    "description": "Placeholder or prompt text for selecting a product color"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Text for cancel button or action"
+  },
+  "select": "Select",
+  "@select": {
+    "description": "Text for select button or dropdown option"
+  },
+"updateForm": "Update Form",
+"@updateForm": {
+  "description": "Label or button text for updating a form"
+},
+"fillProductDetails": "Fill Product Details",
+"@fillProductDetails": {
+  "description": "Prompt or label asking the user to fill product details"
+},
+"noCustomerForms": "No customer forms found to navigate to",
+"@noCustomerForms": {
+  "description": "Message shown when there are no customer forms available for navigation"
+},
+"orderConfirmed": "Your order is confirmed with form Id",
+"@orderConfirmed": {
+  "description": "Message shown to confirm the order along with the form Id"
+},
+"orderDeclined": "Your order is declined with form Id",
+"@orderDeclined": {
+  "description": "Message shown when the order is declined along with the form Id"
+},
+"customersList": "Customers List",
+"@customersList": {
+  "description": "Title for displaying the list of customers"
+},
+"user": "User",
+"@user": {
+  "description": "Label or title for a user"
+},
+"customer": "Customer",
+"@customer": {
+  "description": "Label or title for a customer"
+},
+"customerInquiries": "Customer Inquiries",
+"@customerInquiries": {
+  "description": "Title or section label for customer inquiries"
+},
+"findLatestMessages": "Let's find latest messages",
+"@findLatestMessages": {
+  "description": "Message or prompt shown when looking for the latest messages"
+},
+"search": "Search",
+"@search": {
+  "description": "Label or placeholder text for search functionality"
+},
+"unnamed": "Unnamed",
+"@unnamed": {
+  "description": "Label used when something (like a user or item) does not have a name"
+},"online": "Online",
+"@online": {
+  "description": "Status label indicating a user is currently active or connected"
+},
+"analyticsManagement": "Analytics Management",
+"@analyticsManagement": {
+  "description": "Title or label for the analytics management section"
+},
+"confirmDownloadExcel": "Are you sure you want to download all the data in excel format?",
+"@confirmDownloadExcel": {
+  "description": "Confirmation message shown before downloading all data in Excel format"
+},
+"confirm": "Confirm",
+"@confirm": {
+  "description": "Text for confirm button or action"
+},
+"noActivitiesFound": "No activities found",
+"@noActivitiesFound": {
+  "description": "Message displayed when no activities are available"
+},
+"confirmDeleteAllActivities": "Are you sure you want to delete all activities?",
+"@confirmDeleteAllActivities": {
+  "description": "Confirmation message shown before deleting all activities"
+},
+"allDataDeletedSuccessfully": "All data deleted successfully",
+"@allDataDeletedSuccessfully": {
+  "description": "Message shown when all data is deleted successfully"
+},
+"failedToDeleteAllData": "Failed to delete all data",
+"@failedToDeleteAllData": {
+  "description": "Message shown when deleting all data fails"
+},
+"editProduct": "Edit Product",
+"@editProduct": {
+  "description": "Text for editing a product"
+},
+"updateProduct": "Update Product",
+"@updateProduct": {
+  "description": "Text for updating a product"
+},
+"productName": "Product Name",
+"@productName": {
+  "description": "Label for the field where the user enters the product's name"
+},
+"pinnedMessages": "Pinned Messages",
+"@pinnedMessages": {
+  "description": "Label for pinned messages section"
+},
+"noAgentsFound": "No agents found",
+"@noAgentsFound": {
+  "description": "Message shown when no agents are available"
+},
+"clickToSeeChats": "Click to see chats....",
+"@clickToSeeChats": {
+  "description": "Prompt text shown to click and view chats"
+},
+"availableColors": "Available Colors:",
+"@availableColors": {
+  "description": "Label showing the available colors of a product"
+},
+"outOfStock": "Out of Stock",
+"@outOfStock": {
+  "description": "Label indicating the product is out of stock"
+},
+"leftInStock": "Left in Stock",
+"@leftInStock": {
+  "description": "Label indicating how many items are left in stock"
+},
+"only": "Only",
+"@only": {
+  "description": "Label indicating limitation or exclusivity, e.g., 'Only 2 left'"
+},
+"notAvailable": "Not Available",
+"@notAvailable": {
+  "description": "Label indicating that a product or item is not available"
+},
+"edit": "Edit",
+"@edit": {
+  "description": "Label or button text for editing an item or product"
+},
+"remove": "Remove",
+"@remove": {
+  "description": "Label or button text for removing an item or product"
+},
+"noProductsAvailable": "No products available",
+"@noProductsAvailable": {
+  "description": "Message shown when no products are available"
+},
+"noMatchingProducts": "No matching products found",
+"@noMatchingProducts": {
+  "description": "Message shown when no products match the search/filter criteria"
+},
+"searchProducts": "Search products...",
+"@searchProducts": {
+  "description": "Placeholder text for product search input field"
+},
+"uploadNewProduct": "Upload new product",
+"@uploadNewProduct": {
+  "description": "Button or label text for uploading a new product"
+},
+"uploadHere": "Upload here",
+"@uploadHere": {
+  "description": "Prompt text for uploading a file or product"
+},
+"product": "Product",
+"@product": {
+  "description": "Label or text referring to a product"
+},
+"notifications": "Notifications",
+"@notifications": {
+  "description": "Label or title for notifications section"
+},
+"markAllRead": "Mark all read",
+"@markAllRead": {
+  "description": "Button or action to mark all notifications/messages as read"
+},
+"myAccount": "My Account",
+"@myAccount": {
+  "description": "Label or title for user's account section"
+},
+"fullName": "Full Name",
+"@fullName": {
+  "description": "Label for user's full name input field"
+},
+"confirmLogout": "Are you sure you want to log out?",
+"@confirmLogout": {
+  "description": "Confirmation message shown when user tries to log out"
+},
+"noCustomersAvailable": "No customers available",
+"@noCustomersAvailable": {
+  "description": "Message shown when there are no customers available"
+},
+"searchCustomer": "Search customer...",
+"@searchCustomer": {
+  "description": "Placeholder text for searching a customer"
+},
+"manage": "Manage",
+"@manage": {
+  "description": "Label for manage action or button"
+},
+"settingsAndActivity": "Settings and Activity",
+"@settingsAndActivity": {
+  "description": "Label for settings and activity section"
+},
+"account": "Account",
+"@account": {
+  "description": "Label for account section"
+},
+"accountAndSecurity": "Account & Security",
+"@accountAndSecurity": {
+  "description": "Label for account and security settings section"
+},
+"accountManagementPasswordChange": "Account management, password change",
+"@accountManagementPasswordChange": {
+  "description": "Label describing account management and password change options"
+},
+"management": "Management",
+"@management": {
+  "description": "Label for management"
+},
+"userManagement": "User Management",
+"@userManagement": {
+  "description": "Label for user management section"
+},
+  "viewCustomers": "View customers",
+"@viewCustomers": {
+  "description": "Label for viewing customer list"
+},
+"manageAnalyticsData": "Manage Analytics Data",
+"@manageAnalyticsData": {
+  "description": "Label for managing analytics data"
+},
+"termsPolicy": "Terms & Policy",
+"@termsPolicy": {
+  "description": "Label for terms and policy section"
+},
+"about": "About",
+"@about": {
+  "description": "Label for about section"
+},
+"manageTermsPolicy": "Manage Terms & Policy",
+"@manageTermsPolicy": {
+  "description": "Label for managing terms and policy section"
+}
+
 }

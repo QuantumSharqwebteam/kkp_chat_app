@@ -158,4 +158,228 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get privacyPolicyFullText =>
       'KKP அரட்டை பயன்பாட்டில், உங்கள் தனியுரிமையை நாங்கள் மதிக்கிறோம் மற்றும் உங்கள் தனிப்பட்ட தகவல்களை பாதுகாக்க நாங்கள் உறுதிபூண்டுள்ளோம். இந்த தனியுரிமைக் கொள்கை எங்கள் அரட்டை பயன்பாட்டைப் பயன்படுத்தும்போது உங்கள் தரவுகளை எவ்வாறு சேகரிக்கிறோம், பயன்படுத்துகிறோம், பகிர்ந்து கொள்கிறோம் மற்றும் பாதுகாக்கிறோம் என்பதை விளக்குகிறது. எங்கள் சேவைகளைப் பயன்படுத்துவதன் மூலம், இந்த கொள்கையில் விவரிக்கப்பட்ட விதிமுறைகளுக்கு நீங்கள் ஒப்புக்கொள்கிறீர்கள்.\n\nசேகரிக்கப்பட்ட தரவு தடையில்லாத செய்தியனுப்பல் சேவைகளை வழங்க, பயன்பாட்டு பாதுகாப்பை மேம்படுத்த, பயன்பாட்டு முறைகளை பகுப்பாய்வு செய்ய மற்றும் வாடிக்கையாளர் ஆதரவை மேம்படுத்த பயன்படுத்தப்படுகிறது. உங்கள் செய்திகள் ரகசியத்தை பராமரிக்க எண்ட்-டூ-எண்ட் குறியாக்கம் செய்யப்பட்டுள்ளன, மேலும் உங்கள் தகவல்களை பாதுகாக்க நாங்கள் பாதுகாப்பான மேகக் சேமிப்பு மற்றும் கட்டுப்படுத்தப்பட்ட தரவு அணுகல் போன்ற பாதுகாப்பு நடவடிக்கைகளை செயல்படுத்துகிறோம். உங்கள் தனிப்பட்ட தரவுகளை மூன்றாம் தரப்பு விளம்பரதாரர்களுடன் விற்கவோ அல்லது பகிரவோ நாங்கள் செய்வதில்லை. இருப்பினும், சட்டத்தின் கீழ் தேவைப்பட்டால் அல்லது மோசடி மற்றும் பாதுகாப்பு அச்சுறுத்தல்களைத் தடுக்க சட்ட அதிகாரிகளுடன் தரவுகள் பகிரப்படலாம்.\n\nஇந்த தனியுரிமைக் கொள்கை தொடர்பான ஏதேனும் கேள்விகள் அல்லது கவலைகள் இருந்தால், நீங்கள் support@kkpchatapp.com மூலம் எங்களை தொடர்பு கொள்ளலாம். KKP அரட்டை பயன்பாட்டைப் பயன்படுத்தி தொடர்வதன் மூலம், இந்த கொள்கையில் விவரிக்கப்பட்ட விதிமுறைகளை நீங்கள் அங்கீகரிக்கிறீர்கள் மற்றும் ஒப்புக்கொள்கிறீர்கள்.';
+
+  @override
+  String get addProduct => 'பொருள் சேர்';
+
+  @override
+  String get pleaseFillAllFields =>
+      'தயவுசெய்து அனைத்து புலங்களையும் சரியாக நிரப்பவும்!';
+
+  @override
+  String get productAddedSuccessfully => 'பொருள் வெற்றிகரமாக சேர்க்கப்பட்டது!';
+
+  @override
+  String get uploadProductImage => 'பொருள் படத்தை பதிவேற்றவும்';
+
+  @override
+  String get chooseFile => 'கோப்பை தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get productName => 'தயாரிப்பின் பெயர்';
+
+  @override
+  String get name => 'பெயர்';
+
+  @override
+  String get price => 'விலை';
+
+  @override
+  String get size => 'அளவு';
+
+  @override
+  String get color => 'நிறம்';
+
+  @override
+  String get stockAvailable => 'கையிருப்பு உள்ளது';
+
+  @override
+  String get description => 'விவரம்';
+
+  @override
+  String get describeProduct => 'பொருளைப் பற்றி விவரிக்கவும்.......';
+
+  @override
+  String get pickColor => 'நிறத்தை தேர்ந்தெடுக்கவும்';
+
+  @override
+  String get cancel => 'ரத்து செய்';
+
+  @override
+  String get select => 'தேர்வு செய்க';
+
+  @override
+  String get updateForm => 'படிவத்தை புதுப்பிக்கவும்';
+
+  @override
+  String get fillProductDetails => 'உற்பத்தியின் விவரங்களை நிரப்பவும்';
+
+  @override
+  String get noCustomerForms =>
+      'நேவிகேஷன் செய்ய எந்தவொரு வாடிக்கையாளர் படிவங்களும் கிடைக்கவில்லை';
+
+  @override
+  String get orderConfirmed =>
+      'உங்கள் ஆர்டர் பூரணமாகும் பை பாகுபடுத்தப்பட்ட படிவ ID உடன்';
+
+  @override
+  String get orderDeclined =>
+      'உங்கள் ஆர்டர் பூரணமாக மறுக்கப்பட்டுள்ளது படிவ ID உடன்';
+
+  @override
+  String get customersList => 'வாடிக்கையாளர்கள் பட்டியல்';
+
+  @override
+  String get user => 'பயனர்';
+
+  @override
+  String get customer => 'வாடிக்கையாளர்';
+
+  @override
+  String get customerInquiries => 'வாடிக்கையாளர் விசாரணைகள்';
+
+  @override
+  String get findLatestMessages => 'சமீபத்திய செய்திகளை கண்டுபிடிப்போம்';
+
+  @override
+  String get search => 'தேடல்';
+
+  @override
+  String get unnamed => 'பெயரிடப்படாதது';
+
+  @override
+  String get online => 'ஆன்லைன்';
+
+  @override
+  String get analyticsManagement => 'அனலிடிக்ஸ் மேலாண்மை';
+
+  @override
+  String get confirmDownloadExcel =>
+      'எல்லா தரவையும் எக்செல் வடிவில் பதிவிறக்கம் செய்ய விரும்புகிறீர்களா?';
+
+  @override
+  String get confirm => 'உறுதிப்படுத்தவும்';
+
+  @override
+  String get noActivitiesFound => 'செயல்பாடுகள் எதுவும் கிடைக்கவில்லை';
+
+  @override
+  String get confirmDeleteAllActivities =>
+      'நீங்கள் அனைத்து செயல்பாடுகளையும் நீக்க விரும்புகிறீர்களா?';
+
+  @override
+  String get allDataDeletedSuccessfully =>
+      'அனைத்து தரவுகளும் வெற்றிகரமாக நீக்கப்பட்டன';
+
+  @override
+  String get failedToDeleteAllData => 'அனைத்து தரவுகளையும் நீக்க முடியவில்லை';
+
+  @override
+  String get editProduct => 'தயாரிப்பை தொகுக்கவும்';
+
+  @override
+  String get updateProduct => 'தயாரிப்பை புதுப்பிக்கவும்';
+
+  @override
+  String get pinnedMessages => 'இணைக்கப்பட்ட செய்திகள்';
+
+  @override
+  String get noAgentsFound => 'எந்த முகவர்கள் கிடைக்கவில்லை';
+
+  @override
+  String get clickToSeeChats => 'சாட்களை பார்க்க கிளிக் செய்க....';
+
+  @override
+  String get availableColors => 'கிடைக்கும் நிறங்கள்:';
+
+  @override
+  String get outOfStock => 'பங்கு இல்லை';
+
+  @override
+  String get leftInStock => 'மீதமுள்ள பங்கு';
+
+  @override
+  String get only => 'மட்டுமே';
+
+  @override
+  String get notAvailable => 'கிடைக்கவில்லை';
+
+  @override
+  String get edit => 'தொகுப்பி மாற்று';
+
+  @override
+  String get remove => 'அகற்று';
+
+  @override
+  String get noProductsAvailable => 'பொருட்கள் இல்லை';
+
+  @override
+  String get noMatchingProducts => 'பொருட்கள் பொருந்தவில்லை';
+
+  @override
+  String get searchProducts => 'பொருட்களைத் தேடுங்கள்...';
+
+  @override
+  String get uploadNewProduct => 'புதிய பொருளை பதிவேற்றுக';
+
+  @override
+  String get uploadHere => 'இங்கே பதிவேற்றுக';
+
+  @override
+  String get product => 'உருப்படி';
+
+  @override
+  String get notifications => 'அறிவிப்புகள்';
+
+  @override
+  String get markAllRead => 'அனைத்தையும் வாசித்ததாக குறிக்கவும்';
+
+  @override
+  String get myAccount => 'எனது கணக்கு';
+
+  @override
+  String get confirmLogout => 'நீங்கள் வெளியேறவிரும்புகிறீர்களா?';
+
+  @override
+  String get noCustomersAvailable => 'பார்வையாளர்கள் இல்லை';
+
+  @override
+  String get searchCustomer => 'வாடிக்கையாளர் தேடவும்...';
+
+  @override
+  String get manage => 'முன்னணியில் நிர்வகிக்கவும்';
+
+  @override
+  String get settingsAndActivity => 'Settings and Activity';
+
+  @override
+  String get account => 'खाता';
+
+  @override
+  String get accountAndSecurity => 'கணக்கு மற்றும் பாதுகாப்பு';
+
+  @override
+  String get accountManagementPasswordChange =>
+      'கணக்கு மேலாண்மை, கடவுச்சொல் மாற்றம்';
+
+  @override
+  String get management => 'மேலாண்மை';
+
+  @override
+  String get userManagement => 'பயனர் மேலாண்மை';
+
+  @override
+  String get viewCustomers => 'வாடிக்கையாளர்களை பார்க்கவும்';
+
+  @override
+  String get manageAnalyticsData => 'புள்ளிவிவர தரவுகளை நிர்வகிக்கவும்';
+
+  @override
+  String get termsPolicy => 'விதிமுறைகள் & கொள்கை';
+
+  @override
+  String get about => 'பற்றி';
+
+  @override
+  String get manageTermsPolicy => 'விதிகள் மற்றும் கொள்கைகளை நிர்வகிக்கவும்';
 }

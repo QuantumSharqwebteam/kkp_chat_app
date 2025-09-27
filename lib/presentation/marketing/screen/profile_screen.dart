@@ -6,6 +6,7 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -49,11 +50,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text("My Account"),
+        title: Text(locale.myAccount),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -154,23 +156,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildLogoutButton() {
+    final locale = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: CustomButton(
         onPressed: () {
           Utils().showDialogWithActions(
             context,
-            "Log out",
+            locale.logout,
             icon: Icons.logout_outlined,
-            "Are you sure you want to logOut",
-            "LogOut",
+            locale.confirmLogout,
+            locale.logout,
             logout,
           );
         },
         borderWidth: 0,
         fontSize: 16,
         backgroundColor: AppColors.redF11515,
-        text: "Log Out",
+        text: locale.logout,
         icon: Icons.logout_outlined,
       ),
     );

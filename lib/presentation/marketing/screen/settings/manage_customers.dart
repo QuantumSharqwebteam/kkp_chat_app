@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/settings/customer_details_dialog.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/settings/manage_customer_list_item.dart';
@@ -147,9 +148,10 @@ class _ManageCustomersState extends State<ManageCustomers> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text("Manage", style: AppTextStyles.black16_500),
+        title: Text(locale.manage, style: AppTextStyles.black16_500),
         backgroundColor: Colors.white,
         bottom: isLoading
             ? null
@@ -163,7 +165,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
                       Expanded(
                         child: CustomSearchBar(
                           controller: _customerSearchController,
-                          hintText: 'Search customer...',
+                          hintText: locale.searchCustomer,
                           onChanged: (_) => _applyCustomerSearch(),
                           enable: true,
                         ),
@@ -199,6 +201,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
   }
 
   Widget buildCustomerList() {
+    final locale = AppLocalizations.of(context)!;
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -206,7 +209,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
     if (filteredCustomers.isEmpty) {
       return Center(
         child: Text(
-          "No customers available",
+          locale.noCustomersAvailable,
           style: AppTextStyles.grey12_600.copyWith(fontSize: 16),
         ),
       );

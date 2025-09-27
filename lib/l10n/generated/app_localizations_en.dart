@@ -158,4 +158,223 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get privacyPolicyFullText =>
       'At KKP chat app, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, share, and safeguard your data when you use our chat application. By using our services, you agree to the terms outlined in this policy.\n\nThe collected data is used to provide seamless messaging services, enhance app security, analyze usage patterns, and improve customer support. Your messages are end-to-end encrypted to maintain confidentiality, and we implement security measures like secure cloud storage and restricted data access to protect your information. We do not sell or share your personal data with third-party advertisers. However, data may be shared with legal authorities if required by law or to prevent fraud and security threats.\n\nFor any questions or concerns regarding this Privacy Policy, you can contact us at support@kkpchatapp.com. By continuing to use KKP Chat App, you acknowledge and agree to the terms outlined in this policy.';
+
+  @override
+  String get addProduct => 'Add Product';
+
+  @override
+  String get pleaseFillAllFields => 'Please fill all fields correctly!';
+
+  @override
+  String get productAddedSuccessfully => 'Product added successfully!';
+
+  @override
+  String get uploadProductImage => 'Upload Product Image';
+
+  @override
+  String get chooseFile => 'Choose File';
+
+  @override
+  String get productName => 'Product Name';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get price => 'Price';
+
+  @override
+  String get size => 'Size';
+
+  @override
+  String get color => 'Color';
+
+  @override
+  String get stockAvailable => 'Stock Available';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get describeProduct => 'Describe about the product.......';
+
+  @override
+  String get pickColor => 'Pick a Color';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get updateForm => 'Update Form';
+
+  @override
+  String get fillProductDetails => 'Fill Product Details';
+
+  @override
+  String get noCustomerForms => 'No customer forms found to navigate to';
+
+  @override
+  String get orderConfirmed => 'Your order is confirmed with form Id';
+
+  @override
+  String get orderDeclined => 'Your order is declined with form Id';
+
+  @override
+  String get customersList => 'Customers List';
+
+  @override
+  String get user => 'User';
+
+  @override
+  String get customer => 'Customer';
+
+  @override
+  String get customerInquiries => 'Customer Inquiries';
+
+  @override
+  String get findLatestMessages => 'Let\'s find latest messages';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get unnamed => 'Unnamed';
+
+  @override
+  String get online => 'Online';
+
+  @override
+  String get analyticsManagement => 'Analytics Management';
+
+  @override
+  String get confirmDownloadExcel =>
+      'Are you sure you want to download all the data in excel format?';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get noActivitiesFound => 'No activities found';
+
+  @override
+  String get confirmDeleteAllActivities =>
+      'Are you sure you want to delete all activities?';
+
+  @override
+  String get allDataDeletedSuccessfully => 'All data deleted successfully';
+
+  @override
+  String get failedToDeleteAllData => 'Failed to delete all data';
+
+  @override
+  String get editProduct => 'Edit Product';
+
+  @override
+  String get updateProduct => 'Update Product';
+
+  @override
+  String get pinnedMessages => 'Pinned Messages';
+
+  @override
+  String get noAgentsFound => 'No agents found';
+
+  @override
+  String get clickToSeeChats => 'Click to see chats....';
+
+  @override
+  String get availableColors => 'Available Colors:';
+
+  @override
+  String get outOfStock => 'Out of Stock';
+
+  @override
+  String get leftInStock => 'Left in Stock';
+
+  @override
+  String get only => 'Only';
+
+  @override
+  String get notAvailable => 'Not Available';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get noProductsAvailable => 'No products available';
+
+  @override
+  String get noMatchingProducts => 'No matching products found';
+
+  @override
+  String get searchProducts => 'Search products...';
+
+  @override
+  String get uploadNewProduct => 'Upload new product';
+
+  @override
+  String get uploadHere => 'Upload here';
+
+  @override
+  String get product => 'Product';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get markAllRead => 'Mark all read';
+
+  @override
+  String get myAccount => 'My Account';
+
+  @override
+  String get confirmLogout => 'Are you sure you want to log out?';
+
+  @override
+  String get noCustomersAvailable => 'No customers available';
+
+  @override
+  String get searchCustomer => 'Search customer...';
+
+  @override
+  String get manage => 'Manage';
+
+  @override
+  String get settingsAndActivity => 'Settings and Activity';
+
+  @override
+  String get account => 'Account';
+
+  @override
+  String get accountAndSecurity => 'Account & Security';
+
+  @override
+  String get accountManagementPasswordChange =>
+      'Account management, password change';
+
+  @override
+  String get management => 'Management';
+
+  @override
+  String get userManagement => 'User Management';
+
+  @override
+  String get viewCustomers => 'View customers';
+
+  @override
+  String get manageAnalyticsData => 'Manage Analytics Data';
+
+  @override
+  String get termsPolicy => 'Terms & Policy';
+
+  @override
+  String get about => 'About';
+
+  @override
+  String get manageTermsPolicy => 'Manage Terms & Policy';
 }

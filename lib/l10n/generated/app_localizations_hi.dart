@@ -157,4 +157,224 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get privacyPolicyFullText =>
       'केकेपी चैट ऐप में, हम आपकी गोपनीयता का सम्मान करते हैं और आपके व्यक्तिगत जानकारी की सुरक्षा के लिए प्रतिबद्ध हैं। यह गोपनीयता नीति बताती है कि हम आपके डेटा को कैसे एकत्र, उपयोग, साझा और सुरक्षित रखते हैं जब आप हमारे चैट एप्लिकेशन का उपयोग करते हैं। हमारे सेवा का उपयोग करके, आप इस नीति में रेखांकित शर्तों से सहमत होते हैं।\n\nएकत्रित डेटा का उपयोग निर्बाध मैसेजिंग सेवा प्रदान करने, ऐप सुरक्षा बढ़ाने, उपयोग पैटर्न का विश्लेषण करने और ग्राहक सहायता में सुधार करने के लिए किया जाता है। आपके संदेशों को गोपनीयता बनाए रखने के लिए एंड-टू-एंड एन्क्रिप्टेड किया जाता है, और हम सुरक्षित क्लाउड स्टोरेज और प्रतिबंधित डेटा एक्सेस जैसे सुरक्षा उपाय लागू करते हैं ताकि आपकी जानकारी की रक्षा हो सके। हम आपका व्यक्तिगत डेटा तीसरे पक्ष के विज्ञापनदाताओं को नहीं बेचते या साझा नहीं करते। हालांकि, कानून द्वारा आवश्यक होने पर या धोखाधड़ी और सुरक्षा खतरों को रोकने के लिए डेटा को कानूनी अधिकारियों के साथ साझा किया जा सकता है।\n\nइस गोपनीयता नीति से संबंधित किसी भी प्रश्न या चिंता के लिए, आप हमें support@kkpchatapp.com पर संपर्क कर सकते हैं। केकेपी चैट ऐप का उपयोग जारी रखकर, आप इस नीति में रेखांकित शर्तों को स्वीकार करते और सहमत होते हैं।';
+
+  @override
+  String get addProduct => 'उत्पाद जोड़ें';
+
+  @override
+  String get pleaseFillAllFields => 'कृपया सभी फ़ील्ड सही से भरें!';
+
+  @override
+  String get productAddedSuccessfully => 'उत्पाद सफलतापूर्वक जोड़ा गया!';
+
+  @override
+  String get uploadProductImage => 'उत्पाद की छवि अपलोड करें';
+
+  @override
+  String get chooseFile => 'फ़ाइल चुनें';
+
+  @override
+  String get productName => 'उत्पाद का नाम';
+
+  @override
+  String get name => 'नाम';
+
+  @override
+  String get price => 'मूल्य';
+
+  @override
+  String get size => 'आकार';
+
+  @override
+  String get color => 'रंग';
+
+  @override
+  String get stockAvailable => 'स्टॉक उपलब्ध है';
+
+  @override
+  String get description => 'विवरण';
+
+  @override
+  String get describeProduct => 'उत्पाद के बारे में विवरण दें.......';
+
+  @override
+  String get pickColor => 'रंग चुनें';
+
+  @override
+  String get cancel => 'रद्द करें';
+
+  @override
+  String get select => 'चुनें';
+
+  @override
+  String get updateForm => 'फॉर्म अपडेट करें';
+
+  @override
+  String get fillProductDetails => 'उत्पाद विवरण भरें';
+
+  @override
+  String get noCustomerForms =>
+      'नेविगेट करने के लिए कोई ग्राहक फॉर्म नहीं मिला';
+
+  @override
+  String get orderConfirmed => 'आपका ऑर्डर फॉर्म आईडी के साथ पुष्टि हो गई है';
+
+  @override
+  String get orderDeclined =>
+      'आपका ऑर्डर फॉर्म आईडी के साथ अस्वीकार कर दिया गया है';
+
+  @override
+  String get customersList => 'ग्राहकों की सूची';
+
+  @override
+  String get user => 'उपयोगकर्ता';
+
+  @override
+  String get customer => 'ग्राहक';
+
+  @override
+  String get customerInquiries => 'ग्राहक पूछताछ';
+
+  @override
+  String get findLatestMessages => 'आइए नवीनतम संदेश ढूंढते हैं';
+
+  @override
+  String get search => 'खोजें';
+
+  @override
+  String get unnamed => 'बेनाम';
+
+  @override
+  String get online => 'ऑनलाइन';
+
+  @override
+  String get analyticsManagement => 'विश्लेषण प्रबंधन';
+
+  @override
+  String get confirmDownloadExcel =>
+      'क्या आप सुनिश्चित हैं कि आप सभी डेटा को एक्सेल फ़ॉर्मेट में डाउनलोड करना चाहते हैं?';
+
+  @override
+  String get confirm => 'पुष्टि करें';
+
+  @override
+  String get noActivitiesFound => 'कोई गतिविधियाँ नहीं मिलीं';
+
+  @override
+  String get confirmDeleteAllActivities =>
+      'क्या आप वाकई सभी गतिविधियाँ हटाना चाहते हैं?';
+
+  @override
+  String get allDataDeletedSuccessfully => 'सारी जानकारी सफलतापूर्वक हटा दी गई';
+
+  @override
+  String get failedToDeleteAllData => 'सारी जानकारी हटाने में असफल';
+
+  @override
+  String get editProduct => 'उत्पाद संपादित करें';
+
+  @override
+  String get updateProduct => 'उत्पाद अपडेट करें';
+
+  @override
+  String get pinnedMessages => 'पिन किए गए संदेश';
+
+  @override
+  String get noAgentsFound => 'कोई एजेंट नहीं मिला';
+
+  @override
+  String get clickToSeeChats => 'चैट देखने के लिए क्लिक करें....';
+
+  @override
+  String get availableColors => 'उपलब्ध रंग:';
+
+  @override
+  String get outOfStock => 'स्टॉक समाप्त';
+
+  @override
+  String get leftInStock => 'शेष स्टॉक';
+
+  @override
+  String get only => 'केवल';
+
+  @override
+  String get notAvailable => 'उपलब्ध नहीं';
+
+  @override
+  String get edit => 'संपादित करें';
+
+  @override
+  String get remove => 'हटाएँ';
+
+  @override
+  String get noProductsAvailable => 'कोई उत्पाद उपलब्ध नहीं हैं';
+
+  @override
+  String get noMatchingProducts => 'कोई मेल खाने वाला उत्पाद नहीं मिला';
+
+  @override
+  String get searchProducts => 'उत्पाद खोजें...';
+
+  @override
+  String get uploadNewProduct => 'नया उत्पाद अपलोड करें';
+
+  @override
+  String get uploadHere => 'यहाँ अपलोड करें';
+
+  @override
+  String get product => 'उत्पाद';
+
+  @override
+  String get notifications => 'सूचनाएं';
+
+  @override
+  String get markAllRead => 'सभी पढ़ा हुआ मार्क करें';
+
+  @override
+  String get myAccount => 'मेरा खाता';
+
+  @override
+  String get confirmLogout => 'क्या आप वाकई लॉगआउट करना चाहते हैं?';
+
+  @override
+  String get noCustomersAvailable => 'कोई ग्राहक उपलब्ध नहीं हैं';
+
+  @override
+  String get searchCustomer => 'ग्राहक खोजें...';
+
+  @override
+  String get manage => 'प्रबंधित करें';
+
+  @override
+  String get settingsAndActivity => 'सेटिंग्स और गतिविधियाँ';
+
+  @override
+  String get account => 'खाता';
+
+  @override
+  String get accountAndSecurity => 'खाता और सुरक्षा';
+
+  @override
+  String get accountManagementPasswordChange => 'खाता प्रबंधन, पासवर्ड बदलें';
+
+  @override
+  String get management => 'प्रबंधन';
+
+  @override
+  String get userManagement => 'उपयोगकर्ता प्रबंधन';
+
+  @override
+  String get viewCustomers => 'ग्राहक देखें';
+
+  @override
+  String get manageAnalyticsData => 'एनालिटिक्स डेटा प्रबंधित करें';
+
+  @override
+  String get termsPolicy => 'नियम और नीति';
+
+  @override
+  String get about => 'के बारे में';
+
+  @override
+  String get manageTermsPolicy => 'नियम और नीति प्रबंधित करें';
 }

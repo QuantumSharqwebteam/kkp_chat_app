@@ -5,6 +5,7 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_customer_list_screen.dart';
@@ -132,18 +133,20 @@ class _FeedsScreenState extends State<FeedsScreen> {
   }
 
   Widget _buildFilterButtons() {
+    final locale = AppLocalizations.of(context)!;
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         FilterButton(
           onTap: togglePinnedMessages,
-          text: "Pinned Messages",
+          text: locale.pinnedMessages,
         ),
       ],
     );
   }
 
   Widget _buildAgentList(List<Agent> agentsList) {
+    final locale = AppLocalizations.of(context)!;
     // Create a copy of the list to avoid modifying the original list directly
     List<Agent> displayList = List.from(agentsList);
 
@@ -174,7 +177,7 @@ class _FeedsScreenState extends State<FeedsScreen> {
     }
 
     if (displayList.isEmpty) {
-      return const Center(child: Text("No agents found"));
+      return Center(child: Text(locale.noAgentsFound));
     }
 
     return ListView.separated(
@@ -192,8 +195,8 @@ class _FeedsScreenState extends State<FeedsScreen> {
 
         return FeedListCard(
           name: agent.name,
-          message: "click to see chats....",
-          time: isOnline ? "Online" : lastSeen,
+          message: locale.clickToSeeChats,
+          time: isOnline ? locale.online : lastSeen,
           isActive: isOnline,
           isPinned: pinnedAgentsSet.contains(agent.email),
           onPinTap: () => togglePinAgent(agent.email),
