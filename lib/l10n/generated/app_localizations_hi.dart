@@ -64,7 +64,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get createNewPassword => 'नया पासवर्ड बनाएं';
 
   @override
-  String get newPasswordRule => 'आपका नया पासवर्ड पहले इस्तेमाल किए गए पासवर्ड से अलग होना चाहिए';
+  String get newPasswordRule =>
+      'आपका नया पासवर्ड पहले इस्तेमाल किए गए पासवर्ड से अलग होना चाहिए';
 
   @override
   String get password => 'पासवर्ड';
@@ -139,7 +140,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get privacyPolicy => 'गोपनीयता नीति';
 
   @override
-  String get privacyPolicyAgreement => 'केकेपी चैट एप्लिकेशन का उपयोग करके, आप सहमत होते हैं';
+  String get privacyPolicyAgreement =>
+      'केकेपी चैट एप्लिकेशन का उपयोग करके, आप सहमत होते हैं';
 
   @override
   String get appDescription =>
@@ -169,7 +171,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get agentProfileCreated => 'एजेंट प्रोफाइल बनाई गई';
 
   @override
-  String get failedToAddAgent => 'एजेंट जोड़ने में विफल, बाद में पुनः प्रयास करें!';
+  String get failedToAddAgent =>
+      'एजेंट जोड़ने में विफल, बाद में पुनः प्रयास करें!';
 
   @override
   String get phoneNumber => 'फोन नंबर';
@@ -205,13 +208,53 @@ class AppLocalizationsHi extends AppLocalizations {
   String get active => 'सक्रिय';
 
   @override
-  String get confirmDeleteAgent => 'क्या आप इस एजेंट को डिलीट करना निश्चित रूप से चाहते हैं?';
+  String get confirmDeleteAgent =>
+      'क्या आप इस एजेंट को डिलीट करना निश्चित रूप से चाहते हैं?';
 
   @override
   String get deleteAgent => 'एजेंट डिलीट करें';
 
   @override
   String get agentDeletedSuccessfully => 'एजेंट सफलतापूर्वक डिलीट हो गया';
+
+  @override
+  String get profile => 'प्रोफाइल';
+
+  @override
+  String get addNewAgent => 'नया एजेंट जोड़ें';
+
+  @override
+  String get agentEligibleToChat =>
+      '**यह एजेंट ग्राहकों के साथ चैट करने के योग्य है।**';
+
+  @override
+  String get agentNotEligibleToChat =>
+      '**यह एजेंट ग्राहकों के साथ चैट करने के योग्य नहीं है।**';
+
+  @override
+  String get searchByAnything => 'कुछ भी खोजें...';
+
+  @override
+  String get posterAdsManagement => 'पोस्टर विज्ञापन प्रबंधन';
+
+  @override
+  String get uploadPoster => 'पोस्टर अपलोड करें';
+
+  @override
+  String get deletePoster => 'पोस्टर डिलीट करें';
+
+  @override
+  String get selectImageToUpload =>
+      'कृपया अपलोड करने के लिए एक छवि चुनें और सेलेक्ट करें!';
+
+  @override
+  String get adminDashboard => 'एडमिन डैशबोर्ड';
+
+  @override
+  String get visitors => 'आगंतुक';
+
+  @override
+  String get messages => 'संदेश';
 
   @override
   String get chooseWhatToDo => 'क्या करना है चुनें:';
@@ -233,7 +276,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get whoWeAre => 'हम कौन हैं';
 
   @override
-  String get whoWeAreDescription => 'हम एक कपड़ा-केंद्रित कंपनी हैं जो प्रदान करती है:';
+  String get whoWeAreDescription =>
+      'हम एक कपड़ा-केंद्रित कंपनी हैं जो प्रदान करती है:';
 
   @override
   String get premiumQualityYarn => '• प्रीमियम क्वालिटी यार्न';
@@ -252,16 +296,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get ourMission => 'हमारा मिशन';
 
   @override
-  String get missionStatement => 'गति, स्पष्टता और डिजिटल टूल्स के साथ कपड़ा संचालन को सरल बनाना।';
+  String get missionStatement =>
+      'गति, स्पष्टता और डिजिटल टूल्स के साथ कपड़ा संचालन को सरल बनाना।';
 
   @override
   String get ourVision => 'हमारा विजन';
 
   @override
-  String get visionStatement => 'कपड़ा उद्योग में अग्रणी तकनीक-संचालित समाधान बनना।';
-
-  @override
-  String get about => 'के बारे में';
+  String get visionStatement =>
+      'कपड़ा उद्योग में अग्रणी तकनीक-संचालित समाधान बनना।';
 
   @override
   String get john => 'जॉन';
@@ -277,16 +320,14 @@ class AppLocalizationsHi extends AppLocalizations {
   String get february2025 => 'फरवरी २०२५';
 
   @override
-  String get accountAndSecurity => 'खाता और सुरक्षा';
-
-  @override
   String get loginAndRecovery => 'लॉगिन और रिकवरी';
 
   @override
   String get manageYourPassword => 'अपना पासवर्ड प्रबंधित करें';
 
   @override
-  String get loginPreferenceAndRecovery => ', लॉगिन प्राथमिकता और रिकवरी विधियाँ';
+  String get loginPreferenceAndRecovery =>
+      ', लॉगिन प्राथमिकता और रिकवरी विधियाँ';
 
   @override
   String get changePassword => 'पासवर्ड बदलें';
@@ -329,7 +370,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get passwordChangedSuccessfully => 'पासवर्ड सफलतापूर्वक बदल गया!';
 
   @override
-  String get pleaseWaitPasswordChange => 'कृपया प्रतीक्षा करें जबकि पासवर्ड बदल रहा है।';
+  String get pleaseWaitPasswordChange =>
+      'कृपया प्रतीक्षा करें जबकि पासवर्ड बदल रहा है।';
 
   @override
   String get passwordAndSecurity => 'पासवर्ड और सुरक्षा';
@@ -354,9 +396,6 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get subject => 'विषय';
-
-  @override
-  String get description => 'विवरण';
 
   @override
   String get submitComplaint => 'शिकायत जमा करें';
@@ -386,9 +425,6 @@ class AppLocalizationsHi extends AppLocalizations {
   String get preferences => 'प्राथमिकताएँ';
 
   @override
-  String get notifications => 'सूचनाएँ';
-
-  @override
   String get yourNotificationsHub => 'आपका सूचना केंद्र';
 
   @override
@@ -407,7 +443,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get pushNotificationsEnabled => 'पुश सूचनाएँ सक्षम की गईं।';
 
   @override
-  String get permissionDenied => 'अनुमति अस्वीकार की गई। कृपया सेटिंग्स से सक्षम करें।';
+  String get permissionDenied =>
+      'अनुमति अस्वीकार की गई। कृपया सेटिंग्स से सक्षम करें।';
 
   @override
   String get notificationSettings => 'सूचना सेटिंग्स';
@@ -429,9 +466,6 @@ class AppLocalizationsHi extends AppLocalizations {
   String get orderEnquiries => 'ऑर्डर पूछताछ';
 
   @override
-  String get search => 'खोजें';
-
-  @override
   String get cottonTShirt => 'कॉटन टी-शर्ट';
 
   @override
@@ -441,80 +475,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get previousProducts => 'पिछले उत्पाद';
 
   @override
-  String get noProductsAvailable => 'कोई उत्पाद उपलब्ध नहीं है';
-
-  @override
   String get productEnquirers => 'उत्पाद पूछताछ';
 
   @override
   String get howMayIHelpYou => 'मैं आपकी कैसे मदद कर सकता हूँ?';
 
   @override
-  String get availableColors => 'उपलब्ध रंग';
-
-  @override
-  String get notAvailable => 'उपलब्ध नहीं है';
-
-  @override
-  String get outOfStock => 'स्टॉक में नहीं';
-
-  @override
-  String get product => 'उत्पाद';
-
-  @override
   String get searchHere => 'यहाँ खोजें...';
 
   @override
   String get noMatchingProductsFound => 'कोई मिलान उत्पाद नहीं मिला';
-
-  @override
-  String get profile => 'प्रोफाइल';
-
-  @override
-  String get addNewAgent => 'नया एजेंट जोड़ें';
-
-  @override
-  String get agentEligibleToChat => '**यह एजेंट ग्राहकों के साथ चैट करने के योग्य है।**';
-
-  @override
-  String get agentNotEligibleToChat => '**यह एजेंट ग्राहकों के साथ चैट करने के योग्य नहीं है।**';
-
-  @override
-  String get noAgentsFound => 'कोई एजेंट नहीं मिला';
-
-  @override
-  String get searchByAnything => 'कुछ भी खोजें...';
-
-  @override
-  String get posterAdsManagement => 'पोस्टर विज्ञापन प्रबंधन';
-
-  @override
-  String get uploadProductImage => 'उत्पाद छवि अपलोड करें';
-
-  @override
-  String get uploadPoster => 'पोस्टर अपलोड करें';
-
-  @override
-  String get deletePoster => 'पोस्टर डिलीट करें';
-
-  @override
-  String get selectImageToUpload => 'कृपया अपलोड करने के लिए एक छवि चुनें और सेलेक्ट करें!';
-
-  @override
-  String get adminDashboard => 'एडमिन डैशबोर्ड';
-
-  @override
-  String get visitors => 'आगंतुक';
-
-  @override
-  String get messages => 'संदेश';
-
-  @override
-  String get customerInquiries => 'ग्राहक पूछताछ';
-  String get cancel => 'रद्द करें';
-
-  @override
-  String get edit => 'संपादित करें';
 
   @override
   String get saveChanges => 'परिवर्तनों को सहेजें';
@@ -526,7 +496,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get businessDetails => 'व्यापार विवरण';
 
   @override
-  String get profileDetailsUpdatedSuccessfully => 'प्रोफाइल विवरण सफलतापूर्वक अपडेट हो गया!';
+  String get profileDetailsUpdatedSuccessfully =>
+      'प्रोफाइल विवरण सफलतापूर्वक अपडेट हो गया!';
 
   @override
   String get message => 'संदेश';
@@ -548,22 +519,6 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get someBasicInformation => 'शुरुआत करने के लिए कुछ मूल जानकारी।';
-  String get addProduct => 'उत्पाद जोड़ें';
-
-  @override
-  String get pleaseFillAllFields => 'कृपया सभी फ़ील्ड सही से भरें!';
-
-  @override
-  String get productAddedSuccessfully => 'उत्पाद सफलतापूर्वक जोड़ा गया!';
-
-  @override
-  String get chooseFile => 'फ़ाइल चुनें';
-
-  @override
-  String get productName => 'उत्पाद का नाम';
-
-  @override
-  String get name => 'नाम';
 
   @override
   String get enterYourName => 'अपना नाम दर्ज करें';
@@ -627,6 +582,26 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get ok => 'ठीक है';
+
+  @override
+  String get addProduct => 'उत्पाद जोड़ें';
+
+  @override
+  String get pleaseFillAllFields => 'कृपया सभी फ़ील्ड सही से भरें!';
+
+  @override
+  String get productAddedSuccessfully => 'उत्पाद सफलतापूर्वक जोड़ा गया!';
+
+  @override
+  String get uploadProductImage => 'उत्पाद की छवि अपलोड करें';
+
+  @override
+  String get chooseFile => 'फ़ाइल चुनें';
+
+  @override
+  String get name => 'नाम';
+
+  @override
   String get price => 'मूल्य';
 
   @override
@@ -639,10 +614,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get stockAvailable => 'स्टॉक उपलब्ध है';
 
   @override
+  String get description => 'विवरण';
+
+  @override
   String get describeProduct => 'उत्पाद के बारे में विवरण दें.......';
 
   @override
   String get pickColor => 'रंग चुनें';
+
+  @override
+  String get cancel => 'रद्द करें';
 
   @override
   String get select => 'चुनें';
@@ -654,13 +635,15 @@ class AppLocalizationsHi extends AppLocalizations {
   String get fillProductDetails => 'उत्पाद विवरण भरें';
 
   @override
-  String get noCustomerForms => 'नेविगेट करने के लिए कोई ग्राहक फॉर्म नहीं मिला';
+  String get noCustomerForms =>
+      'नेविगेट करने के लिए कोई ग्राहक फॉर्म नहीं मिला';
 
   @override
   String get orderConfirmed => 'आपका ऑर्डर फॉर्म आईडी के साथ पुष्टि हो गई है';
 
   @override
-  String get orderDeclined => 'आपका ऑर्डर फॉर्म आईडी के साथ अस्वीकार कर दिया गया है';
+  String get orderDeclined =>
+      'आपका ऑर्डर फॉर्म आईडी के साथ अस्वीकार कर दिया गया है';
 
   @override
   String get customersList => 'ग्राहकों की सूची';
@@ -672,7 +655,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get customer => 'ग्राहक';
 
   @override
+  String get customerInquiries => 'ग्राहक पूछताछ';
+
+  @override
   String get findLatestMessages => 'आइए नवीनतम संदेश ढूंढते हैं';
+
+  @override
+  String get search => 'खोजें';
 
   @override
   String get unnamed => 'बेनाम';
@@ -694,7 +683,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get noActivitiesFound => 'कोई गतिविधियाँ नहीं मिलीं';
 
   @override
-  String get confirmDeleteAllActivities => 'क्या आप वाकई सभी गतिविधियाँ हटाना चाहते हैं?';
+  String get confirmDeleteAllActivities =>
+      'क्या आप वाकई सभी गतिविधियाँ हटाना चाहते हैं?';
 
   @override
   String get allDataDeletedSuccessfully => 'सारी जानकारी सफलतापूर्वक हटा दी गई';
@@ -709,10 +699,22 @@ class AppLocalizationsHi extends AppLocalizations {
   String get updateProduct => 'उत्पाद अपडेट करें';
 
   @override
+  String get productName => 'उत्पाद का नाम';
+
+  @override
   String get pinnedMessages => 'पिन किए गए संदेश';
 
   @override
+  String get noAgentsFound => 'कोई एजेंट नहीं मिला';
+
+  @override
   String get clickToSeeChats => 'चैट देखने के लिए क्लिक करें....';
+
+  @override
+  String get availableColors => 'उपलब्ध रंग:';
+
+  @override
+  String get outOfStock => 'स्टॉक समाप्त';
 
   @override
   String get leftInStock => 'शेष स्टॉक';
@@ -721,7 +723,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get only => 'केवल';
 
   @override
+  String get notAvailable => 'उपलब्ध नहीं';
+
+  @override
+  String get edit => 'संपादित करें';
+
+  @override
   String get remove => 'हटाएँ';
+
+  @override
+  String get noProductsAvailable => 'कोई उत्पाद उपलब्ध नहीं हैं';
 
   @override
   String get noMatchingProducts => 'कोई मेल खाने वाला उत्पाद नहीं मिला';
@@ -734,6 +745,12 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get uploadHere => 'यहाँ अपलोड करें';
+
+  @override
+  String get product => 'उत्पाद';
+
+  @override
+  String get notifications => 'सूचनाएं';
 
   @override
   String get markAllRead => 'सभी पढ़ा हुआ मार्क करें';
@@ -760,6 +777,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get account => 'खाता';
 
   @override
+  String get accountAndSecurity => 'खाता और सुरक्षा';
+
+  @override
   String get accountManagementPasswordChange => 'खाता प्रबंधन, पासवर्ड बदलें';
 
   @override
@@ -776,6 +796,9 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get termsPolicy => 'नियम और नीति';
+
+  @override
+  String get about => 'के बारे में';
 
   @override
   String get manageTermsPolicy => 'नियम और नीति प्रबंधित करें';

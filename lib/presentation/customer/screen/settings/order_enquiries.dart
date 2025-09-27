@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
-import 'package:kkpchatapp/l10n/app_localizations.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 
 class OrderEnquiries extends StatelessWidget {

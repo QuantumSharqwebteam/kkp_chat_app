@@ -63,7 +63,8 @@ import 'app_localizations_ta.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+      : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,7 +72,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -92,7 +94,11 @@ abstract class AppLocalizations {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('hi'), Locale('ta')];
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('hi'),
+    Locale('ta')
+  ];
 
   /// The title of the application displayed in the AppBar and splash screen
   ///
@@ -214,7 +220,7 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get password;
 
-  /// Label for new password field
+  /// Label for new password input field
   ///
   /// In en, this message translates to:
   /// **'New Password'**
@@ -250,7 +256,7 @@ abstract class AppLocalizations {
   /// **'Create Account'**
   String get createAccount;
 
-  /// Label for user's full name input field
+  /// Label for full name input field
   ///
   /// In en, this message translates to:
   /// **'Full Name'**
@@ -520,12 +526,6 @@ abstract class AppLocalizations {
   /// **'**This agent is not eligible to chat with customers.**'**
   String get agentNotEligibleToChat;
 
-  /// Message when no agents are found
-  ///
-  /// In en, this message translates to:
-  /// **'No agents found'**
-  String get noAgentsFound;
-
   /// Placeholder for search input field
   ///
   /// In en, this message translates to:
@@ -537,31 +537,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Poster Ads Management'**
   String get posterAdsManagement;
-
-  /// Text for uploading product image
-  /// Button or label text for adding a new product
-  ///
-  /// In en, this message translates to:
-  /// **'Add Product'**
-  String get addProduct;
-
-  /// Validation message shown when user leaves fields empty or incorrect
-  ///
-  /// In en, this message translates to:
-  /// **'Please fill all fields correctly!'**
-  String get pleaseFillAllFields;
-
-  /// Confirmation message shown when a product is added successfully
-  ///
-  /// In en, this message translates to:
-  /// **'Product added successfully!'**
-  String get productAddedSuccessfully;
-
-  /// Button or label text for uploading a product image
-  ///
-  /// In en, this message translates to:
-  /// **'Upload Product Image'**
-  String get uploadProductImage;
 
   /// Text for uploading poster
   ///
@@ -598,16 +573,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Messages'**
   String get messages;
-
-  /// Label for customer inquiries section
-  ///
-  /// In en, this message translates to:
-  /// **'Customer Inquiries'**
-  String get customerInquiries;
-
-  /// Label for agent
-  ///
-  /// In en, this message translates to:
 
   /// Prompt for user to choose an action
   ///
@@ -699,12 +664,6 @@ abstract class AppLocalizations {
   /// **'To be the leading tech-powered solution in the textile industry.'**
   String get visionStatement;
 
-  /// Title for about section
-  ///
-  /// In en, this message translates to:
-  /// **'About'**
-  String get about;
-
   /// Example user name
   ///
   /// In en, this message translates to:
@@ -729,12 +688,6 @@ abstract class AppLocalizations {
   /// **'February 2025'**
   String get february2025;
 
-  /// Title for account and security section
-  ///
-  /// In en, this message translates to:
-  /// **'Account & Security'**
-  String get accountAndSecurity;
-
   /// Title for the Login & Recovery section
   ///
   /// In en, this message translates to:
@@ -753,7 +706,7 @@ abstract class AppLocalizations {
   /// **', Login preference and recovery methods'**
   String get loginPreferenceAndRecovery;
 
-  /// Button label for changing password
+  /// Label for changing password
   ///
   /// In en, this message translates to:
   /// **'Change Password'**
@@ -885,12 +838,6 @@ abstract class AppLocalizations {
   /// **'Subject'**
   String get subject;
 
-  /// Label for description field in complaints
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get description;
-
   /// Button label for submitting complaint
   ///
   /// In en, this message translates to:
@@ -944,12 +891,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preferences'**
   String get preferences;
-
-  /// Title for notifications section
-  ///
-  /// In en, this message translates to:
-  /// **'Notifications'**
-  String get notifications;
 
   /// Description for notifications hub
   ///
@@ -1029,12 +970,6 @@ abstract class AppLocalizations {
   /// **'Order Enquiries'**
   String get orderEnquiries;
 
-  /// Label for search functionality
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get search;
-
   /// Product name for cotton t-shirt
   ///
   /// In en, this message translates to:
@@ -1053,12 +988,6 @@ abstract class AppLocalizations {
   /// **'Previous Products'**
   String get previousProducts;
 
-  /// Message when no products are available
-  ///
-  /// In en, this message translates to:
-  /// **'No products available'**
-  String get noProductsAvailable;
-
   /// Title for product enquiries section
   ///
   /// In en, this message translates to:
@@ -1071,30 +1000,6 @@ abstract class AppLocalizations {
   /// **'How may I help you?'**
   String get howMayIHelpYou;
 
-  /// Label for displaying available product colors
-  ///
-  /// In en, this message translates to:
-  /// **'Available Colors'**
-  String get availableColors;
-
-  /// Label for unavailable items/products
-  ///
-  /// In en, this message translates to:
-  /// **'Not Available'**
-  String get notAvailable;
-
-  /// Label for items/products that are out of stock
-  ///
-  /// In en, this message translates to:
-  /// **'Out of Stock'**
-  String get outOfStock;
-
-  /// Label for product
-  ///
-  /// In en, this message translates to:
-  /// **'Product'**
-  String get product;
-
   /// Placeholder for product search input field
   ///
   /// In en, this message translates to:
@@ -1106,23 +1011,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matching products found'**
   String get noMatchingProductsFound;
-
-  /// Label for user profile section
-  ///
-  /// In en, this message translates to:
-  /// **'Profile'**
-
-  /// Button label for canceling an action
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get cancel;
-
-  /// Button label for editing information
-  ///
-  /// In en, this message translates to:
-  /// **'Edit'**
-  String get edit;
 
   /// Button label for saving changes
   ///
@@ -1189,25 +1077,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some basic information to get you started.'**
   String get someBasicInformation;
-
-  /// Label for name field
-  /// Button or label text for selecting a file
-  ///
-  /// In en, this message translates to:
-  /// **'Choose File'**
-  String get chooseFile;
-
-  /// Label for the field where the user enters the product's name
-  ///
-  /// In en, this message translates to:
-  /// **'Product Name'**
-  String get productName;
-
-  /// Label for the field where the user enters their name
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get name;
 
   /// Placeholder for name input field
   ///
@@ -1335,6 +1204,42 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get ok;
 
+  /// Button or label text for adding a new product
+  ///
+  /// In en, this message translates to:
+  /// **'Add Product'**
+  String get addProduct;
+
+  /// Validation message shown when user leaves fields empty or incorrect
+  ///
+  /// In en, this message translates to:
+  /// **'Please fill all fields correctly!'**
+  String get pleaseFillAllFields;
+
+  /// Confirmation message shown when a product is added successfully
+  ///
+  /// In en, this message translates to:
+  /// **'Product added successfully!'**
+  String get productAddedSuccessfully;
+
+  /// Button or label text for uploading a product image
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Product Image'**
+  String get uploadProductImage;
+
+  /// Button or label text for selecting a file
+  ///
+  /// In en, this message translates to:
+  /// **'Choose File'**
+  String get chooseFile;
+
+  /// Label for the field where the user enters their name
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get name;
+
   /// Label for the field where the user enters the product price
   ///
   /// In en, this message translates to:
@@ -1362,6 +1267,8 @@ abstract class AppLocalizations {
   /// Label for the field where the user enters the product description
   ///
   /// In en, this message translates to:
+  /// **'Description'**
+  String get description;
 
   /// Placeholder text for the product description input field
   ///
@@ -1378,6 +1285,8 @@ abstract class AppLocalizations {
   /// Text for cancel button or action
   ///
   /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
 
   /// Text for select button or dropdown option
   ///
@@ -1436,6 +1345,8 @@ abstract class AppLocalizations {
   /// Title or section label for customer inquiries
   ///
   /// In en, this message translates to:
+  /// **'Customer Inquiries'**
+  String get customerInquiries;
 
   /// Message or prompt shown when looking for the latest messages
   ///
@@ -1446,6 +1357,8 @@ abstract class AppLocalizations {
   /// Label or placeholder text for search functionality
   ///
   /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
 
   /// Label used when something (like a user or item) does not have a name
   ///
@@ -1513,6 +1426,12 @@ abstract class AppLocalizations {
   /// **'Update Product'**
   String get updateProduct;
 
+  /// Label for the field where the user enters the product's name
+  ///
+  /// In en, this message translates to:
+  /// **'Product Name'**
+  String get productName;
+
   /// Label for pinned messages section
   ///
   /// In en, this message translates to:
@@ -1522,6 +1441,8 @@ abstract class AppLocalizations {
   /// Message shown when no agents are available
   ///
   /// In en, this message translates to:
+  /// **'No agents found'**
+  String get noAgentsFound;
 
   /// Prompt text shown to click and view chats
   ///
@@ -1532,10 +1453,14 @@ abstract class AppLocalizations {
   /// Label showing the available colors of a product
   ///
   /// In en, this message translates to:
+  /// **'Available Colors:'**
+  String get availableColors;
 
   /// Label indicating the product is out of stock
   ///
   /// In en, this message translates to:
+  /// **'Out of Stock'**
+  String get outOfStock;
 
   /// Label indicating how many items are left in stock
   ///
@@ -1549,11 +1474,29 @@ abstract class AppLocalizations {
   /// **'Only'**
   String get only;
 
+  /// Label indicating that a product or item is not available
+  ///
+  /// In en, this message translates to:
+  /// **'Not Available'**
+  String get notAvailable;
+
+  /// Label or button text for editing an item or product
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
   /// Label or button text for removing an item or product
   ///
   /// In en, this message translates to:
   /// **'Remove'**
   String get remove;
+
+  /// Message shown when no products are available
+  ///
+  /// In en, this message translates to:
+  /// **'No products available'**
+  String get noProductsAvailable;
 
   /// Message shown when no products match the search/filter criteria
   ///
@@ -1578,6 +1521,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload here'**
   String get uploadHere;
+
+  /// Label or text referring to a product
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get product;
+
+  /// Label or title for notifications section
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
 
   /// Button or action to mark all notifications/messages as read
   ///
@@ -1628,6 +1583,10 @@ abstract class AppLocalizations {
   String get account;
 
   /// Label for account and security settings section
+  ///
+  /// In en, this message translates to:
+  /// **'Account & Security'**
+  String get accountAndSecurity;
 
   /// Label describing account management and password change options
   ///
@@ -1665,6 +1624,12 @@ abstract class AppLocalizations {
   /// **'Terms & Policy'**
   String get termsPolicy;
 
+  /// Label for about section
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
   /// Label for managing terms and policy section
   ///
   /// In en, this message translates to:
@@ -1672,7 +1637,8 @@ abstract class AppLocalizations {
   String get manageTermsPolicy;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -1681,7 +1647,8 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'hi', 'ta'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'hi', 'ta'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
