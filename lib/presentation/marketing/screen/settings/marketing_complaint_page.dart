@@ -9,8 +9,7 @@ class MarketingComplaintPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (Provider.of<ComplaintsProvider>(context, listen: false).status ==
-        DataStatus.loading) {
+    if (Provider.of<ComplaintsProvider>(context, listen: false).status == DataStatus.loading) {
       Provider.of<ComplaintsProvider>(context, listen: true).loaddata();
     }
     return Scaffold(
@@ -20,8 +19,7 @@ class MarketingComplaintPage extends StatelessWidget {
   }
 
   Widget _getBody(ctx) {
-    final complaints =
-        Provider.of<ComplaintsProvider>(ctx, listen: true).complaints;
+    final complaints = Provider.of<ComplaintsProvider>(ctx, listen: true).complaints;
     final status = Provider.of<ComplaintsProvider>(ctx, listen: true).status;
     switch (status) {
       case DataStatus.loading:
@@ -44,8 +42,10 @@ class MarketingComplaintPage extends StatelessWidget {
           );
         }
       case DataStatus.failed:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        return Center(
+          child: Text("Error loading"),
+        );
+
       case DataStatus.reloading:
         return Center(child: CircularProgressIndicator());
     }

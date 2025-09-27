@@ -26,8 +26,7 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
           subjectError = AppLocalizations.of(context)!.subjectCannotBeEmpty;
         }
         if (descriptionController.text.isEmpty) {
-          descriptionError =
-              AppLocalizations.of(context)!.descriptionCannotBeEmpty;
+          descriptionError = AppLocalizations.of(context)!.descriptionCannotBeEmpty;
         }
       });
       return;
@@ -53,23 +52,27 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
       setState(() => isLoading = false);
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(AppLocalizations.of(context)!
-                  .complaintSubmittedSuccessfully)),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(AppLocalizations.of(context)!.complaintSubmittedSuccessfully)),
+          );
+        }
         subjectController.clear();
         descriptionController.clear();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: ${response.body}")),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error: ${response.body}")),
+          );
+        }
       }
     } catch (e) {
       setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed: $e")),
+        );
+      }
     }
   }
 
@@ -87,14 +90,12 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(AppLocalizations.of(context)!.subject,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                   TextFormField(
                     controller: subjectController,
                     style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 14),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       enabledBorder: OutlineInputBorder(
                         borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                         borderRadius: BorderRadius.circular(10),
@@ -120,16 +121,14 @@ class _CustomerComplaintPageState extends State<CustomerComplaintPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(AppLocalizations.of(context)!.description,
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w500)),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                   TextFormField(
                     keyboardType: TextInputType.multiline,
                     maxLines: null,
                     controller: descriptionController,
                     style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 20),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
                       enabledBorder: OutlineInputBorder(
                         borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                         borderRadius: BorderRadius.circular(10),

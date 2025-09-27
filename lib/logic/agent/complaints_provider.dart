@@ -28,10 +28,8 @@ class ComplaintsProvider extends ChangeNotifier {
   }
 
   //Todo: Integrate to customer complaint journey
-  Future<void> submitComplaint(
-      {required String subject, required String description}) async {
-    final result = await _complaintRepository.submitComplaint(
-        subject: subject, description: description);
+  Future<void> submitComplaint({required String subject, required String description}) async {
+    await _complaintRepository.submitComplaint(subject: subject, description: description);
   }
 }
 
