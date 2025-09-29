@@ -29,6 +29,7 @@ class ComplaintService {
   Future<bool> submitComplaint(
       {required String subject, required String description}) async {
     final token = await LocalDbHelper.getToken();
+
     final response = await http.post(
       Uri.parse('$baseUrl/complaint/add'),
       headers: {
@@ -40,6 +41,9 @@ class ComplaintService {
         "description": description,
       }),
     );
-    return response.statusCode == 200;
+    final parsedBody = jsonDecode(response.body);
+    return response.statusCode == 201 ||
+        parsedBody["status"] == 201 ||
+        parsedBody["message"] == "Item saved successfully";
   }
 }
