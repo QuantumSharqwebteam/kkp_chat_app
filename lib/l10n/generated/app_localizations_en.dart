@@ -107,7 +107,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emailVerification => 'Email Verification';
 
   @override
-  String get verificationCodeSent => 'We have sent the six-digit verification code to';
+  String get verificationCodeSent =>
+      'We have sent the six-digit verification code to';
 
   @override
   String get invalidCodeError => 'Invalid code, please try again';
@@ -140,7 +141,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacyPolicy => 'Privacy Policy';
 
   @override
-  String get privacyPolicyAgreement => 'By using KKP chat application, you agree to the';
+  String get privacyPolicyAgreement =>
+      'By using KKP chat application, you agree to the';
 
   @override
   String get appDescription =>
@@ -164,7 +166,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get phoneNumberLengthError => 'Phone number should be 10 digits';
 
   @override
-  String get passwordMinLengthError => 'Password should be at least 6 characters';
+  String get passwordMinLengthError =>
+      'Password should be at least 6 characters';
 
   @override
   String get agentProfileCreated => 'Agent Profile created';
@@ -206,13 +209,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get active => 'Active';
 
   @override
-  String get confirmDeleteAgent => 'Are you sure you want to delete this agent?';
+  String get confirmDeleteAgent =>
+      'Are you sure you want to delete this agent?';
 
   @override
   String get deleteAgent => 'Delete Agent';
 
   @override
   String get agentDeletedSuccessfully => 'Agent deleted successfully';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get addNewAgent => 'Add new agent';
+
+  @override
+  String get agentEligibleToChat =>
+      '**This agent is eligible to chat with customers.**';
+
+  @override
+  String get agentNotEligibleToChat =>
+      '**This agent is not eligible to chat with customers.**';
+
+  @override
+  String get searchByAnything => 'Search by anything...';
+
+  @override
+  String get posterAdsManagement => 'Poster Ads Management';
+
+  @override
+  String get uploadPoster => 'Upload Poster';
+
+  @override
+  String get deletePoster => 'Delete Poster';
+
+  @override
+  String get selectImageToUpload =>
+      'Please pick and select an image to upload!';
+
+  @override
+  String get adminDashboard => 'Admin Dashboard';
+
+  @override
+  String get visitors => 'Visitors';
+
+  @override
+  String get messages => 'Messages';
 
   @override
   String get chooseWhatToDo => 'Choose what to do:';
@@ -234,7 +277,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whoWeAre => 'Who We Are';
 
   @override
-  String get whoWeAreDescription => 'We’re a textile-focused company delivering:';
+  String get whoWeAreDescription =>
+      'We’re a textile-focused company delivering:';
 
   @override
   String get premiumQualityYarn => '• Premium quality yarn';
@@ -260,10 +304,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ourVision => 'Our Vision';
 
   @override
-  String get visionStatement => 'To be the leading tech-powered solution in the textile industry.';
-
-  @override
-  String get about => 'About';
+  String get visionStatement =>
+      'To be the leading tech-powered solution in the textile industry.';
 
   @override
   String get john => 'John';
@@ -279,16 +321,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get february2025 => 'February 2025';
 
   @override
-  String get accountAndSecurity => 'Account & Security';
-
-  @override
   String get loginAndRecovery => 'Login & Recovery';
 
   @override
   String get manageYourPassword => 'Manage your password';
 
   @override
-  String get loginPreferenceAndRecovery => ', Login preference and recovery methods';
+  String get loginPreferenceAndRecovery =>
+      ', Login preference and recovery methods';
 
   @override
   String get changePassword => 'Change Password';
@@ -331,7 +371,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordChangedSuccessfully => 'Password changed successfully!';
 
   @override
-  String get pleaseWaitPasswordChange => 'Please wait while the password is being changed.';
+  String get pleaseWaitPasswordChange =>
+      'Please wait while the password is being changed.';
 
   @override
   String get passwordAndSecurity => 'Password and Security';
@@ -349,16 +390,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get descriptionCannotBeEmpty => 'Description cannot be empty';
 
   @override
-  String get complaintSubmittedSuccessfully => 'Complaint submitted successfully';
+  String get complaintSubmittedSuccessfully =>
+      'Complaint submitted successfully';
 
   @override
   String get complaints => 'Complaints';
 
   @override
   String get subject => 'Subject';
-
-  @override
-  String get description => 'Description';
 
   @override
   String get submitComplaint => 'Submit Complaint';
@@ -388,9 +427,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get preferences => 'Preferences';
 
   @override
-  String get notifications => 'Notifications';
-
-  @override
   String get yourNotificationsHub => 'Your Notifications Hub';
 
   @override
@@ -409,7 +445,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pushNotificationsEnabled => 'Push notifications enabled.';
 
   @override
-  String get permissionDenied => 'Permission denied. Please enable from settings.';
+  String get permissionDenied =>
+      'Permission denied. Please enable from settings.';
 
   @override
   String get notificationSettings => 'Notification Settings';
@@ -431,9 +468,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orderEnquiries => 'Order Enquiries';
 
   @override
-  String get search => 'Search';
-
-  @override
   String get cottonTShirt => 'Cotton T-Shirt';
 
   @override
@@ -443,80 +477,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get previousProducts => 'Previous Products';
 
   @override
-  String get noProductsAvailable => 'No products available';
-
-  @override
   String get productEnquirers => 'Product Enquiries';
 
   @override
   String get howMayIHelpYou => 'How may I help you?';
 
   @override
-  String get availableColors => 'Available Colors';
-
-  @override
-  String get notAvailable => 'Not Available';
-
-  @override
-  String get outOfStock => 'Out of Stock';
-
-  @override
-  String get product => 'Product';
-
-  @override
   String get searchHere => 'Search Here...';
 
   @override
   String get noMatchingProductsFound => 'No matching products found';
-
-  @override
-  String get profile => 'Profile';
-
-  @override
-  String get addNewAgent => 'Add new agent';
-
-  @override
-  String get agentEligibleToChat => '**This agent is eligible to chat with customers.**';
-
-  @override
-  String get agentNotEligibleToChat => '**This agent is not eligible to chat with customers.**';
-
-  @override
-  String get noAgentsFound => 'No agents found';
-
-  @override
-  String get searchByAnything => 'Search by anything...';
-
-  @override
-  String get posterAdsManagement => 'Poster Ads Management';
-
-  @override
-  String get uploadProductImage => 'Upload Product Image';
-
-  @override
-  String get uploadPoster => 'Upload Poster';
-
-  @override
-  String get deletePoster => 'Delete Poster';
-
-  @override
-  String get selectImageToUpload => 'Please pick and select an image to upload!';
-
-  @override
-  String get adminDashboard => 'Admin Dashboard';
-
-  @override
-  String get visitors => 'Visitors';
-
-  @override
-  String get messages => 'Messages';
-
-  @override
-  String get customerInquiries => 'Customer Inquiries';
-  String get cancel => 'Cancel';
-
-  @override
-  String get edit => 'Edit';
 
   @override
   String get saveChanges => 'Save Changes';
@@ -528,7 +498,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get businessDetails => 'Business Details';
 
   @override
-  String get profileDetailsUpdatedSuccessfully => 'Profile details updated successfully!';
+  String get profileDetailsUpdatedSuccessfully =>
+      'Profile details updated successfully!';
 
   @override
   String get message => 'Message';
@@ -549,10 +520,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pressBackAgainToExit => 'Press back again to exit';
 
   @override
-  String get someBasicInformation => 'Some basic information to get you started.';
-
-  @override
-  String get name => 'Name';
+  String get someBasicInformation =>
+      'Some basic information to get you started.';
 
   @override
   String get enterYourName => 'Enter your name';
@@ -616,4 +585,223 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+
+  @override
+  String get addProduct => 'Add Product';
+
+  @override
+  String get pleaseFillAllFields => 'Please fill all fields correctly!';
+
+  @override
+  String get productAddedSuccessfully => 'Product added successfully!';
+
+  @override
+  String get uploadProductImage => 'Upload Product Image';
+
+  @override
+  String get chooseFile => 'Choose File';
+
+  @override
+  String get name => 'Name';
+
+  @override
+  String get price => 'Price';
+
+  @override
+  String get size => 'Size';
+
+  @override
+  String get color => 'Color';
+
+  @override
+  String get stockAvailable => 'Stock Available';
+
+  @override
+  String get description => 'Description';
+
+  @override
+  String get describeProduct => 'Describe about the product.......';
+
+  @override
+  String get pickColor => 'Pick a Color';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get select => 'Select';
+
+  @override
+  String get updateForm => 'Update Form';
+
+  @override
+  String get fillProductDetails => 'Fill Product Details';
+
+  @override
+  String get noCustomerForms => 'No customer forms found to navigate to';
+
+  @override
+  String get orderConfirmed => 'Your order is confirmed with form Id';
+
+  @override
+  String get orderDeclined => 'Your order is declined with form Id';
+
+  @override
+  String get customersList => 'Customers List';
+
+  @override
+  String get user => 'User';
+
+  @override
+  String get customer => 'Customer';
+
+  @override
+  String get customerInquiries => 'Customer Inquiries';
+
+  @override
+  String get findLatestMessages => 'Let\'s find latest messages';
+
+  @override
+  String get search => 'Search';
+
+  @override
+  String get unnamed => 'Unnamed';
+
+  @override
+  String get online => 'Online';
+
+  @override
+  String get analyticsManagement => 'Analytics Management';
+
+  @override
+  String get confirmDownloadExcel =>
+      'Are you sure you want to download all the data in excel format?';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get noActivitiesFound => 'No activities found';
+
+  @override
+  String get confirmDeleteAllActivities =>
+      'Are you sure you want to delete all activities?';
+
+  @override
+  String get allDataDeletedSuccessfully => 'All data deleted successfully';
+
+  @override
+  String get failedToDeleteAllData => 'Failed to delete all data';
+
+  @override
+  String get editProduct => 'Edit Product';
+
+  @override
+  String get updateProduct => 'Update Product';
+
+  @override
+  String get productName => 'Product Name';
+
+  @override
+  String get pinnedMessages => 'Pinned Messages';
+
+  @override
+  String get noAgentsFound => 'No agents found';
+
+  @override
+  String get clickToSeeChats => 'Click to see chats....';
+
+  @override
+  String get availableColors => 'Available Colors:';
+
+  @override
+  String get outOfStock => 'Out of Stock';
+
+  @override
+  String get leftInStock => 'Left in Stock';
+
+  @override
+  String get only => 'Only';
+
+  @override
+  String get notAvailable => 'Not Available';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get noProductsAvailable => 'No products available';
+
+  @override
+  String get noMatchingProducts => 'No matching products found';
+
+  @override
+  String get searchProducts => 'Search products...';
+
+  @override
+  String get uploadNewProduct => 'Upload new product';
+
+  @override
+  String get uploadHere => 'Upload here';
+
+  @override
+  String get product => 'Product';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get markAllRead => 'Mark all read';
+
+  @override
+  String get myAccount => 'My Account';
+
+  @override
+  String get confirmLogout => 'Are you sure you want to log out?';
+
+  @override
+  String get noCustomersAvailable => 'No customers available';
+
+  @override
+  String get searchCustomer => 'Search customer...';
+
+  @override
+  String get manage => 'Manage';
+
+  @override
+  String get settingsAndActivity => 'Settings and Activity';
+
+  @override
+  String get account => 'Account';
+
+  @override
+  String get accountAndSecurity => 'Account & Security';
+
+  @override
+  String get accountManagementPasswordChange =>
+      'Account management, password change';
+
+  @override
+  String get management => 'Management';
+
+  @override
+  String get userManagement => 'User Management';
+
+  @override
+  String get viewCustomers => 'View customers';
+
+  @override
+  String get manageAnalyticsData => 'Manage Analytics Data';
+
+  @override
+  String get termsPolicy => 'Terms & Policy';
+
+  @override
+  String get about => 'About';
+
+  @override
+  String get manageTermsPolicy => 'Manage Terms & Policy';
 }

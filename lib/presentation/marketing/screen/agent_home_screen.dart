@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/main.dart';
@@ -50,6 +51,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     final provider = Provider.of<AssignedCustomersProvider>(context);
     return Scaffold(
       backgroundColor: Colors.white,
@@ -75,7 +77,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                               children: [
                                 _buildSearchBar(provider),
                                 const SizedBox(height: 20),
-                                Text("Customer Inquiries",
+                                Text(locale.customerInquiries,
                                     style: AppTextStyles.black16_500),
                               ],
                             ),
@@ -99,6 +101,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   }
 
   Widget _buildProfileSection(String? name) {
+    final locale = AppLocalizations.of(context)!;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
       leading: Initicon(
@@ -107,7 +110,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       ),
       title: Text(name ?? "", style: AppTextStyles.black16_500),
       subtitle:
-          Text("Let's find latest messages", style: AppTextStyles.black10_500),
+          Text(locale.findLatestMessages, style: AppTextStyles.black10_500),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -136,15 +139,17 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   }
 
   Widget _buildSearchBar(AssignedCustomersProvider provider) {
+    final locale = AppLocalizations.of(context)!;
     return CustomSearchBar(
       enable: true,
       controller: _searchController,
-      hintText: "Search",
+      hintText: locale.search,
       onChanged: provider.updateSearchQuery,
     );
   }
 
   Widget _buildCustomerInquiriesList(AssignedCustomersProvider provider) {
+    final locale = AppLocalizations.of(context)!;
     final socket = provider.socketService;
 
     // Get the list of valid customers from the provider (already sorted by the provider)
@@ -166,7 +171,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         itemBuilder: (context, index) {
           final customer = validCustomers[index];
-          final name = customer['name'] ?? "Unnamed";
+          final name = customer['name'] ?? locale.unnamed;
           final email = customer['email']?.toString() ?? "";
           final isAccountDeleted = customer['isDeleted'] ?? false;
           final isOnline = customer['isOnline'] ?? false; // Use the flag we set
@@ -183,7 +188,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   message: lastMessage,
                   isAccountDeleted: isAccountDeleted,
                   isActive: isOnline, // Use our local flag
-                  time: isOnline ? "Online" : lastSeen,
+                  time: isOnline ? locale.online : lastSeen,
                   enableLongPress: false,
                   onTap: () async {
                     await provider.resetNotificationCount(email);

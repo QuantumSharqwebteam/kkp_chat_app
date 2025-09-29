@@ -3,6 +3,7 @@ import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/sucees_dialog.dart';
+import 'package:kkpchatapp/presentation/common_widgets/toast_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Utils {
@@ -131,5 +132,27 @@ class Utils {
       debugPrint('Could not launch $url');
       throw 'Could not launch $url';
     }
+  }
+
+  static void showCustomToast(BuildContext context,
+      {required String title, required String subtitle}) {
+    late OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 80,
+        left: 10,
+        right: 10,
+        child: ToastWidget(
+          title: title,
+          subtitle: subtitle,
+          onDismiss: () {
+            overlayEntry.remove();
+          },
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
   }
 }

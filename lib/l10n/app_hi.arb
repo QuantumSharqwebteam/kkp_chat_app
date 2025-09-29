@@ -281,10 +281,7 @@
   "@agentNotEligibleToChat": {
     "description": "एजेंट चैट अयोग्यता का संदेश"
   },
-  "noAgentsFound": "कोई एजेंट नहीं मिला",
-  "@noAgentsFound": {
-    "description": "कोई एजेंट नहीं मिलने का संदेश"
-  },
+
   "searchByAnything": "कुछ भी खोजें...",
   "@searchByAnything": {
     "description": "खोज इनपुट फील्ड का प्लेसहोल्डर"
@@ -293,10 +290,7 @@
   "@posterAdsManagement": {
     "description": "पोस्टर विज्ञापन प्रबंधन अनुभाग का शीर्षक"
   },
-  "uploadProductImage": "उत्पाद छवि अपलोड करें",
-  "@uploadProductImage": {
-    "description": "उत्पाद छवि अपलोड करने का टेक्स्ट"
-  },
+
   "uploadPoster": "पोस्टर अपलोड करें",
   "@uploadPoster": {
     "description": "पोस्टर अपलोड करने का टेक्स्ट"
@@ -321,10 +315,7 @@
   "@messages": {
     "description": "संदेशों की गिनती या अनुभाग का लेबल"
   },
-  "customerInquiries": "ग्राहक पूछताछ",
-  "@customerInquiries": {
-    "description": "ग्राहक पूछताछ अनुभाग का लेबल"},
-
+ 
   "chooseWhatToDo": "क्या करना है चुनें:",
   "@chooseWhatToDo": {
     "description": "उपयोगकर्ता को कार्रवाई चुनने के लिए प्रॉम्प्ट"
@@ -502,10 +493,7 @@
   "@subject": {
     "description": "शिकायतों में विषय क्षेत्र के लिए लेबल"
   },
-  "description": "विवरण",
-  "@description": {
-    "description": "शिकायतों में विवरण क्षेत्र के लिए लेबल"
-  },
+
   "submitComplaint": "शिकायत जमा करें",
   "@submitComplaint": {
     "description": "शिकायत जमा करने के बटन के लिए लेबल"
@@ -522,10 +510,7 @@
   "@accountAndOrders": {
     "description": "खाता और ऑर्डर अनुभाग का शीर्षक"
   },
-  "accountAndSecurity": "खाता और सुरक्षा",
-  "@accountAndSecurity": {
-    "description": "खाता और सुरक्षा अनुभाग का शीर्षक"
-  },
+ 
   "accountManagement": "खाता प्रबंधन",
   "@accountManagement": {
     "description": "खाता प्रबंधन अनुभाग का शीर्षक"
@@ -546,10 +531,7 @@
   "@preferences": {
     "description": "प्राथमिकताएँ अनुभाग का शीर्षक"
   },
-  "notifications": "सूचनाएँ",
-  "@notifications": {
-    "description": "सूचनाएँ अनुभाग का शीर्षक"
-  },
+ 
   "yourNotificationsHub": "आपका सूचना केंद्र",
   "@yourNotificationsHub": {
     "description": "सूचना केंद्र का वर्णन"
@@ -566,10 +548,7 @@
   "@termsAndPolicy": {
     "description": "नियम और नीति अनुभाग का शीर्षक"
   },
-  "about": "के बारे में",
-  "@about": {
-    "description": "के बारे में अनुभाग का शीर्षक"
-  },
+
   "manageTermsAndPolicy": "नियम और नीति प्रबंधित करें",
   "@manageTermsAndPolicy": {
     "description": "नियम और नीति प्रबंधन का शीर्षक"
@@ -610,10 +589,7 @@
   "@orderEnquiries": {
     "description": "ऑर्डर पूछताछ अनुभाग का शीर्षक"
   },
-  "search": "खोजें",
-  "@search": {
-    "description": "खोज कार्यक्षमता के लिए लेबल"
-  },
+ 
   "cottonTShirt": "कॉटन टी-शर्ट",
   "@cottonTShirt": {
     "description": "कॉटन टी-शर्ट उत्पाद का नाम"
@@ -626,10 +602,7 @@
   "@previousProducts": {
     "description": "पिछले उत्पाद अनुभाग का शीर्षक"
   },
-  "noProductsAvailable": "कोई उत्पाद उपलब्ध नहीं है",
-  "@noProductsAvailable": {
-    "description": "जब कोई उत्पाद उपलब्ध न हो तो संदेश"
-  },
+
   "productEnquirers": "उत्पाद पूछताछ",
   "@productEnquirers": {
     "description": "उत्पाद पूछताछ अनुभाग का शीर्षक"
@@ -638,22 +611,8 @@
   "@howMayIHelpYou": {
     "description": "ग्राहक सेवा स्वागत संदेश"
   },
-  "availableColors": "उपलब्ध रंग",
-  "@availableColors": {
-    "description": "उत्पाद के उपलब्ध रंगों को प्रदर्शित करने के लिए लेबल"
-  },
-  "notAvailable": "उपलब्ध नहीं है",
-  "@notAvailable": {
-    "description": "उपलब्ध नहीं होने वाले आइटम्स/उत्पादों के लिए लेबल"
-  },
-  "outOfStock": "स्टॉक में नहीं",
-  "@outOfStock": {
-    "description": "स्टॉक में नहीं होने वाले आइटम्स/उत्पादों के लिए लेबल"
-  },
-   "product": "उत्पाद",
-  "@product": {
-    "description": "उत्पाद के लिए लेबल"
-  },
+ 
+
   "searchHere": "यहाँ खोजें...",
   "@searchHere": {
     "description": "उत्पाद खोज इनपुट फील्ड के लिए प्लेसहोल्डर"
@@ -666,14 +625,8 @@
   "@profile": {
     "description": "उपयोगकर्ता प्रोफाइल अनुभाग के लिए लेबल"
   },
-  "cancel": "रद्द करें",
-  "@cancel": {
-    "description": "किसी क्रिया को रद्द करने के लिए बटन लेबल"
-  },
-  "edit": "संपादित करें",
-  "@edit": {
-    "description": "जानकारी संपादित करने के लिए बटन लेबल"
-  },
+  
+ 
   "saveChanges": "परिवर्तनों को सहेजें",
   "@saveChanges": {
     "description": "परिवर्तनों को सहेजने के लिए बटन लेबल"
@@ -718,10 +671,7 @@
   "@someBasicInformation": {
     "description": "प्रोफाइल सेटअप के लिए परिचयात्मक टेक्स्ट"
   },
-  "name": "नाम",
-  "@name": {
-    "description": "नाम फील्ड के लिए लेबल"
-  },
+  
   "enterYourName": "अपना नाम दर्ज करें",
   "@enterYourName": {
     "description": "नाम इनपुट फील्ड के लिए प्लेसहोल्डर"
@@ -805,7 +755,298 @@
   "ok": "ठीक है",
   "@ok": {
     "description": "पुष्टि के लिए बटन लेबल"
-  }
+  },
 
+  "addProduct": "उत्पाद जोड़ें",
+"@addProduct": {
+  "description": "नए उत्पाद जोड़ने के लिए बटन या लेबल टेक्स्ट"
+},
+"pleaseFillAllFields": "कृपया सभी फ़ील्ड सही से भरें!",
+"@pleaseFillAllFields": {
+  "description": "जब उपयोगकर्ता फ़ील्ड खाली छोड़ता है या गलत भरता है तो दिखाया जाने वाला संदेश"
+},
+"productAddedSuccessfully": "उत्पाद सफलतापूर्वक जोड़ा गया!",
+"@productAddedSuccessfully": {
+  "description": "जब कोई उत्पाद सफलतापूर्वक जोड़ा जाता है तब दिखाया जाने वाला पुष्टिकरण संदेश"
+},
+"uploadProductImage": "उत्पाद की छवि अपलोड करें",
+"@uploadProductImage": {
+  "description": "उत्पाद की छवि अपलोड करने के लिए बटन या लेबल टेक्स्ट"
+},
+"chooseFile": "फ़ाइल चुनें",
+"@chooseFile": {
+  "description": "फ़ाइल चुनने के लिए बटन या लेबल टेक्स्ट"
+},
+
+"name": "नाम",
+"@name": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता अपना नाम दर्ज करता है"
+},
+"price": "मूल्य",
+"@price": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का मूल्य दर्ज करता है"
+},
+"size": "आकार",
+"@size": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का आकार चुनता या दर्ज करता है"
+},
+"color": "रंग",
+"@color": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का रंग चुनता या दर्ज करता है"
+},
+"stockAvailable": "स्टॉक उपलब्ध है",
+"@stockAvailable": {
+  "description": "लेबल जो उत्पाद के उपलब्ध स्टॉक की मात्रा दर्शाता है"
+},
+"description": "विवरण",
+"@description": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का विवरण दर्ज करता है"
+},
+"describeProduct": "उत्पाद के बारे में विवरण दें.......",
+"@describeProduct": {
+  "description": "उत्पाद विवरण इनपुट फ़ील्ड के लिए प्लेसहोल्डर टेक्स्ट"
+},
+"pickColor": "रंग चुनें",
+"@pickColor": {
+  "description": "उत्पाद का रंग चुनने के लिए प्लेसहोल्डर या प्रॉम्प्ट टेक्स्ट"
+},
+"cancel": "रद्द करें",
+"@cancel": {
+  "description": "रद्द करें बटन या क्रिया के लिए टेक्स्ट"
+},
+"select": "चुनें",
+"@select": {
+  "description": "चुनें बटन या ड्रॉपडाउन विकल्प के लिए टेक्स्ट"
+},
+"updateForm": "फॉर्म अपडेट करें",
+"@updateForm": {
+  "description": "Label or button text for updating a form in Hindi"
+},
+"fillProductDetails": "उत्पाद विवरण भरें",
+"@fillProductDetails": {
+  "description": "Prompt or label asking the user to fill product details in Hindi"
+},
+"noCustomerForms": "नेविगेट करने के लिए कोई ग्राहक फॉर्म नहीं मिला",
+"@noCustomerForms": {
+  "description": "Message shown when there are no customer forms available for navigation in Hindi"
+},
+"orderConfirmed": "आपका ऑर्डर फॉर्म आईडी के साथ पुष्टि हो गई है",
+"@orderConfirmed": {
+  "description": "Message shown to confirm the order along with the form Id in Hindi"
+},
+"orderDeclined": "आपका ऑर्डर फॉर्म आईडी के साथ अस्वीकार कर दिया गया है",
+"@orderDeclined": {
+  "description": "Message shown when the order is declined along with the form Id in Hindi"
+},
+"customersList": "ग्राहकों की सूची",
+"@customersList": {
+  "description": "Title for displaying the list of customers in Hindi"
+},
+"user": "उपयोगकर्ता",
+"@user": {
+  "description": "Label or title for a user in Hindi"
+},
+"customer": "ग्राहक",
+"@customer": {
+  "description": "Label or title for a customer in Hindi"
+},
+"customerInquiries": "ग्राहक पूछताछ",
+"@customerInquiries": {
+  "description": "Title or section label for customer inquiries in Hindi"
+},
+"findLatestMessages": "आइए नवीनतम संदेश ढूंढते हैं",
+"@findLatestMessages": {
+  "description": "Message or prompt shown when looking for the latest messages in Hindi"
+},
+"search": "खोजें",
+"@search": {
+  "description": "Label or placeholder text for search functionality in Hindi"
+},
+"unnamed": "बेनाम",
+"@unnamed": {
+  "description": "Label used when something (like a user or item) does not have a name in Hindi"
+},
+"online": "ऑनलाइन",
+"@online": {
+  "description": "Status label indicating a user is currently active or connected in Hindi"
+},
+"analyticsManagement": "विश्लेषण प्रबंधन",
+"@analyticsManagement": {
+  "description": "Title or label for the analytics management section in Hindi"
+},
+"confirmDownloadExcel": "क्या आप सुनिश्चित हैं कि आप सभी डेटा को एक्सेल फ़ॉर्मेट में डाउनलोड करना चाहते हैं?",
+"@confirmDownloadExcel": {
+  "description": "Confirmation message shown before downloading all data in Excel format in Hindi"
+},
+"confirm": "पुष्टि करें",
+"@confirm": {
+  "description": "Text for confirm button or action in Hindi"
+},
+"noActivitiesFound": "कोई गतिविधियाँ नहीं मिलीं",
+"@noActivitiesFound": {
+  "description": "Message displayed when no activities are available in Hindi"
+},
+"confirmDeleteAllActivities": "क्या आप वाकई सभी गतिविधियाँ हटाना चाहते हैं?",
+"@confirmDeleteAllActivities": {
+  "description": "Confirmation message shown before deleting all activities in Hindi"
+},
+"allDataDeletedSuccessfully": "सारी जानकारी सफलतापूर्वक हटा दी गई",
+"@allDataDeletedSuccessfully": {
+  "description": "Message shown when all data is deleted successfully in Hindi"
+},
+"failedToDeleteAllData": "सारी जानकारी हटाने में असफल",
+"@failedToDeleteAllData": {
+  "description": "Message shown when deleting all data fails in Hindi"
+},
+"editProduct": "उत्पाद संपादित करें",
+"@editProduct": {
+  "description": "Text for editing a product in Hindi"
+},
+"updateProduct": "उत्पाद अपडेट करें",
+"@updateProduct": {
+  "description": "Text for updating a product in Hindi"
+},
+"productName": "उत्पाद का नाम",
+"@productName": {
+  "description": "Label for the product name field in Hindi"
+},
+"pinnedMessages": "पिन किए गए संदेश",
+"@pinnedMessages": {
+  "description": "Label for pinned messages section in Hindi"
+},
+"noAgentsFound": "कोई एजेंट नहीं मिला",
+"@noAgentsFound": {
+  "description": "Message shown when no agents are available in Hindi"
+},
+"clickToSeeChats": "चैट देखने के लिए क्लिक करें....",
+"@clickToSeeChats": {
+  "description": "Prompt text in Hindi to click and view chats"
+},
+"availableColors": "उपलब्ध रंग:",
+"@availableColors": {
+  "description": "Label in Hindi showing the available colors of a product"
+},
+"outOfStock": "स्टॉक समाप्त",
+"@outOfStock": {
+  "description": "Label in Hindi indicating the product is out of stock"
+},
+"leftInStock": "शेष स्टॉक",
+"@leftInStock": {
+  "description": "Label in Hindi indicating remaining stock"
+},
+"only": "केवल",
+"@only": {
+  "description": "Label in Hindi indicating limitation, e.g., 'केवल 2 बचा है'"
+},
+"notAvailable": "उपलब्ध नहीं",
+"@notAvailable": {
+  "description": "Label in Hindi indicating item/product is not available"
+},
+"edit": "संपादित करें",
+"@edit": {
+  "description": "Label in Hindi for editing an item or product"
+},
+"remove": "हटाएँ",
+"@remove": {
+  "description": "Label in Hindi for removing an item or product"
+},
+"noProductsAvailable": "कोई उत्पाद उपलब्ध नहीं हैं",
+"@noProductsAvailable": {
+  "description": "Message in Hindi when no products are available"
+},
+"noMatchingProducts": "कोई मेल खाने वाला उत्पाद नहीं मिला",
+"@noMatchingProducts": {
+  "description": "Message in Hindi when no products match the search/filter criteria"
+},
+"searchProducts": "उत्पाद खोजें...",
+"@searchProducts": {
+  "description": "Message in Hindi for product search input field"
+},
+"uploadNewProduct": "नया उत्पाद अपलोड करें",
+"@uploadNewProduct": {
+  "description": "Hindi translation for uploading a new product"
+},
+"uploadHere": "यहाँ अपलोड करें",
+"@uploadHere": {
+  "description": "Hindi translation for uploading a file or product"
+},
+"product": "उत्पाद",
+"@product": {
+  "description": "Hindi translation for product"
+},
+"notifications": "सूचनाएं",
+"@notifications": {
+  "description": "Hindi translation for notifications"
+},
+"markAllRead": "सभी पढ़ा हुआ मार्क करें",
+"@markAllRead": {
+  "description": "Hindi translation for marking all notifications/messages as read"
+},
+"myAccount": "मेरा खाता",
+"@myAccount": {
+  "description": "Hindi translation for user's account section"
+},
+
+"confirmLogout": "क्या आप वाकई लॉगआउट करना चाहते हैं?",
+"@confirmLogout": {
+  "description": "Hindi translation for logout confirmation message"
+},
+"noCustomersAvailable": "कोई ग्राहक उपलब्ध नहीं हैं",
+"@noCustomersAvailable": {
+  "description": "Hindi translation for no customers available message"
+},
+"searchCustomer": "ग्राहक खोजें...",
+"@searchCustomer": {
+  "description": "Hindi placeholder text for searching a customer"
+},
+"manage": "प्रबंधित करें",
+"@manage": {
+  "description": "Hindi label for manage action or button"
+},
+"settingsAndActivity": "सेटिंग्स और गतिविधियाँ",
+"@settingsAndActivity": {
+  "description": "Hindi label for settings and activity section"
+},
+
+"account": "खाता",
+"@account": {
+  "description": "Hindi label for account section"
+},
+"accountAndSecurity": "खाता और सुरक्षा",
+"@accountAndSecurity": {
+  "description": "Hindi label for account and security settings section"
+},
+"accountManagementPasswordChange": "खाता प्रबंधन, पासवर्ड बदलें",
+"@accountManagementPasswordChange": {
+  "description": "Hindi label describing account management and password change options"
+},
+"management": "प्रबंधन",
+"@management": {
+  "description": "Hindi label for management"
+},
+"userManagement": "उपयोगकर्ता प्रबंधन",
+"@userManagement": {
+  "description": "Hindi label for user management section"
+},
+"viewCustomers": "ग्राहक देखें",
+"@viewCustomers": {
+  "description": "Hindi label for viewing customer list"
+},
+"manageAnalyticsData": "एनालिटिक्स डेटा प्रबंधित करें",
+"@manageAnalyticsData": {
+  "description": "Hindi label for managing analytics data"
+},
+"termsPolicy": "नियम और नीति",
+"@termsPolicy": {
+  "description": "Hindi label for terms and policy section"
+},
+"about": "के बारे में",
+"@about": {
+  "description": "Hindi label for about section"
+},
+"manageTermsPolicy": "नियम और नीति प्रबंधित करें",
+"@manageTermsPolicy": {
+  "description": "Hindi label for managing terms and policy section"
+}
 
 }

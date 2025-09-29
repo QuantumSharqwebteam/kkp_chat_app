@@ -8,6 +8,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/api/product_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/add_product_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
@@ -20,6 +21,7 @@ class AddProductScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return ChangeNotifierProvider<AddProductProvider>(
       create: (_) => AddProductProvider(
         productService: ProductService(),
@@ -29,7 +31,7 @@ class AddProductScreen extends StatelessWidget {
         backgroundColor: AppColors.background,
         appBar: AppBar(
           backgroundColor: AppColors.background,
-          title: const Text("Add Product"),
+          title: Text(locale.addProduct),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
@@ -53,14 +55,14 @@ class AddProductScreen extends StatelessWidget {
                           bool success = await provider.addProduct();
                           if (context.mounted) {
                             if (!success) {
-                              Utils().showSuccessDialog(context,
-                                  "Please fill all fields correctly!", false);
+                              Utils().showSuccessDialog(
+                                  context, locale.pleaseFillAllFields, false);
                               return;
                             }
                           }
                           if (context.mounted) {
                             Utils().showSuccessDialog(
-                                context, "Product added successfully!", true);
+                                context, locale.productAddedSuccessfully, true);
                           }
                           Future.delayed(const Duration(seconds: 2), () {
                             if (context.mounted) {
@@ -70,7 +72,7 @@ class AddProductScreen extends StatelessWidget {
                             }
                           });
                         },
-                        text: "Add Product",
+                        text: locale.addProduct,
                         fontSize: 18,
                         borderColor: AppColors.blue00ABE9,
                         backgroundColor: AppColors.blue00ABE9,
@@ -89,6 +91,8 @@ class AddProductScreen extends StatelessWidget {
 
   Widget _buildImagePickerContainer(
       BuildContext context, AddProductProvider provider) {
+    final locale = AppLocalizations.of(context)!;
+
     return SizedBox(
       width: double.maxFinite,
       child: GestureDetector(
@@ -120,7 +124,7 @@ class AddProductScreen extends StatelessWidget {
                             const Icon(Icons.cloud_upload_rounded,
                                 size: 50, color: AppColors.grey7B7B7B),
                             Text(
-                              "Upload Product Image",
+                              locale.uploadProductImage,
                               style: AppTextStyles.black16_500.copyWith(
                                 color: AppColors.grey7B7B7B,
                               ),
@@ -138,7 +142,7 @@ class AddProductScreen extends StatelessWidget {
                               },
                               textColor: AppColors.blue,
                               borderColor: AppColors.background,
-                              text: "Choose File",
+                              text: locale.chooseFile,
                             ),
                           ],
                         )
@@ -163,6 +167,8 @@ class AddProductScreen extends StatelessWidget {
 
   Widget _buildProductDetails(
       BuildContext context, AddProductProvider provider) {
+    final locale = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -180,16 +186,18 @@ class AddProductScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Product Name", style: AppTextStyles.black14_600),
+          Text(locale.productName, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.nameController,
-            hintText: 'Name',
+            hintText: locale.name,
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: Text("Price", style: AppTextStyles.black14_600)),
-              Expanded(child: Text("Size", style: AppTextStyles.black14_600)),
+              Expanded(
+                  child: Text(locale.price, style: AppTextStyles.black14_600)),
+              Expanded(
+                  child: Text(locale.size, style: AppTextStyles.black14_600)),
             ],
           ),
           const SizedBox(height: 5),
@@ -206,11 +214,11 @@ class AddProductScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text("Color", style: AppTextStyles.black14_600),
+          Text(locale.color, style: AppTextStyles.black14_600),
           const SizedBox(height: 5),
           _buildColorPickerWidget(context, provider),
           const SizedBox(height: 10),
-          Text("Stock Available", style: AppTextStyles.black14_600),
+          Text(locale.stockAvailable, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.stockController,
             hintText: "2000",
@@ -218,10 +226,10 @@ class AddProductScreen extends StatelessWidget {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           const SizedBox(height: 10),
-          Text("Description", style: AppTextStyles.black14_600),
+          Text(locale.description, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.descriptionController,
-            hintText: "Describe about the product....... ",
+            hintText: locale.describeProduct,
             maxLines: 8,
             height: 100,
             minLines: 2,
@@ -266,6 +274,7 @@ class AddProductScreen extends StatelessWidget {
 
   Widget _buildColorPickerWidget(
       BuildContext context, AddProductProvider provider) {
+    final locale = AppLocalizations.of(context)!;
     return Wrap(
       spacing: 8.0,
       children: [
@@ -288,7 +297,7 @@ class AddProductScreen extends StatelessWidget {
               context: context,
               builder: (context) {
                 return AlertDialog(
-                  title: const Text("Pick a Color"),
+                  title: Text(locale.pickColor),
                   content: SingleChildScrollView(
                     child: ColorPicker(
                       pickerColor: pickedColor,
@@ -301,11 +310,11 @@ class AddProductScreen extends StatelessWidget {
                   ),
                   actions: [
                     TextButton(
-                      child: const Text("Cancel"),
+                      child: Text(locale.cancel),
                       onPressed: () => Navigator.pop(context),
                     ),
                     TextButton(
-                      child: const Text("Select"),
+                      child: Text(locale.select),
                       onPressed: () => Navigator.pop(context, pickedColor),
                     ),
                   ],

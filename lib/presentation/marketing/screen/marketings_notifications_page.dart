@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/models/notification_model.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/empty_notifications_widget.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
@@ -69,13 +70,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     final provider = Provider.of<NotificationProvider>(context);
     final grouped = groupNotificationsByDate(provider.notifications);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Notifications",
+        title: Text(
+          locale.notifications,
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.white,
@@ -85,8 +87,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               onPressed: () async {
                 await provider.markAllRead();
               },
-              child: const Text(
-                "Mark all read",
+              child: Text(
+                locale.markAllRead,
                 style: TextStyle(
                   color: Colors.blue,
                   decoration: TextDecoration.underline,

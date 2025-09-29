@@ -15,12 +15,24 @@ import 'package:kkpchatapp/presentation/common_widgets/locale/locale_switcher.da
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/customer_complaint_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
 
   @override
   State<CustomerSettingsPage> createState() => _CustomerSettingsPageState();
+}
+
+Future<void> _launchDialer(BuildContext context, String phoneNumber) async {
+  final Uri uri = Uri(scheme: 'tel', path: phoneNumber);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  } else {
+    if (context.mounted) {
+      Utils.showCustomToast(context, title: 'Error', subtitle: 'No Supported App Found');
+    }
+  }
 }
 
 class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
@@ -146,8 +158,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               // mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -182,8 +193,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ],
                           onTaps: [
                             () {
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
                                 return AccountAndSecurity();
                               }));
                             }
@@ -196,12 +206,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                                 fontSize: 14),
                           ),
                           showDividerAfterTitle: true,
-                          titles: [
-                            AppLocalizations.of(context)!.accountAndSecurity
-                          ],
-                          subtitles: [
-                            AppLocalizations.of(context)!.accountManagement
-                          ],
+                          titles: [AppLocalizations.of(context)!.accountAndSecurity],
+                          subtitles: [AppLocalizations.of(context)!.accountManagement],
                         ),
                         // SizedBox(
                         //   height: 10,
@@ -226,16 +232,34 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                               ),
                             ),
                           ],
-                          subtitles: [
-                            AppLocalizations.of(context)!.trackAllOrderEnquires
-                          ],
+                          subtitles: [AppLocalizations.of(context)!.trackAllOrderEnquires],
                           onTaps: [
                             () {
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context) {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
                                 return CustomerInquiriesPage();
                               }));
                             }
+                          ],
+                        ),
+                        Divider(
+                          thickness: 1,
+                          height: 0,
+                          color: AppColors.greyE5E7EB, // light gray
+                        ),
+                        // user management , inaquiry mangement , notifications and reports and system settins tiles
+                        CustomSettingsTile(
+                          numberOfTiles: 1,
+                          titles: ['Contact Us'],
+                          leadingWidgets: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue.shade50,
+                              radius: 20,
+                              child: Icon(Icons.phone_android),
+                            ),
+                          ],
+                          subtitles: ["Tap To Get Help"],
+                          onTaps: [
+                            () => _launchDialer(context, "+91 9789965789"),
                           ],
                         ),
                       ],
@@ -266,8 +290,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -287,9 +310,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                       title: Text(
                         AppLocalizations.of(context)!.preferences,
                         style: TextStyle(
-                            color: AppColors.grey7B7B7B,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14),
+                            color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                       ),
                       showDividerAfterTitle: true,
                       titles: [AppLocalizations.of(context)!.notifications],
@@ -304,13 +325,10 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ),
                         ),
                       ],
-                      subtitles: [
-                        AppLocalizations.of(context)!.yourNotificationsHub
-                      ],
+                      subtitles: [AppLocalizations.of(context)!.yourNotificationsHub],
                       onTaps: [
                         () {
-                          Navigator.pushNamed(
-                              context, CustomerRoutes.notificationSettings);
+                          Navigator.pushNamed(context, CustomerRoutes.notificationSettings);
                         }
                       ],
                     ),
@@ -352,9 +370,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                   title: Text(
                     AppLocalizations.of(context)!.complaints,
                     style: TextStyle(
-                        color: AppColors.grey7B7B7B,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14),
+                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                   ),
                   showDividerAfterTitle: true,
                   titles: [AppLocalizations.of(context)!.complaints],
@@ -363,9 +379,7 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                     () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                const CustomerComplaintPage()),
+                        MaterialPageRoute(builder: (context) => const CustomerComplaintPage()),
                       );
                     },
                   ],
@@ -425,19 +439,14 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                   title: Text(
                     AppLocalizations.of(context)!.termsAndPolicy,
                     style: TextStyle(
-                        color: AppColors.grey7B7B7B,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14),
+                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
                   ),
                   showDividerAfterTitle: true,
                   titles: [AppLocalizations.of(context)!.about],
-                  subtitles: [
-                    AppLocalizations.of(context)!.manageTermsAndPolicy
-                  ],
+                  subtitles: [AppLocalizations.of(context)!.manageTermsAndPolicy],
                   onTaps: [
                     () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
                         return AboutUsPage();
                       }));
                     },
