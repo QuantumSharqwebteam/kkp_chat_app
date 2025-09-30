@@ -49,7 +49,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.changeLocale,
+                AppLocalizations.of(context)?.changeLocale ?? 'Change locale:',
                 style: AppTextStyles.black10_600,
               ),
               LanguageSwitcher(),
@@ -98,13 +98,16 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     ],
                     onTaps: [
                       () {
-                        Navigator.pushNamed(context, CustomerRoutes.passwordAndSecurity);
+                        Navigator.pushNamed(
+                            context, CustomerRoutes.passwordAndSecurity);
                       }
                     ],
                     title: Text(
                       locale.account,
                       style: TextStyle(
-                          color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                          color: AppColors.grey7B7B7B,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14),
                     ),
                     showDividerAfterTitle: true,
                     titles: [locale.accountAndSecurity],
@@ -165,7 +168,9 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     title: Text(
                       locale.management,
                       style: TextStyle(
-                          color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                          color: AppColors.grey7B7B7B,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14),
                     ),
                     showDividerAfterTitle: true,
                     titles: [locale.userManagement],
@@ -279,7 +284,9 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 title: Text(
                   'Complaints',
                   style: TextStyle(
-                      color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                      color: AppColors.grey7B7B7B,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14),
                 ),
                 showDividerAfterTitle: true,
                 titles: ['All Complaint'],
@@ -288,7 +295,8 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const MarketingComplaintPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const MarketingComplaintPage()),
                     );
                   },
                 ],
@@ -325,14 +333,17 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 title: Text(
                   locale.termsPolicy,
                   style: TextStyle(
-                      color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                      color: AppColors.grey7B7B7B,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14),
                 ),
                 showDividerAfterTitle: true,
                 titles: [locale.about],
                 subtitles: [locale.manageTermsPolicy],
                 onTaps: [
                   () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
                       return AboutUsPage();
                     }));
                   },

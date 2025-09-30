@@ -10,6 +10,7 @@ class ComplaintsProvider extends ChangeNotifier {
   List<ComplaintModel>? complaints;
   DataStatus status = DataStatus.loading;
   final _complaintRepository = ComplaintRepository();
+  bool complaintSubmitting = false;
 
   Future<void> loaddata() async {
     if (status == DataStatus.loading || status == DataStatus.reloading) {
@@ -27,9 +28,15 @@ class ComplaintsProvider extends ChangeNotifier {
     }
   }
 
-  //Todo: Integrate to customer complaint journey
-  Future<void> submitComplaint({required String subject, required String description}) async {
-    await _complaintRepository.submitComplaint(subject: subject, description: description);
+  Future<bool> submitComplaint(
+      {required String subject, required String description}) async {
+    complaintSubmitting = true;
+    notifyListeners();
+    final result = await _complaintRepository.submitComplaint(
+        subject: subject, description: description);
+    complaintSubmitting = false;
+    notifyListeners();
+    return result;
   }
 }
 
