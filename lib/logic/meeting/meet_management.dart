@@ -6,14 +6,17 @@ class MeetingManagement with ChangeNotifier {
   final MeetingService _meetingService;
   List<MeetingModel> _meetings = [];
   bool _isLoading = false;
+  bool _isUpdating = false;
   String? _error;
 
   MeetingManagement({MeetingService? meetingService})
-      : _meetingService = meetingService ?? MeetingService();
-
+      : _meetingService = meetingService ?? MeetingService() {
+    fetchAllMeetings();
+  }
   // Getters
   List<MeetingModel> get meetings => _meetings;
   bool get isLoading => _isLoading;
+  bool get isUpdating => _isUpdating;
   String? get error => _error;
 
   // Fetch all meetings
@@ -24,12 +27,64 @@ class MeetingManagement with ChangeNotifier {
 
     try {
       _meetings = await _meetingService.getAllMeetings();
+      debugPrint("Total meetings fetched: ${_meetings.length}"); // Debug print
+
+      // Print details of all meetings
+      for (var meeting in _meetings) {
+        debugPrint("Meeting: ${meeting.title}, Time: ${meeting.startTime}");
+      }
     } catch (e) {
       _error = "Failed to fetch meetings: $e";
+      debugPrint("Error fetching meetings: $e"); // Debug print for errors
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // Get today's upcoming meetings
+  List<MeetingModel> getTodaysUpcomingMeetings() {
+    final now = DateTime.now();
+    final todaysMeetings = _meetings.where((meeting) {
+      try {
+        final meetingDate = DateTime.parse(meeting.startTime);
+        // Check if meeting is today and in the future
+        final isTodayAndFuture = meetingDate.year == now.year &&
+            meetingDate.month == now.month &&
+            meetingDate.day == now.day &&
+            meetingDate.isAfter(now);
+
+        debugPrint("Checking meeting: ${meeting.title} - Today and future: $isTodayAndFuture");
+        return isTodayAndFuture;
+      } catch (e) {
+        debugPrint("Error parsing meeting time for ${meeting.title}: $e");
+        return false;
+      }
+    }).toList()
+      ..sort((a, b) => DateTime.parse(a.startTime).compareTo(DateTime.parse(b.startTime)));
+
+    debugPrint("Found ${todaysMeetings.length} upcoming meetings for today");
+
+    // Print details of today's upcoming meetings
+    for (var meeting in todaysMeetings) {
+      debugPrint("Upcoming meeting: ${meeting.title}, Time: ${meeting.startTime}");
+    }
+
+    return todaysMeetings;
+  }
+
+  // Get the next upcoming meeting (if any)
+  MeetingModel? getNextUpcomingMeeting() {
+    final todaysMeetings = getTodaysUpcomingMeetings();
+    final nextMeeting = todaysMeetings.isNotEmpty ? todaysMeetings.first : null;
+
+    if (nextMeeting != null) {
+      debugPrint("Next upcoming meeting: ${nextMeeting.title} at ${nextMeeting.startTime}");
+    } else {
+      debugPrint("No upcoming meetings found for today");
+    }
+
+    return nextMeeting;
   }
 
   // Create a new meeting
@@ -42,7 +97,6 @@ class MeetingManagement with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
-
     try {
       final success = await _meetingService.createMeeting(
         title: title,
@@ -71,10 +125,9 @@ class MeetingManagement with ChangeNotifier {
     String? link,
     String? startTime,
   }) async {
-    _isLoading = true;
+    _isUpdating = true; // Set updating state to true
     _error = null;
     notifyListeners();
-
     try {
       final success = await _meetingService.updateMeeting(
         id: id,
@@ -91,7 +144,7 @@ class MeetingManagement with ChangeNotifier {
       _error = "Failed to update meeting: $e";
       return false;
     } finally {
-      _isLoading = false;
+      _isUpdating = false; // Set updating state to false
       notifyListeners();
     }
   }
@@ -101,7 +154,6 @@ class MeetingManagement with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
-
     try {
       final success = await _meetingService.deleteMeeting(id);
       if (success) {

@@ -1,4 +1,7 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
@@ -153,10 +156,10 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                             errorText: _titleError,
                           ),
                           const SizedBox(height: 10),
-                          const Text("Location"),
+                          const Text("Platform"),
                           CustomTextField(
                             controller: _locationController,
-                            hintText: "Enter location",
+                            hintText: "Platform(Zoom, meet, teams) ",
                             prefixIcon: const Icon(Icons.location_on),
                             errorText: _locationError,
                           ),
@@ -182,7 +185,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                           CustomButton(
                             onPressed: _scheduleMeeting,
                             fontSize: 18,
-                            backgroundColor: Colors.blue,
+                            backgroundColor: AppColors.bluePrimary,
                             text: "Schedule Meeting",
                           ),
                         ],

@@ -28,7 +28,6 @@ class MeetingService {
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        debugPrint("${response.body}");
         final data = body['message'];
         if (data is List) {
           return data.map((e) => MeetingModel.fromJson(e)).toList();
