@@ -4,8 +4,22 @@ import 'package:kkpchatapp/presentation/admin/screens/meetings/schedule_meet.dar
 import 'package:kkpchatapp/presentation/admin/widgets/meet_tile.dart';
 import 'package:provider/provider.dart';
 
-class MeetingsListScreen extends StatelessWidget {
+class MeetingsListScreen extends StatefulWidget {
   const MeetingsListScreen({super.key});
+
+  @override
+  State<MeetingsListScreen> createState() => _MeetingsListScreenState();
+}
+
+class _MeetingsListScreenState extends State<MeetingsListScreen> {
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final meetingManagement = Provider.of<MeetingManagement>(context, listen: false);
+      meetingManagement.fetchAllMeetings();
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {

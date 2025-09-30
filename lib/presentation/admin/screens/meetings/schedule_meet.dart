@@ -170,15 +170,13 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                           ),
                           const SizedBox(height: 10),
                           const Text("Start Time"),
-                          InkWell(
+                          CustomTextField(
+                            controller: _startTimeController,
+                            hintText: "Select start time",
+                            prefixIcon: const Icon(Icons.calendar_today),
+                            errorText: _startTimeError,
+                            readOnly: true,
                             onTap: () => _selectDateTime(context),
-                            child: CustomTextField(
-                              controller: _startTimeController,
-                              hintText: "Select start time",
-                              prefixIcon: const Icon(Icons.calendar_today),
-                              errorText: _startTimeError,
-                              readOnly: true,
-                            ),
                           ),
                           const SizedBox(height: 20),
                           CustomButton(
