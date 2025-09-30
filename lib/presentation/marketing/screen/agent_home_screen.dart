@@ -75,6 +75,44 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // ,,,,,,,,,,,,,,,,,,,,,,,,,
+                                Container(
+                                    height: 50,
+                                    width: double.maxFinite,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black
+                                              .withValues(alpha: 0.20),
+                                          blurRadius: 3,
+                                          spreadRadius: 0,
+                                          offset: Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ListTile(
+                                      leading: const Icon(Icons.calendar_today,
+                                          color: Colors.blue),
+                                      // title: Text(
+                                      //   upcomingMeeting.title,
+                                      //   style: const TextStyle(
+                                      //       fontWeight: FontWeight.bold),
+                                      // ),
+                                      // subtitle: Text(
+                                      //   "${upcomingMeeting.location} • "
+                                      //   "${upcomingMeeting.startTime!.toLocal()}",
+                                      // ),
+                                      trailing: const Icon(
+                                          Icons.arrow_forward_ios,
+                                          size: 16),
+                                      onTap: () {},
+                                    )),
+                                const SizedBox(height: 20),
+                                // ,,,,,,,,,,,,,,,,,,,,,,,,
                                 _buildSearchBar(provider),
                                 const SizedBox(height: 20),
                                 Text(locale.customerInquiries,
