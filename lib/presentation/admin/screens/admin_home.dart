@@ -10,6 +10,7 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
 import 'package:kkpchatapp/presentation/admin/screens/poster_management_screen.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/admin_home_chart.dart';
@@ -293,17 +294,18 @@ class _AdminHomeState extends State<AdminHome> {
             height: Utils().height(context) * 0.06,
             fontSize: 18,
             borderRadius: 10,
-            text: "Poster Management"),
+            text: AppLocalizations.of(context)!.posterManagement),
         const SizedBox(height: 10),
-        // CustomButton(
-        //     onPressed: () {
-        //       Navigator.pushNamed(
-        //           context, MarketingRoutes.customerInquriesPage);
-        //     },
-        //     height: Utils().height(context) * 0.06,
-        //     fontSize: 18,
-        //     borderRadius: 10,
-        //     text: "Customer Inquries"),
+        CustomButton(
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return MeetingsListScreen();
+              }));
+            },
+            height: Utils().height(context) * 0.06,
+            fontSize: 18,
+            borderRadius: 10,
+            text: "Meetings Management"),
       ],
     );
   }
