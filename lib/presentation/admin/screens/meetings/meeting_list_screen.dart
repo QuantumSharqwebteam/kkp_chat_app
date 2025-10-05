@@ -8,8 +8,42 @@ import 'package:kkpchatapp/presentation/admin/widgets/meet_tile.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:provider/provider.dart';
 
-class MeetingsListScreen extends StatelessWidget {
-  const MeetingsListScreen({super.key});
+import '../../../../data/local_storage/local_db_helper.dart';
+
+class MeetingsListScreen extends StatefulWidget {
+  const MeetingsListScreen({
+    super.key,
+  });
+
+  @override
+  State<MeetingsListScreen> createState() => _MeetingsListScreenState();
+}
+
+class _MeetingsListScreenState extends State<MeetingsListScreen> {
+  bool showButtons = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    final role = await LocalDbHelper.getUserType();
+    late String rolename;
+    if (role == "1") {
+      rolename = "admin";
+    } else if (role == "2") {
+      rolename = "agent";
+    } else if (role == "3") {
+      rolename = "agent Head";
+    }
+    if (rolename == "admin" || rolename == "agent Head") {
+      setState(() {
+        showButtons = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,29 +68,34 @@ class MeetingsListScreen extends StatelessWidget {
                     itemCount: meetingManagement.meetings.length,
                     itemBuilder: (context, index) {
                       final meeting = meetingManagement.meetings[index];
-                      return MeetingTile(meeting: meeting);
+                      return MeetingTile(
+                        meeting: meeting,
+                        showButtons: showButtons,
+                      );
                     },
                   ),
                 ),
-      floatingActionButton: SizedBox(
-        height: Utils().height(context) * 0.09,
-        width: Utils().width(context) * 0.24,
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ScheduleMeetingScreen(),
+      floatingActionButton: showButtons
+          ? SizedBox(
+              height: Utils().height(context) * 0.09,
+              width: Utils().width(context) * 0.24,
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ScheduleMeetingScreen(),
+                    ),
+                  );
+                },
+                backgroundColor: AppColors.bluePrimary,
+                child: Text(
+                  "Schedule ",
+                  style: AppTextStyles.white8_600.copyWith(fontSize: 13),
+                ),
               ),
-            );
-          },
-          backgroundColor: AppColors.bluePrimary,
-          child: Text(
-            "Schedule ",
-            style: AppTextStyles.white8_600.copyWith(fontSize: 13),
-          ),
-        ),
-      ),
+            )
+          : null,
     );
   }
 }

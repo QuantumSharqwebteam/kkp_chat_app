@@ -14,8 +14,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 class MeetingTile extends StatelessWidget {
   final MeetingModel meeting;
+  final bool showButtons;
 
-  const MeetingTile({super.key, required this.meeting});
+  const MeetingTile(
+      {super.key, required this.meeting, required this.showButtons});
 
   Future<void> _launchUrl(String url) async {
     if (!await launchUrl(Uri.parse(url))) {
@@ -25,7 +27,8 @@ class MeetingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meetingManagement = Provider.of<MeetingManagement>(context, listen: false);
+    final meetingManagement =
+        Provider.of<MeetingManagement>(context, listen: false);
 
     return Card(
       color: Colors.white,
@@ -44,10 +47,12 @@ class MeetingTile extends StatelessWidget {
               children: [
                 Text(
                   meeting.title,
-                  style: AppTextStyles.black16_700.copyWith(color: AppColors.grey5C5C5C),
+                  style: AppTextStyles.black16_700
+                      .copyWith(color: AppColors.grey5C5C5C),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
                     color: meeting.status == "scheduled"
                         ? AppColors.activeGreen
@@ -72,7 +77,8 @@ class MeetingTile extends StatelessWidget {
             // Location and Platform
             Row(
               children: [
-                const Icon(Icons.location_searching_rounded, size: 16, color: Colors.grey),
+                const Icon(Icons.location_searching_rounded,
+                    size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
                 Text(
                   meeting.location,
@@ -144,54 +150,58 @@ class MeetingTile extends StatelessWidget {
             // ),
 
             // Actions (Update, Delete)
-            Row(
-              spacing: 8,
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    height: 40,
-                    text: "Update",
-                    backgroundColor: Colors.white,
-                    textColor: AppColors.activeGreen.withValues(alpha: 0.3),
-                    borderColor: AppColors.greyD9D9D9,
-                    onPressed: () {
-                      // Navigate to update screen or show update dialog
-                      _showUpdateDialog(context, meetingManagement, meeting);
-                    },
+            Visibility(
+              visible: showButtons,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Expanded(
+                    child: CustomButton(
+                      height: 40,
+                      text: "Update",
+                      backgroundColor: Colors.white,
+                      textColor: AppColors.activeGreen.withValues(alpha: 0.3),
+                      borderColor: AppColors.greyD9D9D9,
+                      onPressed: () {
+                        // Navigate to update screen or show update dialog
+                        _showUpdateDialog(context, meetingManagement, meeting);
+                      },
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: CustomButton(
-                    height: 40,
-                    text: "Delete",
-                    backgroundColor: Colors.white,
-                    borderColor: AppColors.redF11515,
-                    textColor: AppColors.redF11515,
-                    onPressed: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Delete Meeting"),
-                          content: const Text("Are you sure you want to delete this meeting?"),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text("Cancel"),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text("Delete"),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed == true) {
-                        await meetingManagement.deleteMeeting(meeting.id);
-                      }
-                    },
+                  Expanded(
+                    child: CustomButton(
+                      height: 40,
+                      text: "Delete",
+                      backgroundColor: Colors.white,
+                      borderColor: AppColors.redF11515,
+                      textColor: AppColors.redF11515,
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("Delete Meeting"),
+                            content: const Text(
+                                "Are you sure you want to delete this meeting?"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("Cancel"),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text("Delete"),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await meetingManagement.deleteMeeting(meeting.id);
+                        }
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -213,7 +223,8 @@ class MeetingTile extends StatelessWidget {
     final titleController = TextEditingController(text: meeting.title);
     final locationController = TextEditingController(text: meeting.location);
     final linkController = TextEditingController(text: meeting.link);
-    final startTimeController = TextEditingController(text: _formatDateTime(meeting.startTime));
+    final startTimeController =
+        TextEditingController(text: _formatDateTime(meeting.startTime));
 
     Future<void> selectDateTime(BuildContext context) async {
       final DateTime? pickedDate = await showDatePicker(
@@ -226,7 +237,8 @@ class MeetingTile extends StatelessWidget {
       if (pickedDate != null) {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay.fromDateTime(DateTime.parse(meeting.startTime)),
+          initialTime:
+              TimeOfDay.fromDateTime(DateTime.parse(meeting.startTime)),
         );
 
         if (pickedTime != null) {
