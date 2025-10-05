@@ -36,8 +36,7 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost>
-    with WidgetsBindingObserver {
+class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
@@ -83,8 +82,7 @@ class _MarketingHostState extends State<MarketingHost>
     final token = await LocalDbHelper.getToken();
     await _loadUserData().whenComplete(() {
       if (agentName != null && agentEmail != null && rolename != null) {
-        _socketService.initSocket(agentName!, agentEmail!, rolename!,
-            token: token);
+        _socketService.initSocket(agentName!, agentEmail!, rolename!, token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
         _socketService.onDisconnect(_handleDisconnect);
@@ -183,7 +181,10 @@ class _MarketingHostState extends State<MarketingHost>
     setState(() {
       _screens = [
         if (role == "1")
-          AdminHome()
+          AdminHome(
+            agentEmail: agentEmail ?? "admin@gmail.com",
+            agentName: agentName ?? "admin",
+          )
         else
           MultiProvider(
             providers: [

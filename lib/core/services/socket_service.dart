@@ -40,8 +40,13 @@ class SocketService {
   Function(Map<String, dynamic>)? _onProductUpdate;
   Function(String)? _onProductDelete;
 
+  // Group chat callbacks
+  Function(Map<String, dynamic>)? _onGroupMessageReceived;
+
   bool isChatPageOpen = false;
   String? activeCustomerId;
+
+  bool isGroupChatPageOpen = false;
 
   Function? onMessageReceivedCallback;
 
@@ -94,16 +99,16 @@ class SocketService {
       _updateRoomMembers(List<String>.from(roomMembers));
     });
 
-    // _socket.on('receiveMessage', (data) {
-    //   debugPrint(data.toString());
-    //   if (isChatPageOpen && _onMessageReceived != null) {
-    //     _onMessageReceived!(data);
-    //   } else if (!isChatPageOpen && _onMessageReceived != null) {
-    //     _chatNotification(data);
-    //   } else {
-    //     return;
-    //   }
-    // });
+    // Group chat listener
+    _socket.on('receiveGroupMessage', (data) {
+      debugPrint('📥 Received group message: $data');
+      if (isGroupChatPageOpen) {
+        _onGroupMessageReceived?.call(data);
+      } else {
+        _chatNotification(data);
+      }
+    });
+
     _socket.on('receiveMessage', (data) {
       debugPrint("recived message socket : ${data.toString()}");
       final String senderId = data['senderId'] ?? '';
@@ -237,6 +242,53 @@ class SocketService {
   void onMessagesReadUpTo(Function(Map<String, dynamic>) callback) {
     debugPrint("🔧 Messages read up to callback set");
     _onMessagesReadUpTo = callback;
+  }
+
+  void toggleGroupChatPageOpen(bool toggle) {
+    debugPrint("🔄 [SocketService] Toggling group chat page: ${toggle ? "OPEN" : "CLOSED"}");
+    isGroupChatPageOpen = toggle;
+  }
+
+  void setGroupChatPageState(bool isOpen) {
+    debugPrint("🔄 [SocketService] Setting group chat page state: ${isOpen ? "OPEN" : "CLOSED"}");
+    isGroupChatPageOpen = isOpen;
+  }
+
+  void onGroupMessageReceived(Function(Map<String, dynamic>) callback) {
+    debugPrint("🔧 [SocketService] Group message callback registered");
+    _onGroupMessageReceived = callback;
+  }
+
+  void sendGroupMessage({
+    required String message,
+    required String senderId,
+    required String senderName,
+    String type = 'text',
+    String? mediaUrl,
+    String? fileName,
+    List<String>? mentions,
+    String? replyTo,
+    String? timestamp,
+    String? messageId,
+  }) {
+    if (!_isConnected) {
+      debugPrint('Socket is not connected. Cannot send group message.');
+      return;
+    }
+    final payload = {
+      'message': message,
+      'senderId': senderId,
+      'senderName': senderName,
+      'type': type,
+      'mediaUrl': mediaUrl,
+      'fileName': fileName,
+      'mentions': mentions,
+      'replyTo': replyTo,
+      'timestamp': timestamp,
+      'messageId': messageId,
+    };
+    _socket.emit('sendGroupMessage', payload);
+    debugPrint('📤 Sent group message: $payload');
   }
 
   void sendChatOpened({

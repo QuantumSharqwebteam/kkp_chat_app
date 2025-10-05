@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
+import 'package:kkpchatapp/data/models/group_message_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 
@@ -18,6 +19,9 @@ class LocalDbHelper {
   static const String _lastMessageMapKey = 'lastMessageMap';
   static const String unreadCountsBoxKey = 'unreadCountsBox';
   static const String _receiverOnChatPageKey = 'receiverOnChatPage';
+
+  // Group chat box key
+  static const String _groupChatBoxKey = 'groupChatBox';
 
   // launguage selected
   static const String _localeKey = 'locale';
@@ -362,5 +366,53 @@ class LocalDbHelper {
 
   static Future<void> clearLocale() async {
     await _box.delete(_localeKey);
+  }
+
+// Open or create the group chat box
+  static Future<Box<dynamic>> _openGroupChatBox() async {
+    debugPrint("📦 [LocalDbHelper] Opening group chat box...");
+    return await Hive.openBox<dynamic>(_groupChatBoxKey);
+  }
+
+// Save a group message
+  static Future<void> saveGroupMessage(GroupMessageModel message) async {
+    debugPrint("💾 [LocalDbHelper] Saving group message: ${message.messageId}");
+    final box = await _openGroupChatBox();
+    await box.put(message.messageId, message.toMap());
+    debugPrint("✅ [LocalDbHelper] Group message saved successfully!");
+  }
+
+// Get all group messages
+  static Future<List<GroupMessageModel>> getGroupMessages() async {
+    debugPrint("📥 [LocalDbHelper] Fetching all group messages...");
+    final box = await _openGroupChatBox();
+    final groupMessages =
+        box.values.map((map) => GroupMessageModel.fromMap(Map<String, dynamic>.from(map))).toList();
+    debugPrint("📋 [LocalDbHelper] Found ${groupMessages.length} group messages");
+    return groupMessages;
+  }
+
+// Delete a group message
+  static Future<void> deleteGroupMessage(String messageId) async {
+    debugPrint("🗑️ [LocalDbHelper] Deleting group message: $messageId");
+    final box = await _openGroupChatBox();
+    await box.delete(messageId);
+    debugPrint("✅ [LocalDbHelper] Group message deleted successfully!");
+  }
+
+// Update a group message (e.g., mark as deleted)
+  static Future<void> updateGroupMessage(GroupMessageModel message) async {
+    debugPrint("🔄 [LocalDbHelper] Updating group message: ${message.messageId}");
+    final box = await _openGroupChatBox();
+    await box.put(message.messageId, message.toMap());
+    debugPrint("✅ [LocalDbHelper] Group message updated successfully!");
+  }
+
+// Clear all group messages
+  static Future<void> clearGroupMessages() async {
+    debugPrint("🧹 [LocalDbHelper] Clearing all group messages...");
+    final box = await _openGroupChatBox();
+    await box.clear();
+    debugPrint("✅ [LocalDbHelper] All group messages cleared successfully!");
   }
 }

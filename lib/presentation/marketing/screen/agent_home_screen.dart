@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/meet_model.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
@@ -10,10 +11,12 @@ import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
+import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/custom_drawer.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +32,7 @@ class AgentHomeScreen extends StatefulWidget {
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
   final _searchController = TextEditingController();
   StreamSubscription<List<String>>? _statusSubscription;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   @override
@@ -46,6 +50,24 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     });
   }
 
+  void logout() async {
+    await LocalDbHelper.removeToken();
+    await LocalDbHelper.removeName();
+    await LocalDbHelper.removeEmail();
+    await LocalDbHelper.removeUserType();
+    await LocalDbHelper.removeProfile();
+
+    SocketService(navigatorKey).dispose();
+
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   void dispose() {
     _statusSubscription?.cancel();
@@ -57,8 +79,14 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final locale = AppLocalizations.of(context)!;
     final provider = Provider.of<AssignedCustomersProvider>(context);
     final meetingManagement = Provider.of<MeetingManagement>(context);
-    final nextMeeting = meetingManagement.getNextUpcomingMeeting();
+    // final nextMeeting = meetingManagement.getNextUpcomingMeeting();
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: CustomDrawer(
+        agentName: provider.agentName,
+        agentEmail: provider.agentEmail,
+        onLogout: logout,
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -111,9 +139,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final locale = AppLocalizations.of(context)!;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-      leading: Initicon(
-        text: name ?? "",
-        size: 35,
+      leading: IconButton(
+        onPressed: () {
+//open drawer
+          _scaffoldKey.currentState?.openDrawer();
+        },
+        icon: Icon(Icons.menu),
       ),
       title: Text(name ?? "", style: AppTextStyles.black16_500),
       subtitle: Text(locale.findLatestMessages, style: AppTextStyles.black10_500),
