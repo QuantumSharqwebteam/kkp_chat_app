@@ -46,7 +46,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   bool _isLoadingMore = false;
   final _chatController = TextEditingController();
   final SocketService _socketService = SocketService(navigatorKey);
-  final ChatService _chatService = ChatService(); // Add ChatService
+  final ChatService _chatService = ChatService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
@@ -57,8 +57,14 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   bool _isAtBottom = true;
   final ValueNotifier<String?> currentTopDate = ValueNotifier(null);
   final Map<Key, GlobalKey> _messageKeys = {};
-  String? _nextCursor; // Track the cursor for pagination
-  final Set<String> _loadedMessageIds = {}; // Track loaded message IDs to avoid duplicates
+  String? _nextCursor;
+  final Set<String> _loadedMessageIds = {};
+  final Set<String> fetchedCursors = {};
+  // bool _isEditing = false;
+  // String _editingMessageId = '';
+  final _editController = TextEditingController();
+  int _currentPage = 1;
+  final Set<int> _fetchedPages = {};
 
   @override
   void initState() {
@@ -66,8 +72,10 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     WidgetsBinding.instance.addObserver(this);
     _socketService.setGroupChatPageState(true);
     _socketService.onGroupMessageReceived(_handleIncomingGroupMessage);
+    _socketService.onGroupMessageDeleted(_handleGroupMessageDeleted);
+    _socketService.onGroupMessageEdited(_handleGroupMessageEdited);
     _initializeRecorder();
-    _loadInitialGroupMessages(); // Load from API first
+    _loadInitialGroupMessages();
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
@@ -94,123 +102,116 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     }
   }
 
-  /// Load initial 20 messages from API
+  // --- Load Initial Messages ---
   Future<void> _loadInitialGroupMessages() async {
     setState(() => _isLoading = true);
     try {
-      // First try to fetch from API
+      // 1. Fetch from API
       final result = await _chatService.fetchGroupMessages(limit: 20);
       final List<GroupMessageModel> fetchedMessages = result['messages'];
       _nextCursor = result['nextCursor'];
 
-      if (fetchedMessages.isNotEmpty) {
-        // Remove duplicates and add to messages
-        final uniqueMessages = _removeDuplicates(fetchedMessages);
+      // 2. Load from local storage
+      final localMessages = await LocalDbHelper.getGroupMessages();
 
-        setState(() {
-          messages = uniqueMessages;
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        });
+      // 3. Merge API and local messages
+      final mergedMessages = _mergeMessages(localMessages, fetchedMessages);
 
-        // Save to local storage
-        for (var msg in uniqueMessages) {
-          await LocalDbHelper.saveGroupMessage(msg);
-        }
-        _scrollToBottom();
-      } else {
-        // If API returns no messages, load from local storage
-        await _loadLocalGroupMessages();
-        _scrollToBottom();
+      setState(() {
+        messages = mergedMessages;
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false;
+      });
+
+      // 4. Save merged messages to local storage
+      for (var msg in messages) {
+        await LocalDbHelper.saveGroupMessage(msg);
       }
+      _scrollToBottom();
     } catch (e) {
-      debugPrint("Error fetching initial group messages: $e");
-      // Fallback to local storage if API fails
-      await _loadLocalGroupMessages();
+      debugPrint("Error loading messages: $e");
+      // Fallback: Load from local storage if API fails
+      final localMessages = await LocalDbHelper.getGroupMessages();
+      if (localMessages.isNotEmpty) {
+        setState(() {
+          messages = _removeDuplicates(localMessages);
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _isLoading = false;
+        });
+      }
     } finally {
-      setState(() => _isLoading = false);
       _scrollToBottom();
     }
   }
 
-  /// Load messages from local storage (fallback)
-  Future<void> _loadLocalGroupMessages() async {
-    try {
-      final localMessages = await LocalDbHelper.getGroupMessages();
-      if (localMessages.isNotEmpty) {
-        // Remove duplicates and add to messages
-        final uniqueMessages = _removeDuplicates(localMessages);
-
-        setState(() {
-          messages = uniqueMessages;
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-          if (messages.isNotEmpty) {
-            _nextCursor = messages.last.timestamp.toIso8601String();
-          }
-        });
-      }
-    } catch (e) {
-      debugPrint("Error loading local group messages: $e");
-    }
-  }
-
-  /// Remove duplicate messages based on messageId
-  List<GroupMessageModel> _removeDuplicates(List<GroupMessageModel> newMessages) {
-    return newMessages.where((message) {
-      // Check if we've already loaded this message
-      if (_loadedMessageIds.contains(message.messageId)) {
-        return false; // Skip duplicates
+  // --- Merge Local and API Messages ---
+  List<GroupMessageModel> _mergeMessages(
+      List<GroupMessageModel> localMessages, List<GroupMessageModel> apiMessages) {
+    final merged = [...localMessages];
+    for (var apiMsg in apiMessages) {
+      final index = merged.indexWhere((msg) => msg.messageId == apiMsg.messageId);
+      if (index != -1) {
+        // Replace local message with API message if API message is newer
+        if (apiMsg.timestamp.isAfter(merged[index].timestamp)) {
+          merged[index] = apiMsg;
+        }
       } else {
-        _loadedMessageIds.add(message.messageId);
-        return true; // Keep unique messages
+        // Add new message from API
+        merged.add(apiMsg);
       }
-    }).toList();
+    }
+    return _removeDuplicates(merged);
   }
 
-  /// Load more older messages
+  // --- Load More Messages ---
   Future<void> _loadMoreGroupMessages() async {
-    if (_isLoadingMore || _nextCursor == null) return;
-
+    if (_isLoadingMore || _nextCursor == null || _fetchedPages.contains(_currentPage)) return;
+    _fetchedPages.add(_currentPage);
     setState(() => _isLoadingMore = true);
+
     try {
-      // Fetch older messages using the nextCursor
       final result = await _chatService.fetchGroupMessages(
         limit: 20,
         before: _nextCursor,
       );
-
       final List<GroupMessageModel> olderMessages = result['messages'];
       _nextCursor = result['nextCursor'];
 
       if (olderMessages.isNotEmpty) {
-        // Remove duplicates and add to messages
         final uniqueMessages = _removeDuplicates(olderMessages);
-
         setState(() {
           messages.insertAll(0, uniqueMessages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         });
-
-        // Save to local storage
         for (var msg in uniqueMessages) {
           await LocalDbHelper.saveGroupMessage(msg);
         }
       }
     } catch (e) {
-      debugPrint("Error loading more group messages: $e");
+      debugPrint("Error loading more messages: $e");
     } finally {
       setState(() => _isLoadingMore = false);
     }
   }
 
-  /// Handle incoming real-time messages
+  // --- Remove Duplicates ---
+  List<GroupMessageModel> _removeDuplicates(List<GroupMessageModel> messagesList) {
+    return messagesList.where((message) {
+      if (_loadedMessageIds.contains(message.messageId)) {
+        return false;
+      } else {
+        _loadedMessageIds.add(message.messageId);
+        return true;
+      }
+    }).toList();
+  }
+
+  // --- Handle Incoming Messages ---
   void _handleIncomingGroupMessage(Map<String, dynamic> data) {
     debugPrint("Group message received: ${data.toString()}");
     final message = GroupMessageModel.fromApiJson(data);
-
-    // Check if this is a new message (not already loaded)
     if (!_loadedMessageIds.contains(message.messageId)) {
       _loadedMessageIds.add(message.messageId);
-
       setState(() {
         messages.add(message);
       });
@@ -219,7 +220,138 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     }
   }
 
-  /// Initialize the audio recorder
+// --- Handle Message Deletion ---
+  void _handleGroupMessageDeleted(Map<String, dynamic> data) {
+    debugPrint("🗑️ Group message deleted: ${data.toString()}");
+    final messageId = data['messageId'];
+    setState(() {
+      final index = messages.indexWhere((msg) => msg.messageId == messageId);
+      if (index != -1) {
+        messages[index] = messages[index].copyWith(
+          isDeleted: true,
+          message: "This message was deleted",
+        );
+        // Save the updated message to local storage
+        LocalDbHelper.updateGroupMessage(messages[index]);
+      }
+    });
+  }
+
+  // --- Delete Message ---
+  void _deleteMessage(String messageId) {
+    _socketService.deleteGroupMessage(messageId, widget.agentEmail);
+    // Update the local message state to reflect deletion
+    setState(() {
+      final index = messages.indexWhere((msg) => msg.messageId == messageId);
+      if (index != -1) {
+        messages[index] = messages[index].copyWith(
+          isDeleted: true,
+          message: "This message was deleted",
+        );
+        // Save the updated message to local storage
+        LocalDbHelper.updateGroupMessage(messages[index]);
+      }
+    });
+    // Notify other users about the deletion
+    _socketService.updateLastMessage(widget.agentEmail, "message deleted");
+  }
+
+// --- Handle Message Edit ---
+  void _handleGroupMessageEdited(Map<String, dynamic> data) {
+    debugPrint("✏️ Group message edited: ${data.toString()}");
+    final messageId = data['messageId'];
+    final newMessage = data['newMessage'];
+    setState(() {
+      final index = messages.indexWhere((msg) => msg.messageId == messageId);
+      if (index != -1) {
+        messages[index] = messages[index].copyWith(
+          message: newMessage,
+          isEdited: true,
+        );
+        // Save the updated message to local storage
+        LocalDbHelper.updateGroupMessage(messages[index]);
+      }
+    });
+  }
+
+  // // --- Edit Message ---
+  // void _startEditingMessage(String messageId, String currentMessage) {
+  //   setState(() {
+  //     _isEditing = true;
+  //     _editingMessageId = messageId;
+  //     _editController.text = currentMessage;
+  //   });
+  // }
+
+  // void _cancelEditing() {
+  //   setState(() {
+  //     _isEditing = false;
+  //     _editingMessageId = '';
+  //     _editController.clear();
+  //   });
+  // }
+
+  // --- Show Edit Dialog ---
+  void _showEditMessageDialog(String messageId, String currentMessage) {
+    _editController.text = currentMessage;
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Edit Message"),
+          content: TextField(
+            controller: _editController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: "Edit your message",
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _editController.clear();
+              },
+            ),
+            TextButton(
+              child: const Text("Save"),
+              onPressed: () {
+                _saveEditedMessage(messageId);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// --- Save Edited Message ---
+  void _saveEditedMessage(String messageId) {
+    if (_editController.text.trim().isEmpty) return;
+    final newMessage = _editController.text.trim();
+    _socketService.editGroupMessage(
+      messageId,
+      widget.agentEmail,
+      newMessage,
+    );
+    // Update the local message state to reflect the edit
+    setState(() {
+      final index = messages.indexWhere((msg) => msg.messageId == messageId);
+      if (index != -1) {
+        messages[index] = messages[index].copyWith(
+          message: newMessage,
+          isEdited: true,
+        );
+        // Save the updated message to local storage
+        LocalDbHelper.updateGroupMessage(messages[index]);
+      }
+    });
+    _editController.clear();
+  }
+
+  // --- Audio Recording ---
   Future<void> _initializeRecorder() async {
     try {
       await _recorder.openRecorder();
@@ -229,7 +361,6 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     }
   }
 
-  /// Start recording voice message
   Future<void> _startRecording() async {
     try {
       await _recorder.startRecorder(toFile: 'voice_message.aac');
@@ -245,7 +376,6 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     }
   }
 
-  /// Stop recording and send voice message
   Future<void> _stopRecording() async {
     _timer?.cancel();
     try {
@@ -267,14 +397,13 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     }
   }
 
-  /// Send a group message
+  // --- Send Message ---
   void _sendGroupMessage({
     required String messageText,
     String type = 'text',
     String? mediaUrl,
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null) return;
-
     final currentTime = DateTime.now();
     final messageId = const Uuid().v4();
     final message = GroupMessageModel(
@@ -286,11 +415,9 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       mediaUrl: mediaUrl,
       messageId: messageId,
     );
-
     setState(() {
       messages.add(message);
     });
-
     _socketService.sendGroupMessage(
       message: messageText,
       senderId: widget.agentEmail,
@@ -300,13 +427,12 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       timestamp: currentTime.toIso8601String(),
       messageId: messageId,
     );
-
     LocalDbHelper.saveGroupMessage(message);
     _chatController.clear();
     _scrollToBottom();
   }
 
-  /// Pick and send an image
+  // --- Pick and Send Media ---
   Future<void> _pickAndSendImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile = await picker.pickImage(source: source);
@@ -319,7 +445,6 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     }
   }
 
-  /// Pick and send a document
   Future<void> _pickAndSendDocument() async {
     final FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -335,7 +460,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     }
   }
 
-  /// Scroll to bottom of the chat
+  // --- Scroll Logic ---
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -348,16 +473,15 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     });
   }
 
-  /// Handle scroll events for pagination
   void _handleScroll() {
     if (_scrollController.position.atEdge &&
         _scrollController.position.pixels == 0 &&
         !_isLoadingMore) {
+      _currentPage++;
       _loadMoreGroupMessages();
     }
   }
 
-  /// Check if user is at the bottom of the chat
   void _checkIfAtBottom() {
     if (_scrollController.position.atEdge) {
       bool isBottom =
@@ -394,17 +518,50 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
           Column(
             children: [
               if (_isLoadingMore)
-                Center(
+                const Center(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 15.0),
+                    padding: EdgeInsets.only(top: 15.0),
                     child: CircularProgressIndicator(),
                   ),
                 ),
+              // if (_isEditing)
+              //   Container(
+              //     color: Colors.grey[100],
+              //     padding: const EdgeInsets.all(8.0),
+              //     child: Row(
+              //       children: [
+              //         Expanded(
+              //           child: TextField(
+              //             controller: _editController,
+              //             autofocus: true,
+              //             decoration: InputDecoration(
+              //               hintText: 'Edit your message',
+              //               border: OutlineInputBorder(
+              //                 borderRadius: BorderRadius.circular(20),
+              //               ),
+              //               contentPadding: const EdgeInsets.symmetric(
+              //                 horizontal: 16,
+              //                 vertical: 12,
+              //               ),
+              //             ),
+              //           ),
+              //         ),
+              //         IconButton(
+              //           icon: const Icon(Icons.close, color: Colors.red),
+              //           onPressed: _cancelEditing,
+              //         ),
+              //         IconButton(
+              //           icon: const Icon(Icons.check, color: Colors.green),
+              //           onPressed: () => _saveEditedMessage,
+              //         ),
+              //       ],
+              //     ),
+              //   ),
               Expanded(
                 child: _isLoading
-                    ? ShimmerMessageList()
+                    ? const ShimmerMessageList()
                     : messages.isEmpty
-                        ? NoChatConversation()
+                        ? const NoChatConversation()
                         : ListView.builder(
                             controller: _scrollController,
                             padding: const EdgeInsets.all(10),
@@ -431,9 +588,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                                       ImageMessageBubble(
                                         imageUrl: msg.mediaUrl!,
                                         isMe: isAgent,
-                                        timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String(),
-                                        ),
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                         onLongPress: isAgent
                                             ? () => _showMessageOptionsBottomSheet(
@@ -444,9 +600,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                                       DocumentMessageBubble(
                                         documentUrl: msg.mediaUrl!,
                                         isMe: isAgent,
-                                        timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String(),
-                                        ),
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                         onLongPress: isAgent
                                             ? () => _showMessageOptionsBottomSheet(
@@ -457,9 +612,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                                       VoiceMessageBubble(
                                         voiceUrl: msg.mediaUrl!,
                                         isMe: isAgent,
-                                        timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String(),
-                                        ),
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                         onLongPress: isAgent
                                             ? () => _showMessageOptionsBottomSheet(
@@ -515,8 +669,9 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     );
   }
 
+  // --- Show Message Options Bottom Sheet ---
   void _showMessageOptionsBottomSheet(BuildContext context, String messageId,
-      {String? textToCopy}) {
+      {String? textToCopy, String? currentMessage}) {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
@@ -533,14 +688,22 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                     Navigator.pop(context);
                   },
                 ),
-              // ListTile( // Commented out delete option
-              //   leading: const Icon(Icons.delete),
-              //   title: const Text('Delete Message'),
-              //   onTap: () {
-              //     Navigator.pop(context);
-              //     _socketService.deleteGroupMessage(messageId);
-              //   },
-              // ),
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Message'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showEditMessageDialog(messageId, currentMessage ?? "");
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text('Delete Message'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(messageId);
+                },
+              ),
             ],
           ),
         );

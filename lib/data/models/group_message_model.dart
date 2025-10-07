@@ -11,6 +11,7 @@ class GroupMessageModel {
   final String messageId;
   final bool isDeleted;
   final bool read;
+  final bool isEdited; // New field to track edited messages
 
   GroupMessageModel({
     required this.message,
@@ -25,6 +26,7 @@ class GroupMessageModel {
     required this.messageId,
     this.isDeleted = false,
     this.read = false,
+    this.isEdited = false, // Default to false
   });
 
   // Convert to Map for local storage
@@ -42,6 +44,7 @@ class GroupMessageModel {
       'messageId': messageId,
       'isDeleted': isDeleted,
       'read': read,
+      'isEdited': isEdited, // Include in the map
     };
   }
 
@@ -49,7 +52,7 @@ class GroupMessageModel {
   factory GroupMessageModel.fromMap(Map<String, dynamic> map) {
     return GroupMessageModel(
       message: map['message'] ?? '',
-      timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
+      timestamp: DateTime.tryParse(map['timestamp'] ?? '') ?? DateTime.now(),
       senderId: map['senderId'] ?? '',
       senderName: map['senderName'] ?? '',
       type: map['type'] ?? 'text',
@@ -57,9 +60,10 @@ class GroupMessageModel {
       fileName: map['fileName'],
       mentions: map['mentions'] != null ? List<String>.from(map['mentions']) : null,
       replyTo: map['replyTo'],
-      messageId: map['messageId'], // Use _id as fallback
+      messageId: map['messageId'] ?? map['_id'] ?? '', // Use _id as fallback
       isDeleted: map['isDeleted'] ?? false,
       read: map['read'] ?? false,
+      isEdited: map['isEdited'] ?? false, // Add isEdited from map
     );
   }
 
@@ -67,7 +71,9 @@ class GroupMessageModel {
   factory GroupMessageModel.fromApiJson(Map<String, dynamic> json) {
     return GroupMessageModel(
       message: json['message'] ?? '',
-      timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toIso8601String()),
+      timestamp: json['timestamp'] != null
+          ? DateTime.tryParse(json['timestamp']) ?? DateTime.now()
+          : DateTime.now(),
       senderId: json['senderId'] ?? '',
       senderName: json['senderName'] ?? '',
       type: json['type'] ?? 'text',
@@ -75,9 +81,43 @@ class GroupMessageModel {
       fileName: json['fileName'],
       mentions: json['mentions'] != null ? List<String>.from(json['mentions']) : null,
       replyTo: json['replyTo'],
-      messageId: json['messageId'], // Use _id as fallback
+      messageId: json['messageId'] ?? json['_id'] ?? '', // Use _id as fallback
       isDeleted: json['isDeleted'] ?? false,
       read: json['read'] ?? false,
+      isEdited: json['isEdited'] ?? false, // Add isEdited from API
+    );
+  }
+
+  // Copy with method for immutable updates
+  GroupMessageModel copyWith({
+    String? message,
+    DateTime? timestamp,
+    String? senderId,
+    String? senderName,
+    String? type,
+    String? mediaUrl,
+    String? fileName,
+    List<String>? mentions,
+    String? replyTo,
+    String? messageId,
+    bool? isDeleted,
+    bool? read,
+    bool? isEdited,
+  }) {
+    return GroupMessageModel(
+      message: message ?? this.message,
+      timestamp: timestamp ?? this.timestamp,
+      senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
+      type: type ?? this.type,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      fileName: fileName ?? this.fileName,
+      mentions: mentions ?? this.mentions,
+      replyTo: replyTo ?? this.replyTo,
+      messageId: messageId ?? this.messageId,
+      isDeleted: isDeleted ?? this.isDeleted,
+      read: read ?? this.read,
+      isEdited: isEdited ?? this.isEdited,
     );
   }
 }

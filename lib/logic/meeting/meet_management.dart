@@ -27,12 +27,12 @@ class MeetingManagement with ChangeNotifier {
 
     try {
       _meetings = await _meetingService.getAllMeetings();
-      debugPrint("Total meetings fetched: ${_meetings.length}"); // Debug print
+      // debugPrint("Total meetings fetched: ${_meetings.length}"); // Debug print
 
       // Print details of all meetings
-      for (var meeting in _meetings) {
-        debugPrint("Meeting: ${meeting.title}, Time: ${meeting.startTime}");
-      }
+      // for (var meeting in _meetings) {
+      //   debugPrint("Meeting: ${meeting.title}, Time: ${meeting.startTime}");
+      // }
     } catch (e) {
       _error = "Failed to fetch meetings: $e";
       debugPrint("Error fetching meetings: $e"); // Debug print for errors
@@ -54,7 +54,7 @@ class MeetingManagement with ChangeNotifier {
             meetingDate.day == now.day &&
             meetingDate.isAfter(now);
 
-        debugPrint("Checking meeting: ${meeting.title} - Today and future: $isTodayAndFuture");
+        // debugPrint("Checking meeting: ${meeting.title} - Today and future: $isTodayAndFuture");
         return isTodayAndFuture;
       } catch (e) {
         debugPrint("Error parsing meeting time for ${meeting.title}: $e");
@@ -63,12 +63,12 @@ class MeetingManagement with ChangeNotifier {
     }).toList()
       ..sort((a, b) => DateTime.parse(a.startTime).compareTo(DateTime.parse(b.startTime)));
 
-    debugPrint("Found ${todaysMeetings.length} upcoming meetings for today");
+    // debugPrint("Found ${todaysMeetings.length} upcoming meetings for today");
 
     // Print details of today's upcoming meetings
-    for (var meeting in todaysMeetings) {
-      debugPrint("Upcoming meeting: ${meeting.title}, Time: ${meeting.startTime}");
-    }
+    // for (var meeting in todaysMeetings) {
+    //   debugPrint("Upcoming meeting: ${meeting.title}, Time: ${meeting.startTime}");
+    // }
 
     return todaysMeetings;
   }
@@ -79,9 +79,9 @@ class MeetingManagement with ChangeNotifier {
     final nextMeeting = todaysMeetings.isNotEmpty ? todaysMeetings.first : null;
 
     if (nextMeeting != null) {
-      debugPrint("Next upcoming meeting: ${nextMeeting.title} at ${nextMeeting.startTime}");
+      //  debugPrint("Next upcoming meeting: ${nextMeeting.title} at ${nextMeeting.startTime}");
     } else {
-      debugPrint("No upcoming meetings found for today");
+      //debugPrint("No upcoming meetings found for today");
     }
 
     return nextMeeting;

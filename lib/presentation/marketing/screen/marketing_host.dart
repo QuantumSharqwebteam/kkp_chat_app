@@ -15,6 +15,7 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
+import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 
@@ -84,6 +85,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
       if (agentName != null && agentEmail != null && rolename != null) {
         _socketService.initSocket(agentName!, agentEmail!, rolename!, token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
+        _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
         _socketService.onDisconnect(_handleDisconnect);
         _socketService.onConnect(_handleConnect);
@@ -286,6 +288,15 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
       customername: data["senderName"],
       targetId: data['targetId'],
     );
+  }
+
+  void _handleIcomingGroupMessage(Map<String, dynamic> data) {
+    Navigator.push(widget.navigatorKey.currentContext!, MaterialPageRoute(builder: (context) {
+      return InternalChatScreen(
+          agentName: data["senderName"],
+          agentEmail: data["senderId"],
+          navigatorKey: widget.navigatorKey);
+    }));
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {

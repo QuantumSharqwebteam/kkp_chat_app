@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart' show AppTextStyles;
@@ -19,7 +20,7 @@ class GroupMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRead = message.read;
+    // final isRead = message.read;
 
     return message.isDeleted
         ? DeletedMessageBubble(
@@ -32,17 +33,25 @@ class GroupMessageBubble extends StatelessWidget {
               mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                if (!isMe)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Initicon(
+                      text: message.senderName,
+                      size: 25,
+                    ),
+                  ),
                 Stack(
                   children: [
                     Container(
                       margin: const EdgeInsets.only(
-                        top: 20,
+                        top: 10,
                         bottom: 15,
                         left: 10,
                         right: 10,
                       ),
                       padding: const EdgeInsets.only(
-                        left: 20,
+                        left: 10,
                         right: 10,
                         top: 10,
                         bottom: 10,
@@ -61,14 +70,38 @@ class GroupMessageBubble extends StatelessWidget {
                           bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
                         ),
                       ),
-                      child: Text(
-                        message.message,
-                        style: TextStyle(
-                          color: isMe ? Colors.white : Colors.black.withAlpha(153),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.start,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!isMe)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 5.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "~${message.senderName}",
+                                    style: AppTextStyles.greyAAAAAA_10_400
+                                        .copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    message.senderId,
+                                    style: AppTextStyles.greyAAAAAA_10_400.copyWith(fontSize: 8),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          Text(
+                            message.message,
+                            style: TextStyle(
+                              color: isMe ? Colors.white : Colors.black.withAlpha(153),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.start,
+                          ),
+                        ],
                       ),
                     ),
                     Positioned(
@@ -82,12 +115,12 @@ class GroupMessageBubble extends StatelessWidget {
                             DateFormat('hh:mm a').format(message.timestamp),
                             style: AppTextStyles.greyAAAAAA_10_400.copyWith(fontSize: 8.5),
                           ),
-                          if (isMe)
-                            Icon(
-                              Icons.check,
-                              color: isRead ? Colors.blue : Colors.grey,
-                              size: 16,
-                            ),
+                          // if (isMe)
+                          //   Icon(
+                          //     Icons.check,
+                          //     color: isRead ? Colors.blue : Colors.grey,
+                          //     size: 16,
+                          //   ),
                         ],
                       ),
                     ),
