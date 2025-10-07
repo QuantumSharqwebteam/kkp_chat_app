@@ -293,8 +293,8 @@ class _AdminHomeState extends State<AdminHome> {
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) {
                 return InternalChatScreen(
-                  agentEmail: "",
-                  agentName: "",
+                  agentEmail: widget.agentEmail,
+                  agentName: widget.agentName,
                   navigatorKey: navigatorKey,
                 );
               }));
