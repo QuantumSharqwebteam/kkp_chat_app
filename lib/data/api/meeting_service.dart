@@ -9,7 +9,8 @@ class MeetingService {
   final String? baseUrl = dotenv.env['BASE_URL'];
   final http.Client client;
 
-  MeetingService({http.Client? httpClient}) : client = httpClient ?? http.Client();
+  MeetingService({http.Client? httpClient})
+      : client = httpClient ?? http.Client();
 
   /// Fetches all meetings from the backend
   Future<List<MeetingModel>> getAllMeetings() async {
@@ -93,6 +94,7 @@ class MeetingService {
     String? location,
     String? link,
     String? startTime,
+    String? status,
   }) async {
     final url = Uri.parse('$baseUrl/meet/update/$id');
     final token = await LocalDbHelper.getToken();
@@ -112,6 +114,7 @@ class MeetingService {
     if (location != null) body['location'] = location;
     if (link != null) body['link'] = link;
     if (startTime != null) body['startTime'] = startTime;
+    if (status != null) body['status'] = status;
 
     try {
       final response = await client.put(

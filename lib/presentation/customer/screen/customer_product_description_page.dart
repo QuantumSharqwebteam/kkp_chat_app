@@ -80,7 +80,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
 
                   const SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -135,7 +135,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: Text(
                             product.description ??
                                 AppLocalizations.of(context)!.notAvailable,
@@ -151,7 +151,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                                 ? AppLocalizations.of(context)!.availableColors
                                 : AppLocalizations.of(context)!.outOfStock,
                             onPressed: () {},
-                            width: Utils().width(context) * 0.8,
+                            width: Utils().width(context) * 1.5,
                             height: 35,
                             borderRadius: 5,
                             backgroundColor: Colors.white,

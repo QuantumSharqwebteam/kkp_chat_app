@@ -40,75 +40,78 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: AppColors.background,
-      ),
-      body: Center(
-        child: SizedBox(
-          width: Utils().width(context) * 0.9,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(AppLocalizations.of(context)!.accountAndSecurity,
-                  style: AppTextStyles.black20_500),
-              SizedBox(height: 16),
-              Text(AppLocalizations.of(context)!.loginAndRecovery,
-                  style: AppTextStyles.black16_500),
-              Text(
-                AppLocalizations.of(context)!.manageYourPassword,
-                style: AppTextStyles.black14_400,
-              ),
-              Text(AppLocalizations.of(context)!.loginPreferenceAndRecovery,
-                  style: AppTextStyles.black14_400),
-              SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black),
-                  borderRadius: BorderRadius.circular(6),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          surfaceTintColor: AppColors.background,
+          toolbarHeight: kToolbarHeight,
+        ),
+        body: Center(
+          child: SizedBox(
+            width: Utils().width(context) * 0.9,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(AppLocalizations.of(context)!.accountAndSecurity,
+                    style: AppTextStyles.black20_500),
+                SizedBox(height: 16),
+                Text(AppLocalizations.of(context)!.loginAndRecovery,
+                    style: AppTextStyles.black16_500),
+                Text(
+                  AppLocalizations.of(context)!.manageYourPassword,
+                  style: AppTextStyles.black14_400,
                 ),
-                child: SettingsTile(
-                  titles: [AppLocalizations.of(context)!.changePassword],
-                  numberOfTiles: 1,
-                  isDense: true,
-                  onTaps: [
-                    () {
-                      Navigator.pushNamed(
-                          context, CustomerRoutes.changePassword);
-                    }
-                  ],
-                ),
-              ),
-              Spacer(),
-              if (role == "0")
+                Text(AppLocalizations.of(context)!.loginPreferenceAndRecovery,
+                    style: AppTextStyles.black14_400),
+                SizedBox(height: 16),
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: SettingsTile(
-                    titles: [
-                      AppLocalizations.of(context)!.deleteAccountPermanently
-                    ],
-                    tileTitleStyle: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700),
+                    titles: [AppLocalizations.of(context)!.changePassword],
                     numberOfTiles: 1,
                     isDense: true,
                     onTaps: [
                       () {
-                        confirmDelete(context);
+                        Navigator.pushNamed(
+                            context, CustomerRoutes.changePassword);
                       }
                     ],
-                    trailingIconColor: Colors.red,
-                    leadingIcons: [Icons.delete_forever_rounded],
-                    iconColor: Colors.red,
                   ),
                 ),
-              SizedBox(height: 20),
-            ],
+                Spacer(),
+                if (role == "0")
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: SettingsTile(
+                      titles: [
+                        AppLocalizations.of(context)!.deleteAccountPermanently
+                      ],
+                      tileTitleStyle: TextStyle(
+                          color: Colors.red,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700),
+                      numberOfTiles: 1,
+                      isDense: true,
+                      onTaps: [
+                        () {
+                          confirmDelete(context);
+                        }
+                      ],
+                      trailingIconColor: Colors.red,
+                      leadingIcons: [Icons.delete_forever_rounded],
+                      iconColor: Colors.red,
+                    ),
+                  ),
+                SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

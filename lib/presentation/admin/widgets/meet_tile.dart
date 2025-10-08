@@ -54,18 +54,22 @@ class MeetingTile extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
-                    color: meeting.status == "scheduled"
-                        ? AppColors.activeGreen
-                        : AppColors.helperOrange.withOpacity(0.2),
+                    color: meeting.status == "cancelled"
+                        ? AppColors.errorRed.withOpacity(0.8)
+                        : meeting.status == "completed"
+                            ? AppColors.activeGreen
+                            : meeting.status == "scheduled"
+                                ? Colors.amber
+                                : Colors.amber,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     meeting.status,
                     style: TextStyle(
                       fontSize: 12,
-                      color: meeting.status == "scheduled"
+                      color: meeting.status == meeting.status
                           ? Colors.white
-                          : AppColors.helperOrange.withOpacity(0.2),
+                          : Colors.white70.withOpacity(1.0),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -154,51 +158,89 @@ class MeetingTile extends StatelessWidget {
               visible: showButtons,
               child: Row(
                 spacing: 8,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Expanded(
-                    child: CustomButton(
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to update screen or show update dialog
+                      _showUpdateDialog(context, meetingManagement, meeting);
+                    },
+                    child: Image.asset(
+                      'assets/icons/updated.png',
                       height: 40,
-                      text: "Update",
-                      backgroundColor: Colors.white,
-                      textColor: AppColors.activeGreen.withValues(alpha: 0.3),
-                      borderColor: AppColors.greyD9D9D9,
-                      onPressed: () {
-                        // Navigate to update screen or show update dialog
-                        _showUpdateDialog(context, meetingManagement, meeting);
-                      },
+                      width: 40,
                     ),
+                    // CustomButton(
+                    //   height: 40,
+                    //   image: Image.asset('assets/icons/updated.png'),
+                    //   text: "",
+                    //   backgroundColor: Colors.white,
+                    //   textColor: AppColors.activeGreen.withValues(alpha: 0.3),
+                    //   borderColor: AppColors.greyD9D9D9,
+                    //   onPressed: () {
+                    //     // Navigate to update screen or show update dialog
+                    //     _showUpdateDialog(context, meetingManagement, meeting);
+                    //   },
+                    // ),
                   ),
-                  Expanded(
-                    child: CustomButton(
+                  GestureDetector(
+                    onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Delete Meeting"),
+                          content: const Text(
+                              "Are you sure you want to delete this meeting?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text("Cancel"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text("Delete"),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true) {
+                        await meetingManagement.deleteMeeting(meeting.id);
+                      }
+                    },
+                    child: Image.asset(
+                      'assets/icons/delete.png',
                       height: 40,
-                      text: "Delete",
-                      backgroundColor: Colors.white,
-                      borderColor: AppColors.redF11515,
-                      textColor: AppColors.redF11515,
-                      onPressed: () async {
-                        final confirmed = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Delete Meeting"),
-                            content: const Text(
-                                "Are you sure you want to delete this meeting?"),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text("Cancel"),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text("Delete"),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirmed == true) {
-                          await meetingManagement.deleteMeeting(meeting.id);
-                        }
-                      },
+                      width: 40,
                     ),
+                    // child: CustomButton(
+                    //   height: 40,
+                    //   text: "Delete",
+                    //   backgroundColor: Colors.white,
+                    //   borderColor: AppColors.redF11515,
+                    //   textColor: AppColors.redF11515,
+                    // onPressed: () async {
+                    //   final confirmed = await showDialog<bool>(
+                    //     context: context,
+                    //     builder: (context) => AlertDialog(
+                    //       title: const Text("Delete Meeting"),
+                    //       content: const Text(
+                    //           "Are you sure you want to delete this meeting?"),
+                    //       actions: [
+                    //         TextButton(
+                    //           onPressed: () => Navigator.pop(context, false),
+                    //           child: const Text("Cancel"),
+                    //         ),
+                    //         TextButton(
+                    //           onPressed: () => Navigator.pop(context, true),
+                    //           child: const Text("Delete"),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   );
+                    //   if (confirmed == true) {
+                    //     await meetingManagement.deleteMeeting(meeting.id);
+                    //   }
+                    // },
                   ),
                 ],
               ),
@@ -225,12 +267,14 @@ class MeetingTile extends StatelessWidget {
     final linkController = TextEditingController(text: meeting.link);
     final startTimeController =
         TextEditingController(text: _formatDateTime(meeting.startTime));
+    String status = meeting.status;
+    DateTime? updatedTime;
 
     Future<void> selectDateTime(BuildContext context) async {
       final DateTime? pickedDate = await showDatePicker(
         context: context,
         initialDate: DateTime.parse(meeting.startTime),
-        firstDate: DateTime.now(),
+        firstDate: DateTime(2000),
         lastDate: DateTime(2100),
       );
 
@@ -249,7 +293,9 @@ class MeetingTile extends StatelessWidget {
             pickedTime.hour,
             pickedTime.minute,
           );
-          startTimeController.text = combined.toIso8601String();
+          updatedTime = combined;
+          startTimeController.text =
+              _formatDateTime(combined.toIso8601String());
         }
       }
     }
@@ -286,6 +332,32 @@ class MeetingTile extends StatelessWidget {
                 readOnly: true,
                 onTap: () => selectDateTime(context),
               ),
+              DropdownButton<String>(
+                  isExpanded: true,
+                  value: status,
+                  items: [
+                    DropdownMenuItem<String>(
+                        value: 'cancelled',
+                        child: Text(
+                          "Cancelled",
+                          style: AppTextStyles.black10_500,
+                        )),
+                    DropdownMenuItem<String>(
+                        value: 'completed',
+                        child: Text(
+                          "Completed",
+                          style: AppTextStyles.black10_500,
+                        )),
+                    DropdownMenuItem<String>(
+                        value: 'scheduled',
+                        child: Text(
+                          "Scheduled",
+                          style: AppTextStyles.black10_500,
+                        )),
+                  ],
+                  onChanged: (value) {
+                    status = value!;
+                  }),
             ],
           ),
         ),
@@ -310,7 +382,9 @@ class MeetingTile extends StatelessWidget {
                           title: titleController.text,
                           location: locationController.text,
                           link: linkController.text,
-                          startTime: startTimeController.text,
+                          startTime: updatedTime?.toIso8601String() ??
+                              meeting.startTime,
+                          status: status,
                         );
                         if (context.mounted) Navigator.pop(context);
                       },
