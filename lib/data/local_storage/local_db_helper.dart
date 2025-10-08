@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
+import 'package:kkpchatapp/data/models/group_message_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 
@@ -18,6 +19,11 @@ class LocalDbHelper {
   static const String _lastMessageMapKey = 'lastMessageMap';
   static const String unreadCountsBoxKey = 'unreadCountsBox';
   static const String _receiverOnChatPageKey = 'receiverOnChatPage';
+
+  // Group chat box key
+  static const String _groupChatBoxKey = 'groupChatBox';
+  //group chat unread count
+  static const String _groupChatUnreadCountKey = 'groupChatUnreadCount';
 
   // launguage selected
   static const String _localeKey = 'locale';
@@ -363,4 +369,119 @@ class LocalDbHelper {
   static Future<void> clearLocale() async {
     await _box.delete(_localeKey);
   }
+
+// Open or create the group chat box
+  static Future<Box<dynamic>> _openGroupChatBox() async {
+    //   debugPrint("📦 [LocalDbHelper] Opening group chat box...");
+    return await Hive.openBox<dynamic>(_groupChatBoxKey);
+  }
+
+// Save a group message
+  static Future<void> saveGroupMessage(GroupMessageModel message) async {
+    //  debugPrint("💾 [LocalDbHelper] Saving group message: ${message.messageId}");
+    final box = await _openGroupChatBox();
+    await box.put(message.messageId, message.toMap());
+    // debugPrint("✅ [LocalDbHelper] Group message saved successfully!");
+  }
+
+// Get all group messages
+  static Future<List<GroupMessageModel>> getGroupMessages() async {
+    debugPrint("📥 [LocalDbHelper] Fetching all group messages...");
+    final box = await _openGroupChatBox();
+    final groupMessages =
+        box.values.map((map) => GroupMessageModel.fromMap(Map<String, dynamic>.from(map))).toList();
+    debugPrint("📋 [LocalDbHelper] Found ${groupMessages.length} group messages");
+    return groupMessages;
+  }
+
+// Delete a group message
+  static Future<void> deleteGroupMessage(String messageId) async {
+    debugPrint("🗑️ [LocalDbHelper] Deleting group message: $messageId");
+    final box = await _openGroupChatBox();
+    await box.delete(messageId);
+    debugPrint("✅ [LocalDbHelper] Group message deleted successfully!");
+  }
+
+// Update a group message (e.g., mark as deleted)
+  static Future<void> updateGroupMessage(GroupMessageModel message) async {
+    debugPrint("🔄 [LocalDbHelper] Updating group message: ${message.messageId}");
+    final box = await _openGroupChatBox();
+    await box.put(message.messageId, message.toMap());
+    debugPrint("✅ [LocalDbHelper] Group message updated successfully!");
+  }
+
+// Clear all group messages
+  static Future<void> clearGroupMessages() async {
+    debugPrint("🧹 [LocalDbHelper] Clearing all group messages...");
+    final box = await _openGroupChatBox();
+    await box.clear();
+    debugPrint("✅ [LocalDbHelper] All group messages cleared successfully!");
+  }
+
+  // Add these methods for group chat unread count management
+
+  /// Get the current unread count for group chat
+  static Future<int> getGroupChatUnreadCount() async {
+    try {
+      final box = await Hive.openBox<int>(_groupChatUnreadCountKey);
+      return box.get('count') ?? 0; // Use null-coalescing operator to handle null
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Error getting group chat unread count: $e");
+      return 0; // Return default value on error
+    }
+  }
+
+  /// Increment the unread count for group chat
+  static Future<void> incrementGroupChatUnreadCount() async {
+    try {
+      final box = await Hive.openBox<int>(_groupChatUnreadCountKey);
+      int currentCount = box.get('count') ?? 0; // Use null-coalescing operator
+      await box.put('count', currentCount + 1);
+      debugPrint("✅ [LocalDbHelper] Incremented group chat unread count to ${currentCount + 1}");
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Error incrementing group chat unread count: $e");
+      rethrow;
+    }
+  }
+
+  /// Set a specific unread count for group chat
+  static Future<void> setGroupChatUnreadCount(int count) async {
+    try {
+      final box = await Hive.openBox<int>(_groupChatUnreadCountKey);
+      await box.put('count', count);
+      debugPrint("✅ [LocalDbHelper] Set group chat unread count to $count");
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Error setting group chat unread count: $e");
+      rethrow;
+    }
+  }
+
+  /// Clear the unread count for group chat
+  static Future<void> clearGroupChatUnreadCount() async {
+    try {
+      final box = await Hive.openBox<int>(_groupChatUnreadCountKey);
+      await box.put('count', 0);
+      debugPrint("✅ [LocalDbHelper] Cleared group chat unread count");
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Error clearing group chat unread count: $e");
+      rethrow;
+    }
+  }
+
+  /// Initialize group chat unread count box if it doesn't exist
+  static Future<void> initializeGroupChatUnreadCount() async {
+    try {
+      // Try to open the box, it will be created if it doesn't exist
+      await Hive.openBox<int>(_groupChatUnreadCountKey);
+      debugPrint("✅ [LocalDbHelper] Initialized group chat unread count box");
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Error initializing group chat unread count box: $e");
+      rethrow;
+    }
+  }
+
+  // Helper method to ensure we have a valid count
+  // static Future<int> _getValidCount(int? count) async {
+  //   return count ?? 0;
+  // }
 }

@@ -15,6 +15,7 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
+import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 
@@ -36,8 +37,7 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost>
-    with WidgetsBindingObserver {
+class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
@@ -83,9 +83,9 @@ class _MarketingHostState extends State<MarketingHost>
     final token = await LocalDbHelper.getToken();
     await _loadUserData().whenComplete(() {
       if (agentName != null && agentEmail != null && rolename != null) {
-        _socketService.initSocket(agentName!, agentEmail!, rolename!,
-            token: token);
+        _socketService.initSocket(agentName!, agentEmail!, rolename!, token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
+        _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
         _socketService.onDisconnect(_handleDisconnect);
         _socketService.onConnect(_handleConnect);
@@ -183,7 +183,10 @@ class _MarketingHostState extends State<MarketingHost>
     setState(() {
       _screens = [
         if (role == "1")
-          AdminHome()
+          AdminHome(
+            agentEmail: agentEmail ?? "admin@gmail.com",
+            agentName: agentName ?? "admin",
+          )
         else
           MultiProvider(
             providers: [
@@ -285,6 +288,15 @@ class _MarketingHostState extends State<MarketingHost>
       customername: data["senderName"],
       targetId: data['targetId'],
     );
+  }
+
+  void _handleIcomingGroupMessage(Map<String, dynamic> data) {
+    Navigator.push(widget.navigatorKey.currentContext!, MaterialPageRoute(builder: (context) {
+      return InternalChatScreen(
+          agentName: data["senderName"],
+          agentEmail: data["senderId"],
+          navigatorKey: widget.navigatorKey);
+    }));
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {

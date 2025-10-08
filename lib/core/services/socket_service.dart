@@ -40,8 +40,15 @@ class SocketService {
   Function(Map<String, dynamic>)? _onProductUpdate;
   Function(String)? _onProductDelete;
 
+  // Group chat callbacks
+  Function(Map<String, dynamic>)? _onGroupMessageReceived;
+  Function(Map<String, dynamic>)? _onGroupMessageDeleted;
+  Function(Map<String, dynamic>)? _onGroupMessageEdited;
+
   bool isChatPageOpen = false;
   String? activeCustomerId;
+
+  bool isGroupChatPageOpen = false;
 
   Function? onMessageReceivedCallback;
 
@@ -94,16 +101,16 @@ class SocketService {
       _updateRoomMembers(List<String>.from(roomMembers));
     });
 
-    // _socket.on('receiveMessage', (data) {
-    //   debugPrint(data.toString());
-    //   if (isChatPageOpen && _onMessageReceived != null) {
-    //     _onMessageReceived!(data);
-    //   } else if (!isChatPageOpen && _onMessageReceived != null) {
-    //     _chatNotification(data);
-    //   } else {
-    //     return;
-    //   }
-    // });
+    // Group chat listener
+    _socket.on('receiveGroupMessage', (data) {
+      debugPrint('📥 Received group message: $data');
+      if (isGroupChatPageOpen) {
+        _onGroupMessageReceived?.call(data);
+      } else {
+        _groupChatNotification(data);
+      }
+    });
+
     _socket.on('receiveMessage', (data) {
       debugPrint("recived message socket : ${data.toString()}");
       final String senderId = data['senderId'] ?? '';
@@ -191,6 +198,26 @@ class SocketService {
       }
     });
 
+    _socket.on('groupMessageMarkedDeleted', (data) {
+      debugPrint('🗑️ Group message marked as deleted: $data');
+      if (isGroupChatPageOpen) {
+        _onGroupMessageDeleted?.call(data);
+      } else {
+        // Handle in background if needed
+        _handleBackgroundGroupMessageDeletion(data);
+      }
+    });
+
+    _socket.on('groupMessageEdited', (data) {
+      debugPrint('✏️ Group message edited: $data');
+      if (isGroupChatPageOpen) {
+        _onGroupMessageEdited?.call(data);
+      } else {
+        // Handle in background if needed
+        _handleBackgroundGroupMessageEdit(data);
+      }
+    });
+
     _socket.onDisconnect((_) {
       _isConnected = false;
       for (String email in _roomMembers) {
@@ -237,6 +264,143 @@ class SocketService {
   void onMessagesReadUpTo(Function(Map<String, dynamic>) callback) {
     debugPrint("🔧 Messages read up to callback set");
     _onMessagesReadUpTo = callback;
+  }
+
+  void toggleGroupChatPageOpen(bool toggle) {
+    debugPrint("🔄 [SocketService] Toggling group chat page: ${toggle ? "OPEN" : "CLOSED"}");
+    isGroupChatPageOpen = toggle;
+  }
+
+  void setGroupChatPageState(bool isOpen) {
+    debugPrint("🔄 [SocketService] Setting group chat page state: ${isOpen ? "OPEN" : "CLOSED"}");
+    isGroupChatPageOpen = isOpen;
+  }
+
+  void onGroupMessageReceived(Function(Map<String, dynamic>) callback) {
+    debugPrint("🔧 [SocketService] Group message callback registered");
+    _onGroupMessageReceived = callback;
+  }
+
+  // Add these methods to register callbacks
+  void onGroupMessageDeleted(Function(Map<String, dynamic>) callback) {
+    debugPrint("🔧 [SocketService] Group message deleted callback registered");
+    _onGroupMessageDeleted = callback;
+  }
+
+  void onGroupMessageEdited(Function(Map<String, dynamic>) callback) {
+    debugPrint("🔧 [SocketService] Group message edited callback registered");
+    _onGroupMessageEdited = callback;
+  }
+
+  void sendGroupMessage({
+    required String message,
+    required String senderId,
+    required String senderName,
+    String type = 'text',
+    String? mediaUrl,
+    String? fileName,
+    List<String>? mentions,
+    String? replyTo,
+    String? timestamp,
+    String? messageId,
+  }) {
+    if (!_isConnected) {
+      debugPrint('Socket is not connected. Cannot send group message.');
+      return;
+    }
+    final payload = {
+      'message': message,
+      'senderId': senderId,
+      'senderName': senderName,
+      'type': type,
+      'mediaUrl': mediaUrl,
+      'fileName': fileName,
+      'mentions': mentions,
+      'replyTo': replyTo,
+      'timestamp': timestamp,
+      'messageId': messageId,
+    };
+    _socket.emit('sendGroupMessage', payload);
+    debugPrint('📤 Sent group message: $payload');
+  }
+
+  // Add these methods to handle background events
+  void _handleBackgroundGroupMessageDeletion(Map<String, dynamic> data) async {
+    debugPrint("🗑️ Handling group message deletion in background: ${data.toString()}");
+    final messageId = data['messageId'];
+
+    try {
+      // Update the message in local storage
+      final localMessages = await LocalDbHelper.getGroupMessages();
+      final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
+
+      if (index != -1) {
+        final updatedMessage = localMessages[index].copyWith(
+          isDeleted: true,
+          message: "This message was deleted",
+        );
+        await LocalDbHelper.updateGroupMessage(updatedMessage);
+        debugPrint("✅ Updated deleted message in local storage: $messageId");
+      }
+    } catch (e) {
+      debugPrint("❌ Error updating deleted message in background: $e");
+    }
+  }
+
+  void _handleBackgroundGroupMessageEdit(Map<String, dynamic> data) async {
+    debugPrint("✏️ Handling group message edit in background: ${data.toString()}");
+    final messageId = data['messageId'];
+    final newMessage = data['newMessage'];
+
+    try {
+      // Update the message in local storage
+      final localMessages = await LocalDbHelper.getGroupMessages();
+      final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
+
+      if (index != -1) {
+        final updatedMessage = localMessages[index].copyWith(
+          message: newMessage,
+          isEdited: true,
+        );
+        await LocalDbHelper.updateGroupMessage(updatedMessage);
+        debugPrint("✅ Updated edited message in local storage: $messageId");
+      }
+    } catch (e) {
+      debugPrint("❌ Error updating edited message in background: $e");
+    }
+  }
+
+// Add this method to delete a group message
+  void deleteGroupMessage(String messageId, String senderId) {
+    if (!_isConnected) {
+      debugPrint('Socket is not connected. Cannot delete group message.');
+      return;
+    }
+
+    final payload = {
+      'messageId': messageId,
+      'senderId': senderId,
+    };
+
+    _socket.emit('deleteGroupMessage', payload);
+    debugPrint('🗑️ Delete group message event emitted: $messageId');
+  }
+
+// Add this method to edit a group message
+  void editGroupMessage(String messageId, String senderId, String newMessage) {
+    if (!_isConnected) {
+      debugPrint('Socket is not connected. Cannot edit group message.');
+      return;
+    }
+
+    final payload = {
+      'messageId': messageId,
+      'senderId': senderId,
+      'newMessage': newMessage,
+    };
+
+    _socket.emit('editGroupMessage', payload);
+    debugPrint('✏️ Edit group message event emitted: $messageId');
   }
 
   void sendChatOpened({
@@ -882,15 +1046,155 @@ class SocketService {
     activeCustomerId = isOpen ? customerId : null;
   }
 
+  /// Handles notifications for group messages when the chat is not open
+  /// Handles notifications for group messages when the chat is not open
+  Future<void> _groupChatNotification(Map<String, dynamic> data) async {
+    debugPrint('🔔 Group Chat Notification: $data');
+
+    // Check if this is a valid group message notification
+    if (!data.containsKey('type') ||
+        !data.containsKey('senderId') ||
+        !data.containsKey('message') ||
+        !data.containsKey('senderName')) {
+      debugPrint('ℹ️ Ignoring invalid group chat notification: $data');
+      return;
+    }
+
+    try {
+      // Initialize notifications plugin if not already done
+      if (_notificationsPlugin == null) {
+        _notificationsPlugin = FlutterLocalNotificationsPlugin();
+        const androidSettings = AndroidInitializationSettings('app_logo');
+        const iosSettings = DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestSoundPermission: true,
+          requestBadgePermission: true,
+          defaultPresentAlert: true,
+          defaultPresentSound: true,
+          defaultPresentBadge: true,
+        );
+        const initSettings = InitializationSettings(
+          android: androidSettings,
+          iOS: iosSettings,
+        );
+        await _notificationsPlugin!
+            .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
+      }
+
+      // Request permissions for iOS
+      await _notificationsPlugin!
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+
+      // Create notification details
+      const androidDetails = AndroidNotificationDetails(
+        'group_chat_channel_id',
+        'Internal Chat Notifications',
+        channelDescription: 'Notifications for internal team chat messages',
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        icon: 'app_logo',
+        largeIcon: DrawableResourceAndroidBitmap('app_logo'),
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      final notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      // Create more descriptive notification title and content
+      final title = "New update from Internal Chat (${data['senderName']})";
+      String messageContent;
+
+      switch (data['type']) {
+        case 'media':
+          messageContent = "[Image]";
+          break;
+        case 'document':
+          messageContent = "[Document]";
+          break;
+        case 'voice':
+          messageContent = "[Voice message]";
+          break;
+        case 'text':
+        default:
+          // For text messages, show a preview if it's not too long
+          messageContent = data['message'].length > 30
+              ? "${data['message'].substring(0, 30)}..."
+              : data['message'];
+          break;
+      }
+
+      // Use a fixed ID for group notifications to replace previous ones
+      const notificationId = 1001;
+
+      // Show the notification
+      await _notificationsPlugin!.show(
+        notificationId,
+        title,
+        messageContent,
+        notificationDetails,
+        payload: jsonEncode({
+          'isGroupMessage': true, // This flag identifies it as a group message
+          'notificationType': 'groupChat',
+          ...data, // Include all original data
+        }),
+      );
+
+      // Increment unread count for group chat using LocalDbHelper
+      try {
+        await LocalDbHelper.incrementGroupChatUnreadCount();
+        debugPrint("✅ Incremented group chat unread count");
+      } catch (e) {
+        debugPrint("❌ Error incrementing group chat unread count: $e");
+      }
+    } catch (e) {
+      debugPrint('❌ Error showing group chat notification: $e');
+    }
+  }
+
+  /// Handles notification taps
   Future<void> _handleNotificationTap(NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
 
-    if (response.payload != null) {
+    if (response.payload == null) {
+      debugPrint("Notification payload is null");
+      return;
+    }
+
+    try {
+      // Check if this is a group message notification
+      if (response.payload is String) {
+        try {
+          final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
+
+          // Handle group message notification
+          if (notificationData['isGroupMessage'] == true) {
+            debugPrint("Group message notification tapped");
+            await handleGroupLocalNotificationTap(navigatorKey, notificationData);
+            return;
+          }
+        } catch (e) {
+          debugPrint("Not a JSON payload or not a group message: $e");
+        }
+      }
+
       // Check if the payload is the string "incoming_call"
       if (response.payload == "incoming_call") {
-        // Just open the app, no additional action needed
         debugPrint("Incoming call notification tapped, opening the app.");
-        return; // Exit the method after handling the incoming call notification
+        return;
       }
 
       if (response.payload == "general_chat_summary") {
@@ -898,7 +1202,7 @@ class SocketService {
         return;
       }
 
-      // If not an incoming call notification, attempt to decode the payload as JSON
+      // Handle regular message notifications
       try {
         final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
         if ("0" == await LocalDbHelper.getUserType()) {
@@ -909,6 +1213,8 @@ class SocketService {
       } catch (e) {
         debugPrint("Failed to decode JSON: $e");
       }
+    } catch (e) {
+      debugPrint("Error handling notification tap: $e");
     }
   }
 }

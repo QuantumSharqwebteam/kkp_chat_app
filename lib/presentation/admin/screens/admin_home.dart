@@ -11,6 +11,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
+import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
 import 'package:kkpchatapp/presentation/admin/screens/poster_management_screen.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/agent_management_list_tile.dart';
@@ -22,7 +23,10 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AdminHome extends StatefulWidget {
-  const AdminHome({super.key});
+  final String agentName;
+  final String agentEmail;
+
+  const AdminHome({super.key, required this.agentName, required this.agentEmail});
 
   @override
   State<AdminHome> createState() => _AdminHomeState();
@@ -300,6 +304,21 @@ class _AdminHomeState extends State<AdminHome> {
   Widget _buildCustomerInquriesButton() {
     return Column(
       children: [
+        CustomButton(
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                return InternalChatScreen(
+                  agentEmail: widget.agentEmail,
+                  agentName: widget.agentName,
+                  navigatorKey: navigatorKey,
+                );
+              }));
+            },
+            height: Utils().height(context) * 0.06,
+            fontSize: 18,
+            borderRadius: 10,
+            text: "Internal Chat"),
+        const SizedBox(height: 10),
         CustomButton(
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) {

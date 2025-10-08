@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/add_agent.dart';
-import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
+// import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/agent_profile_list.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common/privacy_page.dart';
@@ -30,8 +30,7 @@ class MarketingRoutes {
   static const String agentHomeScreen = "AgentHomeScreen";
   static const String marketingNotifications = "Notification_page";
   static const String addProductScreen = "Add_Product_screen";
-  static const String marketingProductDescription =
-      "Marketing_Product_Description_Page";
+  static const String marketingProductDescription = "Marketing_Product_Description_Page";
   static const String marketingSettings = "/Marketing_Settings";
   // static const String transferAgentScreen = "Transfer_agent";
 
@@ -93,8 +92,8 @@ Route<dynamic> generateMarketingRoute(RouteSettings settings) {
 
     //admin side
 
-    case MarketingRoutes.adminHome:
-      return MaterialPageRoute(builder: (_) => AdminHome());
+    // case MarketingRoutes.adminHome:
+    //   return MaterialPageRoute(builder: (_) => AdminHome());
     case MarketingRoutes.addAgent:
       return MaterialPageRoute(builder: (_) => AddAgent());
     case MarketingRoutes.agentProfileList:

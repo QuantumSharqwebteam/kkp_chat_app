@@ -45,41 +45,41 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint("🔥 Background handler triggered");
 
-  // final String? customerEmail = message.data['senderId'];
-  // final String? agentEmail = message.data['targetId'];
-
-  final String role =
-      message.data['role'] ?? 'agent'; // Default to 'agent' if role is not specified
-  final String customerEmail;
-  final String agentEmail;
-
-  if (role == 'User') {
-    customerEmail = message.data['senderId'];
-    agentEmail = message.data['targetId'];
-  } else {
-    customerEmail = message.data['targetId'];
-    agentEmail = message.data['senderId'];
-  }
-
-  // debugPrint("📧 Extracted customerEmail: $customerEmail");
-  // debugPrint("📧 Extracted agentEmail: $agentEmail");
-
-  // Attempt to initialize Hive and open the box
+  final String role = message.data['role'] ?? 'agent';
+  final String notificationType = message.data['notificationType'] ?? 'individual';
 
   try {
     await Hive.initFlutter();
-    if (role == 'User') {
-      final box = await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
-      final currentCount = box.get(customerEmail, defaultValue: 0);
-      await box.put(customerEmail, currentCount! + 1);
-      debugPrint("📈 Unread count incremented for customerEmail: $customerEmail");
+
+    if (notificationType == 'group') {
+      // Handle group chat notification
+      await LocalDbHelper.incrementGroupChatUnreadCount();
+      debugPrint("📈 Incremented group chat unread count");
     } else {
-      // If the role is user, save the notification in the user-specific box
-      final userBoxName = '${customerEmail}count';
-      final userBox = await Hive.openBox<int>(userBoxName);
-      final currentCount = userBox.get('count', defaultValue: 0);
-      await userBox.put('count', currentCount! + 1);
-      debugPrint("📈 Unread count incremented for user: $customerEmail");
+      // Handle direct chat notification
+      final String customerEmail;
+      final String agentEmail;
+
+      if (role == 'User') {
+        customerEmail = message.data['senderId'];
+        agentEmail = message.data['targetId'];
+      } else {
+        customerEmail = message.data['targetId'];
+        agentEmail = message.data['senderId'];
+      }
+
+      if (role == 'User') {
+        final box = await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
+        final currentCount = box.get(customerEmail, defaultValue: 0);
+        await box.put(customerEmail, currentCount! + 1);
+        debugPrint("📈 Unread count incremented for customerEmail: $customerEmail");
+      } else {
+        final userBoxName = '${customerEmail}count';
+        final userBox = await Hive.openBox<int>(userBoxName);
+        final currentCount = userBox.get('count', defaultValue: 0);
+        await userBox.put('count', currentCount! + 1);
+        debugPrint("📈 Unread count incremented for user: $customerEmail");
+      }
     }
   } catch (e) {
     if (kDebugMode) {
