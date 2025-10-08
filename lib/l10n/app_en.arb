@@ -1040,6 +1040,25 @@
 "manageTermsPolicy": "Manage Terms & Policy",
 "@manageTermsPolicy": {
   "description": "Label for managing terms and policy section"
-}
-
+},
+"allComplaint": "All Complaints",
+  "@allComplaint": {
+    "description": "Title for the section showing all complaints"
+  },
+  "viewComplaints": "View Complaints",
+  "@viewComplaints": {
+    "description": "Button/label for viewing complaints"
+  },
+   "searchProducts": "Search products",
+  "@searchProducts": {
+    "description": "Placeholder or label for product search functionality"
+  },
+  "complaintsNotFound": "Complaints not found",
+  "@complaintsNotFound": {
+    "description": "Message displayed when no complaints are found"
+  },
+   "upcomingMeetings": "Upcoming Meetings",
+  "@upcomingMeetings": {
+    "description": "Title for the section displaying scheduled future meetings"
+  }
 }

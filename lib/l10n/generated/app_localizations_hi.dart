@@ -738,7 +738,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get noMatchingProducts => 'कोई मेल खाने वाला उत्पाद नहीं मिला';
 
   @override
-  String get searchProducts => 'उत्पाद खोजें...';
+  String get searchProducts => 'उत्पादों को खोजें';
 
   @override
   String get uploadNewProduct => 'नया उत्पाद अपलोड करें';
@@ -802,4 +802,16 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get manageTermsPolicy => 'नियम और नीति प्रबंधित करें';
+
+  @override
+  String get allComplaint => 'सभी शिकायतें';
+
+  @override
+  String get viewComplaints => 'शिकायतें देखें';
+
+  @override
+  String get complaintsNotFound => 'कोई शिकायत नहीं मिली';
+
+  @override
+  String get upcomingMeetings => 'आगामी बैठकें';
 }

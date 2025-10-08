@@ -45,7 +45,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
     return Scaffold(
       appBar: _buildAppBar(context, provider),
       body: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.only(left: 14, right: 14),
         child: provider.isLoading
             ? const Center(child: ShimmerGrid())
             : provider.filteredProducts.isEmpty
@@ -94,7 +94,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
             width: double.infinity,
             enable: true,
             controller: _searchController,
-            hintText: locale.searchProducts,
+            hintText: AppLocalizations.of(context)!.searchProducts,
             onChanged: (query) {
               provider.applyFilter(query);
             },
@@ -154,7 +154,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
   Widget _buildFloatingActionButton(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
     return SizedBox(
-      height: 80,
+      height: 95,
       width: 88,
       child: FloatingActionButton(
         onPressed: () async {

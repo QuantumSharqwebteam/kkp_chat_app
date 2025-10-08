@@ -284,6 +284,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   Widget _buildUpcomingMeetingsSection(
       MeetingManagement meetingManagement, BuildContext context) {
     final nextMeeting = meetingManagement.getNextUpcomingMeeting();
+    final locale = AppLocalizations.of(context)!;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -293,7 +294,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              "Upcoming meetings",
+              locale.upcomingMeetings,
               style: AppTextStyles.black16_500,
             ),
             TextButton(

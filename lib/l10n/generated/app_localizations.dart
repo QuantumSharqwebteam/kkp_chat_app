@@ -1504,10 +1504,10 @@ abstract class AppLocalizations {
   /// **'No matching products found'**
   String get noMatchingProducts;
 
-  /// Placeholder text for product search input field
+  /// Placeholder or label for product search functionality
   ///
   /// In en, this message translates to:
-  /// **'Search products...'**
+  /// **'Search products'**
   String get searchProducts;
 
   /// Button or label text for uploading a new product
@@ -1635,6 +1635,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage Terms & Policy'**
   String get manageTermsPolicy;
+
+  /// Title for the section showing all complaints
+  ///
+  /// In en, this message translates to:
+  /// **'All Complaints'**
+  String get allComplaint;
+
+  /// Button/label for viewing complaints
+  ///
+  /// In en, this message translates to:
+  /// **'View Complaints'**
+  String get viewComplaints;
+
+  /// Message displayed when no complaints are found
+  ///
+  /// In en, this message translates to:
+  /// **'Complaints not found'**
+  String get complaintsNotFound;
+
+  /// Title for the section displaying scheduled future meetings
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming Meetings'**
+  String get upcomingMeetings;
 }
 
 class _AppLocalizationsDelegate

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/schedule_meet.dart';
 import 'package:kkpchatapp/presentation/admin/widgets/meet_tile.dart';
@@ -13,12 +14,13 @@ class MeetingsListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     final meetingManagement = Provider.of<MeetingManagement>(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Upcoming Meetings",
+          locale.upcomingMeetings,
           style: AppTextStyles.black16_700,
         ),
       ),

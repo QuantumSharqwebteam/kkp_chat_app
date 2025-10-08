@@ -739,7 +739,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noMatchingProducts => 'No matching products found';
 
   @override
-  String get searchProducts => 'Search products...';
+  String get searchProducts => 'Search products';
 
   @override
   String get uploadNewProduct => 'Upload new product';
@@ -804,4 +804,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manageTermsPolicy => 'Manage Terms & Policy';
+
+  @override
+  String get allComplaint => 'All Complaints';
+
+  @override
+  String get viewComplaints => 'View Complaints';
+
+  @override
+  String get complaintsNotFound => 'Complaints not found';
+
+  @override
+  String get upcomingMeetings => 'Upcoming Meetings';
 }

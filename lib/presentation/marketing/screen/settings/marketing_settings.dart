@@ -103,7 +103,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                       }
                     ],
                     title: Text(
-                      locale.account,
+                      AppLocalizations.of(context)!.account,
                       style: TextStyle(
                           color: AppColors.grey7B7B7B,
                           fontWeight: FontWeight.w500,
@@ -282,15 +282,15 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   ),
                 ],
                 title: Text(
-                  'Complaints',
+                  AppLocalizations.of(context)!.complaints,
                   style: TextStyle(
                       color: AppColors.grey7B7B7B,
                       fontWeight: FontWeight.w500,
                       fontSize: 14),
                 ),
                 showDividerAfterTitle: true,
-                titles: ['All Complaint'],
-                subtitles: ['View Complaints'],
+                titles: [AppLocalizations.of(context)!.allComplaint],
+                subtitles: [AppLocalizations.of(context)!.viewComplaints],
                 onTaps: [
                   () {
                     Navigator.push(

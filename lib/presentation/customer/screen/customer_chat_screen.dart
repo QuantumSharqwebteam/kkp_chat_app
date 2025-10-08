@@ -1311,7 +1311,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
             if (isFormUpdating) FullScreenLoader(),
             if (!_isAtBottom)
               Positioned(
-                bottom: 80, // Adjust the position as needed
+                bottom: 120, // Adjust the position as needed
                 right: 16, // Adjust the position as needed
                 child: FloatingActionButton(
                   onPressed: _scrollToBottom,

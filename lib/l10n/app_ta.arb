@@ -1042,7 +1042,29 @@
 "settingsAndActivity": "அமைப்புகள் மற்றும் செயல்பாடுகள்",
   "@settingsAndActivity": {
     "description": "அமைப்புகள் மற்றும் செயல்பாடுகள் பகுதியின் லேபல்"
+  },
+"allComplaint": "அனைத்து புகார்கள்",
+  "@allComplaint": {
+    "description": "அனைத்து புகார்களையும் காட்டும் பகுதியின் தலைப்பு"
+  },
+  "viewComplaints": "புகார்களை பார்வையிடு",
+  "@viewComplaints": {
+    "description": "புகார்களை பார்வையிட பொத்தான்/லேபல்"
+  },
+ "account": "கணக்கு",
+  "@account": {
+    "description": "கணக்கு பகுதிக்கான லேபல்"
+  },
+  "searchProducts": "பொருட்களை தேடு",
+  "@searchProducts": {
+    "description": "பொருள் தேடல் செயல்பாட்டுக்கான இடமிருப்பு அல்லது லேபல்"
+  },
+  "complaintsNotFound": "புகார்கள் எதுவும் கிடைக்கவில்லை",
+  "@complaintsNotFound": {
+    "description": "புகார்கள் எதுவும் இல்லாதபோது காட்டப்படும் செய்தி"
+  },
+  "upcomingMeetings": "வரவிருக்கும் கூட்டங்கள்",
+  "@upcomingMeetings": {
+    "description": "திட்டமிடப்பட்ட எதிர்கால கூட்டங்களை காட்டும் பகுதியின் தலைப்பு"
   }
-
-
 }

@@ -1047,6 +1047,25 @@
 "manageTermsPolicy": "नियम और नीति प्रबंधित करें",
 "@manageTermsPolicy": {
   "description": "Hindi label for managing terms and policy section"
-}
-
-}
+},
+ "allComplaint": "सभी शिकायतें",
+  "@allComplaint": {
+    "description": "सभी शिकायतों को दिखाने वाले अनुभाग का शीर्षक"
+  },
+  "viewComplaints": "शिकायतें देखें",
+  "@viewComplaints": {
+    "description": "शिकायतें देखने के लिए बटन/लेबल"
+  },
+  "searchProducts": "उत्पादों को खोजें",
+  "@searchProducts": {
+    "description": "उत्पाद खोज कार्यक्षमता के लिए प्लेसहोल्डर या लेबल"
+  },
+  "complaintsNotFound": "कोई शिकायत नहीं मिली",
+  "@complaintsNotFound": {
+    "description": "जब कोई शिकायत नहीं मिलती तो प्रदर्शित संदेश"
+  },
+   "upcomingMeetings": "आगामी बैठकें",
+  "@upcomingMeetings": {
+    "description": "नियोजित भविष्य की बैठकों को प्रदर्शित करने वाले अनुभाग का शीर्षक"
+  }
+  }

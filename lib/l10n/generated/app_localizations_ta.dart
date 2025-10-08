@@ -753,7 +753,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get noMatchingProducts => 'பொருட்கள் பொருந்தவில்லை';
 
   @override
-  String get searchProducts => 'பொருட்களைத் தேடுங்கள்...';
+  String get searchProducts => 'பொருட்களை தேடு';
 
   @override
   String get uploadNewProduct => 'புதிய பொருளை பதிவேற்றுக';
@@ -789,7 +789,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get settingsAndActivity => 'அமைப்புகள் மற்றும் செயல்பாடுகள்';
 
   @override
-  String get account => 'खाता';
+  String get account => 'கணக்கு';
 
   @override
   String get accountAndSecurity => 'கணக்கு மற்றும் பாதுகாப்பு';
@@ -818,4 +818,16 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get manageTermsPolicy => 'விதிகள் மற்றும் கொள்கைகளை நிர்வகிக்கவும்';
+
+  @override
+  String get allComplaint => 'அனைத்து புகார்கள்';
+
+  @override
+  String get viewComplaints => 'புகார்களை பார்வையிடு';
+
+  @override
+  String get complaintsNotFound => 'புகார்கள் எதுவும் கிடைக்கவில்லை';
+
+  @override
+  String get upcomingMeetings => 'வரவிருக்கும் கூட்டங்கள்';
 }

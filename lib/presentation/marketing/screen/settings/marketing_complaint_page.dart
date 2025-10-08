@@ -1,5 +1,6 @@
 // import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/complaints_provider.dart';
 import 'package:provider/provider.dart';
 import '../../widget/marketing_complaint_card.dart';
@@ -9,17 +10,19 @@ class MarketingComplaintPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     if (Provider.of<ComplaintsProvider>(context, listen: false).status ==
         DataStatus.loading) {
       Provider.of<ComplaintsProvider>(context, listen: true).loaddata();
     }
     return Scaffold(
-      appBar: AppBar(title: const Text("Complaints")),
+      appBar: AppBar(title: Text(locale.complaints)),
       body: _getBody(context),
     );
   }
 
   Widget _getBody(ctx) {
+    final locale = AppLocalizations.of(ctx)!;
     final complaints =
         Provider.of<ComplaintsProvider>(ctx, listen: true).complaints;
     final status = Provider.of<ComplaintsProvider>(ctx, listen: true).status;
@@ -28,7 +31,7 @@ class MarketingComplaintPage extends StatelessWidget {
         return Center(child: CircularProgressIndicator());
       case DataStatus.successful:
         if (complaints?.isEmpty == true) {
-          return Center(child: Text('Complaints not found'));
+          return Center(child: Text(locale.complaintsNotFound));
         } else {
           return RefreshIndicator(
             onRefresh: () async {
