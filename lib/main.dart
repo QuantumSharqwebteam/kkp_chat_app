@@ -46,7 +46,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("🔥 Background handler triggered");
 
   final String role = message.data['role'] ?? 'agent';
-  final String notificationType = message.data['notificationType'] ?? 'individual';
+  final String notificationType =
+      message.data['notificationType'] ?? 'individual';
 
   try {
     await Hive.initFlutter();
@@ -69,10 +70,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       }
 
       if (role == 'User') {
-        final box = await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
+        final box = await Hive.openBox<int>(
+            '${LocalDbHelper.unreadCountsBoxKey}_$agentEmail');
         final currentCount = box.get(customerEmail, defaultValue: 0);
         await box.put(customerEmail, currentCount! + 1);
-        debugPrint("📈 Unread count incremented for customerEmail: $customerEmail");
+        debugPrint(
+            "📈 Unread count incremented for customerEmail: $customerEmail");
       } else {
         final userBoxName = '${customerEmail}count';
         final userBox = await Hive.openBox<int>(userBoxName);
@@ -114,9 +117,16 @@ void main() async {
   // Set the global flag to true after initialization
   // isAppInitialized = true;
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
   // Handle terminated state
-  RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  RemoteMessage? initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
 
   runApp(
     MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
@@ -158,18 +168,21 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => NewPassProvider()),
         ChangeNotifierProvider(create: (_) => ChatRefreshProvider()),
         ChangeNotifierProvider(create: (_) => ChatStatusProvider()),
-        ChangeNotifierProvider(create: (_) => CallProvider(widget.navigatorKey)),
+        ChangeNotifierProvider(
+            create: (_) => CallProvider(widget.navigatorKey)),
         ChangeNotifierProvider(create: (_) => ComplaintsProvider()),
         ChangeNotifierProvider(
           create: (_) => NotificationProvider()..fetchNotifications(),
         ),
         ChangeNotifierProvider(
-          create: (_) => MarketingProductProvider(ProductRepository())..fetchProducts(),
+          create: (_) =>
+              MarketingProductProvider(ProductRepository())..fetchProducts(),
         ),
         ChangeNotifierProvider(
-            create: (_) => CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
-              ..fetchPosters()
-              ..fetchProducts()),
+            create: (_) =>
+                CustomerHomeProvider(SocketService(navigatorKey), navigatorKey)
+                  ..fetchPosters()
+                  ..fetchProducts()),
         ChangeNotifierProvider(
           create: (_) => AgentProvider()..fetchAgents(),
         ),
