@@ -296,6 +296,7 @@ class SocketService {
     required String message,
     required String senderId,
     required String senderName,
+    required String groupId,
     String type = 'text',
     String? mediaUrl,
     String? fileName,
@@ -308,10 +309,12 @@ class SocketService {
       debugPrint('Socket is not connected. Cannot send group message.');
       return;
     }
+
     final payload = {
       'message': message,
       'senderId': senderId,
       'senderName': senderName,
+      'groupId': groupId,
       'type': type,
       'mediaUrl': mediaUrl,
       'fileName': fileName,
@@ -320,6 +323,7 @@ class SocketService {
       'timestamp': timestamp,
       'messageId': messageId,
     };
+
     _socket.emit('sendGroupMessage', payload);
     debugPrint('📤 Sent group message: $payload');
   }
@@ -371,7 +375,8 @@ class SocketService {
   }
 
 // Add this method to delete a group message
-  void deleteGroupMessage(String messageId, String senderId) {
+  void deleteGroupMessage(
+      {required String messageId, required String senderId, required String groupId}) {
     if (!_isConnected) {
       debugPrint('Socket is not connected. Cannot delete group message.');
       return;
@@ -380,6 +385,7 @@ class SocketService {
     final payload = {
       'messageId': messageId,
       'senderId': senderId,
+      "groupId": groupId,
     };
 
     _socket.emit('deleteGroupMessage', payload);
@@ -387,7 +393,11 @@ class SocketService {
   }
 
 // Add this method to edit a group message
-  void editGroupMessage(String messageId, String senderId, String newMessage) {
+  void editGroupMessage(
+      {required String messageId,
+      required String senderId,
+      required String newMessage,
+      required String groupId}) {
     if (!_isConnected) {
       debugPrint('Socket is not connected. Cannot edit group message.');
       return;
@@ -397,6 +407,7 @@ class SocketService {
       'messageId': messageId,
       'senderId': senderId,
       'newMessage': newMessage,
+      "groupId": groupId
     };
 
     _socket.emit('editGroupMessage', payload);

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/group_message_model.dart';
+import 'package:kkpchatapp/data/models/group_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 
@@ -484,4 +485,74 @@ class LocalDbHelper {
   // static Future<int> _getValidCount(int? count) async {
   //   return count ?? 0;
   // }
+
+  // Save groups to Hive
+  static Future<void> saveGroups(List<GroupModel> groups) async {
+    try {
+      final box = await Hive.openBox<dynamic>('groupsBox');
+      await box.clear();
+      for (var group in groups) {
+        await box.add(group.toJson());
+      }
+      await _box.put('lastGroupsFetchTime', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to save groups: $e");
+      rethrow;
+    }
+  }
+
+// Get groups from Hive
+  static Future<List<GroupModel>?> getGroups() async {
+    try {
+      final box = await Hive.openBox<dynamic>('groupsBox');
+      final groupsJson = box.values.toList();
+      if (groupsJson.isEmpty) return null;
+      return groupsJson.map((json) {
+        return GroupModel.fromJson(Map<String, dynamic>.from(json));
+      }).toList();
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to get groups: $e");
+      return null;
+    }
+  }
+
+// Get groups timestamp
+  static Future<int?> getGroupsTimestamp() async {
+    return _box.get('lastGroupsFetchTime');
+  }
+
+// Save user groups to Hive
+  static Future<void> saveUserGroups(List<GroupModel> userGroups) async {
+    try {
+      final box = await Hive.openBox<dynamic>('userGroupsBox');
+      await box.clear();
+      for (var group in userGroups) {
+        await box.add(group.toJson());
+      }
+      await _box.put('lastUserGroupsFetchTime', DateTime.now().millisecondsSinceEpoch);
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to save user groups: $e");
+      rethrow;
+    }
+  }
+
+// Get user groups from Hive
+  static Future<List<GroupModel>?> getUserGroups() async {
+    try {
+      final box = await Hive.openBox<dynamic>('userGroupsBox');
+      final userGroupsJson = box.values.toList();
+      if (userGroupsJson.isEmpty) return null;
+      return userGroupsJson.map((json) {
+        return GroupModel.fromJson(Map<String, dynamic>.from(json));
+      }).toList();
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to get user groups: $e");
+      return null;
+    }
+  }
+
+// Get user groups timestamp
+  static Future<int?> getUserGroupsTimestamp() async {
+    return _box.get('lastUserGroupsFetchTime');
+  }
 }

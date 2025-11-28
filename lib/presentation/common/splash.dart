@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/common/onboarding_page.dart';
+import 'package:provider/provider.dart';
 
 class Splash extends StatefulWidget {
   const Splash({super.key});
@@ -21,6 +24,7 @@ class _SplashState extends State<Splash> {
   Future<void> _checkLogin(context) async {
     String? token = await LocalDbHelper.getToken();
     final String? userType = await LocalDbHelper.getUserType();
+    final String? email = LocalDbHelper.getEmail();
 
     // final int? lastRefreshTime = await LocalDbHelper.getLastRefreshTime();
     // final int currentTime = DateTime.now().millisecondsSinceEpoch;
@@ -41,6 +45,9 @@ class _SplashState extends State<Splash> {
     await _refreshToken(token, context);
 
     if (token != null && userType != null) {
+      // Fetch user groups in the background
+      await _fetchUserGroups(email ?? "");
+
       if (userType == '0') {
         if (mounted) {
           Navigator.pushReplacementNamed(
@@ -50,12 +57,10 @@ class _SplashState extends State<Splash> {
         }
       } else if (userType == '1' || userType == '2' || userType == '3') {
         if (mounted) {
-          Navigator.pushReplacementNamed(
-              context, MarketingRoutes.marketingHostScreen);
+          Navigator.pushReplacementNamed(context, MarketingRoutes.marketingHostScreen);
         }
       } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Invalid Credentials')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid Credentials')));
       }
     } else {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
@@ -70,13 +75,25 @@ class _SplashState extends State<Splash> {
         if (response['message'] == "Refresh token generated successfully") {
           token = response['token'];
           await LocalDbHelper.saveToken(response['token']);
-          await LocalDbHelper.saveLastRefreshTime(
-              DateTime.now().millisecondsSinceEpoch);
+          await LocalDbHelper.saveLastRefreshTime(DateTime.now().millisecondsSinceEpoch);
         } else {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(response['message'])));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'])));
         }
       });
+    }
+  }
+
+  /// Fetch user groups in the background
+  Future<void> _fetchUserGroups(String email) async {
+    try {
+      // Use Provider to access GroupProvider
+      final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+      await Future.wait([groupProvider.fetchUsersGroups(email), groupProvider.fetchAllGroups()]);
+    } catch (e) {
+      // Log error but do not block navigation
+      LoggingService.instance.logNetwork(
+        "Failed to load user groups:${e.toString()}",
+      );
     }
   }
 
@@ -99,8 +116,7 @@ class _SplashState extends State<Splash> {
 
   @override
   void dispose() {
-    _refreshTokenTimer
-        ?.cancel(); // Cancel the timer when the widget is disposed
+    _refreshTokenTimer?.cancel(); // Cancel the timer when the widget is disposed
     super.dispose();
   }
 
