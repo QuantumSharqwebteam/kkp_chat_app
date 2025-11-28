@@ -13,6 +13,7 @@ import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/data/api/chat_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/group_message_model.dart';
+import 'package:kkpchatapp/data/models/group_model.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
@@ -22,6 +23,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/group_description.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 
@@ -29,12 +31,16 @@ class InternalChatScreen extends StatefulWidget {
   final String agentName;
   final String agentEmail;
   final GlobalKey<NavigatorState> navigatorKey;
+  final String? groupId;
+  final GroupModel? group; // Add this line
 
   const InternalChatScreen({
     super.key,
     required this.agentName,
     required this.agentEmail,
     required this.navigatorKey,
+    this.groupId,
+    this.group, // Add this line
   });
 
   @override
@@ -107,7 +113,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     setState(() => _isLoading = true);
     try {
       // 1. Fetch from API
-      final result = await _chatService.fetchGroupMessages(limit: 20);
+      final result = await _chatService.fetchGroupMessages(limit: 20, groupId: widget.groupId!);
       final List<GroupMessageModel> fetchedMessages = result['messages'];
       _nextCursor = result['nextCursor'];
 
@@ -172,6 +178,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     try {
       final result = await _chatService.fetchGroupMessages(
         limit: 20,
+        groupId: widget.groupId!,
         before: _nextCursor,
       );
       final List<GroupMessageModel> olderMessages = result['messages'];
@@ -239,7 +246,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
 
   // --- Delete Message ---
   void _deleteMessage(String messageId) {
-    _socketService.deleteGroupMessage(messageId, widget.agentEmail);
+    _socketService.deleteGroupMessage(
+        messageId: messageId, senderId: widget.agentEmail, groupId: widget.groupId!);
     // Update the local message state to reflect deletion
     setState(() {
       final index = messages.indexWhere((msg) => msg.messageId == messageId);
@@ -332,10 +340,10 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     if (_editController.text.trim().isEmpty) return;
     final newMessage = _editController.text.trim();
     _socketService.editGroupMessage(
-      messageId,
-      widget.agentEmail,
-      newMessage,
-    );
+        messageId: messageId,
+        senderId: widget.agentEmail,
+        newMessage: newMessage,
+        groupId: widget.groupId!);
     // Update the local message state to reflect the edit
     setState(() {
       final index = messages.indexWhere((msg) => msg.messageId == messageId);
@@ -419,14 +427,14 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       messages.add(message);
     });
     _socketService.sendGroupMessage(
-      message: messageText,
-      senderId: widget.agentEmail,
-      senderName: widget.agentName,
-      type: type,
-      mediaUrl: mediaUrl,
-      timestamp: currentTime.toIso8601String(),
-      messageId: messageId,
-    );
+        message: messageText,
+        senderId: widget.agentEmail,
+        senderName: widget.agentName,
+        type: type,
+        mediaUrl: mediaUrl,
+        timestamp: currentTime.toIso8601String(),
+        messageId: messageId,
+        groupId: widget.groupId ?? "");
     LocalDbHelper.saveGroupMessage(message);
     _chatController.clear();
     _scrollToBottom();
@@ -502,9 +510,19 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         elevation: 5,
         surfaceTintColor: Colors.white,
         shadowColor: AppColors.greyDBDDE1,
-        title: const Text(
-          "Internal Chat",
-          style: AppTextStyles.black16_600,
+        title: GestureDetector(
+          onTap: () {
+            if (widget.group != null) {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                return GroupDescriptionScreen(
+                    groupId: widget.groupId ?? "Na", group: widget.group!);
+              }));
+            }
+          },
+          child: const Text(
+            "Internal Chat",
+            style: AppTextStyles.black16_600,
+          ),
         ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(

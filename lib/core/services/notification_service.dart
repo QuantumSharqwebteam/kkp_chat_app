@@ -95,30 +95,8 @@ class NotificationService with WidgetsBindingObserver {
         //     ChatStorageService(); // Get the customer's email
         final customerEmail = LocalDbHelper.getEmail();
 
-        if (customerEmail != null) {
-          // Save the message to Hive local storage
-          // final message = ChatMessageModel(
-          //   message: notificationData["message"],
-          //   timestamp: DateTime.parse(DateTime.now().toIso8601String()),
-          //   sender: notificationData["senderId"],
-          //   type: notificationData["type"],
-          //   mediaUrl: notificationData["mediaUrl"],
-          //   form: notificationData["form"],
-          // );
-
-          //   chatStorageService.saveMessage(message, customerEmail);
-        }
-
-        // if (isAppInitialized) {
-        //   handlePushNotificationClickForCustomer(
-        //       navigatorKey!, notificationData);
-        // }
+        if (customerEmail != null) {}
       }
-      // if ("0" != await LocalDbHelper.getUserType()) {
-      //   if (isAppInitialized) {
-      //     handlePushNotificationClickForAgent(navigatorKey!, notificationData);
-      //   }
-      // }
     });
   }
 
@@ -151,40 +129,6 @@ class NotificationService with WidgetsBindingObserver {
       }
     }
   }
-
-  // Setup foreground notifications (when the app is in the foreground)
-  // static void _setupForegroundNotification() {
-  //   FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-  //     debugPrint("📩 Foreground Notification: ${message.notification?.body}");
-
-  //     if (_appLifecycleState == AppLifecycleState.resumed) {
-  //       // App is in the foreground, do not show local notification
-  //       return;
-  //     }
-
-  //     if (message.notification != null) {
-  //       const AndroidNotificationDetails androidNotificationDetails =
-  //           AndroidNotificationDetails(
-  //         'high_importance_channel',
-  //         'High Importance Notifications',
-  //         channelDescription: 'This channel is for important notifications',
-  //         importance: Importance.high,
-  //         priority: Priority.high,
-  //       );
-
-  //       const NotificationDetails notificationDetails =
-  //           NotificationDetails(android: androidNotificationDetails);
-
-  //       await _localNotificationsPlugin.show(
-  //         message.notification.hashCode,
-  //         message.notification?.title,
-  //         message.notification?.body,
-  //         notificationDetails,
-  //         payload: jsonEncode(message.data),
-  //       );
-  //     }
-  //   });
-  // }
 
   // Method to show incoming call notification
   static Future<void> showIncomingCallNotification(String callerName) async {
@@ -219,50 +163,6 @@ class NotificationService with WidgetsBindingObserver {
       payload: 'incoming_call',
     );
   }
-
-  // Initialize local notifications plugin
-  // static Future<void> _initializeLocalNotifications() async {
-  //   const AndroidInitializationSettings initializationSettingsAndroid =
-  //       AndroidInitializationSettings('@mipmap/ic_launcher');
-
-  //   // ✅ iOS/macOS-specific initialization
-  //   const DarwinInitializationSettings initializationSettingsDarwin =
-  //       DarwinInitializationSettings(
-  //     requestAlertPermission: true,
-  //     requestSoundPermission: true,
-  //     requestBadgePermission: true,
-  //     defaultPresentAlert: true,
-  //     defaultPresentSound: true,
-  //     defaultPresentBadge: true,
-  //     defaultPresentBanner: true,
-  //     defaultPresentList: true,
-  //   );
-
-  //   const InitializationSettings initializationSettings =
-  //       InitializationSettings(
-  //     android: initializationSettingsAndroid,
-  //     iOS: initializationSettingsDarwin,
-  //   );
-
-  //   await _localNotificationsPlugin.initialize(initializationSettings,
-  //       onDidReceiveNotificationResponse: (NotificationResponse response) {
-  //     _handleNotificationTap(response);
-  //   });
-
-  //   // Create notification channel for Android 8.0 and above
-  //   const AndroidNotificationChannel androidNotificationChannel =
-  //       AndroidNotificationChannel(
-  //     'high_importance_channel',
-  //     'High Importance Notifications',
-  //     description: 'This channel is for important notifications',
-  //     importance: Importance.high,
-  //   );
-
-  //   await _localNotificationsPlugin
-  //       .resolvePlatformSpecificImplementation<
-  //           AndroidFlutterLocalNotificationsPlugin>()
-  //       ?.createNotificationChannel(androidNotificationChannel);
-  // }
 
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =

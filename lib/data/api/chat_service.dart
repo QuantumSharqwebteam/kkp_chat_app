@@ -601,9 +601,10 @@ class ChatService {
   Future<Map<String, dynamic>> fetchGroupMessages({
     int limit = 20,
     String? before,
+    required String groupId,
   }) async {
     final url = Uri.parse(
-      "$baseUrl/chat/groupMessages?limit=$limit${before != null ? '&before=$before' : ''}",
+      "$baseUrl/chat/groupMessages?limit=$limit&groupId=$groupId${before != null ? '&before=$before' : ''}",
     );
     final token = await LocalDbHelper.getToken();
 

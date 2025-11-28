@@ -5,10 +5,9 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
-import 'package:kkpchatapp/main.dart';
-import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/group_list_screen.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String? agentName;
@@ -48,14 +47,12 @@ class CustomDrawer extends StatelessWidget {
                     children: [
                       Text(
                         agentName ?? "",
-                        style: AppTextStyles.black16_600
-                            .copyWith(color: Colors.white),
+                        style: AppTextStyles.black16_600.copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "Agent",
-                        style: AppTextStyles.black12_400
-                            .copyWith(color: Colors.white70),
+                        style: AppTextStyles.black12_400.copyWith(color: Colors.white70),
                       ),
                     ],
                   ),
@@ -67,8 +64,7 @@ class CustomDrawer extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _buildDrawerItem(context,
-                      icon: Icons.meeting_room, title: "Meetings", onTap: () {
+                  _buildDrawerItem(context, icon: Icons.meeting_room, title: "Meetings", onTap: () {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -76,21 +72,25 @@ class CustomDrawer extends StatelessWidget {
                                   email: LocalDbHelper.getEmail()!,
                                 )));
                   }),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.chat,
-                    title: "Internal Chat",
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => InternalChatScreen(
-                                    agentName: agentName ?? "agent",
-                                    agentEmail: agentEmail ?? "agent@gmail.com",
-                                    navigatorKey: navigatorKey,
-                                  )));
-                    },
-                  ),
+                  // _buildDrawerItem(
+                  //   context,
+                  //   icon: Icons.chat,
+                  //   title: "Internal Chat",
+                  //   onTap: () {
+                  //     Navigator.push(
+                  //         context,
+                  //         MaterialPageRoute(
+                  //             builder: (context) => InternalChatScreen(
+                  //                   agentName: agentName ?? "agent",
+                  //                   agentEmail: agentEmail ?? "agent@gmail.com",
+                  //                   navigatorKey: navigatorKey,
+                  //                 )));
+                  //   },
+                  // ),
+                  _buildDrawerItem(context, icon: Icons.group, title: "Groups", onTap: () {
+                    Navigator.push(
+                        context, MaterialPageRoute(builder: (context) => GroupListScreen()));
+                  })
                   // Add more items as needed
                 ],
               ),
