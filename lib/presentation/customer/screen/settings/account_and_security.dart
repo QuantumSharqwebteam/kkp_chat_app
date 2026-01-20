@@ -40,78 +40,73 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.background,
-          surfaceTintColor: AppColors.background,
-          toolbarHeight: kToolbarHeight,
-        ),
-        body: Center(
-          child: SizedBox(
-            width: Utils().width(context) * 0.9,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(AppLocalizations.of(context)!.accountAndSecurity,
-                    style: AppTextStyles.black20_500),
-                SizedBox(height: 16),
-                Text(AppLocalizations.of(context)!.loginAndRecovery,
-                    style: AppTextStyles.black16_500),
-                Text(
-                  AppLocalizations.of(context)!.manageYourPassword,
-                  style: AppTextStyles.black14_400,
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        surfaceTintColor: AppColors.background,
+        toolbarHeight: kToolbarHeight,
+        title: Text(AppLocalizations.of(context)!.accountAndSecurity,
+            style: AppTextStyles.black20_500),
+      ),
+      body: Center(
+        child: SizedBox(
+          width: Utils().width(context) * 0.9,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Text(AppLocalizations.of(context)!.accountAndSecurity,
+              //     style: AppTextStyles.black20_500),
+              SizedBox(height: 16),
+              Text(AppLocalizations.of(context)!.loginAndRecovery,
+                  style: AppTextStyles.black16_500),
+              Text(
+                AppLocalizations.of(context)!.manageYourPassword,
+                style: AppTextStyles.black14_400,
+              ),
+              Text(AppLocalizations.of(context)!.loginPreferenceAndRecovery,
+                  style: AppTextStyles.black14_400),
+              SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                Text(AppLocalizations.of(context)!.loginPreferenceAndRecovery,
-                    style: AppTextStyles.black14_400),
-                SizedBox(height: 16),
+                child: SettingsTile(
+                  titles: [AppLocalizations.of(context)!.changePassword],
+                  numberOfTiles: 1,
+                  isDense: true,
+                  onTaps: [
+                    () {
+                      Navigator.pushNamed(context, CustomerRoutes.changePassword);
+                    }
+                  ],
+                ),
+              ),
+              Spacer(),
+              if (role == "0")
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.black),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: SettingsTile(
-                    titles: [AppLocalizations.of(context)!.changePassword],
+                    titles: [AppLocalizations.of(context)!.deleteAccountPermanently],
+                    tileTitleStyle:
+                        TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w700),
                     numberOfTiles: 1,
                     isDense: true,
                     onTaps: [
                       () {
-                        Navigator.pushNamed(
-                            context, CustomerRoutes.changePassword);
+                        confirmDelete(context);
                       }
                     ],
+                    trailingIconColor: Colors.red,
+                    leadingIcons: [Icons.delete_forever_rounded],
+                    iconColor: Colors.red,
                   ),
                 ),
-                Spacer(),
-                if (role == "0")
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.black),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: SettingsTile(
-                      titles: [
-                        AppLocalizations.of(context)!.deleteAccountPermanently
-                      ],
-                      tileTitleStyle: TextStyle(
-                          color: Colors.red,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700),
-                      numberOfTiles: 1,
-                      isDense: true,
-                      onTaps: [
-                        () {
-                          confirmDelete(context);
-                        }
-                      ],
-                      trailingIconColor: Colors.red,
-                      leadingIcons: [Icons.delete_forever_rounded],
-                      iconColor: Colors.red,
-                    ),
-                  ),
-                SizedBox(height: 20),
-              ],
-            ),
+              SizedBox(height: 40),
+            ],
           ),
         ),
       ),
@@ -149,8 +144,7 @@ class ConfirmDeleteBottomSheet extends StatefulWidget {
   const ConfirmDeleteBottomSheet({super.key, required this.scaffoldMessenger});
 
   @override
-  State<ConfirmDeleteBottomSheet> createState() =>
-      _ConfirmDeleteBottomSheetState();
+  State<ConfirmDeleteBottomSheet> createState() => _ConfirmDeleteBottomSheetState();
 }
 
 class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
@@ -165,27 +159,57 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
 
   final AuthApi authApi = AuthApi();
 
+  Future<void> _showFinalDeleteConfirmationDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button to close the dialog
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Final Confirmation"),
+          content: const Text(
+              "Are you absolutely sure you want to delete your account? This action cannot be undone."),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                deleteAccount(context); // Proceed with account deletion
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> deleteAccount(BuildContext context) async {
     setState(() {
       isLoading = true; // Start loading
     });
 
     try {
-      authApi
-          .deleteUserAccount(email.text, password.text, feedback.text)
-          .then((response) async {
+      authApi.deleteUserAccount(email.text, password.text, feedback.text).then((response) async {
         final message = response['message'];
         if (message == "User marked as deleted successfully") {
           widget.scaffoldMessenger
-              .showSnackBar(SnackBar(content: Text(message)));
+              .showSnackBar(const SnackBar(content: Text("Account deleted successfully")));
 
           await clearHiveStorage();
           if (context.mounted) {
             logOut(context);
           }
         } else {
-          widget.scaffoldMessenger
-              .showSnackBar(SnackBar(content: Text(message)));
+          widget.scaffoldMessenger.showSnackBar(
+              SnackBar(content: Text("Cannot delete acount! Incorrect details provided")));
         }
       });
     } catch (e) {
@@ -261,21 +285,17 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
                         ? null
                         : () {
                             setState(() {
-                              emailError = email.text.trim().isEmpty
-                                  ? "Email is required"
-                                  : null;
-                              passwordError = password.text.trim().isEmpty
-                                  ? "Password is required"
-                                  : null;
-                              feedbackError = feedback.text.trim().isEmpty
-                                  ? "Feedback is required"
-                                  : null;
+                              emailError = email.text.trim().isEmpty ? "Email is required" : null;
+                              passwordError =
+                                  password.text.trim().isEmpty ? "Password is required" : null;
+                              feedbackError =
+                                  feedback.text.trim().isEmpty ? "Feedback is required" : null;
                             });
 
                             if (emailError == null &&
                                 passwordError == null &&
                                 feedbackError == null) {
-                              deleteAccount(context);
+                              _showFinalDeleteConfirmationDialog(context);
                             }
                           },
                     width: Utils().width(context) * 0.8,

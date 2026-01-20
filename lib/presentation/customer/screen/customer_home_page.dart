@@ -68,8 +68,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _buildCarouselIndicator(),
                 const SizedBox(height: 10),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(15),
                     borderRadius: const BorderRadius.only(
@@ -89,43 +88,34 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         notificationCount: _provider.notificationCount,
                       ),
                       SizedBox(height: 20),
-                      Text(AppLocalizations.of(context)!.newProducts,
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      if (_provider.newProducts == null)
+                        Text(AppLocalizations.of(context)!.newProducts,
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       _provider.isLoading
                           ? ShimmerGrid()
-                          : _provider.newProducts != null &&
-                                  _provider.previousProducts != null
+                          : _provider.newProducts != null && _provider.previousProducts != null
                               ? Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     ResponsiveGridList(
-                                      horizontalGridSpacing:
-                                          Utils().width(context) * 0.025,
-                                      verticalGridSpacing:
-                                          Utils().height(context) * 0.0125,
-                                      horizontalGridMargin:
-                                          Utils().width(context) * 0.025,
-                                      verticalGridMargin:
-                                          Utils().height(context) * 0.015,
+                                      horizontalGridSpacing: Utils().width(context) * 0.025,
+                                      verticalGridSpacing: Utils().height(context) * 0.0125,
+                                      horizontalGridMargin: Utils().width(context) * 0.025,
+                                      verticalGridMargin: Utils().height(context) * 0.015,
 
                                       // ✅ Increase card width more aggressively
                                       minItemWidth: isTablet
-                                          ? (isLandscape
-                                              ? 420
-                                              : 340) // wider for tablets
+                                          ? (isLandscape ? 420 : 340) // wider for tablets
                                           : 200, // mobile size
 
                                       minItemsPerRow: isLandscape ? 1 : 2,
                                       maxItemsPerRow: isLandscape ? 2 : 2,
 
-                                      listViewBuilderOptions:
-                                          ListViewBuilderOptions(
+                                      listViewBuilderOptions: ListViewBuilderOptions(
                                         physics: NeverScrollableScrollPhysics(),
                                         shrinkWrap: true,
                                       ),
-                                      children:
-                                          _provider.newProducts!.map((product) {
+                                      children: _provider.newProducts!.map((product) {
                                         return ProductItem(
                                           product: product,
                                           onTap: () {
@@ -141,74 +131,30 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                         );
                                       }).toList(),
                                     ),
-
-                                    // ResponsiveGridList(
-                                    // GridView.builder(
-                                    //   padding: const EdgeInsets.symmetric(
-                                    //       horizontal: 5, vertical: 15),
-                                    //   shrinkWrap: true,
-                                    //   physics:
-                                    //       const NeverScrollableScrollPhysics(),
-                                    //   gridDelegate:
-                                    //       const SliverGridDelegateWithFixedCrossAxisCount(
-                                    //     crossAxisCount: 2,
-                                    //     crossAxisSpacing: 10,
-                                    //     mainAxisSpacing: 10,
-                                    //     mainAxisExtent: 220,
-                                    //   ),
-                                    //   itemCount: _provider.newProducts!.length,
-                                    //   itemBuilder: (context, index) {
-                                    //     final product =
-                                    //         _provider.newProducts![index];
-                                    //     return ProductItem(
-                                    //       product: product,
-                                    //       onTap: () {
-                                    //         Navigator.push(
-                                    //           context,
-                                    //           MaterialPageRoute(
-                                    //             builder: (context) =>
-                                    //                 CustomerProductDescriptionPage(
-                                    //                     product: product),
-                                    //           ),
-                                    //         );
-                                    //       },
-                                    //     );
-                                    //   },
-                                    // ),
                                     const SizedBox(height: 20),
-                                    Text(
-                                        AppLocalizations.of(context)!
-                                            .previousProducts,
-                                        style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold)),
+                                    if (_provider.previousProducts == null)
+                                      Text(AppLocalizations.of(context)!.previousProducts,
+                                          style:
+                                              TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                                     ResponsiveGridList(
-                                      horizontalGridSpacing:
-                                          Utils().width(context) * 0.025,
-                                      verticalGridSpacing:
-                                          Utils().height(context) * 0.0125,
-                                      horizontalGridMargin:
-                                          Utils().width(context) * 0.025,
-                                      verticalGridMargin:
-                                          Utils().height(context) * 0.015,
+                                      horizontalGridSpacing: Utils().width(context) * 0.025,
+                                      verticalGridSpacing: Utils().height(context) * 0.0125,
+                                      horizontalGridMargin: Utils().width(context) * 0.025,
+                                      verticalGridMargin: Utils().height(context) * 0.015,
 
                                       // ✅ Increase card width more aggressively
                                       minItemWidth: isTablet
-                                          ? (isLandscape
-                                              ? 420
-                                              : 340) // wider for tablets
+                                          ? (isLandscape ? 420 : 340) // wider for tablets
                                           : 200, // mobile size
 
                                       minItemsPerRow: isLandscape ? 1 : 2,
                                       maxItemsPerRow: isLandscape ? 2 : 2,
 
-                                      listViewBuilderOptions:
-                                          ListViewBuilderOptions(
+                                      listViewBuilderOptions: ListViewBuilderOptions(
                                         physics: NeverScrollableScrollPhysics(),
                                         shrinkWrap: true,
                                       ),
-                                      children: _provider.previousProducts!
-                                          .map((product) {
+                                      children: _provider.previousProducts!.map((product) {
                                         return ProductItem(
                                           product: product,
                                           onTap: () {
@@ -224,44 +170,10 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                         );
                                       }).toList(),
                                     ),
-                                    // GridView.builder(
-                                    //   padding: const EdgeInsets.symmetric(
-                                    //       horizontal: 5, vertical: 15),
-                                    //   shrinkWrap: true,
-                                    //   physics:
-                                    //       const NeverScrollableScrollPhysics(),
-                                    //   gridDelegate:
-                                    //       const SliverGridDelegateWithFixedCrossAxisCount(
-                                    //     crossAxisCount: 2,
-                                    //     crossAxisSpacing: 10,
-                                    //     mainAxisSpacing: 10,
-                                    //     mainAxisExtent: 220,
-                                    //   ),
-                                    //   itemCount:
-                                    //       _provider.previousProducts!.length,
-                                    //   itemBuilder: (context, index) {
-                                    //     final product =
-                                    //         _provider.previousProducts![index];
-                                    //     return ProductItem(
-                                    //       product: product,
-                                    //       onTap: () {
-                                    //         Navigator.push(
-                                    //           context,
-                                    //           MaterialPageRoute(
-                                    //             builder: (context) =>
-                                    //                 CustomerProductDescriptionPage(
-                                    //                     product: product),
-                                    //           ),
-                                    //         );
-                                    //       },
-                                    //     );
-                                    //   },
-                                    // ),
                                   ],
                                 )
                               : Center(
-                                  child: Text(AppLocalizations.of(context)!
-                                      .noProductsAvailable)),
+                                  child: Text(AppLocalizations.of(context)!.noProductsAvailable)),
                     ],
                   ),
                 ),
@@ -375,28 +287,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             radius: 25,
             backgroundImage: AssetImage("assets/images/user.jpg"),
           ),
-          // Positioned(
-          //   bottom: 0,
-          //   right: 0,
-          //   child: Material(
-          //     elevation: 5,
-          //     color: Colors.transparent,
-          //     type: MaterialType.circle,
-          //     child: Container(
-          //       height: 12,
-          //       width: 12,
-          //       decoration: BoxDecoration(
-          //         borderRadius: BorderRadius.circular(50),
-          //         color: Colors.green,
-          //       ),
-          //     ),
-          //   ),
-          // ),
         ]),
         title: Text(AppLocalizations.of(context)!.productEnquirers,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        subtitle: Text(AppLocalizations.of(context)!.howMayIHelpYou,
-            style: TextStyle(fontSize: 12)),
+        subtitle:
+            Text(AppLocalizations.of(context)!.howMayIHelpYou, style: TextStyle(fontSize: 12)),
         trailing: notificationCount != null && notificationCount > 0
             ? Container(
                 padding: EdgeInsets.all(6),

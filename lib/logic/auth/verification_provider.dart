@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 
 class VerificationProvider with ChangeNotifier {
@@ -49,13 +50,12 @@ class VerificationProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> verifyOtp(BuildContext context, String email) async {
+  Future<bool> verifyOtp(BuildContext context, String email, {String? token}) async {
     setIsVerifyLoading(true);
     setIsOtpError(false);
 
     if (_otp.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Please enter the OTP')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please enter the OTP')));
       setErrorText('Please enter the OTP');
       setIsVerifyLoading(false);
       setIsOtpError(true);
@@ -64,27 +64,28 @@ class VerificationProvider with ChangeNotifier {
 
     if (_otp.length != 6) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('OTP must be 6 digits long')));
-      setErrorText("OTP must be 6 digits long");
+          .showSnackBar(SnackBar(content: Text('Incorrect OTP. Please try again.')));
+      setErrorText("Incorrect OTP. Please try again.");
       setIsVerifyLoading(false);
       setIsOtpError(true);
       return false;
     }
 
     try {
-      final response =
-          await AuthRepository().verifyOtp(email: email, otp: int.parse(_otp));
+      final response = await AuthRepository().verifyOtp(email: email, otp: int.parse(_otp));
 
       if (response['message'] == "OTP Verified Successfully!") {
         if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(response['message'])));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'])));
+        }
+        if (token != null) {
+          await LocalDbHelper.saveToken(token);
+          await LocalDbHelper.saveUserType("0");
         }
         return true;
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(response['message'])));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'])));
         }
         setErrorText(response['message']);
         setIsOtpError(true);

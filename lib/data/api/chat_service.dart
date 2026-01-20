@@ -541,13 +541,13 @@ class ChatService {
           final String lastMessageTimestampStr = jsonResponse["lastUserReadTimestamp"];
           return DateTime.parse(lastMessageTimestampStr);
         } else {
-          throw Exception("Failed to retrieve last message timestamp: ${response.body}");
+          debugPrint("Failed to retrieve last message timestamp: ${response.body}");
         }
       } else {
-        throw Exception("Failed to retrieve last message timestamp: ${response.body}");
+        debugPrint("Failed to retrieve last message timestamp: ${response.body}");
       }
     } catch (e) {
-      throw Exception("Error retrieving last message timestamp: $e");
+      debugPrint("Error retrieving last message timestamp: $e");
     }
   }
 
