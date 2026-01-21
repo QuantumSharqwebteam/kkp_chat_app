@@ -159,12 +159,12 @@ class SignupProvider with ChangeNotifier {
 
       if (response['message'] == "User signed up successfully") {
         try {
-          //await LocalDbHelper.saveToken(response['token'].toString());
-          await LocalDbHelper.saveUserType("0");
+          // await LocalDbHelper.saveToken(response['token'].toString());
+          //await LocalDbHelper.saveUserType("0");
 
-          if (context.mounted) {
-            await _saveUser(context, _name);
-          }
+          // if (context.mounted) {
+          //   await saveUser(context, _name);
+          // }
 
           final result = await AuthRepository().sendOtp(email: _email);
           if (result['message'] == "OTP sent") {
@@ -212,7 +212,7 @@ class SignupProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _saveUser(BuildContext context, String name) async {
+  Future<void> saveUser(BuildContext context, String name) async {
     try {
       final response = await AuthRepository().updateUserDetails(
           name: name, address: null, customerType: null, gstNo: null, number: null, panNo: null);

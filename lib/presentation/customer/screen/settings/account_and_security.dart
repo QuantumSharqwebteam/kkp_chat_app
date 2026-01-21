@@ -105,7 +105,7 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                     iconColor: Colors.red,
                   ),
                 ),
-              SizedBox(height: 40),
+              SizedBox(height: 100),
             ],
           ),
         ),
@@ -262,7 +262,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             CustomTextField(
               controller: password,
               errorText: passwordError,
-              hintText: AppLocalizations.of(context)!.emailLabel,
+              hintText: AppLocalizations.of(context)!.password,
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.visiblePassword,
               isPassword: true,

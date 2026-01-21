@@ -85,20 +85,22 @@ class VerificationProvider with ChangeNotifier {
         return true;
       } else {
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'])));
+          //  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text()));
+          debugPrint("Error Signup : $response['message']");
         }
         setErrorText(response['message']);
         setIsOtpError(true);
         return false;
       }
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("$e"),
-          ),
-        );
-      }
+      // if (context.mounted) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //       content: Text("$e"),
+      //     ),
+      //   );
+      debugPrint("${e.toString}");
+
       setErrorText(e.toString());
       setIsOtpError(true);
       return false;

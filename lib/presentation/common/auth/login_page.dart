@@ -86,9 +86,8 @@ class _LoginPageState extends State<LoginPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          locale.signup,
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          locale.email,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -113,8 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
                           locale.password,
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -145,8 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                       },
                       child: Text(
                         locale.forgotPassword,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12),
+                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                       ),
                     ),
                   ),
@@ -156,8 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                       : CustomButton(
                           text: locale.login,
                           onPressed: () {
-                            loginProvider.login(
-                                context, _email.text, _pass.text);
+                            loginProvider.login(context, _email.text, _pass.text);
                           },
                         ),
                   SizedBox(height: 30),
