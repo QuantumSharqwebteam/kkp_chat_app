@@ -54,17 +54,15 @@ class MeetingManagement with ChangeNotifier {
             meetingDate.day == now.day &&
             meetingDate.isAfter(now);
 
-        debugPrint(
-            "Checking meeting: ${meeting.title} - Today and future: $isTodayAndFuture");
+        // debugPrint("Checking meeting: ${meeting.title} - Today and future: $isTodayAndFuture");
         // debugPrint("Checking meeting: ${meeting.title} - Today and future: $isTodayAndFuture");
         return isTodayAndFuture;
       } catch (e) {
-        debugPrint("Error parsing meeting time for ${meeting.title}: $e");
+        //   debugPrint("Error parsing meeting time for ${meeting.title}: $e");
         return false;
       }
     }).toList()
-      ..sort((a, b) =>
-          DateTime.parse(a.startTime).compareTo(DateTime.parse(b.startTime)));
+      ..sort((a, b) => DateTime.parse(a.startTime).compareTo(DateTime.parse(b.startTime)));
 
     // debugPrint("Found ${todaysMeetings.length} upcoming meetings for today");
 
@@ -72,29 +70,32 @@ class MeetingManagement with ChangeNotifier {
     // for (var meeting in todaysMeetings) {
     //   debugPrint("Upcoming meeting: ${meeting.title}, Time: ${meeting.startTime}");
     // }
-    for (var meeting in todaysMeetings) {
-      debugPrint(
-          "Upcoming meeting: ${meeting.title}, Time: ${meeting.startTime}");
-    }
+    // for (var meeting in todaysMeetings) {
+    //   debugPrint("Upcoming meeting: ${meeting.title}, Time: ${meeting.startTime}");
+    // }
 
     return todaysMeetings;
   }
 
   // Get the next upcoming meeting (if any)
+  // Get the next upcoming meetings for today (MAX 2)
+// Returns null when there are NO upcoming meetings
   List<MeetingModel>? getNextUpcomingMeeting() {
     final todaysMeetings = getTodaysUpcomingMeetings();
-    final nextMeeting = todaysMeetings.isNotEmpty ? todaysMeetings.first : null;
 
-    if (nextMeeting != null) {
-      debugPrint(
-          "Next upcoming meeting: ${nextMeeting.title} at ${nextMeeting.startTime}");
-      //  debugPrint("Next upcoming meeting: ${nextMeeting.title} at ${nextMeeting.startTime}");
-    } else {
-      //debugPrint("No upcoming meetings found for today");
+    // ✅ IMPORTANT: Return null when no meetings exist
+    if (todaysMeetings.isEmpty) {
+      // debugPrint("No upcoming meetings found for today");
+      return null;
     }
 
-    return todaysMeetings.sublist(
-        0, todaysMeetings.length > 1 ? 2 : todaysMeetings.length);
+    // ✅ Take only first 2 meetings safely
+    final upcomingMeetings = todaysMeetings.take(2).toList();
+
+    // debugPrint(
+    //     "Next upcoming meeting: ${upcomingMeetings.first.title} at ${upcomingMeetings.first.startTime}");
+
+    return upcomingMeetings;
   }
 
   // Create a new meeting

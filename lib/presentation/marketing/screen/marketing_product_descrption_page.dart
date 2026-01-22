@@ -17,13 +17,12 @@ class MarketingProductDescrptionPage extends StatefulWidget {
   const MarketingProductDescrptionPage({super.key, required this.product});
 
   @override
-  State<MarketingProductDescrptionPage> createState() =>
-      _MarketingProductDescrptionPageState();
+  State<MarketingProductDescrptionPage> createState() => _MarketingProductDescrptionPageState();
 }
 
-class _MarketingProductDescrptionPageState
-    extends State<MarketingProductDescrptionPage> {
+class _MarketingProductDescrptionPageState extends State<MarketingProductDescrptionPage> {
   Future<void> _removeProduct() async {
+    final productId = widget.product.productId;
     Utils().showDialogWithActions(
       context,
       "Remove Product",
@@ -31,15 +30,22 @@ class _MarketingProductDescrptionPageState
       "Remove",
       () async {
         Navigator.pop(context); // Close the confirmation dialog
+        // ✅ SAFETY CHECK
+        if (productId == null || productId.isEmpty) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Invalid product. Cannot delete.")),
+            );
+          }
+          return;
+        }
 
         final ProductRepository productRepository = ProductRepository();
-        bool success =
-            await productRepository.deleteProduct(widget.product.productId!);
+        bool success = await productRepository.deleteProduct(widget.product.productId!);
 
         if (success) {
           if (mounted) {
-            Utils().showSuccessDialog(
-                context, "Product deleted successfully", true);
+            Utils().showSuccessDialog(context, "Product deleted successfully", true);
           }
           Future.delayed(Duration(seconds: 2), () {
             if (mounted) {
@@ -73,8 +79,7 @@ class _MarketingProductDescrptionPageState
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(Icons.arrow_back, size: 30),
               ),
-              Text(widget.product.productName.toUpperCase(),
-                  style: AppTextStyles.black20_500),
+              Text(widget.product.productName.toUpperCase(), style: AppTextStyles.black20_500),
             ],
           ),
         ),
@@ -97,8 +102,7 @@ class _MarketingProductDescrptionPageState
                   color: Colors.white,
                 ),
               ),
-              errorWidget: (context, url, error) =>
-                  const Icon(Icons.broken_image, size: 120),
+              errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 120),
               fadeInDuration: const Duration(milliseconds: 400),
               fadeInCurve: Curves.easeIn,
             ),
@@ -107,8 +111,7 @@ class _MarketingProductDescrptionPageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.product.productName.toUpperCase(),
-                      style: AppTextStyles.black22_600),
+                  Text(widget.product.productName.toUpperCase(), style: AppTextStyles.black22_600),
                   const SizedBox(height: 10),
                   // price and sizes row
                   Row(
@@ -118,13 +121,10 @@ class _MarketingProductDescrptionPageState
                           style: AppTextStyles.black16_700),
                       Row(
                         children: [
-                          Text("${locale.size}: ",
-                              style: AppTextStyles.black16_500),
+                          Text("${locale.size}: ", style: AppTextStyles.black16_500),
                           ...widget.product.sizes.map((size) => Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 3),
-                                child: Text(size,
-                                    style: AppTextStyles.black16_500),
+                                padding: const EdgeInsets.symmetric(horizontal: 3),
+                                child: Text(size, style: AppTextStyles.black16_500),
                               )),
                         ],
                       ),
@@ -134,15 +134,13 @@ class _MarketingProductDescrptionPageState
 
                   Text(
                     locale.availableColors,
-                    style: AppTextStyles.black16_500
-                        .copyWith(color: Colors.black, fontSize: 17),
+                    style: AppTextStyles.black16_500.copyWith(color: Colors.black, fontSize: 17),
                   ),
                   const SizedBox(height: 5),
 
                   ColoredCircles(
                     colors: widget.product.colors.map((color) {
-                      return Color(
-                          int.parse(color.colorCode.replaceAll("#", "0xff")));
+                      return Color(int.parse(color.colorCode.replaceAll("#", "0xff")));
                     }).toList(),
                     size: 35,
                   ),
@@ -153,9 +151,8 @@ class _MarketingProductDescrptionPageState
                         ? '${locale.only} ${widget.product.stock} ${locale.leftInStock}'
                         : locale.outOfStock,
                     style: AppTextStyles.black12_400.copyWith(
-                      color: widget.product.stock > 0
-                          ? AppColors.activeGreen
-                          : AppColors.inActiveRed,
+                      color:
+                          widget.product.stock > 0 ? AppColors.activeGreen : AppColors.inActiveRed,
                     ),
                   ),
                   Text(
@@ -185,8 +182,7 @@ class _MarketingProductDescrptionPageState
                           );
                         },
                         width: Utils().width(context) * 0.43,
-                        image:
-                            Icon(Icons.edit, color: AppColors.blue, size: 20),
+                        image: Icon(Icons.edit, color: AppColors.blue, size: 20),
                         height: 35,
                         borderRadius: 5,
                         borderColor: AppColors.blue0056FB,
@@ -196,8 +192,7 @@ class _MarketingProductDescrptionPageState
                       CustomButton(
                         text: locale.remove,
                         onPressed: _removeProduct,
-                        image: Icon(Icons.delete,
-                            color: AppColors.inActiveRed, size: 20),
+                        image: Icon(Icons.delete, color: AppColors.inActiveRed, size: 20),
                         width: Utils().width(context) * 0.43,
                         height: 35,
                         borderRadius: 5,

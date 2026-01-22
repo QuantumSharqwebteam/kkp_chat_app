@@ -32,13 +32,25 @@ class Product {
     );
   }
 
-  // Convert Product object to JSON
-  Map<String, dynamic> toJson() {
+  /// ✅ FOR ADD PRODUCT (NO productId)
+  Map<String, dynamic> toCreateJson() {
     return {
-      "productId": productId,
       "productName": productName,
       "imageUrl": imageUrl,
-      "colors": colors.map((color) => color.toJson()).toList(),
+      "colors": colors.map((c) => c.toJson()).toList(),
+      "sizes": sizes,
+      "stock": stock,
+      "price": price,
+      "description": description,
+    };
+  }
+
+  /// ✅ FOR UPDATE PRODUCT (NO productId in body)
+  Map<String, dynamic> toUpdateJson() {
+    return {
+      "productName": productName,
+      "imageUrl": imageUrl,
+      "colors": colors.map((c) => c.toJson()).toList(),
       "sizes": sizes,
       "stock": stock,
       "price": price,

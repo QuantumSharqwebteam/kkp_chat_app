@@ -23,15 +23,15 @@ class SocketService {
   bool _isConnected = false;
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
   //ChatStorageService chatStorageService = ChatStorageService();
-  int _reconnectAttempts = 0;
-  final int _maxReconnectAttempts = 5;
-  final Duration _reconnectInterval = const Duration(seconds: 3);
+  // int _reconnectAttempts = 0;
+  // final int _maxReconnectAttempts = 5;
+  // final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
   Function(String)? _onMessageDeleted;
   Function(Map<String, dynamic>)? _onIncomingCall;
   // Function(Map<String, dynamic>)? _onCallAnswered;
   Function(Map<String, dynamic>)? _onCallTerminated;
-  Function? _onDisconnect;
+  // Function? _onDisconnect;
   Function? _onConnect;
   Function(Map<String, dynamic>)? _onChatStatus;
   Function(Map<String, dynamic>)? _onMessagesReadUpTo;
@@ -69,17 +69,26 @@ class SocketService {
   }
 
   void initSocket(String userName, String userEmail, String role, {String? token}) {
+    // ✅ Prevent duplicate socket creation
+    if (_isConnected) {
+      debugPrint('⚠️ Socket already connected, skipping init');
+      return;
+    }
     _statusController.close();
     _statusController = StreamController<List<String>>.broadcast();
     _socket = io.io(serverUrl, <String, dynamic>{
       'transports': ['websocket'],
-      'autoConnect': false,
-      'reconnection': false,
+      'autoConnect': true,
+      'reconnection': true,
+      'reconnectionAttempts': 10,
+      'reconnectionDelay': 2000,
+      'reconnectionDelayMax': 10000,
+      'timeout': 20000,
     });
 
     _socket.onConnect((_) {
       _isConnected = true;
-      _reconnectAttempts = 0;
+      // _reconnectAttempts = 0;
       debugPrint('✅ Connected to socket server');
       _socket.emit('join', {
         'user': userName,
@@ -88,7 +97,7 @@ class SocketService {
         "token": token,
       });
       if (_onConnect != null) {
-        _onConnect!(); // Trigger the connect callback
+        _onConnect?.call(); // Trigger the connect callback
       }
     });
 
@@ -225,20 +234,20 @@ class SocketService {
         debugPrint("⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
       }
       debugPrint('⚠️ Disconnected from socket server');
-      _attemptReconnect(userName, userEmail, role);
+      // _attemptReconnect(userName, userEmail, role);
     });
 
-    _socket.onError((error) {
-      debugPrint('❌ Socket Error: $error');
-      _attemptReconnect(userName, userEmail, role);
-    });
+    // _socket.onError((error) {
+    //   debugPrint('❌ Socket Error: $error');
+    //   _attemptReconnect(userName, userEmail, role);
+    // });
 
     _socket.connect();
   }
 
-  void onDisconnect(Function callback) {
-    _onDisconnect = callback;
-  }
+  // void onDisconnect(Function callback) {
+  //   _onDisconnect = callback;
+  // }
 
   void onConnect(Function callback) {
     _onConnect = callback;
@@ -684,31 +693,31 @@ class SocketService {
     _onCallTerminated = callback;
   }
 
-  void _attemptReconnect(String userName, String userEmail, String role) {
-    if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
-      _reconnectAttempts++;
-      debugPrint('🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
+  // void _attemptReconnect(String userName, String userEmail, String role) {
+  //   if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
+  //     _reconnectAttempts++;
+  //     debugPrint('🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
 
-      Future.delayed(_reconnectInterval, () {
-        if (!_isConnected) {
-          _socket.connect();
-          _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
-        }
-      });
-    } else {
-      debugPrint('🚫 Max reconnection attempts reached or user logged out.');
-      if (_onDisconnect != null) {
-        _onDisconnect!(); // Trigger the disconnect callback only when max attempts are reached
-      }
-      // Reset reconnection attempts and reinitialize the socket
-      _reconnectAttempts = 0;
-      Future.delayed(_reconnectInterval, () {
-        debugPrint('🔄 Reinitializing socket connection...');
-        _socket.connect();
-        _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
-      });
-    }
-  }
+  //     Future.delayed(_reconnectInterval, () {
+  //       if (!_isConnected) {
+  //         _socket.connect();
+  //         _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
+  //       }
+  //     });
+  //   } else {
+  //     debugPrint('🚫 Max reconnection attempts reached or user logged out.');
+  //     if (_onDisconnect != null) {
+  //       _onDisconnect!(); // Trigger the disconnect callback only when max attempts are reached
+  //     }
+  //     // Reset reconnection attempts and reinitialize the socket
+  //     _reconnectAttempts = 0;
+  //     Future.delayed(_reconnectInterval, () {
+  //       debugPrint('🔄 Reinitializing socket connection...');
+  //       _socket.connect();
+  //       _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
+  //     });
+  //   }
+  // }
 
   void updateLastMessage(String email, String message) {
     LocalDbHelper.updateLastMessage(email, message);
@@ -845,7 +854,7 @@ class SocketService {
       debugPrint('🛑🛑 Socket service disposed completely');
     } else {
       _socket.clearListeners();
-      _reconnectAttempts = _maxReconnectAttempts;
+      //   _reconnectAttempts = _maxReconnectAttempts;
       debugPrint('🛑 🛑 Socket disposed finally ');
     }
   }

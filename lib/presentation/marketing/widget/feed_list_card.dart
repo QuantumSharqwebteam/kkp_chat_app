@@ -56,7 +56,7 @@ class FeedListCard extends StatelessWidget {
           children: [
             Text(
               name,
-              style: AppTextStyles.black14_600,
+              style: AppTextStyles.black14_600.copyWith(fontSize: 13),
             ),
             const SizedBox(width: 6),
             if (isAccountDeleted)
@@ -67,15 +67,13 @@ class FeedListCard extends StatelessWidget {
               )
           ],
         ),
-        subtitle:
-            Text(message ?? "Last Message", style: AppTextStyles.grey12_600),
+        subtitle: Text(message ?? "Last Message", style: AppTextStyles.grey12_600),
         trailing: isPinned
             ? const Icon(Icons.push_pin, color: AppColors.redF11515, size: 16)
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(time ?? _getCurrentTime(),
-                      style: AppTextStyles.black10_600),
+                  Text(time ?? _getCurrentTime(), style: AppTextStyles.black10_600),
                   unreadCount > 0
                       ? CircleAvatar(
                           radius: 10,

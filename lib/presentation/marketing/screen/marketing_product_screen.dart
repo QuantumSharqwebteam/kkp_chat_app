@@ -46,24 +46,44 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
       appBar: _buildAppBar(context, provider),
       body: Padding(
         padding: const EdgeInsets.only(left: 14, right: 14),
-        child: provider.isLoading
-            ? const Center(child: ShimmerGrid())
-            : provider.filteredProducts.isEmpty
-                ? Center(
-                    child: Text(
-                      provider.searchQuery.isEmpty
-                          ? locale.noProductsAvailable
-                          : locale.noMatchingProducts,
-                    ),
-                  )
-                : _buildProductsList(context, provider.filteredProducts),
+        child: RefreshIndicator(
+          // ✅ Pull-to-refresh action
+          onRefresh: () async {
+            await context
+                .read<MarketingProductProvider>()
+                .fetchProducts(isRefresh: true); // ✅ show app bar loader
+          },
+
+          // ✅ RefreshIndicator NEEDS a scrollable child
+          child: provider.isLoading
+              ? const Center(child: ShimmerGrid())
+
+              // ✅ EMPTY STATE STILL SCROLLABLE
+              : provider.filteredProducts.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      shrinkWrap: true, // IMPORTANT
+                      children: [
+                        SizedBox(height: Utils().height(context) * 0.3),
+                        Center(
+                          child: Text(
+                            provider.searchQuery.isEmpty
+                                ? locale.noProductsAvailable
+                                : locale.noMatchingProducts,
+                          ),
+                        ),
+                      ],
+                    )
+
+                  // ✅ PRODUCT GRID
+                  : _buildProductsList(context, provider.filteredProducts),
+        ),
       ),
       floatingActionButton: _buildFloatingActionButton(context),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
-      BuildContext context, MarketingProductProvider provider) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, MarketingProductProvider provider) {
     final locale = AppLocalizations.of(context)!;
 
     return AppBar(
@@ -79,12 +99,19 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
               Text(locale.product, style: AppTextStyles.black20_600),
               IconButton(
                 onPressed: () {
-                  Navigator.pushNamed(
-                      context, MarketingRoutes.marketingNotifications);
+                  Navigator.pushNamed(context, MarketingRoutes.marketingNotifications);
                 },
                 icon: const Icon(Icons.notifications_active_outlined),
                 iconSize: 25,
               ),
+              // IconButton(
+              //   icon: const Icon(Icons.refresh),
+              //   onPressed: provider.isRefreshing
+              //       ? null
+              //       : () {
+              //           context.read<MarketingProductProvider>().fetchProducts(isRefresh: true);
+              //         },
+              // ),
             ],
           ),
           SizedBox(

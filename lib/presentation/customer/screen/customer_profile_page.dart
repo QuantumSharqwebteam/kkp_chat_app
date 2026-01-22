@@ -41,8 +41,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   Future<void> _loadUserProfile() async {
     final userData = await _authRepository.getUserInfo();
-    if (userData['message'] ==
-        "Session expired due to login on another device") {
+    if (userData['message'] == "Session expired due to login on another device") {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -125,8 +124,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -172,7 +170,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               _buildHeader(),
               const SizedBox(height: 10),
               _buildSectionContainer([
-                _section("Personal Detail"),
+                _section("Personal Details"),
                 _input("Full Name", _nameController),
                 _input("Email Address", _emailController, enabled: false),
                 _input("Mobile No.", _numberController),
@@ -219,10 +217,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
           ),
           const SizedBox(height: 10),
           Text(_profile?.name ?? '',
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text(_profile?.email ?? '',
-              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(_profile?.email ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );
@@ -251,24 +247,19 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             color: Colors.black54,
           ),
           const SizedBox(width: 8),
-          Text(title,
-              style:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
         ],
       ),
     );
   }
 
-  Widget _input(String label, TextEditingController controller,
-      {bool enabled = true}) {
+  Widget _input(String label, TextEditingController controller, {bool enabled = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
@@ -277,8 +268,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             decoration: InputDecoration(
               filled: true,
               fillColor: enabled ? Colors.white : const Color(0xFFF5F5F5),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               enabledBorder: OutlineInputBorder(
                 borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                 borderRadius: BorderRadius.circular(10),
@@ -304,21 +294,14 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style:
-                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             value: _customerType,
-            items: options
-                .map((val) => DropdownMenuItem(value: val, child: Text(val)))
-                .toList(),
-            onChanged: _isEditing
-                ? (val) => setState(() => _customerType = val!)
-                : null,
+            items: options.map((val) => DropdownMenuItem(value: val, child: Text(val))).toList(),
+            onChanged: _isEditing ? (val) => setState(() => _customerType = val!) : null,
             decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -353,8 +336,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
           onPressed: _saveChanges,
           child: Text(
             AppLocalizations.of(context)!.saveChanges,
-            style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
       ),

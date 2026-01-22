@@ -250,7 +250,7 @@ class LocalDbHelper {
       final box = await Hive.openBox<dynamic>(_productBoxKey);
       await box.clear();
       for (var product in products) {
-        await box.add(product.toJson());
+        await box.add(product.toCreateJson());
       }
       await _box.put(_lastProductFetchTimeKey, DateTime.now().millisecondsSinceEpoch);
       debugPrint("✅ [LocalDbHelper] Products saved successfully!");
@@ -316,11 +316,11 @@ class LocalDbHelper {
       );
       if (existingIndex != -1) {
         // Update existing product
-        await box.putAt(existingIndex, product.toJson());
+        await box.putAt(existingIndex, product.toCreateJson());
         debugPrint("✅ [LocalDbHelper] Product updated: ${product.productName}");
       } else {
         // Add new product
-        await box.add(product.toJson());
+        await box.add(product.toCreateJson());
         debugPrint("✅ [LocalDbHelper] Product added: ${product.productName}");
       }
     } catch (e) {

@@ -17,10 +17,12 @@ class VerificationPage extends StatefulWidget {
     required this.email,
     required this.isNewAccount,
     this.name,
+    this.token,
   });
   final String email;
   final bool isNewAccount;
   final String? name;
+  final String? token;
 
   @override
   State<VerificationPage> createState() => _VerificationPageState();
@@ -53,7 +55,7 @@ class _VerificationPageState extends State<VerificationPage> {
                     ),
                     SizedBox(height: 10),
                     Text(
-                      '${l.verificationCodeSent}${widget.email}',
+                      '${l.verificationCodeSent}   ${widget.email}',
                       style: TextStyle(fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -152,7 +154,11 @@ class _VerificationPageState extends State<VerificationPage> {
                             : CustomButton(
                                 text: 'Verify',
                                 onPressed: () async {
-                                  if (await verificationProvider.verifyOtp(context, widget.email) ==
+                                  if (await verificationProvider.verifyOtp(
+                                        context,
+                                        widget.email,
+                                        token: widget.token,
+                                      ) ==
                                       true) {
                                     if (widget.isNewAccount == true) {
                                       if (context.mounted) {
