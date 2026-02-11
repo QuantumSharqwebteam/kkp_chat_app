@@ -60,11 +60,10 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
               Text(AppLocalizations.of(context)!.loginAndRecovery,
                   style: AppTextStyles.black16_500),
               Text(
-                "Manage Y",
+                "Manage your account",
                 style: AppTextStyles.black14_400,
               ),
-              Text(AppLocalizations.of(context)!.loginPreferenceAndRecovery,
-                  style: AppTextStyles.black14_400),
+              Text("Login preference and recovery methods", style: AppTextStyles.black14_400),
               SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
