@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
@@ -231,6 +232,7 @@ class ChatService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+      LoggingService.instance.logNetwork("Form Data: ${data.toString()}");
 
       List<FormDataModel> formList =
           (data['formData'] as List).map((item) => FormDataModel.fromJson(item)).toList();
@@ -254,6 +256,7 @@ class ChatService {
     // print(response.body);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+      LoggingService.instance.logNetwork("Form Data: ${data.toString()}");
 
       List<FormDataModel> formList =
           (data['formData'] as List).map((item) => FormDataModel.fromJson(item)).toList();

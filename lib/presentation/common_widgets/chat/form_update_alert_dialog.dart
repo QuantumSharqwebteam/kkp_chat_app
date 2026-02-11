@@ -7,7 +7,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
 class FormUpdateAlertDialog extends StatelessWidget {
   final String formId;
-
+  final String buyerName;
   final String quality;
   final String quantity;
   final String weave;
@@ -18,6 +18,7 @@ class FormUpdateAlertDialog extends StatelessWidget {
 
   const FormUpdateAlertDialog({
     super.key,
+    required this.buyerName,
     required this.quality,
     required this.quantity,
     required this.weave,
@@ -38,6 +39,23 @@ class FormUpdateAlertDialog extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Buyer name ',
+                  style: AppTextStyles.black14_600,
+                ),
+                TextSpan(
+                  text: buyerName,
+                  style: AppTextStyles.grey12_600,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
           RichText(
             text: TextSpan(
               children: [

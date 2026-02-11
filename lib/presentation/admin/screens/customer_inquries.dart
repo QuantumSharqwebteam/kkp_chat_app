@@ -35,17 +35,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   bool showFilters = false;
   String selectedDateRange = 'Last 30 days';
   String selectedStatus = "All";
-  bool isFetchingMore = false;
+
   bool isDownloading = false;
 
   List<String> dateRanges = ['Today', 'Last Week', 'Last Month', 'Last 30 days'];
   List<String> status = ["All", "Confirmed", "Processed", "Declined"];
-
-  List<FormDataModel> filteredInquiries = [];
-
-  late ScrollController _scrollController;
-  int visibleItemCount = 10;
-  final int itemsPerPage = 10;
 
   // Map to track the expanded state of each inquiry card
   Map<String, bool> expandedStates = {};
@@ -53,20 +47,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   @override
   void initState() {
     super.initState();
-    _inquiryProvider = Provider.of<InquiryProvider>(context, listen: false);
-    _fetchInitialData();
-    _searchController.addListener(_applyFilters);
-    _scrollController = ScrollController()..addListener(_onScroll);
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Listen for changes in the provider and apply filters when data changes
-    final provider = Provider.of<InquiryProvider>(context);
-    if (!provider.isLoading) {
-      _applyFilters();
-    }
+    _inquiryProvider = Provider.of<InquiryProvider>(context, listen: false);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _fetchInitialData();
+    });
   }
 
   Future<void> _fetchInitialData() async {
@@ -80,23 +66,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() async {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
-        !isFetchingMore &&
-        visibleItemCount < filteredInquiries.length) {
-      setState(() => isFetchingMore = true);
-      await Future.delayed(const Duration(milliseconds: 500)); // Simulate fetch
-      setState(() {
-        visibleItemCount = (visibleItemCount + itemsPerPage).clamp(0, filteredInquiries.length);
-        isFetchingMore = false;
-      });
-    }
   }
 
   String _getFormattedDate(String rawDate) {
@@ -109,69 +80,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     final parsed = DateTime.tryParse(rawDate);
     if (parsed == null) return '';
     return DateFormat('h:mm a').format(parsed); // e.g., "3:45 PM"
-  }
-
-  void _applyFilters() {
-    final allInquiries = _inquiryProvider.inquiries;
-    String search = _searchController.text.toLowerCase();
-    final now = DateTime.now();
-
-    final filtered = allInquiries.where((item) {
-      final matchQuality = selectedStatus == 'All' || item.status.contains(selectedStatus);
-
-      final dateTime = DateTime.tryParse(item.date);
-      final formattedDate =
-          dateTime != null ? DateFormat('MMMM d, yyyy').format(dateTime).toLowerCase() : '';
-      final formattedTime =
-          dateTime != null ? DateFormat('h:mm a').format(dateTime).toLowerCase() : '';
-
-      final matchSearch = item.customerName.toLowerCase().contains(search) ||
-          item.agentName.toLowerCase().contains(search) ||
-          item.quality.toLowerCase().contains(search) ||
-          item.weave.toLowerCase().contains(search) ||
-          item.composition.toLowerCase().contains(search) ||
-          item.rate.toLowerCase().contains(search) ||
-          item.quantity.toLowerCase().contains(search) ||
-          item.status.toLowerCase().contains(search) ||
-          formattedDate.contains(search) || // 🔍 Match formatted date
-          formattedTime.contains(search); // 🔍 Match formatted time
-
-      bool matchDate = true;
-      if (dateTime != null) {
-        switch (selectedDateRange) {
-          case 'Today':
-            matchDate =
-                dateTime.day == now.day && dateTime.month == now.month && dateTime.year == now.year;
-            break;
-          case 'Last Week':
-            matchDate = dateTime.isAfter(now.subtract(const Duration(days: 7)));
-            break;
-          case 'Last Month':
-            matchDate = dateTime.isAfter(DateTime(now.year, now.month - 1, now.day));
-            break;
-          case 'Last 30 days':
-            matchDate = dateTime.isAfter(now.subtract(const Duration(days: 30)));
-            break;
-        }
-      }
-
-      return matchQuality && matchSearch && matchDate;
-    }).toList();
-
-    // Sort by date and time
-    filtered.sort((a, b) {
-      final dateA = DateTime.tryParse(a.date);
-      final dateB = DateTime.tryParse(b.date);
-      if (dateA == null || dateB == null) return 0;
-      return dateB.compareTo(dateA); // Newest first
-    });
-
-    final newVisibleCount = filtered.length > itemsPerPage ? itemsPerPage : filtered.length;
-
-    setState(() {
-      filteredInquiries = filtered;
-      visibleItemCount = newVisibleCount;
-    });
   }
 
   void toggleShowFilters() {
@@ -277,7 +185,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                     onTap: isDownloading
                         ? null
                         : () async {
-                            await downloadAsExcel(filteredInquiries);
+                            await downloadAsExcel(_inquiryProvider.inquiries);
                           },
                     child: isDownloading
                         ? const SizedBox(
@@ -323,7 +231,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                                       enable: true,
                                       controller: _searchController,
                                       hintText: AppLocalizations.of(context)!.searchByAnything,
-                                      onChanged: (value) => _applyFilters(),
+                                      onChanged: (value) {
+                                        _inquiryProvider.updateSearch(value);
+                                      },
                                     ),
                                   ),
                                 ),
@@ -388,7 +298,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
               items: dateRanges,
               onChanged: (value) {
                 setState(() => selectedDateRange = value!);
-                _applyFilters();
+                _inquiryProvider.updateDateRange(value!);
               },
             ),
             const SizedBox(width: 10),
@@ -397,7 +307,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
               items: status,
               onChanged: (value) {
                 setState(() => selectedStatus = value!);
-                _applyFilters();
+                _inquiryProvider.updateStatus(value!);
               },
             ),
           ],
@@ -407,32 +317,20 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   Widget _buildInquiryList() {
-    if (filteredInquiries.isEmpty) {
-      return Center(child: EmptyInquriesWidget());
+    final inquiries = _inquiryProvider.inquiries;
+
+    if (inquiries.isEmpty) {
+      return const Center(child: EmptyInquriesWidget());
     }
 
-    final visibleItems = filteredInquiries.take(visibleItemCount).toList();
-
     return RefreshIndicator(
-      onRefresh: () async => await _inquiryProvider.refreshInquiries(),
+      onRefresh: _inquiryProvider.refreshInquiries,
       child: ListView.builder(
-        physics: AlwaysScrollableScrollPhysics(),
-        controller: _scrollController,
-        itemCount: visibleItems.length + (isFetchingMore ? 1 : 0),
+        padding: const EdgeInsets.only(bottom: 60),
+        itemCount: inquiries.length,
         itemBuilder: (context, index) {
-          if (index == visibleItems.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          final inquiry = visibleItems[index];
-          return AnimatedOpacity(
-            opacity: 1,
-            duration: Duration(milliseconds: 400 + (index * 100)),
-            child: _buildInquiryCard(inquiry),
-          );
+          final inquiry = inquiries[index];
+          return _buildInquiryCard(inquiry);
         },
       ),
     );

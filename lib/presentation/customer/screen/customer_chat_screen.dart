@@ -908,6 +908,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
       builder: (BuildContext context) {
         return FormUpdateAlertDialog(
           formId: formData["_id"],
+          buyerName: formData["buyerName"],
           quality: formData['quality'],
           quantity: formData['quantity'],
           weave: formData['weave'],
