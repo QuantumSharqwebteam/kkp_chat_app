@@ -203,7 +203,7 @@ class _MarketingProductDescrptionPageState extends State<MarketingProductDescrpt
                     ],
                   ),
                   SizedBox(
-                    height: 40,
+                    height: 100,
                   )
                 ],
               ),

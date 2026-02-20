@@ -4,7 +4,6 @@ import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/core/utils/helper_functions.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-import 'package:kkpchatapp/presentation/common/auth/verification_bottom_sheet.dart';
 import 'package:kkpchatapp/presentation/common/auth/verification_page.dart';
 
 class LoginProvider with ChangeNotifier {
