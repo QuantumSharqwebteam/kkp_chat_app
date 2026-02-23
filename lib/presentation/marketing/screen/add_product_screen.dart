@@ -41,43 +41,52 @@ class AddProductScreen extends StatelessWidget {
           builder: (context, provider, _) {
             return Stack(
               children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildImagePickerContainer(context, provider),
-                      const SizedBox(height: 10),
-                      _buildProductDetails(context, provider),
-                      const SizedBox(height: 10),
-                      CustomButton(
-                        onPressed: () async {
-                          bool success = await provider.addProduct();
-                          if (context.mounted) {
-                            if (!success) {
-                              Utils().showSuccessDialog(
-                                  context, locale.pleaseFillAllFields, false);
-                              return;
-                            }
-                          }
-                          if (context.mounted) {
-                            Utils().showSuccessDialog(
-                                context, locale.productAddedSuccessfully, true);
-                          }
-                          Future.delayed(const Duration(seconds: 2), () {
+                SafeArea(
+                  top: false,
+                  bottom: Platform.isAndroid,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildImagePickerContainer(context, provider),
+                        const SizedBox(height: 10),
+                        _buildProductDetails(context, provider),
+                        const SizedBox(height: 10),
+                        CustomButton(
+                          onPressed: () async {
+                            bool success = await provider.addProduct();
                             if (context.mounted) {
-                              Navigator.pop(context); // Close dialog
-                              Navigator.pop(
-                                  context, true); // Go back with success
+                              if (!success) {
+                                Utils()
+                                    .showSuccessDialog(context, locale.pleaseFillAllFields, false);
+                                return;
+                              }
+                              Future.delayed(const Duration(microseconds: 300), () {
+                                if (context.mounted) {
+                                  Navigator.pop(context); // Close dialog
+                                }
+                              });
                             }
-                          });
-                        },
-                        text: locale.addProduct,
-                        fontSize: 18,
-                        borderColor: AppColors.blue00ABE9,
-                        backgroundColor: AppColors.blue00ABE9,
-                      ),
-                    ],
+                            if (context.mounted) {
+                              Utils().showSuccessDialog(
+                                  context, locale.productAddedSuccessfully, true);
+                            }
+                            Future.delayed(const Duration(seconds: 2), () {
+                              if (context.mounted) {
+                                Navigator.pop(context); // Close dialog
+                                Navigator.pop(context, true); // Go back with success
+                              }
+                            });
+                          },
+                          text: locale.addProduct,
+                          fontSize: 18,
+                          borderColor: AppColors.blue00ABE9,
+                          backgroundColor: AppColors.blue00ABE9,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 if (provider.isLoading) const FullScreenLoader(),
@@ -89,16 +98,14 @@ class AddProductScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildImagePickerContainer(
-      BuildContext context, AddProductProvider provider) {
+  Widget _buildImagePickerContainer(BuildContext context, AddProductProvider provider) {
     final locale = AppLocalizations.of(context)!;
 
     return SizedBox(
       width: double.maxFinite,
       child: GestureDetector(
         onTap: () async {
-          final pickedFile =
-              await ImagePicker().pickImage(source: ImageSource.gallery);
+          final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
           if (pickedFile != null) {
             provider.pickImage(File(pickedFile.path));
           }
@@ -134,8 +141,8 @@ class AddProductScreen extends StatelessWidget {
                               fontSize: 13,
                               backgroundColor: AppColors.background,
                               onPressed: () async {
-                                final pickedFile = await ImagePicker()
-                                    .pickImage(source: ImageSource.gallery);
+                                final pickedFile =
+                                    await ImagePicker().pickImage(source: ImageSource.gallery);
                                 if (pickedFile != null) {
                                   provider.pickImage(File(pickedFile.path));
                                 }
@@ -165,8 +172,7 @@ class AddProductScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProductDetails(
-      BuildContext context, AddProductProvider provider) {
+  Widget _buildProductDetails(BuildContext context, AddProductProvider provider) {
     final locale = AppLocalizations.of(context)!;
 
     return Container(
@@ -194,10 +200,8 @@ class AddProductScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(
-                  child: Text(locale.price, style: AppTextStyles.black14_600)),
-              Expanded(
-                  child: Text(locale.size, style: AppTextStyles.black14_600)),
+              Expanded(child: Text(locale.price, style: AppTextStyles.black14_600)),
+              Expanded(child: Text(locale.size, style: AppTextStyles.black14_600)),
             ],
           ),
           const SizedBox(height: 5),
@@ -272,8 +276,7 @@ class AddProductScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildColorPickerWidget(
-      BuildContext context, AddProductProvider provider) {
+  Widget _buildColorPickerWidget(BuildContext context, AddProductProvider provider) {
     final locale = AppLocalizations.of(context)!;
     return Wrap(
       spacing: 8.0,
@@ -289,9 +292,8 @@ class AddProductScreen extends StatelessWidget {
         }),
         GestureDetector(
           onTap: () async {
-            Color pickedColor = provider.selectedColors.isNotEmpty
-                ? provider.selectedColors.last
-                : Colors.black;
+            Color pickedColor =
+                provider.selectedColors.isNotEmpty ? provider.selectedColors.last : Colors.black;
 
             Color? newColor = await showDialog(
               context: context,
