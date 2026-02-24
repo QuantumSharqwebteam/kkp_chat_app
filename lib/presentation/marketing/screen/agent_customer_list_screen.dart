@@ -22,8 +22,7 @@ class AgentCustomersListScreen extends StatefulWidget {
   });
 
   @override
-  State<AgentCustomersListScreen> createState() =>
-      _AgentCustomersListScreenState();
+  State<AgentCustomersListScreen> createState() => _AgentCustomersListScreenState();
 }
 
 class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
@@ -43,8 +42,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
     });
 
     try {
-      final fetchedCustomerList =
-          await _chatRepo.fetchAssignedCustomerList(widget.agentEmail);
+      final fetchedCustomerList = await _chatRepo.fetchAssignedCustomerList(widget.agentEmail);
       setState(() {
         customers = fetchedCustomerList;
       });
@@ -84,7 +82,7 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
           Padding(
             padding: const EdgeInsets.only(
               top: 40,
-              bottom: 20,
+              bottom: 80,
             ),
             child: Text(
               locale.customersList,
@@ -100,13 +98,11 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                     ? NoCustomerAssignedWidget()
                     : ListView.separated(
                         itemCount: customers.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 15),
+                        separatorBuilder: (context, index) => const SizedBox(height: 15),
                         itemBuilder: (context, index) {
                           final customer = customers[index];
                           return Container(
-                            decoration:
-                                BoxDecoration(color: Colors.white, boxShadow: [
+                            decoration: BoxDecoration(color: Colors.white, boxShadow: [
                               BoxShadow(
                                 blurRadius: 4,
                                 spreadRadius: 0,
@@ -145,13 +141,11 @@ class _AgentCustomersListScreenState extends State<AgentCustomersListScreen> {
                                 // if (result == true) {
                                 //   await fetchCustomers();
                                 // }
-                                Navigator.push(context,
-                                    MaterialPageRoute(builder: (context) {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) {
                                   return AgentCustomerMessagesScreen(
                                     agentEmail: widget.agentEmail,
                                     agentName: widget.agentName,
-                                    customerEmail:
-                                        customer['email'] ?? "user@gmail.com",
+                                    customerEmail: customer['email'] ?? "user@gmail.com",
                                     customerName: customer["name"] ?? "user",
                                   );
                                 }));

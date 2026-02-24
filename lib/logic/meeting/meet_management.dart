@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/api/meeting_service.dart';
 import 'package:kkpchatapp/data/models/meet_model.dart';
 
 class MeetingManagement with ChangeNotifier {
   final MeetingService _meetingService;
+  final LoggingService _logger = LoggingService.instance;
   List<MeetingModel> _meetings = [];
   bool _isLoading = false;
   bool _isUpdating = false;
@@ -24,18 +26,28 @@ class MeetingManagement with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+    _logger.logUi('MeetingManagement.fetchAllMeetings started', level: LogLevel.info);
 
     try {
       _meetings = await _meetingService.getAllMeetings();
+      _logger.logUi(
+        'MeetingManagement.fetchAllMeetings success | Count: ${_meetings.length}',
+        level: LogLevel.info,
+      );
       // debugPrint("Total meetings fetched: ${_meetings.length}"); // Debug print
 
       // Print details of all meetings
       // for (var meeting in _meetings) {
       //   debugPrint("Meeting: ${meeting.title}, Time: ${meeting.startTime}");
       // }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = "Failed to fetch meetings: $e";
-      debugPrint("Error fetching meetings: $e"); // Debug print for errors
+      _logger.logUi(
+        'MeetingManagement.fetchAllMeetings failed',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stackTrace,
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -108,6 +120,10 @@ class MeetingManagement with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+    _logger.logUi(
+      'MeetingManagement.createMeeting started | title: $title',
+      level: LogLevel.info,
+    );
     try {
       final success = await _meetingService.createMeeting(
         title: title,
@@ -116,11 +132,20 @@ class MeetingManagement with ChangeNotifier {
         startTime: startTime,
       );
       if (success) {
+        _logger.logUi('MeetingManagement.createMeeting success', level: LogLevel.info);
         await fetchAllMeetings(); // Refresh the list
+      } else {
+        _logger.logUi('MeetingManagement.createMeeting failed', level: LogLevel.warning);
       }
       return success;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = "Failed to create meeting: $e";
+      _logger.logUi(
+        'MeetingManagement.createMeeting exception',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stackTrace,
+      );
       return false;
     } finally {
       _isLoading = false;
@@ -140,6 +165,7 @@ class MeetingManagement with ChangeNotifier {
     _isUpdating = true; // Set updating state to true
     _error = null;
     notifyListeners();
+    _logger.logUi('MeetingManagement.updateMeeting started | id: $id', level: LogLevel.info);
     try {
       final success = await _meetingService.updateMeeting(
         id: id,
@@ -150,11 +176,20 @@ class MeetingManagement with ChangeNotifier {
         status: status,
       );
       if (success) {
+        _logger.logUi('MeetingManagement.updateMeeting success | id: $id', level: LogLevel.info);
         await fetchAllMeetings(); // Refresh the list
+      } else {
+        _logger.logUi('MeetingManagement.updateMeeting failed | id: $id', level: LogLevel.warning);
       }
       return success;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = "Failed to update meeting: $e";
+      _logger.logUi(
+        'MeetingManagement.updateMeeting exception | id: $id',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stackTrace,
+      );
       return false;
     } finally {
       _isUpdating = false; // Set updating state to false
@@ -167,14 +202,24 @@ class MeetingManagement with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+    _logger.logUi('MeetingManagement.deleteMeeting started | id: $id', level: LogLevel.info);
     try {
       final success = await _meetingService.deleteMeeting(id);
       if (success) {
+        _logger.logUi('MeetingManagement.deleteMeeting success | id: $id', level: LogLevel.info);
         await fetchAllMeetings(); // Refresh the list
+      } else {
+        _logger.logUi('MeetingManagement.deleteMeeting failed | id: $id', level: LogLevel.warning);
       }
       return success;
-    } catch (e) {
+    } catch (e, stackTrace) {
       _error = "Failed to delete meeting: $e";
+      _logger.logUi(
+        'MeetingManagement.deleteMeeting exception | id: $id',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stackTrace,
+      );
       return false;
     } finally {
       _isLoading = false;

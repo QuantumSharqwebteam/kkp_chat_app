@@ -11,7 +11,11 @@ class UserModel {
   });
 
   static UserModel fromJson(Map<String, dynamic> json) {
-    return UserModel(id: json['_id'], email: json['email'], name: json['name']);
+    return UserModel(
+      id: (json['_id'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+    );
   }
 
   // Map<String, dynamic> toMap() {

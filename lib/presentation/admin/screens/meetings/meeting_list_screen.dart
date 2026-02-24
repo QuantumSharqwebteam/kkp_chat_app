@@ -16,6 +16,16 @@ class MeetingsListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
     final meetingManagement = Provider.of<MeetingManagement>(context);
+    final upcomingMeetings = meetingManagement.getTodaysUpcomingMeetings();
+    final upcomingIds = upcomingMeetings.map((meeting) => meeting.id).toSet();
+    final remainingMeetings =
+        meetingManagement.meetings.where((meeting) => !upcomingIds.contains(meeting.id)).toList()
+          ..sort((a, b) {
+            final aTime = DateTime.tryParse(a.startTime) ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final bTime = DateTime.tryParse(b.startTime) ?? DateTime.fromMillisecondsSinceEpoch(0);
+            return aTime.compareTo(bTime);
+          });
+    final sortedMeetings = [...upcomingMeetings, ...remainingMeetings];
 
     return Scaffold(
       appBar: AppBar(
@@ -33,9 +43,9 @@ class MeetingsListScreen extends StatelessWidget {
               : RefreshIndicator(
                   onRefresh: () => meetingManagement.fetchAllMeetings(),
                   child: ListView.builder(
-                    itemCount: meetingManagement.meetings.length,
+                    itemCount: sortedMeetings.length,
                     itemBuilder: (context, index) {
-                      final meeting = meetingManagement.meetings[index];
+                      final meeting = sortedMeetings[index];
                       return MeetingTile(
                         meeting: meeting,
                         showButtons: meeting.scheduledPerson.email == email,

@@ -61,13 +61,13 @@ class AddProductScreen extends StatelessWidget {
                               if (!success) {
                                 Utils()
                                     .showSuccessDialog(context, locale.pleaseFillAllFields, false);
+                                Future.delayed(const Duration(microseconds: 300), () {
+                                  if (context.mounted) {
+                                    Navigator.pop(context); // Close dialog
+                                  }
+                                });
                                 return;
                               }
-                              Future.delayed(const Duration(microseconds: 300), () {
-                                if (context.mounted) {
-                                  Navigator.pop(context); // Close dialog
-                                }
-                              });
                             }
                             if (context.mounted) {
                               Utils().showSuccessDialog(

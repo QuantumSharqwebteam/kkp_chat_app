@@ -105,6 +105,10 @@ class LocalDbHelper {
     return null;
   }
 
+  static String? getProfileId() {
+    return getProfile()?.id;
+  }
+
   static Future<void> removeProfile() async {
     await _box.delete(_profile);
   }

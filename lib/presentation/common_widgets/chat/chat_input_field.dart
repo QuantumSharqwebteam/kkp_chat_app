@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 
@@ -35,8 +36,7 @@ class ChatInputField extends StatefulWidget {
   State<ChatInputField> createState() => _ChatInputFieldState();
 }
 
-class _ChatInputFieldState extends State<ChatInputField>
-    with SingleTickerProviderStateMixin {
+class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
 
@@ -47,15 +47,14 @@ class _ChatInputFieldState extends State<ChatInputField>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _animation =
-        Tween<double>(begin: 1.0, end: 1.5).animate(_animationController)
-          ..addStatusListener((status) {
-            if (status == AnimationStatus.completed) {
-              _animationController.reverse();
-            } else if (status == AnimationStatus.dismissed) {
-              _animationController.forward();
-            }
-          });
+    _animation = Tween<double>(begin: 1.0, end: 1.5).animate(_animationController)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _animationController.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          _animationController.forward();
+        }
+      });
 
     if (widget.isRecording) {
       _animationController.forward();
@@ -128,8 +127,7 @@ class _ChatInputFieldState extends State<ChatInputField>
                     ),
                   ),
                   IconButton(
-                      icon: const Icon(Icons.camera_alt),
-                      onPressed: widget.onSendImageByCamera),
+                      icon: const Icon(Icons.camera_alt), onPressed: widget.onSendImageByCamera),
                   const SizedBox(
                     width: 10,
                   ),
@@ -156,8 +154,7 @@ class _ChatInputFieldState extends State<ChatInputField>
                               height: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color:
-                                    AppColors.blue00ABE9.withValues(alpha: 0.5),
+                                color: AppColors.blue00ABE9.withValues(alpha: 0.5),
                               ),
                             ),
                           ),
@@ -216,84 +213,82 @@ final String? currentUser = LocalDbHelper.getProfile()?.role;
 
 void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
   showModalBottomSheet(
-    context: context,
-    elevation: 10,
-    backgroundColor: Colors.transparent, // Makes the corners visible
-    isScrollControlled: true, // Ensures proper spacing
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-    ),
-    builder: (context) {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20.0),
-    ),
-    margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
-    padding: const EdgeInsets.all(10.0),
-    child: SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 🛑 Fix: Add SizedBox or ConstrainedBox
-          SizedBox(
-            height: 200, // Adjust height as needed (e.g., 2 rows of GridView)
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 2,
-                mainAxisSpacing: 0,
-                childAspectRatio: 0.9,
-              ),
-              itemCount: currentUser == "User"
-                  ? attachmentItemsforCustomer.length
-                  : attachmentItems.length,
-              itemBuilder: (context, index) {
-                final item = currentUser == "User"
-                    ? attachmentItemsforCustomer[index]
-                    : attachmentItems[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      onItemSelected(item['label']!);
-                    });
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          shape: BoxShape.circle,
+      context: context,
+      elevation: 10,
+      backgroundColor: Colors.transparent, // Makes the corners visible
+      isScrollControlled: true, // Ensures proper spacing
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+      ),
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          margin: EdgeInsets.only(bottom: Utils().height(context) * 0.1, left: 10, right: 10),
+          padding: const EdgeInsets.all(10.0),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 🛑 Fix: Add SizedBox or ConstrainedBox
+                SizedBox(
+                  height: 200, // Adjust height as needed (e.g., 2 rows of GridView)
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 2,
+                      mainAxisSpacing: 0,
+                      childAspectRatio: 0.9,
+                    ),
+                    itemCount: currentUser == "User"
+                        ? attachmentItemsforCustomer.length
+                        : attachmentItems.length,
+                    itemBuilder: (context, index) {
+                      final item = currentUser == "User"
+                          ? attachmentItemsforCustomer[index]
+                          : attachmentItems[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            onItemSelected(item['label']!);
+                          });
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Image.asset(
+                                item['image']!,
+                                height: 30,
+                                width: 30,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              item['label']!,
+                              style: AppTextStyles.black10_500,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        child: Image.asset(
-                          item['image']!,
-                          height: 30,
-                          width: 30,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item['label']!,
-                        style: AppTextStyles.black10_500,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    ),
-  );
-}
-
-  );
+        );
+      });
 }
