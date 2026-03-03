@@ -149,46 +149,45 @@ class _VerificationPageState extends State<VerificationPage> {
                           textColor: Colors.black,
                           fontSize: 12,
                         ),
-                        verificationProvider.isVerifyLoading
-                            ? Center(child: CircularProgressIndicator())
-                            : CustomButton(
-                                text: 'Verify',
-                                onPressed: () async {
-                                  if (await verificationProvider.verifyOtp(
-                                        context,
-                                        widget.email,
-                                        token: widget.token,
-                                      ) ==
-                                      true) {
-                                    if (widget.isNewAccount == true) {
-                                      if (context.mounted) {
-                                        Navigator.pushReplacementNamed(
-                                            context, CustomerRoutes.customerProfileSetup,
-                                            arguments: {"forUpdate": false, "name": widget.name});
-                                      }
-                                    } else {
-                                      if (context.mounted) {
-                                        Navigator.pushReplacement(context,
-                                            MaterialPageRoute(builder: (_) {
-                                          return NewPassPage(
-                                            email: widget.email,
-                                          );
-                                        }));
-                                      }
-                                    }
-                                  } else {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(l.wrongOTPError),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                                width: Utils().width(context) * 0.38,
-                                fontSize: 12,
-                              ),
+                        CustomButton(
+                          text: 'Verify',
+                          isLoading: verificationProvider.isVerifyLoading,
+                          onPressed: () async {
+                            if (await verificationProvider.verifyOtp(
+                                  context,
+                                  widget.email,
+                                  token: widget.token,
+                                ) ==
+                                true) {
+                              if (widget.isNewAccount == true) {
+                                if (context.mounted) {
+                                  Navigator.pushReplacementNamed(
+                                      context, CustomerRoutes.customerProfileSetup,
+                                      arguments: {"forUpdate": false, "name": widget.name});
+                                }
+                              } else {
+                                if (context.mounted) {
+                                  Navigator.pushReplacement(context,
+                                      MaterialPageRoute(builder: (_) {
+                                    return NewPassPage(
+                                      email: widget.email,
+                                    );
+                                  }));
+                                }
+                              }
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(l.wrongOTPError),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          width: Utils().width(context) * 0.38,
+                          fontSize: 12,
+                        ),
                       ],
                     ),
                     SizedBox(height: 30),

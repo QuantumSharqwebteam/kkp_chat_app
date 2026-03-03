@@ -92,14 +92,13 @@ class _NewPassPageState extends State<NewPassPage> {
                           onChanged: (value) => newPassProvider.setRePassword(value),
                         ),
                         SizedBox(height: 40),
-                        newPassProvider.isLoading
-                            ? const CircularProgressIndicator()
-                            : CustomButton(
-                                text: l.resetPassword,
-                                onPressed: () {
-                                  newPassProvider.changePassword(context, widget.email);
-                                },
-                              ),
+                        CustomButton(
+                          text: l.resetPassword,
+                          isLoading: newPassProvider.isLoading,
+                          onPressed: () {
+                            newPassProvider.changePassword(context, widget.email);
+                          },
+                        ),
                         SizedBox(height: 20),
                       ],
                     ),

@@ -8,20 +8,29 @@ import 'package:kkpchatapp/presentation/common/chat/incoming_call_screen.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 
-/// Handles notification click for customers.
-Future<void> handleNotificationClickForCustomer(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
-//  final customerEmail = LocalDbHelper.getProfile()?.email;
-  final customerEmail = notificationData['targetId'];
+Future<void> _resetCustomerUnreadCount(
+    GlobalKey<NavigatorState> navigatorKey, String? customerEmail) async {
+  if (customerEmail == null || customerEmail.isEmpty) return;
+
   final boxNameWithCount = '${customerEmail}count';
   final box = await Hive.openBox<int>(boxNameWithCount);
   await box.put('count', 0);
+}
+
+/// Handles notification click for customers.
+Future<void> handleNotificationClickForCustomer(
+    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+  final customerEmail = (notificationData['targetId'] as String?) ?? LocalDbHelper.getEmail();
+  if (notificationData["type"] == "product") {
+    notificationData["message"] = "Shared product";
+  }
+  await _resetCustomerUnreadCount(navigatorKey, customerEmail);
 
   navigatorKey.currentState?.push(
     MaterialPageRoute(
       builder: (_) => CustomerChatScreen(
         agentName: "Agent",
-        customerEmail: notificationData['targetId'],
+        customerEmail: customerEmail,
         navigatorKey: navigatorKey,
       ),
     ),
@@ -38,11 +47,16 @@ Future<void> handlePushNotificationClickForCustomer(
 
   // Function to trigger navigation
   void triggerNavigation() {
-    // final customerEmail = LocalDbHelper.getProfile()?.email;
-
-    final customerEmail = notificationData["targetId"];
+    final customerEmail = (notificationData["targetId"] as String?) ?? LocalDbHelper.getEmail();
     final agentEmail = notificationData["senderId"];
     final agentName = notificationData["senderName"];
+    if (notificationData["type"] == "product") {
+      notificationData["message"] = "Shared product";
+    }
+    if (customerEmail == null || customerEmail.isEmpty) {
+      debugPrint("Customer email missing in notification payload; skipping navigation.");
+      return;
+    }
 
     // ChatStorageService chatStorageService = ChatStorageService();
     // final Map<String, dynamic> notiData = notificationData;
@@ -59,17 +73,18 @@ Future<void> handlePushNotificationClickForCustomer(
 
     //chatStorageService.saveMessage(pushMessage, targetId);
 
-    Navigator.push(
-      navigatorKey.currentContext!,
-      MaterialPageRoute(
-        builder: (_) => CustomerChatScreen(
-          agentName: agentName,
-          customerEmail: customerEmail,
-          agentEmail: agentEmail,
-          navigatorKey: navigatorKey,
+    _resetCustomerUnreadCount(navigatorKey, customerEmail).whenComplete(() {
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => CustomerChatScreen(
+            agentName: agentName,
+            customerEmail: customerEmail,
+            agentEmail: agentEmail,
+            navigatorKey: navigatorKey,
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   // Listen for changes to isAppInitialized
@@ -102,6 +117,9 @@ Future<void> handlePushNotificationClickForCustomer(
 /// Handles notification click for agents.
 Future<void> handleNotificationClickForAgent(
     GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+  if (notificationData["type"] == "product") {
+    notificationData["message"] = "Shared product";
+  }
   final customerEmail = notificationData['senderId'];
   final agentEmail = notificationData['targetId'];
   final customerName = notificationData['senderName'];
@@ -180,6 +198,9 @@ Future<void> handlePushNotificationClickForAgent(
     final customerName = notificationData['senderName'];
     final agentEmail = notificationData['targetId'];
     final agentName = notificationData['targetName'];
+    if (notificationData["type"] == "product") {
+      notificationData["message"] = "Shared product";
+    }
     await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
     Navigator.push(
       navigatorKey.currentContext!,

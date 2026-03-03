@@ -246,16 +246,16 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                 if (notificationCount > 0)
                   Positioned(
                     right: 10,
-                    top: 10,
+                    top: 5,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(5),
                       decoration: const BoxDecoration(
                         color: Colors.red,
                         shape: BoxShape.circle,
                       ),
                       child: Text(
                         notificationCount.toString(),
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
                       ),
                     ),
                   ),

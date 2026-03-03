@@ -32,11 +32,16 @@ class ComplaintsProvider extends ChangeNotifier {
       {required String subject, required String description}) async {
     complaintSubmitting = true;
     notifyListeners();
-    final result = await _complaintRepository.submitComplaint(
-        subject: subject, description: description);
-    complaintSubmitting = false;
-    notifyListeners();
-    return result;
+    try {
+      final result = await _complaintRepository.submitComplaint(
+          subject: subject, description: description);
+      return result;
+    } catch (_) {
+      return false;
+    } finally {
+      complaintSubmitting = false;
+      notifyListeners();
+    }
   }
 }
 

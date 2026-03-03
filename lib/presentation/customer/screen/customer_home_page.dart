@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
@@ -68,13 +69,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _buildCarouselIndicator(),
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  margin: EdgeInsets.symmetric(horizontal: 5),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(15),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,29 +87,24 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         notificationCount: _provider.notificationCount,
                       ),
                       SizedBox(height: 20),
-                      if (_provider.newProducts == null)
-                        Text(AppLocalizations.of(context)!.newProducts,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       _provider.isLoading
                           ? ShimmerGrid()
-                          : _provider.newProducts != null && _provider.previousProducts != null
+                          : (_provider.newProducts?.isNotEmpty ?? false)
                               ? Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    Text(
+                                      AppLocalizations.of(context)!.newProducts,
+                                      style: AppTextStyles.black16_500,
+                                    ),
                                     ResponsiveGridList(
                                       horizontalGridSpacing: Utils().width(context) * 0.025,
                                       verticalGridSpacing: Utils().height(context) * 0.0125,
                                       horizontalGridMargin: Utils().width(context) * 0.025,
                                       verticalGridMargin: Utils().height(context) * 0.015,
-
-                                      // ✅ Increase card width more aggressively
-                                      minItemWidth: isTablet
-                                          ? (isLandscape ? 420 : 340) // wider for tablets
-                                          : 200, // mobile size
-
+                                      minItemWidth: isTablet ? (isLandscape ? 420 : 340) : 200,
                                       minItemsPerRow: isLandscape ? 1 : 2,
                                       maxItemsPerRow: isLandscape ? 2 : 2,
-
                                       listViewBuilderOptions: ListViewBuilderOptions(
                                         physics: NeverScrollableScrollPhysics(),
                                         shrinkWrap: true,
@@ -131,49 +125,46 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                         );
                                       }).toList(),
                                     ),
-                                    const SizedBox(height: 20),
-                                    if (_provider.previousProducts == null)
-                                      Text(AppLocalizations.of(context)!.previousProducts,
-                                          style:
-                                              TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                    ResponsiveGridList(
-                                      horizontalGridSpacing: Utils().width(context) * 0.025,
-                                      verticalGridSpacing: Utils().height(context) * 0.0125,
-                                      horizontalGridMargin: Utils().width(context) * 0.025,
-                                      verticalGridMargin: Utils().height(context) * 0.015,
-
-                                      // ✅ Increase card width more aggressively
-                                      minItemWidth: isTablet
-                                          ? (isLandscape ? 420 : 340) // wider for tablets
-                                          : 200, // mobile size
-
-                                      minItemsPerRow: isLandscape ? 1 : 2,
-                                      maxItemsPerRow: isLandscape ? 2 : 2,
-
-                                      listViewBuilderOptions: ListViewBuilderOptions(
-                                        physics: NeverScrollableScrollPhysics(),
-                                        shrinkWrap: true,
+                                    if ((_provider.products?.length ?? 0) >= 3 &&
+                                        (_provider.previousProducts?.isNotEmpty ?? false)) ...[
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        AppLocalizations.of(context)!.previousProducts,
+                                        style: AppTextStyles.black16_500,
                                       ),
-                                      children: _provider.previousProducts!.map((product) {
-                                        return ProductItem(
-                                          product: product,
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    CustomerProductDescriptionPage(
-                                                        product: product),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      }).toList(),
-                                    ),
+                                      ResponsiveGridList(
+                                        horizontalGridSpacing: Utils().width(context) * 0.025,
+                                        verticalGridSpacing: Utils().height(context) * 0.0125,
+                                        horizontalGridMargin: Utils().width(context) * 0.025,
+                                        verticalGridMargin: Utils().height(context) * 0.015,
+                                        minItemWidth: isTablet ? (isLandscape ? 420 : 340) : 200,
+                                        minItemsPerRow: isLandscape ? 1 : 2,
+                                        maxItemsPerRow: isLandscape ? 2 : 2,
+                                        listViewBuilderOptions: ListViewBuilderOptions(
+                                          physics: NeverScrollableScrollPhysics(),
+                                          shrinkWrap: true,
+                                        ),
+                                        children: _provider.previousProducts!.map((product) {
+                                          return ProductItem(
+                                            product: product,
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      CustomerProductDescriptionPage(
+                                                          product: product),
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        }).toList(),
+                                      ),
+                                      const SizedBox(height: 20),
+                                    ],
                                   ],
                                 )
-                              : Center(
-                                  child: Text(AppLocalizations.of(context)!.noProductsAvailable)),
+                              : Center(child: SizedBox.shrink()),
                     ],
                   ),
                 ),

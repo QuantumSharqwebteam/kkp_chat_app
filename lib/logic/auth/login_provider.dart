@@ -240,7 +240,7 @@ class LoginProvider with ChangeNotifier {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text("${value['status']} : ${value['message']}"),
+                content: Text("${value['message']}"),
               ),
             );
           }

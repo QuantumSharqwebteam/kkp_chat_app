@@ -205,18 +205,22 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
       final message = response['message'];
 
       if (message == "User marked as deleted successfully") {
-        widget.scaffoldMessenger.showSnackBar(
-          const SnackBar(content: Text("Account deleted successfully")),
-        );
-
-        // ✅ Close bottom sheet
+        // Close bottom sheet first
         if (sheetContext.mounted) {
           Navigator.of(sheetContext).pop();
         }
 
-        await clearHiveStorage();
+        // Show success message on parent scaffold
+        widget.scaffoldMessenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text("Account deleted successfully")),
+          );
 
-        // ✅ ALWAYS redirect via root navigator
+        // Keep the message visible briefly before navigation
+        await Future.delayed(const Duration(seconds: 1));
+
+        await clearHiveStorage();
         await logOut();
       } else {
         widget.scaffoldMessenger.showSnackBar(
@@ -335,15 +339,12 @@ Future<void> logOut() async {
     SocketService socketService = SocketService(navigatorKey);
     socketService.dispose();
 
-    final rootContext = navigatorKey.currentContext;
-
-    if (rootContext != null) {
-      Navigator.of(rootContext).pushNamedAndRemoveUntil(
-        "/login",
-        (route) => false,
-      );
-    }
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      "/login",
+      (route) => false,
+    );
   } catch (e) {
     debugPrint("Error during logout: $e");
   }
 }
+

@@ -24,6 +24,7 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
@@ -434,6 +435,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
     final boxNameWithCount = '${widget.customerEmail}count';
     final box = await Hive.openBox<int>(boxNameWithCount);
     await box.put('count', 0);
+    if (mounted) {
+      context.read<CustomerHomeProvider>().fetchNotificationCount();
+    }
   }
 
   @override

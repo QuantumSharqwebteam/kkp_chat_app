@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/poster_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
@@ -96,15 +97,9 @@ class CustomerHomeProvider with ChangeNotifier {
     notifyListeners();
     try {
       final productsData = await _productRepository.getProducts();
+      await LocalDbHelper.saveProducts(productsData);
       _products = productsData;
-      if (_products!.length >= 2) {
-        _newProducts = _products!.sublist(0, 2);
-        _previousProducts =
-            _products!.sublist(_products!.length - 2, _products!.length);
-      } else {
-        _newProducts = _products;
-        _previousProducts = _products;
-      }
+      _rebuildProductSections();
       // ✅ Preload product images to improve perceived load time
       for (var product in _products!) {
         final image = CachedNetworkImageProvider(product.imageUrl);
@@ -112,6 +107,10 @@ class CustomerHomeProvider with ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
+      try {
+        _products = await LocalDbHelper.getProducts();
+        _rebuildProductSections();
+      } catch (_) {}
       if (kDebugMode) {
         print(e.toString());
       }
@@ -119,6 +118,52 @@ class CustomerHomeProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> refreshProductsFromHive() async {
+    try {
+      _products = await LocalDbHelper.getProducts();
+      _rebuildProductSections();
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to refresh customer home products from local cache: $e');
+      }
+    }
+  }
+
+  Future<void> addOrUpdateProductLocal(Product product) async {
+    await LocalDbHelper.addOrUpdateProduct(product);
+    _products ??= [];
+    final index = _products!.indexWhere((p) => p.productId == product.productId);
+    if (index >= 0) {
+      _products![index] = product;
+    } else {
+      _products!.insert(0, product);
+    }
+    _rebuildProductSections();
+    notifyListeners();
+  }
+
+  Future<void> deleteProductLocal(String productId) async {
+    await LocalDbHelper.deleteProduct(productId);
+    _products ??= [];
+    _products!.removeWhere((p) => p.productId == productId);
+    _rebuildProductSections();
+    notifyListeners();
+  }
+
+  void _rebuildProductSections() {
+    final all = _products ?? <Product>[];
+    if (all.isEmpty) {
+      _newProducts = [];
+      _previousProducts = [];
+      return;
+    }
+
+    final recentCount = all.length >= 2 ? 2 : all.length;
+    _newProducts = all.sublist(0, recentCount);
+    _previousProducts = all.length >= 3 ? all.sublist(recentCount) : [];
   }
 
   Future<void> fetchNotificationCount() async {

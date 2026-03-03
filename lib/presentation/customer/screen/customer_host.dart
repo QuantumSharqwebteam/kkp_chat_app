@@ -12,6 +12,7 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_product_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
@@ -85,31 +86,37 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
   }
 
   // Handle product add event
-  void _handleProductAdd(Map<String, dynamic> productData) {
-    debugPrint("📦 [CustomerHost] New product added: ${productData['productName']}");
+  Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
+    debugPrint("[CustomerHost] New product added: ${productData['productName']}");
     final product = Product.fromJson(productData);
-    LocalDbHelper.addOrUpdateProduct(product);
     if (mounted) {
-      Provider.of<CustomerProductProvider>(context, listen: false).refreshProductsFromHive();
+      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      await homeProvider.addOrUpdateProductLocal(product);
+      await productProvider.refreshProductsFromHive();
     }
   }
 
   // Handle product update event
-  void _handleProductUpdate(Map<String, dynamic> productData) {
-    debugPrint("🔄 [CustomerHost] Product updated: ${productData['productName']}");
+  Future<void> _handleProductUpdate(Map<String, dynamic> productData) async {
+    debugPrint("[CustomerHost] Product updated: ${productData['productName']}");
     final product = Product.fromJson(productData);
-    LocalDbHelper.addOrUpdateProduct(product);
     if (mounted) {
-      Provider.of<CustomerProductProvider>(context, listen: false).refreshProductsFromHive();
+      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      await homeProvider.addOrUpdateProductLocal(product);
+      await productProvider.refreshProductsFromHive();
     }
   }
 
   // Handle product delete event
-  void _handleProductDelete(String productId) {
-    debugPrint("🗑️ [CustomerHost] Product deleted: $productId");
-    LocalDbHelper.deleteProduct(productId);
+  Future<void> _handleProductDelete(String productId) async {
+    debugPrint("[CustomerHost] Product deleted: $productId");
     if (mounted) {
-      Provider.of<CustomerProductProvider>(context, listen: false).refreshProductsFromHive();
+      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      await homeProvider.deleteProductLocal(productId);
+      await productProvider.refreshProductsFromHive();
     }
   }
 
@@ -364,3 +371,4 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     );
   }
 }
+
