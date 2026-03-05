@@ -13,6 +13,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
+import 'package:kkpchatapp/logic/app_state_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
@@ -39,17 +40,18 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserver {
+class _MarketingHostState extends State<MarketingHost>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
   String? agentEmail;
   String? agentName;
   List<Widget> _screens = [];
-  final SocketService _socketService = SocketService(navigatorKey);
+  late final SocketService _socketService;
   final chatRepository = ChatRepository();
   AuthApi auth = AuthApi();
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  // Using the host's navigatorKey (widget.navigatorKey) to avoid multiple navigators.
 
   OverlayEntry? _activeCallOverlay;
 
@@ -60,11 +62,11 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance.addObserver(this);
+    _socketService = SocketService(widget.navigatorKey);
     _loadUserDataAndInitializeSocket().then((_) {
       _initializeNotificationService().then((_) {});
     });
-    initCheck();
   }
 
   @override
@@ -75,17 +77,27 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   void initCheck() async {
     // Set the global flag to true after initialization
     isAppInitialized = true;
+    try {
+      // Also notify provider that app is ready (if provider exists)
+      final provider = Provider.of<AppStateProvider>(context, listen: false);
+      provider.setAppReady(true);
+    } catch (_) {
+      // Provider may not exist in some contexts; ignore
+    }
   }
 
   Future<void> _initializeNotificationService() async {
-    await NotificationService.init(context, _navigatorKey);
+    await NotificationService.init(context, widget.navigatorKey);
+    // Mark app initialized after notification service and navigator are ready
+    isAppInitialized = true;
   }
 
   Future<void> _loadUserDataAndInitializeSocket() async {
     final token = await LocalDbHelper.getToken();
     await _loadUserData().whenComplete(() {
       if (agentName != null && agentEmail != null && rolename != null) {
-        _socketService.initSocket(agentName!, agentEmail!, rolename!, token: token);
+        _socketService.initSocket(agentName!, agentEmail!, rolename!,
+            token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
@@ -224,8 +236,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
     required String customeremail,
     String? targetId,
   }) {
-    Navigator.push(
-      widget.navigatorKey.currentContext!,
+    widget.navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => AgentChatScreen(
           customerName: customername,
@@ -296,16 +307,19 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   }
 
   void _handleIcomingGroupMessage(Map<String, dynamic> data) {
-    Navigator.push(widget.navigatorKey.currentContext!, MaterialPageRoute(builder: (context) {
-      return InternalChatScreen(
-          agentName: data["senderName"],
-          agentEmail: data["senderId"],
-          navigatorKey: widget.navigatorKey);
-    }));
+    widget.navigatorKey.currentState?.push(
+      MaterialPageRoute(builder: (context) {
+        return InternalChatScreen(
+            agentName: data["senderName"],
+            agentEmail: data["senderId"],
+            navigatorKey: widget.navigatorKey);
+      }),
+    );
   }
 
   Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
-    debugPrint("📦 [MarketingHost] Product added: ${productData['productName']}");
+    debugPrint(
+        "📦 [MarketingHost] Product added: ${productData['productName']}");
     if (!mounted) return;
     final product = Product.fromJson(productData);
     await Provider.of<MarketingProductProvider>(context, listen: false)
@@ -313,7 +327,8 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   }
 
   Future<void> _handleProductUpdate(Map<String, dynamic> productData) async {
-    debugPrint("🔄 [MarketingHost] Product updated: ${productData['productName']}");
+    debugPrint(
+        "🔄 [MarketingHost] Product updated: ${productData['productName']}");
     if (!mounted) return;
     final product = Product.fromJson(productData);
     await Provider.of<MarketingProductProvider>(context, listen: false)

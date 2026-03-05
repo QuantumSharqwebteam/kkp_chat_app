@@ -12,6 +12,7 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/app_state_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_product_provider.dart';
 import 'package:kkpchatapp/main.dart';
@@ -35,13 +36,14 @@ class CustomerHost extends StatefulWidget {
   State<CustomerHost> createState() => _CustomerHostState();
 }
 
-class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver {
+class _CustomerHostState extends State<CustomerHost>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   late final SocketService _socketService;
   AuthApi auth = AuthApi();
   final chatRepository = ChatRepository();
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  // Use the host's navigatorKey (widget.navigatorKey) instead of creating a new one
   Profile? profile;
 
   OverlayEntry? _activeCallOverlay;
@@ -83,15 +85,21 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
   void initCheck() async {
     // Set the global flag to true after initialization
     isAppInitialized = true;
+    try {
+      Provider.of<AppStateProvider>(context, listen: false).setAppReady(true);
+    } catch (_) {}
   }
 
   // Handle product add event
   Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
-    debugPrint("[CustomerHost] New product added: ${productData['productName']}");
+    debugPrint(
+        "[CustomerHost] New product added: ${productData['productName']}");
     final product = Product.fromJson(productData);
     if (mounted) {
-      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
-      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      final homeProvider =
+          Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<CustomerProductProvider>(context, listen: false);
       await homeProvider.addOrUpdateProductLocal(product);
       await productProvider.refreshProductsFromHive();
     }
@@ -102,8 +110,10 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     debugPrint("[CustomerHost] Product updated: ${productData['productName']}");
     final product = Product.fromJson(productData);
     if (mounted) {
-      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
-      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      final homeProvider =
+          Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<CustomerProductProvider>(context, listen: false);
       await homeProvider.addOrUpdateProductLocal(product);
       await productProvider.refreshProductsFromHive();
     }
@@ -113,8 +123,10 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
   Future<void> _handleProductDelete(String productId) async {
     debugPrint("[CustomerHost] Product deleted: $productId");
     if (mounted) {
-      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
-      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      final homeProvider =
+          Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<CustomerProductProvider>(context, listen: false);
       await homeProvider.deleteProductLocal(productId);
       await productProvider.refreshProductsFromHive();
     }
@@ -122,7 +134,8 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
 
   void _handleFirebaseNotificationTaps() {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-      debugPrint('🔔 Notification opened (background/terminated): ${message.data}');
+      debugPrint(
+          '🔔 Notification opened (background/terminated): ${message.data}');
 
       if (isAppInitialized) {
         final agentName = message.data['senderName'];
@@ -148,21 +161,21 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     required String? email,
     required String? image,
   }) {
-    Navigator.push(
-        widget.navigatorKey.currentContext!,
-        MaterialPageRoute(
-          builder: (_) => CustomerChatScreen(
-            agentName: name,
-            customerEmail: email,
-            navigatorKey: widget.navigatorKey,
-          ),
-        ));
+    widget.navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => CustomerChatScreen(
+          agentName: name,
+          customerEmail: email,
+          navigatorKey: widget.navigatorKey,
+        ),
+      ),
+    );
   }
 
   Future<void> _initializeNotificationService() async {
     await NotificationService.init(
       context,
-      _navigatorKey,
+      widget.navigatorKey,
       onNotificationClick: (agentName, customerEmail, customerImage) async {
         String? userType = await LocalDbHelper.getUserType();
         if (userType == "0" && profile != null) {
@@ -190,11 +203,13 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
   Future<void> _loadCurrentUserData() async {
     try {
       final userData = await auth.getUserInfo();
-      if (userData['message'] == "Session expired due to login on another device") {
+      if (userData['message'] ==
+          "Session expired due to login on another device") {
         await Hive.deleteFromDisk();
         await reinitializeHive();
         if (mounted) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (context) {
             return LoginPage();
           }));
         }
@@ -266,7 +281,8 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
           debugPrint("🛑 Attempting to stop ringtone...");
 
           await _audioPlayer!.stop();
-          await _audioPlayer!.setSource(AssetSource('')); // 👈 Important for iOS
+          await _audioPlayer!
+              .setSource(AssetSource('')); // 👈 Important for iOS
           debugPrint("✅ Ringtone stopped");
 
           await _audioPlayer!.release();
@@ -371,4 +387,3 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     );
   }
 }
-

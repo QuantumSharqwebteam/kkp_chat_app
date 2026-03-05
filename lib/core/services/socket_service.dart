@@ -53,22 +53,26 @@ class SocketService {
   Function? onMessageReceivedCallback;
 
   List<String> _roomMembers = [];
-  StreamController<List<String>> _statusController = StreamController<List<String>>.broadcast();
+  StreamController<List<String>> _statusController =
+      StreamController<List<String>>.broadcast();
 
   Stream<List<String>> get statusStream => _statusController.stream;
 
   List<String> get onlineUsers => List.from(_roomMembers);
 
-  FlutterLocalNotificationsPlugin? _notificationsPlugin;
+  // Use the shared plugin instance from NotificationService to ensure
+  // it's initialized once at app start and usable across services.
 
   SocketService._internal();
 
-  void onMessageReceived(Function(Map<String, dynamic>) callback, {Function? refreshCallback}) {
+  void onMessageReceived(Function(Map<String, dynamic>) callback,
+      {Function? refreshCallback}) {
     _onMessageReceived = callback;
     onMessageReceivedCallback = refreshCallback;
   }
 
-  void initSocket(String userName, String userEmail, String role, {String? token}) {
+  void initSocket(String userName, String userEmail, String role,
+      {String? token}) {
     // ✅ Prevent duplicate socket creation
     if (_isConnected) {
       debugPrint('⚠️ Socket already connected, skipping init');
@@ -125,7 +129,8 @@ class SocketService {
       final String senderId = data['senderId'] ?? '';
       final String targetId = data['targetId'] ?? '';
 
-      if (isChatPageOpen && (activeCustomerId == senderId || activeCustomerId == targetId)) {
+      if (isChatPageOpen &&
+          (activeCustomerId == senderId || activeCustomerId == targetId)) {
         _onMessageReceived?.call(data);
       } else {
         debugPrint("recived message socket : ${data.toString()}");
@@ -204,7 +209,8 @@ class SocketService {
 
     _socket.on('productDelete', (data) {
       debugPrint("[Socket] Product deleted: $data");
-      final dynamic productId = data is Map ? (data['productId'] ?? data['_id']) : data;
+      final dynamic productId =
+          data is Map ? (data['productId'] ?? data['_id']) : data;
       if (_onProductDelete != null && productId != null) {
         _onProductDelete!(productId.toString());
       }
@@ -234,7 +240,8 @@ class SocketService {
       _isConnected = false;
       for (String email in _roomMembers) {
         LocalDbHelper.updateLastSeenTime(email);
-        debugPrint("⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
+        debugPrint(
+            "⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
       }
       debugPrint('⚠️ Disconnected from socket server');
       // _attemptReconnect(userName, userEmail, role);
@@ -279,12 +286,14 @@ class SocketService {
   }
 
   void toggleGroupChatPageOpen(bool toggle) {
-    debugPrint("🔄 [SocketService] Toggling group chat page: ${toggle ? "OPEN" : "CLOSED"}");
+    debugPrint(
+        "🔄 [SocketService] Toggling group chat page: ${toggle ? "OPEN" : "CLOSED"}");
     isGroupChatPageOpen = toggle;
   }
 
   void setGroupChatPageState(bool isOpen) {
-    debugPrint("🔄 [SocketService] Setting group chat page state: ${isOpen ? "OPEN" : "CLOSED"}");
+    debugPrint(
+        "🔄 [SocketService] Setting group chat page state: ${isOpen ? "OPEN" : "CLOSED"}");
     isGroupChatPageOpen = isOpen;
   }
 
@@ -342,13 +351,15 @@ class SocketService {
 
   // Add these methods to handle background events
   void _handleBackgroundGroupMessageDeletion(Map<String, dynamic> data) async {
-    debugPrint("🗑️ Handling group message deletion in background: ${data.toString()}");
+    debugPrint(
+        "🗑️ Handling group message deletion in background: ${data.toString()}");
     final messageId = data['messageId'];
 
     try {
       // Update the message in local storage
       final localMessages = await LocalDbHelper.getGroupMessages();
-      final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
+      final index =
+          localMessages.indexWhere((msg) => msg.messageId == messageId);
 
       if (index != -1) {
         final updatedMessage = localMessages[index].copyWith(
@@ -364,14 +375,16 @@ class SocketService {
   }
 
   void _handleBackgroundGroupMessageEdit(Map<String, dynamic> data) async {
-    debugPrint("✏️ Handling group message edit in background: ${data.toString()}");
+    debugPrint(
+        "✏️ Handling group message edit in background: ${data.toString()}");
     final messageId = data['messageId'];
     final newMessage = data['newMessage'];
 
     try {
       // Update the message in local storage
       final localMessages = await LocalDbHelper.getGroupMessages();
-      final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
+      final index =
+          localMessages.indexWhere((msg) => msg.messageId == messageId);
 
       if (index != -1) {
         final updatedMessage = localMessages[index].copyWith(
@@ -388,7 +401,9 @@ class SocketService {
 
 // Add this method to delete a group message
   void deleteGroupMessage(
-      {required String messageId, required String senderId, required String groupId}) {
+      {required String messageId,
+      required String senderId,
+      required String groupId}) {
     if (!_isConnected) {
       debugPrint('Socket is not connected. Cannot delete group message.');
       return;
@@ -499,7 +514,9 @@ class SocketService {
     final lastMessageTimestampStr = data['lastMessageTimestamp'];
     debugPrint("Background Chat Status Updated: $status");
 
-    if (status == 'opened' && lastMessageTimestampStr != null && customerEmail != null) {
+    if (status == 'opened' &&
+        lastMessageTimestampStr != null &&
+        customerEmail != null) {
       final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
       if (lastMessageTimestamp != null) {
         // Set the receiver as on the chat page using LocalDbHelper
@@ -508,7 +525,8 @@ class SocketService {
         final userType = await LocalDbHelper.getUserType();
         if (userType == "0") {
           // Customer
-          final messages = await ChatStorageService().getCustomerMessages(customerEmail);
+          final messages =
+              await ChatStorageService().getCustomerMessages(customerEmail);
           for (var message in messages) {
             if (message.timestamp.isBefore(lastMessageTimestamp) ||
                 message.timestamp == lastMessageTimestamp) {
@@ -516,7 +534,8 @@ class SocketService {
               await ChatStorageService().saveMessage(message, customerEmail);
             }
           }
-          debugPrint("✅ Updated customer messages as read up to $lastMessageTimestampStr");
+          debugPrint(
+              "✅ Updated customer messages as read up to $lastMessageTimestampStr");
         } else {
           // Agent
           // Required from backend
@@ -551,14 +570,16 @@ class SocketService {
 
     if (userType == "0") {
       // Customer
-      final messages = await ChatStorageService().getCustomerMessages(customerEmail);
+      final messages =
+          await ChatStorageService().getCustomerMessages(customerEmail);
       for (var message in messages) {
         if (message.timestamp.isBefore(lastMessageTimestamp)) {
           message.read = true;
           await ChatStorageService().saveMessage(message, customerEmail);
         }
       }
-      debugPrint("✅ Updated customer messages as read up to $lastMessageTimestampStr");
+      debugPrint(
+          "✅ Updated customer messages as read up to $lastMessageTimestampStr");
     } else {
       // Agent
       final agentEmail = data['agentEmail']; // Required from backend
@@ -592,19 +613,22 @@ class SocketService {
       final messages = await ChatStorageService().getCustomerMessages(targetId);
       debugPrint("Retrieved messages for customer: ${messages.length}");
 
-      final index = messages.indexWhere((message) => message.messageId == messageId);
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
       if (index != -1) {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
 
         // Save the updated message state to local storage
         await ChatStorageService().saveMessage(messages[index], targetId);
-        debugPrint("Message marked as deleted for customer with ID: $messageId");
+        debugPrint(
+            "Message marked as deleted for customer with ID: $messageId");
 
         // Verify the message is updated in the storage
-        final updatedMessages = await ChatStorageService().getCustomerMessages(targetId);
-        final updatedIndex =
-            updatedMessages.indexWhere((message) => message.messageId == messageId);
+        final updatedMessages =
+            await ChatStorageService().getCustomerMessages(targetId);
+        final updatedIndex = updatedMessages
+            .indexWhere((message) => message.messageId == messageId);
         if (updatedIndex != -1 && updatedMessages[updatedIndex].isDeleted) {
           debugPrint("Successfully updated message in storage for customer.");
         } else {
@@ -619,7 +643,8 @@ class SocketService {
 
       // Retrieve and update the message in local storage
       final messages = await ChatStorageService().getMessages(boxName);
-      final index = messages.indexWhere((message) => message.messageId == messageId);
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
       if (index != -1) {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
@@ -640,7 +665,8 @@ class SocketService {
 
     for (String email in previousUsers.difference(currentUsers)) {
       LocalDbHelper.updateLastSeenTime(email);
-      debugPrint("⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
+      debugPrint(
+          "⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
     }
 
     _roomMembers = newRoomMembers;
@@ -765,10 +791,12 @@ class SocketService {
       // Save the last message for the user last chatted
       if (type == "product") {
         updateLastMessage(targetEmail ?? "", "shared product");
-      } else if (message != null && message.contains("Your order is confirmed with form Id")) {
+      } else if (message != null &&
+          message.contains("Your order is confirmed with form Id")) {
         // Handle order confirmation
         updateLastMessage(targetEmail ?? "", "Order Confirmed");
-      } else if (message != null && message.contains("Your order is declined with form Id")) {
+      } else if (message != null &&
+          message.contains("Your order is declined with form Id")) {
         // Handle order decline
         updateLastMessage(targetEmail ?? "", "Order Declined");
       } else {
@@ -874,7 +902,9 @@ class SocketService {
     final userType = await LocalDbHelper.getUserType();
     final String notificationMessage = data['type'] == "product"
         ? "Shared product"
-        : (data['message'] is String ? data['message'] as String : data['message'].toString());
+        : (data['message'] is String
+            ? data['message'] as String
+            : data['message'].toString());
 
     if (userType == "0") {
       // Customer-side notification logic
@@ -891,24 +921,7 @@ class SocketService {
       final title = "New Message from Agent";
       final id = 200;
 
-      if (_notificationsPlugin == null) {
-        _notificationsPlugin = FlutterLocalNotificationsPlugin();
-        const androidSettings = AndroidInitializationSettings('app_logo');
-        const iosSettings = DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          defaultPresentAlert: true,
-          defaultPresentSound: true,
-          defaultPresentBadge: true,
-        );
-        const initSettings = InitializationSettings(
-          android: androidSettings,
-          iOS: iosSettings,
-        );
-        await _notificationsPlugin!
-            .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
-      }
+      // Plugin initialized by NotificationService.init at app startup
 
       const androidDetails = AndroidNotificationDetails(
         'your_channel_id',
@@ -922,9 +935,10 @@ class SocketService {
         presentBadge: true,
         presentSound: true,
       );
-      final notificationDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
+      final notificationDetails =
+          NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-      await _notificationsPlugin!.show(
+      await NotificationService.plugin.show(
         id,
         title,
         notificationMessage,
@@ -959,28 +973,10 @@ class SocketService {
     }
 
     // Show local notification (rest of the method remains the same)
-    if (_notificationsPlugin == null) {
-      _notificationsPlugin = FlutterLocalNotificationsPlugin();
-      const androidSettings = AndroidInitializationSettings('app_logo');
-      const iosSettings = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestSoundPermission: true,
-        requestBadgePermission: true,
-        defaultPresentAlert: true,
-        defaultPresentSound: true,
-        defaultPresentBadge: true,
-      );
-      const initSettings = InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-      );
-      await _notificationsPlugin!
-          .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
-    }
-
-    // Request permissions for iOS
-    await _notificationsPlugin!
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+    // Plugin initialized by NotificationService; request permissions via shared plugin
+    await NotificationService.plugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(
           alert: true,
           badge: true,
@@ -999,7 +995,8 @@ class SocketService {
       presentBadge: true,
       presentSound: true,
     );
-    final notificationDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
+    final notificationDetails =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
     // final title = "New Message from ${data['senderName']}";
     // final id = title.hashCode;
     // await _notificationsPlugin!.show(
@@ -1014,9 +1011,10 @@ class SocketService {
     if (userType != "0") {
       // Agent-side notification logic
       const consolidatedNotificationId = 999;
-      final box =
-          await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
-      final totalUnreadMessages = box.values.fold<int>(0, (sum, value) => sum + value);
+      final box = await Hive.openBox<int>(
+          '${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
+      final totalUnreadMessages =
+          box.values.fold<int>(0, (sum, value) => sum + value);
       final usersWithUnread = box.values.where((count) => count > 0).length;
 
       String title;
@@ -1024,8 +1022,9 @@ class SocketService {
       String payload;
 
       if (usersWithUnread == 1) {
-        final unreadCount =
-            await LocalDbHelper.getUnreadCount(data['targetId'], data['senderId']) ?? 0;
+        final unreadCount = await LocalDbHelper.getUnreadCount(
+                data['targetId'], data['senderId']) ??
+            0;
 
         if (unreadCount > 1) {
           title = "$unreadCount messages from ${data['senderName']}";
@@ -1037,12 +1036,13 @@ class SocketService {
 
         payload = jsonEncode(data); // Normal payload to open chat
       } else {
-        title = "$totalUnreadMessages unread messages from $usersWithUnread users";
+        title =
+            "$totalUnreadMessages unread messages from $usersWithUnread users";
         message = "You have $totalUnreadMessages unread messages";
         payload = "general_chat_summary"; // Special payload
       }
 
-      await _notificationsPlugin!.show(
+      await NotificationService.plugin.show(
         consolidatedNotificationId,
         title,
         message,
@@ -1053,7 +1053,7 @@ class SocketService {
       final title = "New Message from Agent";
       final id = 200;
 
-      await _notificationsPlugin!.show(
+      await NotificationService.plugin.show(
         id,
         title,
         notificationMessage,
@@ -1088,28 +1088,11 @@ class SocketService {
 
     try {
       // Initialize notifications plugin if not already done
-      if (_notificationsPlugin == null) {
-        _notificationsPlugin = FlutterLocalNotificationsPlugin();
-        const androidSettings = AndroidInitializationSettings('app_logo');
-        const iosSettings = DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          defaultPresentAlert: true,
-          defaultPresentSound: true,
-          defaultPresentBadge: true,
-        );
-        const initSettings = InitializationSettings(
-          android: androidSettings,
-          iOS: iosSettings,
-        );
-        await _notificationsPlugin!
-            .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
-      }
-
-      // Request permissions for iOS
-      await _notificationsPlugin!
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+      // Plugin initialized by NotificationService.init at app startup
+      // Request permissions for iOS via the shared plugin
+      await NotificationService.plugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
           ?.requestPermissions(
             alert: true,
             badge: true,
@@ -1167,7 +1150,7 @@ class SocketService {
       const notificationId = 1001;
 
       // Show the notification
-      await _notificationsPlugin!.show(
+      await NotificationService.plugin.show(
         notificationId,
         title,
         messageContent,
@@ -1200,50 +1183,45 @@ class SocketService {
       return;
     }
 
-    try {
-      // Check if this is a group message notification
-      if (response.payload is String) {
-        try {
-          final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
+    // If payload is a simple control string, handle it before any JSON parsing.
+    if (response.payload == "incoming_call") {
+      debugPrint("Incoming call notification tapped — opening the app only.");
+      return; // Do nothing else; MarketingHost will show the overlay when socket event arrives
+    }
 
-          // Handle group message notification
-          if (notificationData['isGroupMessage'] == true) {
-            debugPrint("Group message notification tapped");
-            await handleGroupLocalNotificationTap(navigatorKey, notificationData);
-            return;
-          }
-        } catch (e) {
-          debugPrint("Not a JSON payload or not a group message: $e");
-        }
-      }
+    if (response.payload == "general_chat_summary") {
+      debugPrint("Summary notification tapped — opening the app only.");
+      return;
+    }
 
-      // Check if the payload is the string "incoming_call"
-      if (response.payload == "incoming_call") {
-        debugPrint("Incoming call notification tapped, opening the app.");
-        return;
-      }
-
-      if (response.payload == "general_chat_summary") {
-        debugPrint("Summary notification tapped, just opening the app.");
-        return;
-      }
-
-      // Handle regular message notifications
+    // Attempt JSON decode only for payloads that are actual JSON strings.
+    if (response.payload is String) {
       try {
-        final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
+        final Map<String, dynamic> notificationData =
+            jsonDecode(response.payload!);
+
+        // Handle group message notification
+        if (notificationData['isGroupMessage'] == true) {
+          debugPrint("Group message notification tapped");
+          await handleGroupLocalNotificationTap(navigatorKey, notificationData);
+          return;
+        }
+
+        // Regular message notification
         if ("0" == await LocalDbHelper.getUserType()) {
           handleNotificationClickForCustomer(navigatorKey, notificationData);
         } else {
           handleNotificationClickForAgent(navigatorKey, notificationData);
         }
+
+        return;
       } catch (e) {
-        debugPrint("Failed to decode JSON: $e");
+        debugPrint("Not a JSON payload or failed to parse payload: $e");
+        return;
       }
-    } catch (e) {
-      debugPrint("Error handling notification tap: $e");
     }
+
+    debugPrint(
+        "Unhandled notification payload type: ${response.payload.runtimeType}");
   }
 }
-
-
-

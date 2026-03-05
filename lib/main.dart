@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +23,7 @@ import 'package:kkpchatapp/logic/agent/complaints_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
+import 'package:kkpchatapp/logic/app_state_provider.dart';
 import 'package:kkpchatapp/logic/auth/forgot_pass_provider.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
 import 'package:kkpchatapp/logic/auth/new_pass_provider.dart';
@@ -47,6 +50,52 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint("🔥 Background handler triggered");
 
+  // Local notifications plugin for the background isolate
+  final FlutterLocalNotificationsPlugin _bgLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  try {
+    const AndroidInitializationSettings androidInit =
+        AndroidInitializationSettings('app_logo');
+    const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
+    await _bgLocalNotificationsPlugin.initialize(initSettings);
+  } catch (e) {
+    debugPrint('❌ Error initializing local notifications in background: $e');
+  }
+
+  // Quick handling for incoming call payloads so user gets a visible notification
+  if (message.data['notificationType'] == 'incoming_call' ||
+      message.data['type'] == 'incoming_call' ||
+      message.data['type'] == 'call') {
+    try {
+      final title = message.data['callerName'] ?? 'Incoming Call';
+      final body = message.data['callerId'] ?? 'Tap to open';
+      const androidDetails = AndroidNotificationDetails(
+        'call_channel_id',
+        'Call Notifications',
+        channelDescription: 'Incoming call notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+      );
+      const iosDetails = DarwinNotificationDetails(
+          presentAlert: true, presentBadge: true, presentSound: true);
+      final notificationDetails =
+          NotificationDetails(android: androidDetails, iOS: iosDetails);
+      await _bgLocalNotificationsPlugin.show(
+          DateTime.now().millisecondsSinceEpoch.remainder(100000),
+          title,
+          body.toString(),
+          notificationDetails,
+          payload: 'incoming_call');
+    } catch (e) {
+      debugPrint(
+          '❌ Error showing incoming call notification in background: $e');
+    }
+  }
+
   final String role = message.data['role'] ?? 'agent';
   final String notificationType =
       message.data['notificationType'] ?? 'individual';
@@ -58,6 +107,32 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       // Handle group chat notification
       await LocalDbHelper.incrementGroupChatUnreadCount();
       debugPrint("📈 Incremented group chat unread count");
+
+      // Show a local notification for group messages
+      try {
+        final title = "Internal Chat Update";
+        final body = message.data['message'] ?? 'New group message';
+        const androidDetails = AndroidNotificationDetails(
+          'group_chat_channel_id',
+          'Internal Chat Notifications',
+          channelDescription: 'Notifications for internal team chat messages',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+        const iosDetails = DarwinNotificationDetails(
+            presentAlert: true, presentBadge: true, presentSound: true);
+        final notificationDetails =
+            NotificationDetails(android: androidDetails, iOS: iosDetails);
+        await _bgLocalNotificationsPlugin.show(
+            1001, title, body.toString(), notificationDetails,
+            payload: jsonEncode({
+              'isGroupMessage': true,
+              'notificationType': 'groupChat',
+              ...message.data
+            }));
+      } catch (e) {
+        debugPrint('❌ Error showing group notification in background: $e');
+      }
     } else {
       // Handle direct chat notification
       final String customerEmail;
@@ -84,6 +159,35 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         final currentCount = userBox.get('count', defaultValue: 0);
         await userBox.put('count', currentCount! + 1);
         debugPrint("📈 Unread count incremented for user: $customerEmail");
+      }
+
+      // Show a local notification for direct chat messages when in background
+      try {
+        final title = (role == 'User')
+            ? 'New Message from Customer'
+            : 'New Message from Agent';
+        final body = message.data['type'] == 'product'
+            ? 'Shared product'
+            : (message.data['message'] ?? 'New message');
+        const androidDetails = AndroidNotificationDetails(
+          'your_channel_id',
+          'your_channel_name',
+          channelDescription: 'your_channel_description',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+        const iosDetails = DarwinNotificationDetails(
+            presentAlert: true, presentBadge: true, presentSound: true);
+        final notificationDetails =
+            NotificationDetails(android: androidDetails, iOS: iosDetails);
+        final payload = jsonEncode(message.data);
+        final id = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+        await _bgLocalNotificationsPlugin.show(
+            id, title, body.toString(), notificationDetails,
+            payload: payload);
+      } catch (e) {
+        debugPrint(
+            '❌ Error showing direct chat notification in background: $e');
       }
     }
   } catch (e) {
@@ -133,7 +237,11 @@ void main() async {
       await FirebaseMessaging.instance.getInitialMessage();
 
   runApp(
-    MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
+    // AppStateProvider must sit above MyApp so initState can read readiness
+    ChangeNotifierProvider(
+      create: (_) => AppStateProvider(),
+      child: MyApp(navigatorKey: navigatorKey, initialMessage: initialMessage),
+    ),
   );
 }
 
@@ -153,10 +261,28 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     NotificationService.init(context, widget.navigatorKey);
 
-    // Handle the initial message if the app was opened via a notification
+    // Handle the initial message if the app was opened via a notification.
+    // Wait for AppStateProvider to mark the app as ready (Splash -> Host finished),
+    // otherwise queue processing in NotificationService.
     if (widget.initialMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        NotificationService.handleNotificationClick(widget.initialMessage!);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          // Wait up to ~5 seconds for provider to become available and app to be ready
+          int attempts = 0;
+          while (attempts < 50) {
+            final appState =
+                Provider.of<AppStateProvider>(context, listen: false);
+            if (appState.isAppReady == true) break;
+            await Future.delayed(const Duration(milliseconds: 100));
+            attempts++;
+          }
+        } catch (e) {
+          // Provider not available yet; NotificationService has its own queue fallback
+          debugPrint('AppStateProvider not available yet: $e');
+        }
+
+        // Let NotificationService handle or enqueue this notification safely
+        NotificationService.handleInitialMessage(widget.initialMessage!);
       });
     }
   }

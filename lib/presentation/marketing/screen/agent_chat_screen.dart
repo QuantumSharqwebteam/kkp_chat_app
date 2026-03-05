@@ -1059,8 +1059,8 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
         final globalKey = _messageKeys[key];
 
         if (globalKey?.currentContext != null) {
-          final context = globalKey!.currentContext!;
-          final box = context.findRenderObject() as RenderBox?;
+          final ctx = globalKey!.currentContext!;
+          final box = ctx.findRenderObject() as RenderBox?;
           if (box != null) {
             try {
               // Get the position of the message

@@ -19,8 +19,11 @@ Future<void> _resetCustomerUnreadCount(
 
 /// Handles notification click for customers.
 Future<void> handleNotificationClickForCustomer(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
-  final customerEmail = (notificationData['targetId'] as String?) ?? LocalDbHelper.getEmail();
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint('handleNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorKey set: ${navigatorKey != null}, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  final customerEmail =
+      (notificationData['targetId'] as String?) ?? LocalDbHelper.getEmail();
   if (notificationData["type"] == "product") {
     notificationData["message"] = "Shared product";
   }
@@ -39,7 +42,9 @@ Future<void> handleNotificationClickForCustomer(
 
 /// Handles push notification click for customers.
 Future<void> handlePushNotificationClickForCustomer(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint('handlePushNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
   // I/flutter ( 1646): 🚀@@ App Opened via Notification: {targetName: waxoc , senderName: Agent mohd 3,
@@ -47,14 +52,16 @@ Future<void> handlePushNotificationClickForCustomer(
 
   // Function to trigger navigation
   void triggerNavigation() {
-    final customerEmail = (notificationData["targetId"] as String?) ?? LocalDbHelper.getEmail();
+    final customerEmail =
+        (notificationData["targetId"] as String?) ?? LocalDbHelper.getEmail();
     final agentEmail = notificationData["senderId"];
     final agentName = notificationData["senderName"];
     if (notificationData["type"] == "product") {
       notificationData["message"] = "Shared product";
     }
     if (customerEmail == null || customerEmail.isEmpty) {
-      debugPrint("Customer email missing in notification payload; skipping navigation.");
+      debugPrint(
+          "Customer email missing in notification payload; skipping navigation.");
       return;
     }
 
@@ -116,7 +123,9 @@ Future<void> handlePushNotificationClickForCustomer(
 
 /// Handles notification click for agents.
 Future<void> handleNotificationClickForAgent(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint('handleNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   if (notificationData["type"] == "product") {
     notificationData["message"] = "Shared product";
   }
@@ -139,8 +148,10 @@ Future<void> handleNotificationClickForAgent(
 
 /// Handles group chat notification tap
 Future<void> handleGroupLocalNotificationTap(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
-  debugPrint("🔔 Group chat notification tapped: ${notificationData.toString()}");
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint(
+      "🔔 Group chat notification tapped: ${notificationData.toString()}");
 
   try {
     // Clear the group chat unread count
@@ -152,18 +163,15 @@ Future<void> handleGroupLocalNotificationTap(
     final agentEmail = notificationData["senderId"];
 
     // Navigate to the internal chat screen
-    if (navigatorKey.currentContext != null) {
-      Navigator.push(
-        navigatorKey.currentContext!,
-        MaterialPageRoute(
-          builder: (_) => InternalChatScreen(
-            agentName: agentName,
-            agentEmail: agentEmail,
-            navigatorKey: navigatorKey,
-          ),
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => InternalChatScreen(
+          agentName: agentName,
+          agentEmail: agentEmail,
+          navigatorKey: navigatorKey,
         ),
-      );
-    }
+      ),
+    );
   } catch (e) {
     debugPrint("❌ Error handling group chat notification tap: $e");
   }
@@ -171,7 +179,9 @@ Future<void> handleGroupLocalNotificationTap(
 
 /// Handles push notification click for agents.
 Future<void> handlePushNotificationClickForAgent(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint('handlePushNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 
@@ -202,8 +212,7 @@ Future<void> handlePushNotificationClickForAgent(
       notificationData["message"] = "Shared product";
     }
     await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
-    Navigator.push(
-      navigatorKey.currentContext!,
+    navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => AgentChatScreen(
           customerName: customerName,
@@ -246,8 +255,9 @@ Future<void> handlePushNotificationClickForAgent(
 
 /// Handles incoming call notification.
 /// Handles incoming call notification.
-Future<void> handleIncomingCall(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> callData) async {
+Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> callData) async {
+  debugPrint('handleIncomingCall invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 
@@ -259,8 +269,7 @@ Future<void> handleIncomingCall(
     final notificationId = callData['notificationId'];
     final callId = callData["callId"];
 
-    Navigator.push(
-      navigatorKey.currentContext!,
+    navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => IncomingCallScreen(
           callerName: remoteUserName,
@@ -301,8 +310,9 @@ Future<void> handleIncomingCall(
 }
 
 /// Handles group push notification for agents
-Future<void> handleGroupPushNotification(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+Future<void> handleGroupPushNotification(GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint('handleGroupPushNotification invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 
@@ -311,8 +321,7 @@ Future<void> handleGroupPushNotification(
     final agentName = notificationData["senderName"];
     final agentEmail = notificationData["senderId"];
 
-    Navigator.push(
-      navigatorKey.currentContext!,
+    navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => InternalChatScreen(
           agentName: agentName,
@@ -345,7 +354,8 @@ Future<void> handleGroupPushNotification(
       controller.add(true);
       return false; // Exit the loop if the variable is true
     }
-    await Future.delayed(const Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(
+        const Duration(milliseconds: 100)); // Check every 100ms
     return true;
   });
 }

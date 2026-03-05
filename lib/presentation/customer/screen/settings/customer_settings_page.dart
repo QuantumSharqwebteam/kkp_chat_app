@@ -30,7 +30,8 @@ Future<void> _launchDialer(BuildContext context, String phoneNumber) async {
     await launchUrl(uri);
   } else {
     if (context.mounted) {
-      Utils.showCustomToast(context, title: 'Error', subtitle: 'No Supported App Found');
+      Utils.showCustomToast(context,
+          title: 'Error', subtitle: 'No Supported App Found');
     }
   }
 }
@@ -86,6 +87,9 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               Text(
                 AppLocalizations.of(context)!.changeLocale,
                 style: AppTextStyles.black10_600,
+              ),
+              const SizedBox(
+                width: 4,
               ),
               LanguageSwitcher(),
               const SizedBox(
@@ -158,7 +162,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               // mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -193,7 +198,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ],
                           onTaps: [
                             () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) {
                                 return AccountAndSecurity();
                               }));
                             }
@@ -206,8 +212,12 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                                 fontSize: 14),
                           ),
                           showDividerAfterTitle: true,
-                          titles: [AppLocalizations.of(context)!.accountAndSecurity],
-                          subtitles: [AppLocalizations.of(context)!.accountManagement],
+                          titles: [
+                            AppLocalizations.of(context)!.accountAndSecurity
+                          ],
+                          subtitles: [
+                            AppLocalizations.of(context)!.accountManagement
+                          ],
                         ),
                         // SizedBox(
                         //   height: 10,
@@ -232,10 +242,13 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                               ),
                             ),
                           ],
-                          subtitles: [AppLocalizations.of(context)!.trackAllOrderEnquires],
+                          subtitles: [
+                            AppLocalizations.of(context)!.trackAllOrderEnquires
+                          ],
                           onTaps: [
                             () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) {
                                 return CustomerInquiriesPage();
                               }));
                             }
@@ -290,7 +303,8 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -310,7 +324,9 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                       title: Text(
                         AppLocalizations.of(context)!.preferences,
                         style: TextStyle(
-                            color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                            color: AppColors.grey7B7B7B,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14),
                       ),
                       showDividerAfterTitle: true,
                       titles: [AppLocalizations.of(context)!.notifications],
@@ -325,10 +341,13 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                           ),
                         ),
                       ],
-                      subtitles: [AppLocalizations.of(context)!.yourNotificationsHub],
+                      subtitles: [
+                        AppLocalizations.of(context)!.yourNotificationsHub
+                      ],
                       onTaps: [
                         () {
-                          Navigator.pushNamed(context, CustomerRoutes.notificationSettings);
+                          Navigator.pushNamed(
+                              context, CustomerRoutes.notificationSettings);
                         }
                       ],
                     ),
@@ -370,7 +389,9 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                   title: Text(
                     AppLocalizations.of(context)!.complaints,
                     style: TextStyle(
-                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                        color: AppColors.grey7B7B7B,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14),
                   ),
                   showDividerAfterTitle: true,
                   titles: [AppLocalizations.of(context)!.complaints],
@@ -379,7 +400,9 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                     () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const CustomerComplaintPage()),
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                const CustomerComplaintPage()),
                       );
                     },
                   ],
@@ -439,14 +462,19 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                   title: Text(
                     AppLocalizations.of(context)!.termsAndPolicy,
                     style: TextStyle(
-                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                        color: AppColors.grey7B7B7B,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14),
                   ),
                   showDividerAfterTitle: true,
                   titles: [AppLocalizations.of(context)!.about],
-                  subtitles: [AppLocalizations.of(context)!.manageTermsAndPolicy],
+                  subtitles: [
+                    AppLocalizations.of(context)!.manageTermsAndPolicy
+                  ],
                   onTaps: [
                     () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return AboutUsPage();
                       }));
                     },

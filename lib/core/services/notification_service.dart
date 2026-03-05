@@ -17,16 +17,27 @@ class NotificationService with WidgetsBindingObserver {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  // Public accessor for other services to reuse the same plugin instance
+  static FlutterLocalNotificationsPlugin get plugin =>
+      _localNotificationsPlugin;
   static bool _notificationClicked = false;
   static GlobalKey<NavigatorState>? navigatorKey;
   static Function(String?, String?, String?)? onNotificationTap;
   static AppLifecycleState? appLifecycleState;
+  // Queue for push notifications received while app is initializing/terminated
+  static final List<Map<String, dynamic>> _pendingPushNotifications = [];
+  static Timer? _pendingProcessorTimer;
+  static bool _pendingProcessorRunning = false;
 
   // Initialize notification service
-  static Future<void> init(BuildContext context, GlobalKey<NavigatorState> navKey,
+  static Future<void> init(
+      BuildContext context, GlobalKey<NavigatorState> navKey,
       {Function(String?, String?, String?)? onNotificationClick}) async {
-    navigatorKey = navKey;
-    onNotificationTap = onNotificationClick;
+    // Only set the navigatorKey and onNotificationTap if they aren't set
+    // yet. Some screens (e.g., MarketingHost) also call init — we must not
+    // overwrite the app root navigator key with a nested navigator.
+    navigatorKey ??= navKey;
+    onNotificationTap ??= onNotificationClick;
 
     WidgetsBinding.instance.addObserver(NotificationService());
     await _initializeLocalNotifications();
@@ -58,7 +69,8 @@ class NotificationService with WidgetsBindingObserver {
   // Setup for background notifications (when the app is in the background)
   static void _setupBackgroundNotification() {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint("🔔 Notification Clicked (Background): ${message.notification?.title}");
+      debugPrint(
+          "🔔 Notification Clicked (Background): ${message.notification?.title}");
       _handleBackgroundMessage(message);
       handleNotificationClick(message);
     });
@@ -101,41 +113,129 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   static Future<void> _setupTerminatedNotification() async {
-    RemoteMessage? message = await FirebaseMessaging.instance.getInitialMessage();
+    RemoteMessage? message =
+        await FirebaseMessaging.instance.getInitialMessage();
     if (message != null) {
-      debugPrint("🚀@@ App Opened via Notification: ${message.toMap()['data']}");
+      debugPrint(
+          "🚀@@ App Opened via Notification: ${message.toMap()['data']}");
       final data = message.toMap()['data'];
       final notificationType = data['notificationType'] ?? 'individual';
 
       if (notificationType == 'group') {
-        // Handle group notification
-        await handleGroupPushNotification(navigatorKey!, data);
+        await _enqueueOrHandlePushNotification(data, isGroup: true);
       } else {
-        // Handle regular notification click
-        final customerEmail = data['targetId'];
-        final agentEmail = data["senderId"];
-
         if (data != null && data['call'] == "true") {
-          // Handle the incoming call
-          await handleIncomingCall(navigatorKey!, data);
+          // incoming call tap: just open the app — MarketingHost will show overlay
+          await _enqueueOrHandlePushNotification(data, isCall: true);
         } else {
-          if ("0" == await LocalDbHelper.getUserType()) {
-            await handlePushNotificationClickForCustomer(navigatorKey!, data);
-          } else {
-            await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
-            await handlePushNotificationClickForAgent(navigatorKey!, data);
-          }
+          await _enqueueOrHandlePushNotification(data);
         }
       }
     }
   }
 
+  // Public helper to handle an initial RemoteMessage (from main).
+  // This ensures the same enqueue/handle logic used for other terminated
+  // notifications is applied.
+  static Future<void> handleInitialMessage(RemoteMessage message) async {
+    try {
+      final data = message.data;
+      final notificationType = data['notificationType'] ?? 'individual';
+
+      if (notificationType == 'group') {
+        await _enqueueOrHandlePushNotification(data, isGroup: true);
+      } else {
+        if (data != null && data['call'] == "true") {
+          await _enqueueOrHandlePushNotification(data, isCall: true);
+        } else {
+          await _enqueueOrHandlePushNotification(data);
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error in handleInitialMessage: $e');
+    }
+  }
+
+  static Future<void> _enqueueOrHandlePushNotification(Map<String, dynamic> data,
+      {bool isGroup = false, bool isCall = false}) async {
+    // If app is ready and navigator available, handle immediately
+    if (navigatorKey != null && isAppInitialized == true && navigatorKey!.currentState != null) {
+      try {
+        final customerEmail = data['targetId'];
+        final agentEmail = data['senderId'];
+        if (isGroup) {
+          await handleGroupPushNotification(navigatorKey!, data);
+          return;
+        }
+
+        if (isCall) {
+          // Do nothing else — just ensure app opens
+          return;
+        }
+
+        if ("0" == await LocalDbHelper.getUserType()) {
+          await handlePushNotificationClickForCustomer(navigatorKey!, data);
+        } else {
+          await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
+          await handlePushNotificationClickForAgent(navigatorKey!, data);
+        }
+      } catch (e) {
+        debugPrint('❌ Error processing push notification immediately: $e');
+      }
+      return;
+    }
+
+    // Otherwise enqueue and start processor
+    debugPrint('⚠️ App not ready — enqueueing push notification: $data');
+    _pendingPushNotifications.add(data);
+    _startPendingProcessor();
+  }
+
+  static void _startPendingProcessor() {
+    if (_pendingProcessorRunning) return;
+    _pendingProcessorRunning = true;
+    _pendingProcessorTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+      if (navigatorKey != null && isAppInitialized == true && navigatorKey!.currentState != null) {
+        debugPrint('✅ App initialized — processing ${_pendingPushNotifications.length} queued notifications');
+        // Drain the queue
+        final List<Map<String, dynamic>> toProcess = List.from(_pendingPushNotifications);
+        _pendingPushNotifications.clear();
+        for (final data in toProcess) {
+          try {
+            final customerEmail = data['targetId'];
+            final agentEmail = data['senderId'];
+            if (data['notificationType'] == 'group' || data['isGroupMessage'] == true) {
+              await handleGroupPushNotification(navigatorKey!, data);
+            } else if (data['call'] == 'true') {
+              // nothing more to do — overlay is shown by socket event
+            } else {
+              if ("0" == await LocalDbHelper.getUserType()) {
+                await handlePushNotificationClickForCustomer(navigatorKey!, data);
+              } else {
+                await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
+                await handlePushNotificationClickForAgent(navigatorKey!, data);
+              }
+            }
+          } catch (e) {
+            debugPrint('❌ Error processing queued notification: $e');
+          }
+        }
+
+        timer.cancel();
+        _pendingProcessorTimer = null;
+        _pendingProcessorRunning = false;
+      }
+    });
+  }
+
   // Method to show incoming call notification
   static Future<void> showIncomingCallNotification(String callerName) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
       'call_channel_id',
       'Call Notifications',
-      channelDescription: 'This channel is used for incoming call notifications',
+      channelDescription:
+          'This channel is used for incoming call notifications',
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
@@ -143,7 +243,8 @@ class NotificationService with WidgetsBindingObserver {
           'incoming_call'), // Use your custom sound file for Android
     );
 
-    const DarwinNotificationDetails iOSPlatformChannelSpecifics = DarwinNotificationDetails(
+    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
@@ -168,7 +269,8 @@ class NotificationService with WidgetsBindingObserver {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings initializationSettingsDarwin = DarwinInitializationSettings(
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
       requestAlertPermission: true,
       requestSoundPermission: true,
       requestBadgePermission: true,
@@ -179,7 +281,8 @@ class NotificationService with WidgetsBindingObserver {
       defaultPresentList: true,
     );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
     );
@@ -191,12 +294,14 @@ class NotificationService with WidgetsBindingObserver {
       },
     );
 
-    final androidPlugin = _localNotificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin =
+        _localNotificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
       // ✅ Default notification channel (optional)
-      const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
+      const AndroidNotificationChannel defaultChannel =
+          AndroidNotificationChannel(
         'high_importance_channel',
         'High Importance Notifications',
         description: 'This channel is for important notifications',
@@ -210,7 +315,8 @@ class NotificationService with WidgetsBindingObserver {
         'Call Notifications',
         description: 'This channel is used for incoming call notifications',
         importance: Importance.high,
-        sound: RawResourceAndroidNotificationSound('incoming_call'), // 👈 without .mp3
+        sound: RawResourceAndroidNotificationSound(
+            'incoming_call'), // 👈 without .mp3
         playSound: true,
       );
       await androidPlugin.createNotificationChannel(callChannel);
@@ -218,21 +324,64 @@ class NotificationService with WidgetsBindingObserver {
   }
 
   // Handle notification tap
-  static Future<void> _handleNotificationTap(NotificationResponse response) async {
+  static Future<void> _handleNotificationTap(
+      NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
 
-    if (response.payload != null) {
-      final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
+    if (response.payload == null) {
+      debugPrint("Notification payload is null");
+      return;
+    }
 
-      if ("0" == await LocalDbHelper.getUserType()) {
-        if (isAppInitialized) {
-          handlePushNotificationClickForCustomer(navigatorKey!, notificationData);
-        }
-      } else {
-        if (isAppInitialized) {
-          handlePushNotificationClickForAgent(navigatorKey!, notificationData);
-        }
+    // For simple control payloads (non-JSON) we handle them explicitly
+    if (response.payload == 'incoming_call') {
+      debugPrint('Incoming call notification tapped — opening app only.');
+      // Do nothing else; the app's socket event / MarketingHost will show overlay
+      return;
+    }
+
+    if (response.payload == 'general_chat_summary') {
+      debugPrint('Summary notification tapped — opening app only.');
+      return;
+    }
+
+    // Attempt to parse JSON payloads only
+    if (response.payload is String) {
+      Map<String, dynamic> notificationData;
+      try {
+        notificationData = jsonDecode(response.payload!);
+      } catch (e) {
+        debugPrint('Failed to parse notification payload as JSON: $e');
+        return;
       }
+
+      if (navigatorKey == null) {
+        debugPrint(
+            '⚠️ navigatorKey not set yet; cannot handle notification tap.');
+        return;
+      }
+
+      try {
+        // Group messages may be handled via a separate flow
+        if (notificationData['isGroupMessage'] == true) {
+          await handleGroupLocalNotificationTap(
+              navigatorKey!, notificationData);
+          return;
+        }
+
+        if ("0" == await LocalDbHelper.getUserType()) {
+          await handlePushNotificationClickForCustomer(
+              navigatorKey!, notificationData);
+        } else {
+          await handlePushNotificationClickForAgent(
+              navigatorKey!, notificationData);
+        }
+      } catch (e) {
+        debugPrint('❌ Error handling notification tap: $e');
+      }
+    } else {
+      debugPrint(
+          'Unhandled notification payload type: ${response.payload.runtimeType}');
     }
   }
 
@@ -314,7 +463,8 @@ class NotificationService with WidgetsBindingObserver {
           debugPrint("🍏 apn toke: $apnsToken");
         }
         if (apnsToken == null) {
-          debugPrint("❌ [iOS] APNs token not yet available. Aborting FCM token fetch.");
+          debugPrint(
+              "❌ [iOS] APNs token not yet available. Aborting FCM token fetch.");
           return; // Wait and retry later
         }
       }

@@ -52,6 +52,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 AppLocalizations.of(context)?.changeLocale ?? 'Change locale:',
                 style: AppTextStyles.black10_600,
               ),
+              const SizedBox(width: 4),
               LanguageSwitcher(),
               const SizedBox(
                 width: 16,

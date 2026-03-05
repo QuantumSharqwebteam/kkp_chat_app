@@ -103,7 +103,10 @@ class CustomerHomeProvider with ChangeNotifier {
       // ✅ Preload product images to improve perceived load time
       for (var product in _products!) {
         final image = CachedNetworkImageProvider(product.imageUrl);
-        precacheImage(image, navigatorKey.currentContext!);
+        final ctx = navigatorKey.currentState?.context;
+        if (ctx != null) {
+          precacheImage(image, ctx);
+        }
       }
       notifyListeners();
     } catch (e) {
@@ -193,8 +196,7 @@ class CustomerHomeProvider with ChangeNotifier {
   }
 
   void navigateToChat() {
-    Navigator.push(
-      navigatorKey.currentContext!,
+    navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => CustomerChatScreen(
           agentName: "Agent",

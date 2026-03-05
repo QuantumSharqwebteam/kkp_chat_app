@@ -139,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ProfileDetailsField(
             icon: Icons.email_outlined,
-            label: 'Email Adress',
+            label: 'Email Address',
             value: profile?.email ?? "NA",
           ),
           SizedBox(
