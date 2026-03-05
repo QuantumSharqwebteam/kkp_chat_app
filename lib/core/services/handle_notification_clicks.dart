@@ -21,7 +21,8 @@ Future<void> _resetCustomerUnreadCount(
 Future<void> handleNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
-  debugPrint('handleNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorKey set: ${navigatorKey != null}, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  debugPrint(
+      'handleNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorKey set: ${navigatorKey != null}, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final customerEmail =
       (notificationData['targetId'] as String?) ?? LocalDbHelper.getEmail();
   if (notificationData["type"] == "product") {
@@ -44,7 +45,8 @@ Future<void> handleNotificationClickForCustomer(
 Future<void> handlePushNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
-  debugPrint('handlePushNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  debugPrint(
+      'handlePushNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
   // I/flutter ( 1646): 🚀@@ App Opened via Notification: {targetName: waxoc , senderName: Agent mohd 3,
@@ -125,7 +127,8 @@ Future<void> handlePushNotificationClickForCustomer(
 Future<void> handleNotificationClickForAgent(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
-  debugPrint('handleNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  debugPrint(
+      'handleNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   if (notificationData["type"] == "product") {
     notificationData["message"] = "Shared product";
   }
@@ -181,7 +184,8 @@ Future<void> handleGroupLocalNotificationTap(
 Future<void> handlePushNotificationClickForAgent(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
-  debugPrint('handlePushNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  debugPrint(
+      'handlePushNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 
@@ -257,7 +261,8 @@ Future<void> handlePushNotificationClickForAgent(
 /// Handles incoming call notification.
 Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> callData) async {
-  debugPrint('handleIncomingCall invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  debugPrint(
+      'handleIncomingCall invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 
@@ -312,7 +317,8 @@ Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
 /// Handles group push notification for agents
 Future<void> handleGroupPushNotification(GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
-  debugPrint('handleGroupPushNotification invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  debugPrint(
+      'handleGroupPushNotification invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 

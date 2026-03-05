@@ -156,10 +156,14 @@ class NotificationService with WidgetsBindingObserver {
     }
   }
 
-  static Future<void> _enqueueOrHandlePushNotification(Map<String, dynamic> data,
-      {bool isGroup = false, bool isCall = false}) async {
+  static Future<void> _enqueueOrHandlePushNotification(
+      Map<String, dynamic> data,
+      {bool isGroup = false,
+      bool isCall = false}) async {
     // If app is ready and navigator available, handle immediately
-    if (navigatorKey != null && isAppInitialized == true && navigatorKey!.currentState != null) {
+    if (navigatorKey != null &&
+        isAppInitialized == true &&
+        navigatorKey!.currentState != null) {
       try {
         final customerEmail = data['targetId'];
         final agentEmail = data['senderId'];
@@ -194,23 +198,30 @@ class NotificationService with WidgetsBindingObserver {
   static void _startPendingProcessor() {
     if (_pendingProcessorRunning) return;
     _pendingProcessorRunning = true;
-    _pendingProcessorTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) async {
-      if (navigatorKey != null && isAppInitialized == true && navigatorKey!.currentState != null) {
-        debugPrint('✅ App initialized — processing ${_pendingPushNotifications.length} queued notifications');
+    _pendingProcessorTimer =
+        Timer.periodic(const Duration(milliseconds: 500), (timer) async {
+      if (navigatorKey != null &&
+          isAppInitialized == true &&
+          navigatorKey!.currentState != null) {
+        debugPrint(
+            '✅ App initialized — processing ${_pendingPushNotifications.length} queued notifications');
         // Drain the queue
-        final List<Map<String, dynamic>> toProcess = List.from(_pendingPushNotifications);
+        final List<Map<String, dynamic>> toProcess =
+            List.from(_pendingPushNotifications);
         _pendingPushNotifications.clear();
         for (final data in toProcess) {
           try {
             final customerEmail = data['targetId'];
             final agentEmail = data['senderId'];
-            if (data['notificationType'] == 'group' || data['isGroupMessage'] == true) {
+            if (data['notificationType'] == 'group' ||
+                data['isGroupMessage'] == true) {
               await handleGroupPushNotification(navigatorKey!, data);
             } else if (data['call'] == 'true') {
               // nothing more to do — overlay is shown by socket event
             } else {
               if ("0" == await LocalDbHelper.getUserType()) {
-                await handlePushNotificationClickForCustomer(navigatorKey!, data);
+                await handlePushNotificationClickForCustomer(
+                    navigatorKey!, data);
               } else {
                 await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
                 await handlePushNotificationClickForAgent(navigatorKey!, data);

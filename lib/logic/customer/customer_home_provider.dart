@@ -138,7 +138,8 @@ class CustomerHomeProvider with ChangeNotifier {
   Future<void> addOrUpdateProductLocal(Product product) async {
     await LocalDbHelper.addOrUpdateProduct(product);
     _products ??= [];
-    final index = _products!.indexWhere((p) => p.productId == product.productId);
+    final index =
+        _products!.indexWhere((p) => p.productId == product.productId);
     if (index >= 0) {
       _products![index] = product;
     } else {
