@@ -14,8 +14,7 @@ class FormMessageBubble extends StatefulWidget {
   final String userRole;
   final Function(Map<String, dynamic>)? onRateUpdated;
   final Function(String, String)? onStatusUpdated;
-  final VoidCallback?
-      onFormUpdateStart; // Callback to start the loading indicator
+  final VoidCallback? onFormUpdateStart; // Callback to start the loading indicator
   final VoidCallback? onFormUpdateEnd; // Callback to end the loading indicator
   final Function(Map<String, dynamic>)? onAskForRateUpdate;
 
@@ -42,15 +41,13 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
 
   Future<void> _updateFormStatus(BuildContext context, String status) async {
     if (widget.onFormUpdateStart != null) {
-      widget
-          .onFormUpdateStart!(); // Notify the parent to start the loading indicator
+      widget.onFormUpdateStart!(); // Notify the parent to start the loading indicator
     }
 
     final formData = widget.formData;
     final id = widget.formData['_id']?.toString();
     if (id == null) {
-      debugPrint(
-          "Form id required : $id in the form data: ${formData.toString()} ");
+      debugPrint("Form id required : $id in the form data: ${formData.toString()} ");
     }
     try {
       await chatRepository.updateInquiryFormStatus(id!, status);
@@ -73,8 +70,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
       }
     } finally {
       if (widget.onFormUpdateEnd != null) {
-        widget
-            .onFormUpdateEnd!(); // Notify the parent to end the loading indicator
+        widget.onFormUpdateEnd!(); // Notify the parent to end the loading indicator
       }
     }
   }
@@ -82,29 +78,23 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment:
-          widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Stack(
           children: [
             Container(
-              margin: const EdgeInsets.only(
-                  top: 20, bottom: 4, left: 10, right: 40),
+              margin: const EdgeInsets.only(top: 20, bottom: 4, left: 10, right: 40),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.65,
               ),
               decoration: BoxDecoration(
-                color: widget.isMe
-                    ? const Color(0xFF00ABE9)
-                    : const Color(0xFFF2F2F2),
+                color: widget.isMe ? const Color(0xFF00ABE9) : const Color(0xFFF2F2F2),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
                   topRight: const Radius.circular(16),
-                  bottomLeft:
-                      widget.isMe ? const Radius.circular(16) : Radius.zero,
-                  bottomRight:
-                      widget.isMe ? Radius.zero : const Radius.circular(16),
+                  bottomLeft: widget.isMe ? const Radius.circular(16) : Radius.zero,
+                  bottomRight: widget.isMe ? Radius.zero : const Radius.circular(16),
                 ),
               ),
               child: Column(
@@ -134,17 +124,13 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                   //  _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
                   // if (widget.formData.containsKey("_id"))
                   //   _buildTextRow("Form Id:", widget.formData["_id"] ?? ""),
-
+                  _buildTextRow("BuyerName", widget.formData["buyerName"] ?? ""),
                   _buildTextRow("Quality", widget.formData["quality"] ?? ""),
                   _buildTextRow("Weave", widget.formData["weave"] ?? ""),
-                  _buildTextRow("Quantity",
-                      widget.formData["quantity"]?.toString() ?? ""),
-                  _buildTextRow(
-                      "Composition", widget.formData["composition"] ?? ""),
-                  if (widget.formData.containsKey("rate") &&
-                      widget.formData["rate"] != 0)
-                    _buildTextRow(
-                        "Rate", widget.formData["rate"]?.toString() ?? ""),
+                  _buildTextRow("Quantity", widget.formData["quantity"]?.toString() ?? ""),
+                  _buildTextRow("Composition", widget.formData["composition"] ?? ""),
+                  if (widget.formData.containsKey("rate") && widget.formData["rate"] != 0)
+                    _buildTextRow("Rate", widget.formData["rate"]?.toString() ?? ""),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -159,11 +145,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                     _handleMenuSelection(context, value);
                   },
                   itemBuilder: (BuildContext context) {
-                    List<String> options = [
-                      'Ask for rate update',
-                      'confirm',
-                      'decline'
-                    ];
+                    List<String> options = ['Ask for rate update', 'confirm', 'decline'];
                     // if (widget.userRole == "2" || widget.userRole == "3") {
                     //   options.addAll(['confirm', 'decline']);
                     // }
@@ -217,8 +199,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
             child: Text(
               label,
               style: AppTextStyles.black14_600.copyWith(
-                color:
-                    widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
+                color: widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
               ),
             ),
           ),
@@ -226,8 +207,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
             child: Text(
               value,
               style: TextStyle(
-                color:
-                    widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
+                color: widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
               ),
               textAlign: TextAlign.right,
             ),

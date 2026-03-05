@@ -80,7 +80,7 @@ class FeedListCard extends StatelessWidget {
                           backgroundColor: AppColors.activeGreen,
                           child: Text(
                             "2",
-                            style: AppTextStyles.black12_400,
+                            style: AppTextStyles.black10_500,
                           ),
                         )
                       : SizedBox.shrink(),

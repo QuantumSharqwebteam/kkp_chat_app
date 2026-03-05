@@ -47,7 +47,7 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
         title: const Text('Create New Group'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -62,6 +62,7 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
             _buildAdminsSection(),
             const SizedBox(height: 24),
             _buildCreateButton(),
+            const SizedBox(height: 80),
           ],
         ),
       ),

@@ -82,17 +82,9 @@ class _ManageCustomersState extends State<ManageCustomers> {
       );
 
       // Set header cells with style
-      final headers = [
-        'Name',
-        'Email',
-        'Phone',
-        'GSTNo',
-        'PanNo',
-        'Customer Type'
-      ];
+      final headers = ['Name', 'Email', 'Phone', 'GSTNo', 'PanNo', 'Customer Type'];
       for (int i = 0; i < headers.length; i++) {
-        final cell =
-            sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
         cell.value = TextCellValue(headers[i]);
         cell.cellStyle = headerStyle;
       }
@@ -103,9 +95,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
         sheet.appendRow([
           TextCellValue(customer['name'] ?? ''),
           TextCellValue(customer['email'] ?? ''),
-          TextCellValue(customer['mobile'] != null
-              ? customer['mobile'].toString()
-              : 'N/A'),
+          TextCellValue(customer['mobile'] != null ? customer['mobile'].toString() : 'N/A'),
           TextCellValue(customer['GSTno'] ?? ''),
           TextCellValue(customer['PANno'] ?? ''),
           TextCellValue(customer['customerType'] ?? ""),
@@ -119,8 +109,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
 
       final bytes = excel.save();
       final dir = await getTemporaryDirectory();
-      final file = File(
-          '${dir.path}/customers_${DateTime.now().millisecondsSinceEpoch}.xlsx');
+      final file = File('${dir.path}/customers_${DateTime.now().millisecondsSinceEpoch}.xlsx');
       await file.writeAsBytes(bytes!);
 
       if (mounted) {
@@ -158,8 +147,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
             : PreferredSize(
                 preferredSize: const Size.fromHeight(65),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
                       Expanded(
@@ -172,15 +160,12 @@ class _ManageCustomersState extends State<ManageCustomers> {
                       ),
                       const SizedBox(width: 10),
                       GestureDetector(
-                        onTap: isCustomerDownloading
-                            ? null
-                            : downloadCustomerDetailsAsExcel,
+                        onTap: isCustomerDownloading ? null : downloadCustomerDetailsAsExcel,
                         child: isCustomerDownloading
                             ? const SizedBox(
                                 width: 30,
                                 height: 30,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Container(
                                 padding: const EdgeInsets.all(8),
@@ -196,7 +181,7 @@ class _ManageCustomersState extends State<ManageCustomers> {
                 ),
               ),
       ),
-      body: buildCustomerList(), // ✅ No more tabs
+      body: SafeArea(bottom: Platform.isAndroid, child: buildCustomerList()), // ✅ No more tabs
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -101,21 +103,24 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.greyE5E7EB,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _agentsList.isEmpty
-              ? Center(child: Text(AppLocalizations.of(context)!.noAgentsAvailable))
-              : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  itemCount: _agentsList.length + 1, // +1 for the image section
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return _buildTransferImage();
-                    }
-                    final agent = _agentsList[index - 1];
-                    return _agentButton(agent);
-                  },
-                ),
+      body: SafeArea(
+        bottom: Platform.isAndroid,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _agentsList.isEmpty
+                ? Center(child: Text(AppLocalizations.of(context)!.noAgentsAvailable))
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 80),
+                    itemCount: _agentsList.length + 1, // +1 for the image section
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return _buildTransferImage();
+                      }
+                      final agent = _agentsList[index - 1];
+                      return _agentButton(agent);
+                    },
+                  ),
+      ),
     );
   }
 

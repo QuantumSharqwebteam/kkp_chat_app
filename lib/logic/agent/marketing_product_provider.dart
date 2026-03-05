@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
 
@@ -48,6 +49,7 @@ class MarketingProductProvider extends ChangeNotifier {
       );
 
       _allProducts = await _productRepository.getProducts();
+      await LocalDbHelper.saveProducts(_allProducts);
 
       // ✅ ADDED: Log response data count
       _logger.logUi(
@@ -74,6 +76,15 @@ class MarketingProductProvider extends ChangeNotifier {
       );
 
       _allProducts = [];
+      try {
+        _allProducts = await LocalDbHelper.getProducts();
+        _logger.logUi(
+          'Loaded products from local cache | Count: ${_allProducts.length}',
+          level: LogLevel.warning,
+        );
+      } catch (_) {
+        _allProducts = [];
+      }
       _filteredProducts = [];
     }
 
@@ -87,6 +98,37 @@ class MarketingProductProvider extends ChangeNotifier {
     // );
 
     notifyListeners();
+  }
+
+  Future<void> refreshProductsFromHive() async {
+    try {
+      _allProducts = await LocalDbHelper.getProducts();
+      applyFilter(_searchQuery);
+    } catch (e, stackTrace) {
+      _logger.logUi(
+        'Failed to refresh products from local cache',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> addOrUpdateProductLocal(Product product) async {
+    await LocalDbHelper.addOrUpdateProduct(product);
+    final index = _allProducts.indexWhere((p) => p.productId == product.productId);
+    if (index >= 0) {
+      _allProducts[index] = product;
+    } else {
+      _allProducts.insert(0, product);
+    }
+    applyFilter(_searchQuery);
+  }
+
+  Future<void> deleteProductLocal(String productId) async {
+    await LocalDbHelper.deleteProduct(productId);
+    _allProducts.removeWhere((p) => p.productId == productId);
+    applyFilter(_searchQuery);
   }
 
   void applyFilter(String query) {

@@ -99,10 +99,14 @@ class LocalDbHelper {
 
   static Profile? getProfile() {
     final profileMap = _box.get(_profile);
-    if (profileMap != null && profileMap is Map<String, dynamic>) {
-      return Profile.fromMap(profileMap);
+    if (profileMap is Map) {
+      return Profile.fromMap(Map<String, dynamic>.from(profileMap));
     }
     return null;
+  }
+
+  static String? getProfileId() {
+    return getProfile()?.id;
   }
 
   static Future<void> removeProfile() async {
@@ -250,7 +254,7 @@ class LocalDbHelper {
       final box = await Hive.openBox<dynamic>(_productBoxKey);
       await box.clear();
       for (var product in products) {
-        await box.add(product.toCreateJson());
+        await box.add(product.toJson());
       }
       await _box.put(_lastProductFetchTimeKey, DateTime.now().millisecondsSinceEpoch);
       debugPrint("✅ [LocalDbHelper] Products saved successfully!");
@@ -312,15 +316,17 @@ class LocalDbHelper {
       final box = await Hive.openBox<dynamic>(_productBoxKey);
       final productMaps = box.values.toList();
       final existingIndex = productMaps.indexWhere(
-        (map) => map['productId'] == product.productId,
+        (map) =>
+            map['productId']?.toString() == product.productId?.toString() ||
+            map['_id']?.toString() == product.productId?.toString(),
       );
       if (existingIndex != -1) {
         // Update existing product
-        await box.putAt(existingIndex, product.toCreateJson());
+        await box.putAt(existingIndex, product.toJson());
         debugPrint("✅ [LocalDbHelper] Product updated: ${product.productName}");
       } else {
         // Add new product
-        await box.add(product.toCreateJson());
+        await box.add(product.toJson());
         debugPrint("✅ [LocalDbHelper] Product added: ${product.productName}");
       }
     } catch (e) {
@@ -336,7 +342,9 @@ class LocalDbHelper {
       final box = await Hive.openBox<dynamic>(_productBoxKey);
       final productMaps = box.values.toList();
       final existingIndex = productMaps.indexWhere(
-        (map) => map['productId'] == productId,
+        (map) =>
+            map['productId']?.toString() == productId.toString() ||
+            map['_id']?.toString() == productId.toString(),
       );
       if (existingIndex != -1) {
         await box.deleteAt(existingIndex);

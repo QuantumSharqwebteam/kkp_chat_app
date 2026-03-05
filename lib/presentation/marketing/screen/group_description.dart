@@ -73,25 +73,28 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildGroupImageSection(),
-                  const SizedBox(height: 20),
-                  _buildGroupNameSection(),
-                  const SizedBox(height: 20),
-                  _buildGroupDescriptionSection(),
-                  const SizedBox(height: 20),
-                  _buildGroupInfoSection(),
-                  const SizedBox(height: 20),
-                  _buildAdminsSection(),
-                  const SizedBox(height: 20),
-                  _buildMembersSection(),
-                  const SizedBox(height: 20),
-                  if (_isEditing) _buildActionButtons(),
-                ],
+          : SafeArea(
+              bottom: Platform.isAndroid,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 16, right: 16, left: 16, bottom: 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildGroupImageSection(),
+                    const SizedBox(height: 20),
+                    _buildGroupNameSection(),
+                    const SizedBox(height: 20),
+                    _buildGroupDescriptionSection(),
+                    const SizedBox(height: 20),
+                    _buildGroupInfoSection(),
+                    const SizedBox(height: 20),
+                    _buildAdminsSection(),
+                    const SizedBox(height: 20),
+                    _buildMembersSection(),
+                    const SizedBox(height: 20),
+                    if (_isEditing) _buildActionButtons(),
+                  ],
+                ),
               ),
             ),
     );

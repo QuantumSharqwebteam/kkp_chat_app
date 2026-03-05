@@ -7,9 +7,11 @@ import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
@@ -87,6 +89,9 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onProductAdd(_handleProductAdd);
+        _socketService.onProductUpdate(_handleProductUpdate);
+        _socketService.onProductDelete(_handleProductDelete);
         //  _socketService.onDisconnect(_handleDisconnect);
         // _socketService.onConnect(_handleConnect);
       } else {
@@ -297,6 +302,29 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
           agentEmail: data["senderId"],
           navigatorKey: widget.navigatorKey);
     }));
+  }
+
+  Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
+    debugPrint("📦 [MarketingHost] Product added: ${productData['productName']}");
+    if (!mounted) return;
+    final product = Product.fromJson(productData);
+    await Provider.of<MarketingProductProvider>(context, listen: false)
+        .addOrUpdateProductLocal(product);
+  }
+
+  Future<void> _handleProductUpdate(Map<String, dynamic> productData) async {
+    debugPrint("🔄 [MarketingHost] Product updated: ${productData['productName']}");
+    if (!mounted) return;
+    final product = Product.fromJson(productData);
+    await Provider.of<MarketingProductProvider>(context, listen: false)
+        .addOrUpdateProductLocal(product);
+  }
+
+  Future<void> _handleProductDelete(String productId) async {
+    debugPrint("🗑️ [MarketingHost] Product deleted: $productId");
+    if (!mounted) return;
+    await Provider.of<MarketingProductProvider>(context, listen: false)
+        .deleteProductLocal(productId);
   }
 
   void _handleIncomingCall(Map<String, dynamic> callData) {

@@ -69,10 +69,6 @@ class ComplaintService {
   }) async {
     try {
       final token = await LocalDbHelper.getToken();
-      LoggingService.instance.logAuth(
-        'AuthToken: $token',
-        level: LogLevel.debug,
-      );
 
       LoggingService.instance.logNetwork(
         'Submitting complaint: $subject',
@@ -86,8 +82,8 @@ class ComplaintService {
           "Authorization": "Bearer $token",
         },
         body: jsonEncode({
-          "subject": subject,
-          "description": description,
+          "subject": subject.trim(),
+          "description": description.trim(),
         }),
       );
 

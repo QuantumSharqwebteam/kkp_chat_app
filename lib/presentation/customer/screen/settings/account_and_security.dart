@@ -1,6 +1,5 @@
 // Ensure all necessary imports
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
@@ -60,11 +59,10 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
               Text(AppLocalizations.of(context)!.loginAndRecovery,
                   style: AppTextStyles.black16_500),
               Text(
-                AppLocalizations.of(context)!.manageYourPassword,
+                "Manage your account",
                 style: AppTextStyles.black14_400,
               ),
-              Text(AppLocalizations.of(context)!.loginPreferenceAndRecovery,
-                  style: AppTextStyles.black14_400),
+              Text("Login preference and recovery methods", style: AppTextStyles.black14_400),
               SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
@@ -159,20 +157,23 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
 
   final AuthApi authApi = AuthApi();
 
-  Future<void> _showFinalDeleteConfirmationDialog(BuildContext context) async {
+  Future<void> _showFinalDeleteConfirmationDialog(
+    BuildContext sheetContext,
+  ) async {
     return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // User must tap a button to close the dialog
-      builder: (BuildContext context) {
+      context: sheetContext,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text("Final Confirmation"),
           content: const Text(
-              "Are you absolutely sure you want to delete your account? This action cannot be undone."),
-          actions: <Widget>[
+            "Are you absolutely sure you want to delete your account?",
+          ),
+          actions: [
             TextButton(
               child: const Text("Cancel"),
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(dialogContext).pop(); // close dialog
               },
             ),
             TextButton(
@@ -181,8 +182,8 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                deleteAccount(context); // Proceed with account deletion
+                Navigator.of(dialogContext).pop(); // close dialog
+                deleteAccount(sheetContext); // ✅ pass SHEET context
               },
             ),
           ],
@@ -191,35 +192,49 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
     );
   }
 
-  Future<void> deleteAccount(BuildContext context) async {
-    setState(() {
-      isLoading = true; // Start loading
-    });
+  Future<void> deleteAccount(BuildContext sheetContext) async {
+    setState(() => isLoading = true);
 
     try {
-      authApi.deleteUserAccount(email.text, password.text, feedback.text).then((response) async {
-        final message = response['message'];
-        if (message == "User marked as deleted successfully") {
-          widget.scaffoldMessenger
-              .showSnackBar(const SnackBar(content: Text("Account deleted successfully")));
+      final response = await authApi.deleteUserAccount(
+        email.text,
+        password.text,
+        feedback.text,
+      );
 
-          await clearHiveStorage();
-          if (context.mounted) {
-            logOut(context);
-          }
-        } else {
-          widget.scaffoldMessenger.showSnackBar(
-              SnackBar(content: Text("Cannot delete acount! Incorrect details provided")));
+      final message = response['message'];
+
+      if (message == "User marked as deleted successfully") {
+        // Close bottom sheet first
+        if (sheetContext.mounted) {
+          Navigator.of(sheetContext).pop();
         }
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print("error in deleting account : ${e.toString()}");
+
+        // Show success message on parent scaffold
+        widget.scaffoldMessenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text("Account deleted successfully")),
+          );
+
+        // Keep the message visible briefly before navigation
+        await Future.delayed(const Duration(seconds: 1));
+
+        await clearHiveStorage();
+        await logOut();
+      } else {
+        widget.scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text("Cannot delete account! Incorrect details provided"),
+          ),
+        );
       }
+    } catch (e) {
+      debugPrint("Error deleting account: $e");
     } finally {
-      setState(() {
-        isLoading = false; // End loading
-      });
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -309,9 +324,8 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
   }
 }
 
-void logOut(BuildContext context) async {
+Future<void> logOut() async {
   try {
-    // 1. Clear all persistent data
     await Future.wait([
       LocalDbHelper.removeToken(),
       LocalDbHelper.removeUserType(),
@@ -322,18 +336,15 @@ void logOut(BuildContext context) async {
       NotificationService.deleteFCMToken(),
     ]);
 
-    // 2. Dispose socket
     SocketService socketService = SocketService(navigatorKey);
     socketService.dispose();
 
-    // 3. If still in UI, navigate:
-    if (context.mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        "/login", // ← the named route you defined
-        (Route<dynamic> route) => false, // ← clears everything
-      );
-    }
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      "/login",
+      (route) => false,
+    );
   } catch (e) {
     debugPrint("Error during logout: $e");
   }
 }
+

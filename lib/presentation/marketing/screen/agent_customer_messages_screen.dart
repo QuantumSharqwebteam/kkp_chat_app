@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -32,12 +34,10 @@ class AgentCustomerMessagesScreen extends StatefulWidget {
   });
 
   @override
-  State<AgentCustomerMessagesScreen> createState() =>
-      _AgentCustomerMessagesScreenState();
+  State<AgentCustomerMessagesScreen> createState() => _AgentCustomerMessagesScreenState();
 }
 
-class _AgentCustomerMessagesScreenState
-    extends State<AgentCustomerMessagesScreen> {
+class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScreen> {
   final ChatRepository _chatRepository = ChatRepository();
   List<ChatMessageModel> messages = [];
   bool _isLoading = true;
@@ -59,8 +59,8 @@ class _AgentCustomerMessagesScreenState
 
   void _checkIfAtBottom() {
     if (_scrollController.position.atEdge) {
-      bool isBottom = _scrollController.position.pixels ==
-          _scrollController.position.maxScrollExtent;
+      bool isBottom =
+          _scrollController.position.pixels == _scrollController.position.maxScrollExtent;
       if (isBottom != _isAtBottom) {
         setState(() {
           _isAtBottom = isBottom;
@@ -96,8 +96,7 @@ class _AgentCustomerMessagesScreenState
         messages = fetchedMessages.map((messageJson) {
           return ChatMessageModel(
             message: messageJson.message ?? '',
-            timestamp: DateTime.parse(
-                messageJson.timestamp ?? DateTime.now().toIso8601String()),
+            timestamp: DateTime.parse(messageJson.timestamp ?? DateTime.now().toIso8601String()),
             sender: messageJson.senderId!,
             type: messageJson.type,
             mediaUrl: messageJson.mediaUrl,
@@ -142,148 +141,140 @@ class _AgentCustomerMessagesScreenState
           ],
         ),
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : messages.isEmpty
-                        ? const NoChatConversation()
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(10),
-                            itemCount: messages.length,
-                            itemBuilder: (context, index) {
-                              final msg = messages[index];
-                              final isAgent = msg.sender == widget.agentEmail;
-                              String? dateHeader;
+      body: SafeArea(
+        bottom: Platform.isAndroid,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : messages.isEmpty
+                          ? const NoChatConversation()
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(10),
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final msg = messages[index];
+                                final isAgent = msg.sender == widget.agentEmail;
+                                String? dateHeader;
 
-                              if (index == 0 ||
-                                  !ChatUtils().isSameDay(
-                                      messages[index - 1].timestamp,
-                                      msg.timestamp)) {
-                                dateHeader =
-                                    ChatUtils().formatDateHeader(msg.timestamp);
-                              }
+                                if (index == 0 ||
+                                    !ChatUtils()
+                                        .isSameDay(messages[index - 1].timestamp, msg.timestamp)) {
+                                  dateHeader = ChatUtils().formatDateHeader(msg.timestamp);
+                                }
 
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (dateHeader != null)
-                                    DateHeader(date: dateHeader),
-                                  if (msg.type == 'media')
-                                    ImageMessageBubble(
-                                      imageUrl: msg.mediaUrl!,
-                                      isMe: isAgent,
-                                      timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String()),
-                                      isDeleted: msg.isDeleted,
-                                    )
-                                  else if (msg.type == 'form')
-                                    FormMessageBubble(
-                                      formData: msg.form!,
-                                      isMe: isAgent,
-                                      timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String()),
-                                      userRole: 'agent',
-                                      onRateUpdated: (Map<String, dynamic>
-                                          updatedFormData) {},
-                                      onStatusUpdated:
-                                          (String status, String id) {},
-                                      onFormUpdateStart: () {},
-                                      onFormUpdateEnd: () {},
-                                      onAskForRateUpdate:
-                                          (Map<String, dynamic> formData) {},
-                                    )
-                                  else if (msg.type == 'document')
-                                    DocumentMessageBubble(
-                                      documentUrl: msg.mediaUrl!,
-                                      isMe: isAgent,
-                                      timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String()),
-                                      isDeleted: msg.isDeleted,
-                                    )
-                                  else if (msg.type == 'voice')
-                                    VoiceMessageBubble(
-                                      voiceUrl: msg.mediaUrl!,
-                                      isMe: isAgent,
-                                      timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String()),
-                                      isDeleted: msg.isDeleted,
-                                    )
-                                  else if (msg.type == 'call')
-                                    CallMessageBubble(
-                                      isMe: isAgent,
-                                      timestamp: ChatUtils().formatTimestamp(
-                                          msg.timestamp.toIso8601String()),
-                                      callStatus: msg.callStatus ?? "",
-                                      callDuration: msg.callDuration ?? '',
-                                    )
-                                  else if (msg.message == 'Fill details')
-                                    FillFormButton(
-                                      buttonText: locale.fillProductDetails,
-                                      onSubmit: () {
-                                        // Agent not allowed to fill the form
-                                      },
-                                    )
-                                  else if (msg.message == "Update form rate")
-                                    FillFormButton(
-                                      buttonText: locale.updateForm,
-                                      onSubmit: () {
-                                        // Only show the widget for history, not to do anything on the agent side
-                                      },
-                                    )
-                                  else if (msg.type == 'product')
-                                    (msg.message != null &&
-                                            msg.message!.isNotEmpty)
-                                        ? ProductMessageBubble(
-                                            productJson: msg.message!,
-                                            isMe:
-                                                msg.sender == widget.agentEmail,
-                                            timestamp:
-                                                ChatUtils().formatTimestamp(
-                                              msg.timestamp.toIso8601String(),
-                                            ),
-                                            isDeleted: msg.isDeleted,
-                                            onLongPress: () {},
-                                            onTap: () {},
-                                          )
-                                        : DeletedMessageBubble(
-                                            isMe:
-                                                msg.sender == widget.agentEmail,
-                                            timestamp:
-                                                ChatUtils().formatTimestamp(
-                                              msg.timestamp.toIso8601String(),
-                                            ),
-                                          )
-                                  else
-                                    MessageBubble(
-                                      message: msg,
-                                      isMe: isAgent,
-                                      onLongPress: () {
-                                        //
-                                      },
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
-              ),
-            ],
-          ),
-          if (!_isAtBottom)
-            Positioned(
-              bottom: 20, // Adjust the position as needed
-              right: 20, // Adjust the position as needed
-              child: FloatingActionButton(
-                onPressed: _scrollToBottom,
-                mini: true,
-                child: const Icon(Icons.arrow_downward_rounded),
-              ),
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (dateHeader != null) DateHeader(date: dateHeader),
+                                    if (msg.type == 'media')
+                                      ImageMessageBubble(
+                                        imageUrl: msg.mediaUrl!,
+                                        isMe: isAgent,
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        isDeleted: msg.isDeleted,
+                                      )
+                                    else if (msg.type == 'form')
+                                      FormMessageBubble(
+                                        formData: msg.form!,
+                                        isMe: isAgent,
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        userRole: 'agent',
+                                        onRateUpdated: (Map<String, dynamic> updatedFormData) {},
+                                        onStatusUpdated: (String status, String id) {},
+                                        onFormUpdateStart: () {},
+                                        onFormUpdateEnd: () {},
+                                        onAskForRateUpdate: (Map<String, dynamic> formData) {},
+                                      )
+                                    else if (msg.type == 'document')
+                                      DocumentMessageBubble(
+                                        documentUrl: msg.mediaUrl!,
+                                        isMe: isAgent,
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        isDeleted: msg.isDeleted,
+                                      )
+                                    else if (msg.type == 'voice')
+                                      VoiceMessageBubble(
+                                        voiceUrl: msg.mediaUrl!,
+                                        isMe: isAgent,
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        isDeleted: msg.isDeleted,
+                                      )
+                                    else if (msg.type == 'call')
+                                      CallMessageBubble(
+                                        isMe: isAgent,
+                                        timestamp: ChatUtils()
+                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        callStatus: msg.callStatus ?? "",
+                                        callDuration: msg.callDuration ?? '',
+                                      )
+                                    else if (msg.message == 'Fill details')
+                                      FillFormButton(
+                                        buttonText: locale.fillProductDetails,
+                                        onSubmit: () {
+                                          // Agent not allowed to fill the form
+                                        },
+                                      )
+                                    else if (msg.message == "Update form rate")
+                                      FillFormButton(
+                                        buttonText: locale.updateForm,
+                                        onSubmit: () {
+                                          // Only show the widget for history, not to do anything on the agent side
+                                        },
+                                      )
+                                    else if (msg.type == 'product')
+                                      (msg.message != null && msg.message!.isNotEmpty)
+                                          ? ProductMessageBubble(
+                                              productJson: msg.message!,
+                                              isMe: msg.sender == widget.agentEmail,
+                                              timestamp: ChatUtils().formatTimestamp(
+                                                msg.timestamp.toIso8601String(),
+                                              ),
+                                              isDeleted: msg.isDeleted,
+                                              onLongPress: () {},
+                                              onTap: () {},
+                                            )
+                                          : DeletedMessageBubble(
+                                              isMe: msg.sender == widget.agentEmail,
+                                              timestamp: ChatUtils().formatTimestamp(
+                                                msg.timestamp.toIso8601String(),
+                                              ),
+                                            )
+                                    else
+                                      MessageBubble(
+                                        message: msg,
+                                        isMe: isAgent,
+                                        onLongPress: () {
+                                          //
+                                        },
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                ),
+              ],
             ),
-        ],
+            if (!_isAtBottom)
+              Positioned(
+                bottom: 20, // Adjust the position as needed
+                right: 20, // Adjust the position as needed
+                child: FloatingActionButton(
+                  onPressed: _scrollToBottom,
+                  mini: true,
+                  child: const Icon(Icons.arrow_downward_rounded),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

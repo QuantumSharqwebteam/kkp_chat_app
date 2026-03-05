@@ -187,23 +187,26 @@ class SocketService {
     });
 
     _socket.on('productAdd', (data) {
-      debugPrint("📦 [Socket] New product added: $data");
+      debugPrint("[Socket] New product added: $data");
       if (_onProductAdd != null) {
-        _onProductAdd!(data);
+        final payload = Map<String, dynamic>.from((data as Map?) ?? const {});
+        _onProductAdd!(payload);
       }
     });
 
     _socket.on('productUpdate', (data) {
-      debugPrint("🔄 [Socket] Product updated: $data");
+      debugPrint("[Socket] Product updated: $data");
       if (_onProductUpdate != null) {
-        _onProductUpdate!(data);
+        final payload = Map<String, dynamic>.from((data as Map?) ?? const {});
+        _onProductUpdate!(payload);
       }
     });
 
     _socket.on('productDelete', (data) {
-      debugPrint("🗑️ [Socket] Product deleted: $data");
-      if (_onProductDelete != null) {
-        _onProductDelete!(data['productId']);
+      debugPrint("[Socket] Product deleted: $data");
+      final dynamic productId = data is Map ? (data['productId'] ?? data['_id']) : data;
+      if (_onProductDelete != null && productId != null) {
+        _onProductDelete!(productId.toString());
       }
     });
 
@@ -869,6 +872,9 @@ class SocketService {
     }
 
     final userType = await LocalDbHelper.getUserType();
+    final String notificationMessage = data['type'] == "product"
+        ? "Shared product"
+        : (data['message'] is String ? data['message'] as String : data['message'].toString());
 
     if (userType == "0") {
       // Customer-side notification logic
@@ -921,7 +927,7 @@ class SocketService {
       await _notificationsPlugin!.show(
         id,
         title,
-        data['message'],
+        notificationMessage,
         notificationDetails,
         payload: jsonEncode(data),
       );
@@ -1026,7 +1032,7 @@ class SocketService {
           message = "You have $unreadCount unread messages";
         } else {
           title = "New message from ${data['senderName']}";
-          message = data['message'];
+          message = notificationMessage;
         }
 
         payload = jsonEncode(data); // Normal payload to open chat
@@ -1050,7 +1056,7 @@ class SocketService {
       await _notificationsPlugin!.show(
         id,
         title,
-        data['message'],
+        notificationMessage,
         notificationDetails,
         payload: jsonEncode(data),
       );
@@ -1238,3 +1244,6 @@ class SocketService {
     }
   }
 }
+
+
+

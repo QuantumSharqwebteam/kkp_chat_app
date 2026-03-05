@@ -531,158 +531,161 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
           ),
         ),
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              if (_isLoadingMore)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: 15.0),
-                    child: CircularProgressIndicator(),
+      body: SafeArea(
+        bottom: Platform.isAndroid,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                if (_isLoadingMore)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: 15.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                // if (_isEditing)
+                //   Container(
+                //     color: Colors.grey[100],
+                //     padding: const EdgeInsets.all(8.0),
+                //     child: Row(
+                //       children: [
+                //         Expanded(
+                //           child: TextField(
+                //             controller: _editController,
+                //             autofocus: true,
+                //             decoration: InputDecoration(
+                //               hintText: 'Edit your message',
+                //               border: OutlineInputBorder(
+                //                 borderRadius: BorderRadius.circular(20),
+                //               ),
+                //               contentPadding: const EdgeInsets.symmetric(
+                //                 horizontal: 16,
+                //                 vertical: 12,
+                //               ),
+                //             ),
+                //           ),
+                //         ),
+                //         IconButton(
+                //           icon: const Icon(Icons.close, color: Colors.red),
+                //           onPressed: _cancelEditing,
+                //         ),
+                //         IconButton(
+                //           icon: const Icon(Icons.check, color: Colors.green),
+                //           onPressed: () => _saveEditedMessage,
+                //         ),
+                //       ],
+                //     ),
+                //   ),
+                Expanded(
+                  child: _isLoading
+                      ? const ShimmerMessageList()
+                      : messages.isEmpty
+                          ? const NoChatConversation()
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.all(10),
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final msg = messages[index];
+                                final isAgent = msg.senderId == widget.agentEmail;
+                                final valueKey = ValueKey('group-msg-$index');
+                                final globalKey = GlobalKey();
+                                _messageKeys[valueKey] = globalKey;
+                                String? dateHeader;
+                                if (index == 0 ||
+                                    !ChatUtils()
+                                        .isSameDay(messages[index - 1].timestamp, msg.timestamp)) {
+                                  dateHeader = ChatUtils().formatDateHeader(msg.timestamp);
+                                }
+                                return Container(
+                                  key: globalKey,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      if (dateHeader != null) DateHeader(date: dateHeader),
+                                      if (msg.type == 'media')
+                                        ImageMessageBubble(
+                                          imageUrl: msg.mediaUrl!,
+                                          isMe: isAgent,
+                                          timestamp: ChatUtils()
+                                              .formatTimestamp(msg.timestamp.toIso8601String()),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isAgent
+                                              ? () => _showMessageOptionsBottomSheet(
+                                                  context, msg.messageId)
+                                              : null,
+                                        )
+                                      else if (msg.type == 'document')
+                                        DocumentMessageBubble(
+                                          documentUrl: msg.mediaUrl!,
+                                          isMe: isAgent,
+                                          timestamp: ChatUtils()
+                                              .formatTimestamp(msg.timestamp.toIso8601String()),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isAgent
+                                              ? () => _showMessageOptionsBottomSheet(
+                                                  context, msg.messageId)
+                                              : null,
+                                        )
+                                      else if (msg.type == 'voice')
+                                        VoiceMessageBubble(
+                                          voiceUrl: msg.mediaUrl!,
+                                          isMe: isAgent,
+                                          timestamp: ChatUtils()
+                                              .formatTimestamp(msg.timestamp.toIso8601String()),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isAgent
+                                              ? () => _showMessageOptionsBottomSheet(
+                                                  context, msg.messageId)
+                                              : null,
+                                        )
+                                      else
+                                        GroupMessageBubble(
+                                          message: msg,
+                                          isMe: isAgent,
+                                          onLongPress: isAgent
+                                              ? () => _showMessageOptionsBottomSheet(
+                                                  context, msg.messageId,
+                                                  textToCopy: msg.message)
+                                              : null,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                ),
+                SafeArea(
+                  minimum: const EdgeInsets.only(bottom: 1),
+                  child: ChatInputField(
+                    controller: _chatController,
+                    onSend: () => _sendGroupMessage(messageText: _chatController.text),
+                    onSendImage: () => _pickAndSendImage(ImageSource.gallery),
+                    onSendDocument: _pickAndSendDocument,
+                    onSendImageByCamera: () => _pickAndSendImage(ImageSource.camera),
+                    onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                    isRecording: _isRecording,
+                    recordedSeconds: _recordedSeconds,
+                    onSendForm: () {},
+                    onShareProduct: () {},
                   ),
                 ),
-              // if (_isEditing)
-              //   Container(
-              //     color: Colors.grey[100],
-              //     padding: const EdgeInsets.all(8.0),
-              //     child: Row(
-              //       children: [
-              //         Expanded(
-              //           child: TextField(
-              //             controller: _editController,
-              //             autofocus: true,
-              //             decoration: InputDecoration(
-              //               hintText: 'Edit your message',
-              //               border: OutlineInputBorder(
-              //                 borderRadius: BorderRadius.circular(20),
-              //               ),
-              //               contentPadding: const EdgeInsets.symmetric(
-              //                 horizontal: 16,
-              //                 vertical: 12,
-              //               ),
-              //             ),
-              //           ),
-              //         ),
-              //         IconButton(
-              //           icon: const Icon(Icons.close, color: Colors.red),
-              //           onPressed: _cancelEditing,
-              //         ),
-              //         IconButton(
-              //           icon: const Icon(Icons.check, color: Colors.green),
-              //           onPressed: () => _saveEditedMessage,
-              //         ),
-              //       ],
-              //     ),
-              //   ),
-              Expanded(
-                child: _isLoading
-                    ? const ShimmerMessageList()
-                    : messages.isEmpty
-                        ? const NoChatConversation()
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(10),
-                            itemCount: messages.length,
-                            itemBuilder: (context, index) {
-                              final msg = messages[index];
-                              final isAgent = msg.senderId == widget.agentEmail;
-                              final valueKey = ValueKey('group-msg-$index');
-                              final globalKey = GlobalKey();
-                              _messageKeys[valueKey] = globalKey;
-                              String? dateHeader;
-                              if (index == 0 ||
-                                  !ChatUtils()
-                                      .isSameDay(messages[index - 1].timestamp, msg.timestamp)) {
-                                dateHeader = ChatUtils().formatDateHeader(msg.timestamp);
-                              }
-                              return Container(
-                                key: globalKey,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (dateHeader != null) DateHeader(date: dateHeader),
-                                    if (msg.type == 'media')
-                                      ImageMessageBubble(
-                                        imageUrl: msg.mediaUrl!,
-                                        isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
-                                        isDeleted: msg.isDeleted,
-                                        onLongPress: isAgent
-                                            ? () => _showMessageOptionsBottomSheet(
-                                                context, msg.messageId)
-                                            : null,
-                                      )
-                                    else if (msg.type == 'document')
-                                      DocumentMessageBubble(
-                                        documentUrl: msg.mediaUrl!,
-                                        isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
-                                        isDeleted: msg.isDeleted,
-                                        onLongPress: isAgent
-                                            ? () => _showMessageOptionsBottomSheet(
-                                                context, msg.messageId)
-                                            : null,
-                                      )
-                                    else if (msg.type == 'voice')
-                                      VoiceMessageBubble(
-                                        voiceUrl: msg.mediaUrl!,
-                                        isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
-                                        isDeleted: msg.isDeleted,
-                                        onLongPress: isAgent
-                                            ? () => _showMessageOptionsBottomSheet(
-                                                context, msg.messageId)
-                                            : null,
-                                      )
-                                    else
-                                      GroupMessageBubble(
-                                        message: msg,
-                                        isMe: isAgent,
-                                        onLongPress: isAgent
-                                            ? () => _showMessageOptionsBottomSheet(
-                                                context, msg.messageId,
-                                                textToCopy: msg.message)
-                                            : null,
-                                      ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-              ),
-              SafeArea(
-                minimum: const EdgeInsets.only(bottom: 1),
-                child: ChatInputField(
-                  controller: _chatController,
-                  onSend: () => _sendGroupMessage(messageText: _chatController.text),
-                  onSendImage: () => _pickAndSendImage(ImageSource.gallery),
-                  onSendDocument: _pickAndSendDocument,
-                  onSendImageByCamera: () => _pickAndSendImage(ImageSource.camera),
-                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
-                  isRecording: _isRecording,
-                  recordedSeconds: _recordedSeconds,
-                  onSendForm: () {},
-                  onShareProduct: () {},
+                const SizedBox(height: 10),
+              ],
+            ),
+            if (!_isAtBottom)
+              Positioned(
+                bottom: 100,
+                right: 10,
+                child: FloatingActionButton(
+                  onPressed: _scrollToBottom,
+                  mini: true,
+                  child: const Icon(Icons.arrow_downward_rounded),
                 ),
               ),
-              const SizedBox(height: 10),
-            ],
-          ),
-          if (!_isAtBottom)
-            Positioned(
-              bottom: 100,
-              right: 10,
-              child: FloatingActionButton(
-                onPressed: _scrollToBottom,
-                mini: true,
-                child: const Icon(Icons.arrow_downward_rounded),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
