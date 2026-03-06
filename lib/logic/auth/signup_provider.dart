@@ -50,15 +50,32 @@ class SignupProvider with ChangeNotifier {
     if (password.trim().isEmpty) {
       setPasswordError("Password can't be Empty");
     } else if (!_validatePassword(password)) {
-      setPasswordError("Password should be at least 6 characters");
+      setPasswordError("Password does not match the criteria");
     } else {
       setPasswordError(null); // Clear the error if the input is valid
     }
+
+    // Keep confirm password error in sync when password changes.
+    if (_rePassword.trim().isNotEmpty) {
+      if (_password != _rePassword) {
+        setRePasswordError("Password doesn't match");
+      } else {
+        setRePasswordError(null);
+      }
+    }
+
     notifyListeners();
   }
 
   void setRePassword(String rePassword) {
     _rePassword = rePassword;
+    if (rePassword.trim().isEmpty) {
+      setRePasswordError("Re-enter Password can't be Empty");
+    } else if (_password != rePassword) {
+      setRePasswordError("Password doesn't match");
+    } else {
+      setRePasswordError(null);
+    }
     notifyListeners();
   }
 
@@ -92,7 +109,8 @@ class SignupProvider with ChangeNotifier {
   }
 
   bool _validatePassword(String password) {
-    return password.length >= 6;
+    return RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$')
+        .hasMatch(password);
   }
 
   Future<void> signup(BuildContext context) async {
@@ -133,7 +151,7 @@ class SignupProvider with ChangeNotifier {
     }
 
     if (!_validatePassword(_password)) {
-      setPasswordError("Password should be at least 6 characters");
+      setPasswordError("Password does not match the criteria");
       setIsLoading(false);
       return;
     }

@@ -28,13 +28,12 @@ class ComplaintsProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> submitComplaint(
-      {required String subject, required String description}) async {
+  Future<bool> submitComplaint({required String subject, required String description}) async {
     complaintSubmitting = true;
     notifyListeners();
     try {
-      final result = await _complaintRepository.submitComplaint(
-          subject: subject, description: description);
+      final result =
+          await _complaintRepository.submitComplaint(subject: subject, description: description);
       return result;
     } catch (_) {
       return false;

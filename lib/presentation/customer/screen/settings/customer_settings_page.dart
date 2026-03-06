@@ -87,6 +87,9 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
                 AppLocalizations.of(context)!.changeLocale,
                 style: AppTextStyles.black10_600,
               ),
+              const SizedBox(
+                width: 4,
+              ),
               LanguageSwitcher(),
               const SizedBox(
                 width: 16,

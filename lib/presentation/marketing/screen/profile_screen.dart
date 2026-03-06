@@ -119,11 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildDetailsCard() {
     return Container(
       decoration: BoxDecoration(color: Colors.white, boxShadow: [
-        BoxShadow(
-            spreadRadius: 6,
-            blurRadius: 4,
-            offset: const Offset(0, 4),
-            color: Colors.white)
+        BoxShadow(spreadRadius: 6, blurRadius: 4, offset: const Offset(0, 4), color: Colors.white)
       ]),
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
       child: Column(
@@ -139,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ProfileDetailsField(
             icon: Icons.email_outlined,
-            label: 'Email Adress',
+            label: 'Email Address',
             value: profile?.email ?? "NA",
           ),
           SizedBox(

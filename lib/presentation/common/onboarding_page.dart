@@ -27,20 +27,20 @@ class OnboardingPage extends StatelessWidget {
                       'assets/icons/logo.png',
                       height: 45,
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
-                          return LoginPage();
-                        }));
-                      },
-                      child: Text(
-                        'Skip',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    // GestureDetector(
+                    //   onTap: () {
+                    //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
+                    //       return LoginPage();
+                    //     }));
+                    //   },
+                    //   child: Text(
+                    //     'Skip',
+                    //     style: TextStyle(
+                    //       fontSize: 16,
+                    //       fontWeight: FontWeight.bold,
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
                 Image.asset(

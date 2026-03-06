@@ -22,6 +22,7 @@ class _SignupPageState extends State<SignupPage> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _repass = TextEditingController();
+  bool _showPasswordRules = false;
 
   @override
   Widget build(BuildContext context) {
@@ -121,12 +122,72 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         controller: _pass,
                         errorText: signupProvider.passwordError,
-                        //helperText: 'Must be at least 6 characters',
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
                         hintText: l.createPassword,
                         onChanged: (value) => signupProvider.setPassword(value),
+                      ),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          setState(() {
+                            _showPasswordRules = !_showPasswordRules;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade600),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Password requirements',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blueGrey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                _showPasswordRules
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                size: 18,
+                                color: Colors.blueGrey.shade600,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      AnimatedCrossFade(
+                        firstChild: const SizedBox.shrink(),
+                        secondChild: Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.blueGrey.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blueGrey.withValues(alpha: 0.2)),
+                          ),
+                          child: const Text(
+                            'Must contain:\n'
+                            '- At least 8 characters\n'
+                            '- One uppercase letter\n'
+                            '- One lowercase letter\n'
+                            '- One number\n'
+                            '- One special character',
+                            style: TextStyle(fontSize: 12, height: 1.3, color: Colors.black87),
+                          ),
+                        ),
+                        crossFadeState: _showPasswordRules
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: const Duration(milliseconds: 180),
                       ),
                     ],
                   ),
@@ -146,7 +207,6 @@ class _SignupPageState extends State<SignupPage> {
                       CustomTextField(
                         controller: _repass,
                         errorText: signupProvider.rePasswordError,
-                        //helperText: 'Must be at least 6 characters',
                         borderRadius: 10,
                         height: 45,
                         maxLines: 1,

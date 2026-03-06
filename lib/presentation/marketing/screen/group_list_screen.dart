@@ -15,11 +15,22 @@ class GroupListScreen extends StatefulWidget {
 }
 
 class _GroupListScreenState extends State<GroupListScreen> {
+  String? role;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRole();
       _loadGroups();
+    });
+  }
+
+  Future<void> _loadRole() async {
+    final loadedRole = await LocalDbHelper.getUserType();
+    if (!mounted) return;
+    setState(() {
+      role = loadedRole;
     });
   }
 
@@ -80,15 +91,17 @@ class _GroupListScreenState extends State<GroupListScreen> {
           }
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddNewGroupScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: role == "2"
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AddNewGroupScreen()),
+                );
+              },
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }
