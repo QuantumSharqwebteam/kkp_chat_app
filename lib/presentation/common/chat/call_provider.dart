@@ -31,8 +31,7 @@ class CallProvider with ChangeNotifier {
   Timer? _callTimeoutTimer;
   bool _isRinging = false;
   final AudioPlayer _ringingPlayer = AudioPlayer();
-  final StreamController<int> _callDurationController =
-      StreamController<int>.broadcast();
+  final StreamController<int> _callDurationController = StreamController<int>.broadcast();
   String? _callId;
   final ChatRepository _chatRepository = ChatRepository();
 
@@ -92,8 +91,7 @@ class CallProvider with ChangeNotifier {
     if (!micStatus.isGranted) throw Exception("Microphone permission denied");
 
     _agoraEngine = createAgoraRtcEngine();
-    await _agoraEngine
-        .initialize(RtcEngineContext(appId: dotenv.env['AGORA_APP_ID']!));
+    await _agoraEngine.initialize(RtcEngineContext(appId: dotenv.env['AGORA_APP_ID']!));
 
     _setupEventHandlers();
 
@@ -144,11 +142,13 @@ class CallProvider with ChangeNotifier {
         _callTimeoutTimer?.cancel();
         notifyListeners();
       },
-      onUserOffline: (RtcConnection connection, int remoteUid,
-          UserOfflineReasonType reason) {
+      onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
         debugPrint("❌ Remote user $remoteUid left due to $reason");
         if (remoteUid == _remoteUid) {
           final duration = _formatDuration(_callDuration);
+          // Create and set the call details message before ending the call
+          final message = createCallDetailsMessage("answered", duration);
+          setCallDetailsMessage(message);
           _updateCallData("answered", callDuration: duration);
           endCall();
         }
@@ -156,6 +156,9 @@ class CallProvider with ChangeNotifier {
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
         if (_remoteUid == null) {
+          // Create and set the call details message before ending the call
+          // final message = createCallDetailsMessage("not answered", "00:00");
+          // setCallDetailsMessage(message);
           _updateCallData("not answered");
         }
       },
@@ -239,8 +242,7 @@ class CallProvider with ChangeNotifier {
               onTap: () {
                 _showCallScreen();
                 navigatorKey.currentState?.push(
-                  MaterialPageRoute(
-                      builder: (_) => const AgoraAudioCallScreen()),
+                  MaterialPageRoute(builder: (_) => const AgoraAudioCallScreen()),
                 );
               },
             ),
@@ -311,8 +313,7 @@ class CallProvider with ChangeNotifier {
   Future<void> _updateCallData(String status, {String? callDuration}) async {
     if (_callId == null) return;
     try {
-      await _chatRepository.updateCallData(_callId!, status,
-          callDuration: callDuration);
+      await _chatRepository.updateCallData(_callId!, status, callDuration: callDuration);
     } catch (e) {
       debugPrint("Failed to update call data: $e");
     }

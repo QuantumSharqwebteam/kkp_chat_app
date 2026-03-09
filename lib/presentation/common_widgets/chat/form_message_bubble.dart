@@ -12,6 +12,7 @@ class FormMessageBubble extends StatefulWidget {
   final bool isMe;
   final String timestamp;
   final String userRole;
+  final int? serialNumber;
   final Function(Map<String, dynamic>)? onRateUpdated;
   final Function(String, String)? onStatusUpdated;
   final VoidCallback? onFormUpdateStart; // Callback to start the loading indicator
@@ -24,6 +25,7 @@ class FormMessageBubble extends StatefulWidget {
     required this.isMe,
     required this.timestamp,
     required this.userRole,
+    this.serialNumber,
     this.onRateUpdated,
     this.onStatusUpdated,
     this.onFormUpdateStart,
@@ -38,6 +40,17 @@ class FormMessageBubble extends StatefulWidget {
 class _FormMessageBubbleState extends State<FormMessageBubble> {
   final chatRepository = ChatRepository();
   final rateController = TextEditingController();
+
+  num _normalizedRate() {
+    final dynamic rateValue = widget.formData["rate"];
+    if (rateValue is num) return rateValue;
+    if (rateValue is String) return num.tryParse(rateValue.trim()) ?? 0;
+    return 0;
+  }
+
+  bool get _isPrivilegedUser => widget.userRole == "2" || widget.userRole == "3";
+  bool get _showAllOptions =>
+      widget.formData['_formOptionsUnlocked'] == true || _normalizedRate() > 0;
 
   Future<void> _updateFormStatus(BuildContext context, String status) async {
     if (widget.onFormUpdateStart != null) {
@@ -100,6 +113,23 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (widget.serialNumber != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: widget.isMe
+                            ? Colors.white.withOpacity(0.22)
+                            : Colors.black.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "Form #${widget.serialNumber}",
+                        style: AppTextStyles.black10_500.copyWith(
+                          color: widget.isMe ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
                   if (widget.formData.containsKey("_id"))
                     RichText(
                       text: TextSpan(
@@ -129,13 +159,11 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                   _buildTextRow("Weave", widget.formData["weave"] ?? ""),
                   _buildTextRow("Quantity", widget.formData["quantity"]?.toString() ?? ""),
                   _buildTextRow("Composition", widget.formData["composition"] ?? ""),
-                  if (widget.formData.containsKey("rate") && widget.formData["rate"] != 0)
-                    _buildTextRow("Rate", widget.formData["rate"]?.toString() ?? ""),
                   const SizedBox(height: 8),
                 ],
               ),
             ),
-            if (widget.userRole == "2" || widget.userRole == "3")
+            if (_isPrivilegedUser)
               Positioned(
                 top: 15,
                 right: 30,
@@ -145,10 +173,9 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                     _handleMenuSelection(context, value);
                   },
                   itemBuilder: (BuildContext context) {
-                    List<String> options = ['Ask for rate update', 'confirm', 'decline'];
-                    // if (widget.userRole == "2" || widget.userRole == "3") {
-                    //   options.addAll(['confirm', 'decline']);
-                    // }
+                    final List<String> options = _showAllOptions
+                        ? ['Ask for rate update', 'confirm', 'decline']
+                        : ['Ask for rate update'];
                     return options.map((String choice) {
                       return PopupMenuItem<String>(
                         value: choice,

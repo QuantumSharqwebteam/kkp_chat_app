@@ -25,6 +25,7 @@ class _SplashState extends State<Splash> {
     String? token = await LocalDbHelper.getToken();
     final String? userType = await LocalDbHelper.getUserType();
     final String? email = LocalDbHelper.getEmail();
+    final bool hasSeenOnboarding = await LocalDbHelper.hasSeenOnboarding();
 
     // final int? lastRefreshTime = await LocalDbHelper.getLastRefreshTime();
     // final int currentTime = DateTime.now().millisecondsSinceEpoch;
@@ -63,9 +64,21 @@ class _SplashState extends State<Splash> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid Credentials')));
       }
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) {
-        return OnboardingPage();
-      }));
+      if (!mounted) return;
+
+      if (!hasSeenOnboarding) {
+        await LocalDbHelper.setOnboardingSeen(true);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) {
+              return const OnboardingPage();
+            },
+          ),
+        );
+      } else {
+        Navigator.pushReplacementNamed(context, '/login');
+      }
     }
   }
 

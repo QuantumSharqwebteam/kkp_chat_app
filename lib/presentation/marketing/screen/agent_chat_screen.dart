@@ -387,6 +387,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
 
       setState(() {
         messages = newLoadedMessages;
+        messages = _mergeFormMessagesById(messages);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
@@ -396,6 +397,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
 
       setState(() {
         messages = chatMessages;
+        messages = _mergeFormMessagesById(messages);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
@@ -470,6 +472,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
           messages.insertAll(0, newChatMessages);
+          messages = _mergeFormMessagesById(messages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           _isLoading = false;
         });
@@ -647,8 +650,133 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     }).toList();
   }
 
+  num _parseRateValue(dynamic rateValue) {
+    if (rateValue is num) return rateValue;
+    if (rateValue is String) return num.tryParse(rateValue.trim()) ?? 0;
+    return 0;
+  }
+
+  String? _extractFormId(ChatMessageModel message) {
+    final form = message.form;
+    if (form == null) return null;
+    final formId = form['_id']?.toString();
+    if (formId == null || formId.isEmpty) return null;
+    return formId;
+  }
+
+  List<ChatMessageModel> _mergeFormMessagesById(List<ChatMessageModel> source) {
+    final sorted = [...source]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final List<ChatMessageModel> merged = [];
+    final Map<String, ChatMessageModel> firstFormMessageById = {};
+
+    for (final message in sorted) {
+      if (message.type != 'form') {
+        merged.add(message);
+        continue;
+      }
+
+      final formId = _extractFormId(message);
+      if (formId == null) {
+        merged.add(message);
+        continue;
+      }
+
+      final incomingForm = Map<String, dynamic>.from(message.form ?? {});
+      final existing = firstFormMessageById[formId];
+
+      if (existing == null) {
+        incomingForm['_formOptionsUnlocked'] = _parseRateValue(incomingForm['rate']) > 0;
+        message.form = incomingForm;
+        firstFormMessageById[formId] = message;
+        merged.add(message);
+      } else {
+        final existingForm = Map<String, dynamic>.from(existing.form ?? {});
+        existingForm.addAll(incomingForm);
+        existingForm['_formOptionsUnlocked'] = true;
+        existing.form = existingForm;
+      }
+    }
+
+    return merged;
+  }
+
+  ({String formId, num rate})? _extractRateUpdateInfo(String? messageText) {
+    if (messageText == null || messageText.isEmpty) return null;
+
+    final regex = RegExp(
+      r'Rate\s+updated\s+as\s+([0-9]+(?:\.[0-9]+)?)\s+for\s+form\s+with\s+Id\s*:\s*([A-Za-z0-9]+)',
+      caseSensitive: false,
+    );
+    final match = regex.firstMatch(messageText);
+    if (match == null) return null;
+
+    final parsedRate = num.tryParse(match.group(1) ?? '');
+    final formId = match.group(2);
+    if (parsedRate == null || formId == null || formId.isEmpty) return null;
+
+    return (formId: formId, rate: parsedRate);
+  }
+
+  Future<void> _updateFormRateLocally({
+    required String formId,
+    required num rate,
+  }) async {
+    final normalizedRate = rate % 1 == 0 ? rate.toInt() : rate;
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    bool updated = false;
+
+    for (int i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      final form = msg.form;
+      if (form == null) continue;
+      if (form['_id']?.toString() != formId) continue;
+
+      final updatedForm = Map<String, dynamic>.from(form);
+      updatedForm['rate'] = normalizedRate;
+      updatedForm['_formOptionsUnlocked'] = true;
+      msg.form = updatedForm;
+      await _chatStorageService.saveMessage(msg, boxName);
+      updated = true;
+    }
+
+    if (updated && mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<bool> _upsertIncomingFormMessage(ChatMessageModel incomingMessage) async {
+    if (incomingMessage.type != 'form') return false;
+
+    final formId = _extractFormId(incomingMessage);
+    if (formId == null) return false;
+
+    final incomingForm = Map<String, dynamic>.from(incomingMessage.form ?? {});
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    final existingIndex = messages.indexWhere(
+      (msg) => msg.type == 'form' && _extractFormId(msg) == formId,
+    );
+
+    if (existingIndex == -1) {
+      incomingForm['_formOptionsUnlocked'] = _parseRateValue(incomingForm['rate']) > 0;
+      incomingMessage.form = incomingForm;
+      return false;
+    }
+
+    final existingMessage = messages[existingIndex];
+    final mergedForm = Map<String, dynamic>.from(existingMessage.form ?? {});
+    mergedForm.addAll(incomingForm);
+    mergedForm['_formOptionsUnlocked'] = true;
+    existingMessage.form = mergedForm;
+    await _chatStorageService.saveMessage(existingMessage, boxName);
+
+    if (mounted) {
+      setState(() {});
+    }
+    return true;
+  }
+
   // In _handleIncomingMessage method
-  void _handleIncomingMessage(Map<String, dynamic> data) {
+  void _handleIncomingMessage(Map<String, dynamic> data) async {
     debugPrint("message received: ${data.toString()}");
     // saving last seen message
     if (data['type'] == "product") {
@@ -667,9 +795,30 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
       messageId: data["messageId"], // Include the message ID
     );
 
+    if (message.type == 'form') {
+      final isMergedIntoExisting = await _upsertIncomingFormMessage(message);
+      if (isMergedIntoExisting) {
+        if (message.messageId != null) {
+          _loadedMessageIds.add(message.messageId!);
+        }
+        _saveLastMessageTime();
+        Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
+        return;
+      }
+    }
+
+    final rateUpdate = _extractRateUpdateInfo(data["message"]?.toString());
+    if (rateUpdate != null) {
+      _updateFormRateLocally(
+        formId: rateUpdate.formId,
+        rate: rateUpdate.rate,
+      );
+    }
+
     if (!_loadedMessageIds.contains(message.messageId)) {
       setState(() {
         messages.add(message); // Append to the end
+        messages = _mergeFormMessagesById(messages);
         _scrollToBottom();
       });
 
@@ -1008,6 +1157,19 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     return formIndices;
   }
 
+  Map<String, int> _buildFormSerialMap() {
+    final Map<String, int> serialByFormId = {};
+    int serial = 0;
+
+    for (final msg in messages) {
+      if (msg.type != 'form') continue;
+      final formId = _extractFormId(msg);
+      if (formId == null) continue;
+      serialByFormId.putIfAbsent(formId, () => ++serial);
+    }
+    return serialByFormId;
+  }
+
   void _navigateToForm(int direction) {
     List<int> formIndices = _getFormMessageIndices();
 
@@ -1124,6 +1286,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
+    final formSerialMap = _buildFormSerialMap();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1281,6 +1444,9 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                                     else if (msg.type == 'form')
                                       FormMessageBubble(
                                         formData: msg.form!,
+                                        serialNumber: msg.form?['_id'] != null
+                                            ? formSerialMap[msg.form!['_id'].toString()]
+                                            : null,
                                         isMe: msg.sender == widget.agentEmail,
                                         timestamp: ChatUtils()
                                             .formatTimestamp(msg.timestamp.toIso8601String()),

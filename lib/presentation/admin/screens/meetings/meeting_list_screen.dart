@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/schedule_meet.dart';
@@ -8,9 +9,34 @@ import 'package:kkpchatapp/presentation/admin/widgets/meet_tile.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:provider/provider.dart';
 
-class MeetingsListScreen extends StatelessWidget {
+class MeetingsListScreen extends StatefulWidget {
   final String email;
   const MeetingsListScreen({super.key, required this.email});
+
+  @override
+  State<MeetingsListScreen> createState() => _MeetingsListScreenState();
+}
+
+class _MeetingsListScreenState extends State<MeetingsListScreen> {
+  String? _userType;
+  String? _roleName;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserRole();
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    final loadedUserType = await LocalDbHelper.getUserType();
+    final loadedRoleName = LocalDbHelper.getProfile()?.role;
+
+    if (!mounted) return;
+    setState(() {
+      _userType = loadedUserType;
+      _roleName = loadedRoleName;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +55,12 @@ class MeetingsListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: AppColors.background,
+        leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(
+              Icons.arrow_back_ios_outlined,
+            )),
         title: Text(
           locale.upcomingMeetings,
           style: AppTextStyles.black16_700,
@@ -46,44 +78,37 @@ class MeetingsListScreen extends StatelessWidget {
                     itemCount: sortedMeetings.length,
                     itemBuilder: (context, index) {
                       final meeting = sortedMeetings[index];
+                      final canManageMeeting = meetingManagement.canEditMeeting(
+                        meeting: meeting,
+                        currentUserEmail: widget.email,
+                        userType: _userType,
+                        roleName: _roleName,
+                      );
+
                       return MeetingTile(
                         meeting: meeting,
-                        showButtons: meeting.scheduledPerson.email == email,
+                        showButtons: canManageMeeting,
                       );
                     },
                   ),
                 ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          color: Colors.white, // Background color
-          borderRadius: BorderRadius.circular(12),
-          // optional rounded corners
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: AppColors.bluePrimary,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ScheduleMeetingScreen(),
+            ),
+          );
+        },
+        icon: const Icon(
+          Icons.add,
+          color: Colors.white,
         ),
-        child: GestureDetector(
-          // height: Utils().height(context) * 0.09,
-          // width: Utils().width(context) * 0.24,
-          // child: FloatingActionButton(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ScheduleMeetingScreen(),
-              ),
-            );
-          },
-
-          child: Image.asset(
-            'assets/icons/schedule.png',
-            fit: BoxFit.contain,
-            height: Utils().height(context) * 0.09,
-            // width: Utils().width(context) * 0.24,
-          ),
-          // backgroundColor: AppColors.bluePrimary,
-          // child: Text(
-          //   "Schedule ",
-          //   style: AppTextStyles.white8_600.copyWith(fontSize: 13),
-          // ),
-          // ),
+        label: Text(
+          'Schedule',
+          style: AppTextStyles.black12_400.copyWith(color: Colors.white),
         ),
       ),
     );

@@ -669,6 +669,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                     recordedSeconds: _recordedSeconds,
                     onSendForm: () {},
                     onShareProduct: () {},
+                    showFormAndProduct: false,
                   ),
                 ),
                 const SizedBox(height: 10),

@@ -21,6 +21,29 @@ class MeetingManagement with ChangeNotifier {
   bool get isUpdating => _isUpdating;
   String? get error => _error;
 
+  bool _isPrivilegedMeetingEditor({
+    String? userType,
+    String? roleName,
+  }) {
+    final normalizedRole = (roleName ?? '').toLowerCase().trim();
+    return userType == "1" ||
+        userType == "3" ||
+        normalizedRole == "admin" ||
+        normalizedRole == "agenthead" ||
+        normalizedRole == "agent head";
+  }
+
+  bool canEditMeeting({
+    required MeetingModel meeting,
+    required String currentUserEmail,
+    String? userType,
+    String? roleName,
+  }) {
+    final isScheduledPerson = meeting.scheduledPerson.email == currentUserEmail;
+    return isScheduledPerson ||
+        _isPrivilegedMeetingEditor(userType: userType, roleName: roleName);
+  }
+
   // Fetch all meetings
   Future<void> fetchAllMeetings() async {
     _isLoading = true;
