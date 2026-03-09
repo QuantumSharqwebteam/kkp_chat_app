@@ -219,7 +219,8 @@ final List<Map<String, String>> attachmentItemsforInternalChat = [
 
 final String? currentUser = LocalDbHelper.getProfile()?.role;
 
-void showAttachmentMenu(BuildContext context, Function(String) onItemSelected, {bool showFormAndProduct = true}) {
+void showAttachmentMenu(BuildContext context, Function(String) onItemSelected,
+    {bool showFormAndProduct = true}) {
   showModalBottomSheet(
       context: context,
       elevation: 10,
