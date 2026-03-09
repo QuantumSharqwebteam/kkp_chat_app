@@ -674,8 +674,10 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                     menuItems.add('Delete Agent Profile');
                   }
 
-                  if ((currentUserRole == 'Admin' || currentUserRole == 'AgentHead') &&
-                      agent.role == 'AgentHead') {
+                  if (currentUserRole == "1" && agent.role == 'AgentHead') {
+                    menuItems.add('Change Agent Head');
+                  }
+                  {
                     menuItems.add('Change Agent Head');
                   }
 

@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -23,9 +24,14 @@ class MeetingTile extends StatelessWidget {
   });
 
   Future<void> _launchUrl(String url) async {
-    if (!await launchUrl(Uri.parse(url))) {
-      throw Exception('Could not launch $url');
+    if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+      if (kDebugMode) {
+        print('Could not launch $url');
+      }
     }
+    // if (!await launchUrl(Uri.parse(url))) {
+    //   debugPrint('Could not launch $url');
+    // }
   }
 
   Future<void> _confirmAndDelete(
@@ -306,7 +312,7 @@ class MeetingTile extends StatelessWidget {
   }
 
   String _formatDateTime(String isoDateTime) {
-    final dateTime = DateTime.parse(isoDateTime);
+    final dateTime = DateTime.parse(isoDateTime).toLocal();
     return "${ChatUtils().formatDateHeader(dateTime)} at ${ChatUtils().formatTimestamp(isoDateTime)}";
   }
 
@@ -325,7 +331,7 @@ class MeetingTile extends StatelessWidget {
     Future<void> selectDateTime(BuildContext context) async {
       final DateTime? pickedDate = await showDatePicker(
         context: context,
-        initialDate: DateTime.parse(meeting.startTime),
+        initialDate: DateTime.parse(meeting.startTime).toLocal(),
         firstDate: DateTime(2000),
         lastDate: DateTime(2100),
       );
@@ -333,7 +339,7 @@ class MeetingTile extends StatelessWidget {
       if (pickedDate != null) {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay.fromDateTime(DateTime.parse(meeting.startTime)),
+          initialTime: TimeOfDay.fromDateTime(DateTime.parse(meeting.startTime).toLocal()),
         );
 
         if (pickedTime != null) {
