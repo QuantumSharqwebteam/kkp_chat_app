@@ -92,23 +92,26 @@ class _MeetingsListScreenState extends State<MeetingsListScreen> {
                     },
                   ),
                 ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.bluePrimary,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ScheduleMeetingScreen(),
-            ),
-          );
-        },
-        icon: const Icon(
-          Icons.add,
-          color: Colors.white,
-        ),
-        label: Text(
-          'Schedule',
-          style: AppTextStyles.black12_400.copyWith(color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0),
+        child: FloatingActionButton.extended(
+          backgroundColor: AppColors.bluePrimary,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ScheduleMeetingScreen(),
+              ),
+            );
+          },
+          icon: const Icon(
+            Icons.add,
+            color: Colors.white,
+          ),
+          label: Text(
+            'Schedule',
+            style: AppTextStyles.black12_400.copyWith(color: Colors.white),
+          ),
         ),
       ),
     );

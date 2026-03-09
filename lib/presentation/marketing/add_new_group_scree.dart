@@ -237,9 +237,8 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
             runSpacing: 8,
             children: selectedMembers.map((email) {
               final matchingAgent = agents.where((agent) => agent.email == email);
-              final name = matchingAgent.isNotEmpty
-                  ? matchingAgent.first.name
-                  : email.split('@').first;
+              final name =
+                  matchingAgent.isNotEmpty ? matchingAgent.first.name : email.split('@').first;
               return Chip(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 label: Text(name),
@@ -350,9 +349,8 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
             // Show other selected admins
             ...selectedAdmins.where((email) => email != loggedInUserEmail).map((email) {
               final matchingAgent = agents.where((agent) => agent.email == email);
-              final name = matchingAgent.isNotEmpty
-                  ? matchingAgent.first.name
-                  : email.split('@').first;
+              final name =
+                  matchingAgent.isNotEmpty ? matchingAgent.first.name : email.split('@').first;
               return Chip(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 label: Text(name),
@@ -374,11 +372,31 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff007A75),
+          backgroundColor:
+              isLoading ? const Color(0xff007A75).withOpacity(0.5) : const Color(0xff007A75),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        onPressed: _createGroup,
-        child: const Text('Create Group', style: TextStyle(color: Colors.white)),
+        onPressed: isLoading ? null : _createGroup,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading) ...[
+              const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            Text(
+              isLoading ? 'Creating...' : 'Create Group',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -461,19 +479,27 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
       );
       return;
     }
+
     if (selectedMembers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one member')),
       );
       return;
     }
+
     if (selectedAdmins.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one admin')),
       );
       return;
     }
+
+    setState(() {
+      isLoading = true;
+    });
+
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+
     final success = await groupProvider.createGroup(
       groupName: _groupNameController.text,
       groupDescription: _groupDescriptionController.text,
@@ -481,11 +507,22 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
       members: selectedMembers,
       groupImage: _groupImageUrl ?? '',
     );
-    if (success && mounted) {
+
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = false;
+    });
+
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Group created successfully!')),
       );
       Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to create group')),
+      );
     }
   }
 

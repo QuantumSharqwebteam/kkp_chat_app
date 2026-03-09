@@ -150,10 +150,10 @@ class MeetingTile extends StatelessWidget {
               runSpacing: 8,
               children: [
                 _buildStatusChip(meeting.status),
-                _buildMetaChip(
-                  icon: Icons.groups_2_outlined,
-                  label: "${meeting.participants.length} Participants",
-                ),
+                // _buildMetaChip(
+                //   icon: Icons.groups_2_outlined,
+                //   label: "${meeting.participants.length} Participants",
+                // ),
               ],
             ),
             const SizedBox(height: 12),

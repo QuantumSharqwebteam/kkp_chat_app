@@ -519,8 +519,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
               }));
             }
           },
-          child: const Text(
-            "Internal Chat",
+          child: Text(
+            widget.group?.groupName ?? "Group",
             style: AppTextStyles.black16_600,
           ),
         ),

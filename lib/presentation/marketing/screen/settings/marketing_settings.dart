@@ -40,8 +40,8 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         title: Text(
-          locale.settingsAndActivity,
-          style: AppTextStyles.black16_500,
+          "Settings",
+          style: AppTextStyles.black14_600,
         ),
         actions: [
           Row(

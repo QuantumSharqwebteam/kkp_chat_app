@@ -1,4 +1,6 @@
 // import 'package:excel/excel.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/complaints_provider.dart';
@@ -11,20 +13,19 @@ class MarketingComplaintPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
-    if (Provider.of<ComplaintsProvider>(context, listen: false).status ==
-        DataStatus.loading) {
+    if (Provider.of<ComplaintsProvider>(context, listen: false).status == DataStatus.loading) {
       Provider.of<ComplaintsProvider>(context, listen: true).loaddata();
     }
     return Scaffold(
+      extendBody: false,
       appBar: AppBar(title: Text(locale.complaints)),
-      body: _getBody(context),
+      body: SafeArea(bottom: Platform.isAndroid, child: _getBody(context)),
     );
   }
 
   Widget _getBody(ctx) {
     final locale = AppLocalizations.of(ctx)!;
-    final complaints =
-        Provider.of<ComplaintsProvider>(ctx, listen: true).complaints;
+    final complaints = Provider.of<ComplaintsProvider>(ctx, listen: true).complaints;
     final status = Provider.of<ComplaintsProvider>(ctx, listen: true).status;
     switch (status) {
       case DataStatus.loading:
