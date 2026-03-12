@@ -524,11 +524,11 @@
   "@passwordChange": {
     "description": "Title for password change section"
   },
-  "orderEnquires": "Order Enquires",
+  "orderEnquires": "Order Enquiries",
   "@orderEnquires": {
     "description": "Title for order enquiries section"
   },
-  "trackAllOrderEnquires": "Track All Order Enquires in One Place",
+  "trackAllOrderEnquires": "Track all order enquiries in one place",
   "@trackAllOrderEnquires": {
     "description": "Description for order enquiries tracking feature"
   },

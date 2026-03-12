@@ -877,13 +877,13 @@ abstract class AppLocalizations {
   /// Title for order enquiries section
   ///
   /// In en, this message translates to:
-  /// **'Order Enquires'**
+  /// **'Order Enquiries'**
   String get orderEnquires;
 
   /// Description for order enquiries tracking feature
   ///
   /// In en, this message translates to:
-  /// **'Track All Order Enquires in One Place'**
+  /// **'Track all order enquiries in one place'**
   String get trackAllOrderEnquires;
 
   /// Title for preferences section
