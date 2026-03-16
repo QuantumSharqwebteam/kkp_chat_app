@@ -90,85 +90,32 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      children: [
-        Stack(
+    final formData = widget.formData;
+    final id = widget.formData['_id']?.toString();
+    return Align(
+      alignment: widget.isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(top: 20, bottom: 4, left: 10, right: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.65,
+        ),
+        decoration: BoxDecoration(
+          color: widget.isMe ? const Color(0xFF00ABE9) : const Color(0xFFF2F2F2),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: widget.isMe ? const Radius.circular(16) : Radius.zero,
+            bottomRight: widget.isMe ? Radius.zero : const Radius.circular(16),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              margin: const EdgeInsets.only(top: 20, bottom: 4, left: 10, right: 40),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.65,
-              ),
-              decoration: BoxDecoration(
-                color: widget.isMe ? const Color(0xFF00ABE9) : const Color(0xFFF2F2F2),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: widget.isMe ? const Radius.circular(16) : Radius.zero,
-                  bottomRight: widget.isMe ? Radius.zero : const Radius.circular(16),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.serialNumber != null)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: widget.isMe
-                            ? Colors.white.withOpacity(0.22)
-                            : Colors.black.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        "Form #${widget.serialNumber}",
-                        style: AppTextStyles.black10_500.copyWith(
-                          color: widget.isMe ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                    ),
-                  if (widget.formData.containsKey("_id"))
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Id:  ',
-                            style: AppTextStyles.black14_600.copyWith(
-                              color: widget.isMe ? Colors.white : null,
-                            ),
-                          ),
-                          TextSpan(
-                            text: widget.formData["_id"],
-                            style: AppTextStyles.grey12_600.copyWith(
-                              color: widget.isMe ? Colors.white : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 15),
-                  //  _buildTextRow("S.No", widget.formData["S.No"] ?? ""),
-                  // if (widget.formData.containsKey("_id"))
-                  //   _buildTextRow("Form Id:", widget.formData["_id"] ?? ""),
-                  _buildTextRow("BuyerName", widget.formData["buyerName"] ?? ""),
-                  _buildTextRow("Quality", widget.formData["quality"] ?? ""),
-                  _buildTextRow("Weave", widget.formData["weave"] ?? ""),
-                  _buildTextRow("Quantity", widget.formData["quantity"]?.toString() ?? ""),
-                  _buildTextRow("Composition", widget.formData["composition"] ?? ""),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-            if (_isPrivilegedUser)
-              Positioned(
-                top: 15,
-                right: 30,
+            if (_isPrivilegedUser && id != null)
+              Align(
+                alignment: Alignment.topRight,
                 child: PopupMenuButton<String>(
-                  // icon: Icon(Icons.menu_outlined),
                   onSelected: (value) {
                     _handleMenuSelection(context, value);
                   },
@@ -191,16 +138,60 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                   },
                 ),
               ),
+            if (widget.serialNumber != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color:
+                      widget.isMe ? Colors.white.withOpacity(0.22) : Colors.black.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  "Form #${widget.serialNumber}",
+                  style: AppTextStyles.black10_500.copyWith(
+                    color: widget.isMe ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+            if (widget.formData.containsKey("_id"))
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: 'Id:  ',
+                      style: AppTextStyles.black14_600.copyWith(
+                        color: widget.isMe ? Colors.white : null,
+                      ),
+                    ),
+                    TextSpan(
+                      text: widget.formData["_id"],
+                      style: AppTextStyles.grey12_600.copyWith(
+                        color: widget.isMe ? Colors.white : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 15),
+            _buildTextRow("BuyerName", widget.formData["buyerName"] ?? ""),
+            _buildTextRow("Quality", widget.formData["quality"] ?? ""),
+            _buildTextRow("Weave", widget.formData["weave"] ?? ""),
+            _buildTextRow("Quantity", widget.formData["quantity"]?.toString() ?? ""),
+            _buildTextRow("Composition", widget.formData["composition"] ?? ""),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: Text(
+                widget.timestamp,
+                style: widget.isMe
+                    ? AppTextStyles.white8_600.copyWith(fontSize: 10)
+                    : AppTextStyles.greyAAAAAA_10_400,
+              ),
+            ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-          child: Text(
-            widget.timestamp,
-            style: AppTextStyles.greyAAAAAA_10_400,
-          ),
-        ),
-      ],
+      ),
     );
   }
 

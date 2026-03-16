@@ -46,9 +46,14 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/extracted_data_viewer_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:kkpchatapp/core/services/product_data_extraction_service.dart';
+import 'package:kkpchatapp/data/repositories/extracted_product_repository.dart';
+import 'package:kkpchatapp/data/models/extracted_product_data.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -83,6 +88,9 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final ChatStorageService _chatStorageService = ChatStorageService();
   final _productRepository = ProductRepository();
+  final ProductDataExtractionService _extractionService = ProductDataExtractionService();
+  final ExtractedProductRepository _extractedProductRepository = ExtractedProductRepository();
+  final LoggingService _logger = LoggingService.instance;
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
@@ -120,6 +128,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     _socketService.onMessagesReadUpTo(_handleMessagesReadUpTo);
 
     _initializeRecorder();
+    _extractionService.initialize();
     _loadPreviousMessages(context);
 
     // Scroll to bottom when the chat page opens
@@ -815,10 +824,16 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
       );
     }
 
+    // Extract product data from incoming messages
+    if (data["type"] == "text" && data["message"]?.toString().isNotEmpty == true) {
+      _extractAndSaveProductData(data["message"], data["messageId"] ?? "");
+    }
+
     if (!_loadedMessageIds.contains(message.messageId)) {
       setState(() {
         messages.add(message); // Append to the end
         messages = _mergeFormMessagesById(messages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
 
@@ -877,6 +892,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       });
 
       _socketService.sendMessage(
@@ -899,9 +915,41 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     }
     _scrollToBottom();
 
+    // Extract product data from sent messages
+    if (type == 'text' && messageText.isNotEmpty) {
+      _extractAndSaveProductData(messageText, messageId);
+    }
+
     _chatController.clear();
     _saveLastMessageTime();
     Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
+  }
+
+  Future<void> _extractAndSaveProductData(String messageText, String messageId) async {
+    try {
+      final extractedData = await _extractionService.extractProductData(messageText);
+      if (extractedData != null) {
+        final productData = ExtractedProductData(
+          chatId: '${widget.agentEmail}${widget.customerEmail}',
+          agentEmail: widget.agentEmail!,
+          customerEmail: widget.customerEmail,
+          customerName: widget.customerName,
+          quality: extractedData['quality'],
+          weave: extractedData['weave'],
+          quantity: extractedData['quantity']?.toString(),
+          composition: extractedData['composition'],
+          rate: extractedData['rate'],
+          extractedAt: DateTime.now(),
+          confidence: extractedData['confidence'] ?? 0.0,
+          extractionTimeMs: extractedData['extractionTimeMs'],
+        );
+
+        await _extractedProductRepository.insert(productData);
+        _logger.logStorage('Product data extracted and saved: ${productData.toJson()}');
+      }
+    } catch (e) {
+      _logger.logStorage('Error extracting product data: $e', level: LogLevel.error);
+    }
   }
 
   void _addTemporaryMessage(String messageText) {
@@ -1321,6 +1369,38 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
           ),
           IconButton(
             onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ExtractedDataViewerScreen(
+                    agentEmail: widget.agentEmail!,
+                  ),
+                ),
+              );
+
+              if (result is Map<String, dynamic> && result['success'] == true) {
+                final formData = result['formData'] as Map<String, dynamic>?;
+                final customerEmail = result['customerEmail'] as String?;
+                if (formData != null && customerEmail != null) {
+                  _sendMessage(
+                    messageText: 'Product inquiry',
+                    type: 'form',
+                    form: formData,
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Sent validated form to $customerEmail'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.inventory, color: Colors.black),
+            tooltip: 'View Extracted Product Data',
+          ),
+          IconButton(
+            onPressed: () async {
               final callProvider = context.read<CallProvider>();
 
               final channelName = sha256.convert(utf8.encode(widget.agentEmail!)).toString();
@@ -1447,7 +1527,8 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                                         serialNumber: msg.form?['_id'] != null
                                             ? formSerialMap[msg.form!['_id'].toString()]
                                             : null,
-                                        isMe: msg.sender == widget.agentEmail,
+                                        isMe: msg.sender?.toLowerCase() ==
+                                            widget.agentEmail?.toLowerCase(),
                                         timestamp: ChatUtils()
                                             .formatTimestamp(msg.timestamp.toIso8601String()),
                                         userRole: userRole!,

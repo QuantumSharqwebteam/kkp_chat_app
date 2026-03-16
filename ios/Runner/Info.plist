@@ -58,6 +58,10 @@
 	<string>Used for voice chat and support queries within the app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Allows users to upload fabric images for product enquiries.</string>
+	<key>NSPrivacyAccessedAPICategoryUserDefaults</key>
+	<string>This app uses UserDefaults to store user preferences and app settings.</string>
+	<key>NSPrivacyAccessedAPICategoryFileTimestamp</key>
+	<string>This app accesses file timestamps to manage local data storage.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

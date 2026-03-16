@@ -96,8 +96,7 @@ class SocketService {
 
     final rateUpdate = _extractRateUpdateInfo(data['message']?.toString());
     if (targetFormId == null && rateUpdate != null) {
-      final normalizedRate =
-          rateUpdate.rate % 1 == 0 ? rateUpdate.rate.toInt() : rateUpdate.rate;
+      final normalizedRate = rateUpdate.rate % 1 == 0 ? rateUpdate.rate.toInt() : rateUpdate.rate;
       targetFormId = rateUpdate.formId;
       formPatch['rate'] = normalizedRate;
       formPatch['_formOptionsUnlocked'] = true;
@@ -857,6 +856,30 @@ class SocketService {
     }
   }
 
+  void sendForm({
+    required String senderId,
+    required String targetId,
+    required String senderName,
+    required Map<String, dynamic> form,
+    required String timestamp,
+    required String messageId,
+  }) {
+    if (_isConnected) {
+      final formData = {
+        'senderId': senderId,
+        'targetId': targetId,
+        'senderName': senderName,
+        'form': form,
+        'timestamp': timestamp,
+        'messageId': messageId,
+      };
+      _socket.emit('sendForm', formData);
+      debugPrint('📤 Sent form via socket: $formData');
+    } else {
+      debugPrint('Socket is not connected. Cannot send form.');
+    }
+  }
+
   void deleteMessage(String messageId, String senderId, [String? targetId]) {
     if (_isConnected) {
       // Create a map with the required parameters
@@ -1322,6 +1345,3 @@ class SocketService {
     }
   }
 }
-
-
-

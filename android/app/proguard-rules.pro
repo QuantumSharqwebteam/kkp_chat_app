@@ -30,3 +30,15 @@
 -keep class io.agora.** { *; }
 -dontwarn io.agora.**
 
+# Google ML Kit
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.mlkit.**
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.firebase.**
+
+
+# Image Picker
+-keep class io.flutter.plugins.imagepicker.** { *; }
+-dontwarn io.flutter.plugins.imagepicker.**
