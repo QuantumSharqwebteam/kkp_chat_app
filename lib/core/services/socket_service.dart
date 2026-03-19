@@ -863,6 +863,7 @@ class SocketService {
     required Map<String, dynamic> form,
     required String timestamp,
     required String messageId,
+    String? orderId,
   }) {
     if (_isConnected) {
       final formData = {
@@ -873,6 +874,9 @@ class SocketService {
         'timestamp': timestamp,
         'messageId': messageId,
       };
+      if (orderId != null) {
+        formData['orderId'] = orderId;
+      }
       _socket.emit('sendForm', formData);
       debugPrint('📤 Sent form via socket: $formData');
     } else {

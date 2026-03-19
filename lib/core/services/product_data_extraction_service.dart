@@ -178,6 +178,16 @@ class ProductDataExtractionService {
       }
     }
 
+    // Handle direct "at rate ..." phrases before general price parsing
+    if (!customData.containsKey('rate')) {
+      final atRateRegex =
+          RegExp(r'at\s*rate\s*(?:rs\.?\s*|inr\s*|₹\s*)?(\d+(?:\.\d+)?)', caseSensitive: false);
+      final atRateMatch = atRateRegex.firstMatch(message);
+      if (atRateMatch != null) {
+        customData['rate'] = num.tryParse(atRateMatch.group(1)!);
+      }
+    }
+
     // Price patterns (per unit) with more phrases and variations
     if (!customData.containsKey('rate')) {
       final priceRegex = RegExp(

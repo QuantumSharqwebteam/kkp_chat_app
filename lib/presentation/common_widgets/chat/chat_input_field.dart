@@ -17,7 +17,9 @@ class ChatInputField extends StatefulWidget {
   final bool isRecording;
   final int recordedSeconds; // Add this line
   final VoidCallback onShareProduct;
+  final VoidCallback? onCheckOrders;
   final bool showFormAndProduct; // Add this parameter
+  final bool showCheckOrders;
 
   const ChatInputField({
     super.key,
@@ -31,7 +33,9 @@ class ChatInputField extends StatefulWidget {
     required this.recordedSeconds,
     required this.onSendImageByCamera,
     required this.onShareProduct, // Add this line
+    this.onCheckOrders,
     this.showFormAndProduct = true, // Default to true for backward compatibility
+    this.showCheckOrders = false,
   });
 
   @override
@@ -90,19 +94,26 @@ class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProvid
           IconButton(
             icon: const Icon(Icons.attachment),
             onPressed: () {
-              showAttachmentMenu(context, (selectedItem) {
-                if (selectedItem == "Photos") {
-                  widget.onSendImage();
-                } else if (selectedItem == "Inquiry Form") {
-                  widget.onSendForm();
-                } else if (selectedItem == "Camera") {
-                  widget.onSendImageByCamera();
-                } else if (selectedItem == "Documents") {
-                  widget.onSendDocument();
-                } else if (selectedItem == "Share Product") {
-                  widget.onShareProduct();
-                }
-              }, showFormAndProduct: widget.showFormAndProduct);
+              showAttachmentMenu(
+                context,
+                (selectedItem) {
+                  if (selectedItem == "Photos") {
+                    widget.onSendImage();
+                  } else if (selectedItem == "Inquiry Form") {
+                    widget.onSendForm();
+                  } else if (selectedItem == "Camera") {
+                    widget.onSendImageByCamera();
+                  } else if (selectedItem == "Documents") {
+                    widget.onSendDocument();
+                  } else if (selectedItem == "Share Product") {
+                    widget.onShareProduct();
+                  } else if (selectedItem == "Check Orders") {
+                    widget.onCheckOrders?.call();
+                  }
+                },
+                showFormAndProduct: widget.showFormAndProduct,
+                showCheckOrders: widget.showCheckOrders,
+              );
             },
           ),
           Expanded(
@@ -220,7 +231,7 @@ final List<Map<String, String>> attachmentItemsforInternalChat = [
 final String? currentUser = LocalDbHelper.getProfile()?.role;
 
 void showAttachmentMenu(BuildContext context, Function(String) onItemSelected,
-    {bool showFormAndProduct = true}) {
+    {bool showFormAndProduct = true, bool showCheckOrders = false}) {
   showModalBottomSheet(
       context: context,
       elevation: 10,
@@ -240,7 +251,10 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected,
           itemsToShow = attachmentItemsforCustomer;
         } else {
           // For agents - all items
-          itemsToShow = attachmentItems;
+          itemsToShow = List<Map<String, String>>.from(attachmentItems);
+          if (showCheckOrders) {
+            itemsToShow.insert(0, {"image": ImageConstants.checkCircle, "label": "Check Orders"});
+          }
         }
 
         return Container(

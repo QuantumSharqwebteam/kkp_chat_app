@@ -250,7 +250,7 @@ class MeetingTile extends StatelessWidget {
     );
   }
 
-  Widget _buildMetaChip({
+  Widget buildMetaChip({
     required IconData icon,
     required String label,
   }) {

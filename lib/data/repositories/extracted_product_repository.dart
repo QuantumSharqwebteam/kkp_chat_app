@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:kkpchatapp/data/local_storage/product_database.dart';
 import 'package:kkpchatapp/data/models/extracted_product_data.dart';
 
@@ -13,7 +14,9 @@ class ExtractedProductRepository {
       await _database.insertExtractedProduct(dataWithId);
       return dataWithId;
     } catch (e) {
-      print('Error inserting extracted product data: $e');
+      if (kDebugMode) {
+        print('Error inserting extracted product data: $e');
+      }
       return null;
     }
   }
@@ -23,7 +26,9 @@ class ExtractedProductRepository {
     try {
       return await _database.getExtractedProductsByChat(chatId);
     } catch (e) {
-      print('Error fetching extracted products by chat: $e');
+      if (kDebugMode) {
+        print('Error fetching extracted products by chat: $e');
+      }
       return [];
     }
   }
@@ -33,7 +38,9 @@ class ExtractedProductRepository {
     try {
       return await _database.getExtractedProductsByAgent(agentEmail);
     } catch (e) {
-      print('Error fetching extracted products by agent: $e');
+      if (kDebugMode) {
+        print('Error fetching extracted products by agent: $e');
+      }
       return [];
     }
   }
@@ -47,7 +54,9 @@ class ExtractedProductRepository {
     try {
       return await _database.getExtractedProductsByDateRange(agentEmail, startDate, endDate);
     } catch (e) {
-      print('Error fetching extracted products by date range: $e');
+      if (kDebugMode) {
+        print('Error fetching extracted products by date range: $e');
+      }
       return [];
     }
   }
@@ -58,7 +67,9 @@ class ExtractedProductRepository {
       final rowsAffected = await _database.updateExtractedProduct(id, updates);
       return rowsAffected > 0;
     } catch (e) {
-      print('Error updating extracted product: $e');
+      if (kDebugMode) {
+        print('Error updating extracted product: $e');
+      }
       return false;
     }
   }
@@ -69,7 +80,9 @@ class ExtractedProductRepository {
       final rowsAffected = await _database.deleteExtractedProduct(id);
       return rowsAffected > 0;
     } catch (e) {
-      print('Error deleting extracted product: $e');
+      if (kDebugMode) {
+        print('Error deleting extracted product: $e');
+      }
       return false;
     }
   }

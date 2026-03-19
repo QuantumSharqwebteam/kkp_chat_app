@@ -386,6 +386,54 @@ class ChatService {
     }
   }
 
+  /// Update inquiry form by order ID (supports status/rate updates)
+  Future<void> updateFormByOrderId({
+    required String orderId,
+    String? status,
+    num? rate,
+    String? quality,
+    String? weave,
+    String? quantity,
+    String? composition,
+    String? buyerName,
+  }) async {
+    final token = await LocalDbHelper.getToken();
+    try {
+      final url = Uri.parse("$baseUrl/chat/updateFormByOrderId/$orderId");
+      final Map<String, dynamic> body = {};
+      if (status != null) body['status'] = status;
+      if (rate != null) body['rate'] = rate;
+      if (quality != null) body['quality'] = quality;
+      if (weave != null) body['weave'] = weave;
+      if (quantity != null) body['quantity'] = quantity;
+      if (composition != null) body['composition'] = composition;
+      if (buyerName != null) body['buyerName'] = buyerName;
+
+      if (body.isEmpty) {
+        return;
+      }
+
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
+      );
+
+      final responseBody = jsonDecode(response.body);
+      if (response.statusCode != 200 || responseBody['status'] != 200) {
+        if (kDebugMode) {
+          debugPrint("Failed to update form by order id: ${response.body}");
+        }
+        throw Exception('Failed to update form by order: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating form by order id: $e');
+    }
+  }
+
   /// Update Call Data
   Future<void> updateCallData(String messageId, String callStatus, {String? callDuration}) async {
     final url = Uri.parse('$baseUrl/chat/updateCall/$messageId');
@@ -524,6 +572,7 @@ class ChatService {
     }
   }
 
+  // ignore: body_might_complete_normally_nullable
   Future<DateTime?> getAgentLastTimestampForCustomer(String customerEmail) async {
     final url = Uri.parse("$baseUrl/chat/getUserLastTimestamp/$customerEmail");
 

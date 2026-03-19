@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
@@ -319,7 +321,7 @@ class PosterManagementScreen extends StatefulWidget {
 
 class _PosterManagementScreenState extends State<PosterManagementScreen> {
   final PosterRepository _posterRepository = PosterRepository();
-  final S3UploadService _s3UploadService = S3UploadService();
+  //final S3UploadService _s3UploadService = S3UploadService();
 
   List<PosterModel> _posters = [];
 
@@ -358,7 +360,9 @@ class _PosterManagementScreenState extends State<PosterManagementScreen> {
 
         _fetchPosters();
       } else {
-        Utils().showSuccessDialog(context, "Failed to delete poster", false);
+        if (mounted) {
+          Utils().showSuccessDialog(context, "Failed to delete poster", false);
+        }
       }
     } catch (e) {
       debugPrint("Delete error $e");

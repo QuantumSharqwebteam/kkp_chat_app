@@ -12,6 +12,10 @@ class ExtractedProductData {
   final DateTime extractedAt;
   final double confidence;
   final int? extractionTimeMs;
+  final bool sent;
+  final DateTime? sentAt;
+  final String? orderId;
+  final String? status;
 
   ExtractedProductData({
     this.id,
@@ -27,6 +31,10 @@ class ExtractedProductData {
     required this.extractedAt,
     required this.confidence,
     this.extractionTimeMs,
+    this.sent = false,
+    this.sentAt,
+    this.orderId,
+    this.status,
   });
 
   factory ExtractedProductData.fromJson(Map<String, dynamic> json) {
@@ -44,6 +52,10 @@ class ExtractedProductData {
       extractedAt: DateTime.parse(json['extracted_at'] as String),
       confidence: (json['confidence'] as num).toDouble(),
       extractionTimeMs: json['extraction_time_ms'] as int?,
+      sent: (json['sent'] as int? ?? 0) == 1,
+      sentAt: json['sent_at'] != null ? DateTime.tryParse(json['sent_at']) : null,
+      orderId: json['order_id'] as String?,
+      status: json['status'] as String?,
     );
   }
 
@@ -61,6 +73,10 @@ class ExtractedProductData {
       'rate': rate,
       'extracted_at': extractedAt.toIso8601String(),
       'confidence': confidence,
+      'sent': sent ? 1 : 0,
+      'sent_at': sentAt?.toIso8601String(),
+      'order_id': orderId,
+      'status': status,
       if (extractionTimeMs != null) 'extraction_time_ms': extractionTimeMs,
     };
   }
@@ -79,6 +95,10 @@ class ExtractedProductData {
     DateTime? extractedAt,
     double? confidence,
     int? extractionTimeMs,
+    bool? sent,
+    DateTime? sentAt,
+    String? orderId,
+    String? status,
   }) {
     return ExtractedProductData(
       id: id ?? this.id,
@@ -94,6 +114,10 @@ class ExtractedProductData {
       extractedAt: extractedAt ?? this.extractedAt,
       confidence: confidence ?? this.confidence,
       extractionTimeMs: extractionTimeMs ?? this.extractionTimeMs,
+      sent: sent ?? this.sent,
+      sentAt: sentAt ?? this.sentAt,
+      orderId: orderId ?? this.orderId,
+      status: status ?? this.status,
     );
   }
 }

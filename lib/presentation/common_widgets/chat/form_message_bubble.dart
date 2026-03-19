@@ -90,7 +90,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
-    final formData = widget.formData;
+    //  final formData = widget.formData;
     final id = widget.formData['_id']?.toString();
     return Align(
       alignment: widget.isMe ? Alignment.centerRight : Alignment.centerLeft,

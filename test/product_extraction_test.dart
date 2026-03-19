@@ -64,9 +64,25 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!['quantity'], equals(50));
-      expect(result!['quality'], equals('premium'));
-      expect(result!['weave'], equals('twill'));
+      expect(result['quality'], equals('premium'));
+      expect(result['weave'], equals('twill'));
       // Note: ML Kit might extract money and date entities if available
+    });
+
+    test('should extract rate from at rate 10 phrase', () async {
+      const message = 'Need 100 meters of fabric at rate 10';
+      final result = await extractionService.extractProductData(message);
+
+      expect(result, isNotNull);
+      expect(result!['rate'], equals(10));
+    });
+
+    test('should extract rate from at rate rs10 phrase', () async {
+      const message = 'Need 100 meters of fabric at rate rs10';
+      final result = await extractionService.extractProductData(message);
+
+      expect(result, isNotNull);
+      expect(result!['rate'], equals(10));
     });
   });
 }

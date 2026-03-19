@@ -22,7 +22,7 @@ class ProductDatabase {
     String path = join(await getDatabasesPath(), 'product_database.db');
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onOpen: _onOpen,
@@ -44,6 +44,18 @@ class ProductDatabase {
     if (!columnNames.contains('customer_name')) {
       await db.execute('ALTER TABLE extracted_products ADD COLUMN customer_name TEXT');
     }
+    if (!columnNames.contains('sent')) {
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN sent INTEGER DEFAULT 0');
+    }
+    if (!columnNames.contains('sent_at')) {
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN sent_at TEXT');
+    }
+    if (!columnNames.contains('order_id')) {
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN order_id TEXT');
+    }
+    if (!columnNames.contains('status')) {
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN status TEXT');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -60,7 +72,11 @@ class ProductDatabase {
         composition TEXT,
         rate REAL,
         extracted_at TEXT NOT NULL,
-        confidence REAL NOT NULL
+        confidence REAL NOT NULL,
+        sent INTEGER DEFAULT 0,
+        sent_at TEXT,
+        order_id TEXT,
+        status TEXT
       )
     ''');
   }
@@ -68,6 +84,12 @@ class ProductDatabase {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE extracted_products ADD COLUMN customer_name TEXT');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN sent INTEGER DEFAULT 0');
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN sent_at TEXT');
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN order_id TEXT');
+      await db.execute('ALTER TABLE extracted_products ADD COLUMN status TEXT');
     }
   }
 
@@ -89,6 +111,10 @@ class ProductDatabase {
         'rate': data.rate,
         'extracted_at': data.extractedAt.toIso8601String(),
         'confidence': data.confidence,
+        'sent': data.sent ? 1 : 0,
+        'sent_at': data.sentAt?.toIso8601String(),
+        'order_id': data.orderId,
+        'status': data.status,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -117,7 +143,12 @@ class ProductDatabase {
         composition: maps[i]['composition'],
         rate: maps[i]['rate'],
         extractedAt: DateTime.parse(maps[i]['extracted_at']),
-        confidence: maps[i]['confidence'],
+        confidence: (maps[i]['confidence'] as num).toDouble(),
+        extractionTimeMs: maps[i]['extraction_time_ms'],
+        sent: (maps[i]['sent'] as int? ?? 0) == 1,
+        sentAt: maps[i]['sent_at'] != null ? DateTime.tryParse(maps[i]['sent_at']) : null,
+        orderId: maps[i]['order_id'],
+        status: maps[i]['status'],
       );
     });
   }
@@ -145,7 +176,12 @@ class ProductDatabase {
         composition: maps[i]['composition'],
         rate: maps[i]['rate'],
         extractedAt: DateTime.parse(maps[i]['extracted_at']),
-        confidence: maps[i]['confidence'],
+        confidence: (maps[i]['confidence'] as num).toDouble(),
+        extractionTimeMs: maps[i]['extraction_time_ms'],
+        sent: (maps[i]['sent'] as int? ?? 0) == 1,
+        sentAt: maps[i]['sent_at'] != null ? DateTime.tryParse(maps[i]['sent_at']) : null,
+        orderId: maps[i]['order_id'],
+        status: maps[i]['status'],
       );
     });
   }
@@ -177,7 +213,12 @@ class ProductDatabase {
         composition: maps[i]['composition'],
         rate: maps[i]['rate'],
         extractedAt: DateTime.parse(maps[i]['extracted_at']),
-        confidence: maps[i]['confidence'],
+        confidence: (maps[i]['confidence'] as num).toDouble(),
+        extractionTimeMs: maps[i]['extraction_time_ms'],
+        sent: (maps[i]['sent'] as int? ?? 0) == 1,
+        sentAt: maps[i]['sent_at'] != null ? DateTime.tryParse(maps[i]['sent_at']) : null,
+        orderId: maps[i]['order_id'],
+        status: maps[i]['status'],
       );
     });
   }

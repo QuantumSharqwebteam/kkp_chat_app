@@ -21,6 +21,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
@@ -36,6 +37,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubb
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/sent_product_form_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
@@ -44,6 +46,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/product_bottom_sheet
 import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/extracted_data_viewer_screen.dart';
@@ -673,6 +676,18 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     return formId;
   }
 
+  String? _extractFormOrderKey(ChatMessageModel message) {
+    final form = message.form;
+    if (form == null) return null;
+
+    final orderId = form['orderId']?.toString();
+    if (orderId != null && orderId.isNotEmpty) {
+      return orderId;
+    }
+
+    return _extractFormId(message);
+  }
+
   List<ChatMessageModel> _mergeFormMessagesById(List<ChatMessageModel> source) {
     final sorted = [...source]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     final List<ChatMessageModel> merged = [];
@@ -750,6 +765,74 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
 
     if (updated && mounted) {
       setState(() {});
+    }
+  }
+
+  Future<void> _updateLocalFormByOrderId({
+    required String orderId,
+    String? status,
+    num? rate,
+    String? quality,
+    String? weave,
+    String? quantity,
+    String? composition,
+    String? buyerName,
+  }) async {
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    bool updated = false;
+
+    for (int i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      final form = msg.form;
+      if (form == null) continue;
+      if (form['orderId']?.toString() != orderId) continue;
+
+      final updatedForm = Map<String, dynamic>.from(form);
+      if (status != null && status.isNotEmpty) {
+        updatedForm['status'] = status;
+      }
+      if (rate != null) {
+        updatedForm['rate'] = rate;
+      }
+      if (quality != null) {
+        updatedForm['quality'] = quality;
+      }
+      if (weave != null) {
+        updatedForm['weave'] = weave;
+      }
+      if (quantity != null) {
+        updatedForm['quantity'] = quantity;
+      }
+      if (composition != null) {
+        updatedForm['composition'] = composition;
+      }
+      if (buyerName != null && buyerName.isNotEmpty) {
+        updatedForm['buyerName'] = buyerName;
+      }
+      updatedForm['_formOptionsUnlocked'] = true;
+      updatedForm['_highlightUpdated'] = true;
+      msg.form = updatedForm;
+      await _chatStorageService.saveMessage(msg, boxName);
+      updated = true;
+    }
+
+    if (updated && mounted) {
+      setState(() {});
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (!mounted) return;
+        bool changed = false;
+        for (int i = 0; i < messages.length; i++) {
+          final form = messages[i].form;
+          if (form == null || form['orderId']?.toString() != orderId) continue;
+          if (form['_highlightUpdated'] == true) {
+            final updatedForm = Map<String, dynamic>.from(form);
+            updatedForm['_highlightUpdated'] = false;
+            messages[i].form = updatedForm;
+            changed = true;
+          }
+        }
+        if (changed) setState(() {});
+      });
     }
   }
 
@@ -877,11 +960,13 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     // Set the receiverIsOnChatPage to false when the app is paused or inactive
     final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
 
+    final messageType = form != null ? 'form' : type;
+
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
       sender: widget.agentEmail!,
-      type: type!,
+      type: messageType!,
       mediaUrl: mediaUrl,
       form: form,
       messageId: messageId,
@@ -895,22 +980,37 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       });
 
-      _socketService.sendMessage(
-        targetEmail: widget.customerEmail,
-        message: messageText,
-        senderEmail: widget.agentEmail!,
-        senderName: widget.agentName ?? "agent",
-        type: type,
-        mediaUrl: mediaUrl,
-        form: form,
-        timestamp: currentTime.toIso8601String(),
-        messageId: messageId, // Include the message ID
-        read: isReceiverOnChatPage ?? false,
-      );
+      // Always send text message event for non-form content
+      if (form == null || type != 'form') {
+        _socketService.sendMessage(
+          targetEmail: widget.customerEmail,
+          message: messageText,
+          senderEmail: widget.agentEmail!,
+          senderName: widget.agentName ?? "agent",
+          type: type ?? 'text',
+          mediaUrl: mediaUrl,
+          form: null,
+          timestamp: currentTime.toIso8601String(),
+          messageId: messageId,
+          read: isReceiverOnChatPage ?? false,
+        );
+      }
+
+      // Send form payload separately when form data exists
+      if (form != null) {
+        _socketService.sendForm(
+          senderId: widget.agentEmail!,
+          targetId: widget.customerEmail,
+          senderName: widget.agentName ?? 'agent',
+          form: form,
+          timestamp: currentTime.toIso8601String(),
+          messageId: messageId,
+          orderId: form['orderId']?.toString(),
+        );
+      }
 
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(message, '${widget.agentEmail}${widget.customerEmail}');
-      // print("sent message saved as :${message.toString()}");
       _loadedMessageIds.add(messageId);
     }
     _scrollToBottom();
@@ -923,6 +1023,10 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     _chatController.clear();
     _saveLastMessageTime();
     Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
+  }
+
+  String _generateOrderId() {
+    return 'ORD-${DateTime.now().millisecondsSinceEpoch}';
   }
 
   Future<void> _extractAndSaveProductData(String messageText, String messageId) async {
@@ -1158,7 +1262,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
   void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
     _sendMessage(
       messageText: "Form rate updated",
-      type: 'form',
+      type: 'text',
       form: updatedFormData,
     );
 
@@ -1177,6 +1281,548 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
 
     // Trigger real-time update after status change
     Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
+  }
+
+  Future<void> _showUpdateOrderByIdSheet(FormDataModel order) async {
+    final statusController = TextEditingController(text: order.status);
+    final rateController = TextEditingController(text: order.rate);
+    final qualityController = TextEditingController(text: order.quality);
+    final weaveController = TextEditingController(text: order.weave);
+    final quantityController = TextEditingController(text: order.quantity);
+    final compositionController = TextEditingController(text: order.composition);
+    final buyerController = TextEditingController(text: order.buyerName);
+    final customerDisplayName = order.customerName.isNotEmpty ? order.customerName : 'Not provided';
+    final buyerDisplayName = order.buyerName.isNotEmpty ? order.buyerName : 'Not provided';
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 14,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            padding: EdgeInsets.only(
+              left: 18,
+              right: 18,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+              top: 14,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 42,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    'Update Order Details',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Order ID: ${order.orderId.isNotEmpty ? order.orderId : order.id}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPersonInfoChip('Customer', customerDisplayName, Colors.blue),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildPersonInfoChip('Buyer', buyerDisplayName, Colors.teal),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Divider(height: 1, thickness: 1),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Update any fields below (leave blank to keep current value)',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: buyerController,
+                    decoration: InputDecoration(
+                      labelText: 'Buyer name',
+                      hintText: 'Add or update the buyer name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: statusController,
+                    decoration: InputDecoration(
+                      labelText: 'Status',
+                      hintText: 'Confirmed / Declined / Pending',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: qualityController,
+                          decoration: InputDecoration(
+                            labelText: 'Quality',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: weaveController,
+                          decoration: InputDecoration(
+                            labelText: 'Weave',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: quantityController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Quantity',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: compositionController,
+                          decoration: InputDecoration(
+                            labelText: 'Composition',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: rateController,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Rate',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  CustomButton(
+                    text: "Save Order",
+                    width: double.maxFinite,
+                    onPressed: () async {
+                      final statusValue = statusController.text.trim();
+                      final rateText = rateController.text.trim();
+                      final qualityValue = qualityController.text.trim();
+                      final weaveValue = weaveController.text.trim();
+                      final quantityValue = quantityController.text.trim();
+                      final compositionValue = compositionController.text.trim();
+                      final buyerValue = buyerController.text.trim();
+                      final rateValue = rateText.isNotEmpty ? num.tryParse(rateText) : null;
+
+                      if (statusValue.isEmpty &&
+                          rateValue == null &&
+                          qualityValue.isEmpty &&
+                          weaveValue.isEmpty &&
+                          quantityValue.isEmpty &&
+                          compositionValue.isEmpty &&
+                          buyerValue.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Enter at least one field to update')),
+                        );
+                        return;
+                      }
+
+                      try {
+                        final updateOrderId = order.orderId.isNotEmpty ? order.orderId : order.id;
+                        await _chatRepository.updateFormByOrderId(
+                          orderId: updateOrderId,
+                          status: statusValue.isNotEmpty ? statusValue : null,
+                          rate: rateValue,
+                          quality: qualityValue.isNotEmpty ? qualityValue : null,
+                          weave: weaveValue.isNotEmpty ? weaveValue : null,
+                          quantity: quantityValue.isNotEmpty ? quantityValue : null,
+                          composition: compositionValue.isNotEmpty ? compositionValue : null,
+                          buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+                        );
+
+                        await _updateLocalFormByOrderId(
+                          orderId: updateOrderId,
+                          status: statusValue.isNotEmpty ? statusValue : null,
+                          rate: rateValue,
+                          quality: qualityValue.isNotEmpty ? qualityValue : null,
+                          weave: weaveValue.isNotEmpty ? weaveValue : null,
+                          quantity: quantityValue.isNotEmpty ? quantityValue : null,
+                          composition: compositionValue.isNotEmpty ? compositionValue : null,
+                          buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Order updated successfully')),
+                          );
+                          Navigator.pop(context);
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Update failed: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showCheckOrdersBottomSheet() async {
+    if (!mounted) return;
+    bool isLoading = true;
+    List<FormDataModel> orders = [];
+    String? error;
+    final customerFilter = widget.customerName;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            if (isLoading) {
+              Future.microtask(() async {
+                try {
+                  final fetchedOrders =
+                      await _chatRepository.fetchFormDataForEnquiery(widget.agentEmail ?? '');
+                  final filteredOrders = fetchedOrders.where((order) {
+                    if (customerFilter == null || customerFilter.isEmpty) return true;
+                    return order.customerName.trim().toLowerCase() ==
+                        customerFilter.trim().toLowerCase();
+                  }).toList();
+
+                  if (mounted) {
+                    setState(() {
+                      orders = filteredOrders;
+                      isLoading = false;
+                    });
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() {
+                      error = e.toString();
+                      isLoading = false;
+                    });
+                  }
+                }
+              });
+            }
+
+            return SafeArea(
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.78,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, -8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Sent Orders',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade900,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : error != null
+                              ? Center(child: Text('Failed to load orders: $error'))
+                              : orders.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        customerFilter != null && customerFilter.isNotEmpty
+                                            ? 'No orders found for ${widget.customerName}'
+                                            : 'No sent orders found.',
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      padding:
+                                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      itemCount: orders.length,
+                                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                      itemBuilder: (context, index) =>
+                                          _buildCheckOrderCard(context, orders[index], index),
+                                    ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCheckOrderCard(BuildContext sheetContext, FormDataModel order, int index) {
+    final orderIdLabel = order.orderId.isNotEmpty ? order.orderId : order.id;
+    final statusLabel = order.status.isNotEmpty ? order.status : 'Pending';
+    final customerLabel =
+        order.customerName.isNotEmpty ? order.customerName : 'Customer not provided';
+    final buyerLabel = order.buyerName.isNotEmpty ? order.buyerName : 'Buyer not provided';
+    final rateLabel = order.rate.isNotEmpty ? '₹${order.rate}' : '-';
+
+    void openEditor() {
+      Navigator.pop(sheetContext);
+      _showUpdateOrderByIdSheet(order);
+    }
+
+    return InkWell(
+      onTap: openEditor,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blue.shade50, Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.blue.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.blue.shade100,
+                  child: Text('${index + 1}', style: TextStyle(color: Colors.blue.shade900)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Order #${index + 1}',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                      const SizedBox(height: 2),
+                      Text(orderIdLabel,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _orderStatusColor(statusLabel),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: const TextStyle(fontSize: 11, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildPersonInfoChip('Customer', customerLabel, Colors.blue),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildPersonInfoChip('Buyer', buyerLabel, Colors.teal),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                if (order.quality.isNotEmpty) _buildOrderDetailPill('Quality', order.quality),
+                if (order.weave.isNotEmpty) _buildOrderDetailPill('Weave', order.weave),
+                if (order.quantity.isNotEmpty) _buildOrderDetailPill('Qty', order.quantity),
+                if (order.composition.isNotEmpty)
+                  _buildOrderDetailPill('Composition', order.composition),
+                _buildOrderDetailPill('Rate', rateLabel),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: openEditor,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Edit'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue.shade700,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _orderStatusColor(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized.contains('confirm')) return Colors.green;
+    if (normalized.contains('decline')) return Colors.red;
+    if (normalized.contains('pending')) return Colors.orange;
+    return Colors.blueGrey;
+  }
+
+  Widget _buildOrderDetailPill(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(fontSize: 12, color: Colors.grey.shade800),
+      ),
+    );
+  }
+
+  Widget _buildPersonInfoChip(String label, String value, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: accentColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: accentColor.withOpacity(0.9),
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade900,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showProductsBottomSheet(BuildContext context) {
@@ -1216,6 +1862,22 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
       serialByFormId.putIfAbsent(formId, () => ++serial);
     }
     return serialByFormId;
+  }
+
+  Map<String, int> _buildSentOrderSerialMap() {
+    final Map<String, int> serialByOrderKey = {};
+    int serial = 0;
+
+    final agentEmailLower = widget.agentEmail?.toLowerCase();
+    for (final msg in messages) {
+      if (msg.type != 'form') continue;
+      if (agentEmailLower == null || msg.sender?.toLowerCase() != agentEmailLower) continue;
+
+      final orderKey = _extractFormOrderKey(msg);
+      if (orderKey == null) continue;
+      serialByOrderKey.putIfAbsent(orderKey, () => ++serial);
+    }
+    return serialByOrderKey;
   }
 
   void _navigateToForm(int direction) {
@@ -1335,6 +1997,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
     final formSerialMap = _buildFormSerialMap();
+    final sentOrderSerialMap = _buildSentOrderSerialMap();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1382,17 +2045,19 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                 final formData = result['formData'] as Map<String, dynamic>?;
                 final customerEmail = result['customerEmail'] as String?;
                 if (formData != null && customerEmail != null) {
+                  final orderId = formData['orderId'] ?? _generateOrderId();
+                  formData['orderId'] = orderId;
                   _sendMessage(
                     messageText: 'Product inquiry',
-                    type: 'form',
+                    type: 'text',
                     form: formData,
                   );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Sent validated form to $customerEmail'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  // ScaffoldMessenger.of(context).showSnackBar(
+                  //   SnackBar(
+                  //     content: Text('Sent validated form to $customerEmail'),
+                  //     backgroundColor: Colors.green,
+                  //   ),
+                  // );
                 }
               }
             },
@@ -1490,6 +2155,9 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                             itemBuilder: (context, index) {
                               final msg = messages[index];
                               final isAgent = msg.sender == widget.agentEmail;
+                              final orderKey = _extractFormOrderKey(msg);
+                              final agentFormSerial =
+                                  orderKey != null ? sentOrderSerialMap[orderKey] : null;
                               final valueKey = ValueKey('chat-msg-$index');
                               final globalKey = GlobalKey();
                               _messageKeys[valueKey] = globalKey;
@@ -1522,30 +2190,48 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                                             : null,
                                       )
                                     else if (msg.type == 'form')
-                                      FormMessageBubble(
-                                        formData: msg.form!,
-                                        serialNumber: msg.form?['_id'] != null
-                                            ? formSerialMap[msg.form!['_id'].toString()]
-                                            : null,
-                                        isMe: msg.sender?.toLowerCase() ==
-                                            widget.agentEmail?.toLowerCase(),
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
-                                        userRole: userRole!,
-                                        onRateUpdated: _handleRateUpdated,
-                                        onStatusUpdated: _handleStatusUpdated,
-                                        onFormUpdateStart: () {
-                                          setState(() {
-                                            _isFormUpdating = true;
-                                          });
-                                        },
-                                        onFormUpdateEnd: () {
-                                          setState(() {
-                                            _isFormUpdating = false;
-                                          });
-                                        },
-                                        onAskForRateUpdate: sendFormToUpdateRate,
-                                      )
+                                      (msg.sender?.toLowerCase() ==
+                                              widget.agentEmail?.toLowerCase())
+                                          ? SentProductFormBubble(
+                                              formData: msg.form ?? {},
+                                              isMe: true,
+                                              timestamp: ChatUtils()
+                                                  .formatTimestamp(msg.timestamp.toIso8601String()),
+                                              serialNumber: agentFormSerial,
+                                              onStatusUpdate: (status) {
+                                                setState(() {
+                                                  msg.form?['status'] = status;
+                                                });
+                                              },
+                                              onRateUpdate: (newRate) {
+                                                setState(() {
+                                                  msg.form?['rate'] = newRate;
+                                                });
+                                              },
+                                            )
+                                          : FormMessageBubble(
+                                              formData: msg.form!,
+                                              serialNumber: msg.form?['_id'] != null
+                                                  ? formSerialMap[msg.form!['_id'].toString()]
+                                                  : null,
+                                              isMe: false,
+                                              timestamp: ChatUtils()
+                                                  .formatTimestamp(msg.timestamp.toIso8601String()),
+                                              userRole: userRole!,
+                                              onRateUpdated: _handleRateUpdated,
+                                              onStatusUpdated: _handleStatusUpdated,
+                                              onFormUpdateStart: () {
+                                                setState(() {
+                                                  _isFormUpdating = true;
+                                                });
+                                              },
+                                              onFormUpdateEnd: () {
+                                                setState(() {
+                                                  _isFormUpdating = false;
+                                                });
+                                              },
+                                              onAskForRateUpdate: sendFormToUpdateRate,
+                                            )
                                     else if (msg.type == 'document')
                                       DocumentMessageBubble(
                                         documentUrl: msg.mediaUrl!,
@@ -1659,6 +2345,9 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                       _pickAndSendImage(ImageSource.camera);
                     },
                     onShareProduct: () => _showProductsBottomSheet(context),
+                    onCheckOrders:
+                        (userRole == '2' || userRole == '3') ? _showCheckOrdersBottomSheet : null,
+                    showCheckOrders: userRole == '2' || userRole == '3',
                     onSendVoice: _isRecording ? _stopRecording : _startRecording,
                     isRecording: _isRecording,
                     recordedSeconds: _recordedSeconds,

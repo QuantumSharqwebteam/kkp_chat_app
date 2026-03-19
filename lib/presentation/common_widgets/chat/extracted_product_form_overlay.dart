@@ -162,6 +162,7 @@ class _ExtractedProductFormOverlayState extends State<ExtractedProductFormOverla
                           "rate": rateController.text.trim().isNotEmpty
                               ? num.tryParse(rateController.text.trim()) ?? 0
                               : 0,
+                          "orderId": 'ORD-${DateTime.now().millisecondsSinceEpoch}',
                         };
                         widget.onSubmit(formData);
                       }
