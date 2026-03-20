@@ -1284,13 +1284,13 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
   }
 
   Future<void> _showUpdateOrderByIdSheet(FormDataModel order) async {
-    final statusController = TextEditingController(text: order.status);
     final rateController = TextEditingController(text: order.rate);
     final qualityController = TextEditingController(text: order.quality);
     final weaveController = TextEditingController(text: order.weave);
     final quantityController = TextEditingController(text: order.quantity);
     final compositionController = TextEditingController(text: order.composition);
     final buyerController = TextEditingController(text: order.buyerName);
+
     final customerDisplayName = order.customerName.isNotEmpty ? order.customerName : 'Not provided';
     final buyerDisplayName = order.buyerName.isNotEmpty ? order.buyerName : 'Not provided';
 
@@ -1302,234 +1302,535 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return SafeArea(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 14,
-                  offset: const Offset(0, -4),
+        /// ✅ Allowed statuses
+        final allowedStatuses = ['Processed', 'Confirmed', 'Declined'];
+
+        /// ✅ Default value from order (safe)
+        String? selectedStatus = allowedStatuses.contains(order.status) ? order.status : null;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return SafeArea(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 14,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            padding: EdgeInsets.only(
-              left: 18,
-              right: 18,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 18,
-              top: 14,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 5,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'Update Order Details',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Order ID: ${order.orderId.isNotEmpty ? order.orderId : order.id}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
+                padding: EdgeInsets.only(
+                  left: 18,
+                  right: 18,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+                  top: 14,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _buildPersonInfoChip('Customer', customerDisplayName, Colors.blue),
+                      /// Drag Handle
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 5,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildPersonInfoChip('Buyer', buyerDisplayName, Colors.teal),
+
+                      const Text(
+                        'Update Order Details',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                       ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        'Order ID: ${order.orderId.isNotEmpty ? order.orderId : order.id}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// Customer / Buyer
+                      Row(
+                        children: [
+                          Expanded(
+                            child:
+                                _buildPersonInfoChip('Customer', customerDisplayName, Colors.blue),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildPersonInfoChip('Buyer', buyerDisplayName, Colors.teal),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+                      const Divider(height: 1, thickness: 1),
+                      const SizedBox(height: 12),
+
+                      Text(
+                        'Update any fields below (leave blank to keep current value)',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// Buyer
+                      TextField(
+                        controller: buyerController,
+                        decoration: InputDecoration(
+                          labelText: 'Buyer name',
+                          hintText: 'Add or update the buyer name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// ✅ STATUS DROPDOWN (with default value)
+                      DropdownButtonFormField<String>(
+                        value: selectedStatus,
+                        hint: const Text('Select Status'),
+                        decoration: InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Processed', child: Text('Processed')),
+                          DropdownMenuItem(value: 'Confirmed', child: Text('Confirmed')),
+                          DropdownMenuItem(value: 'Declined', child: Text('Declined')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            selectedStatus = value;
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// Quality + Weave
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: qualityController,
+                              decoration: InputDecoration(
+                                labelText: 'Quality',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: weaveController,
+                              decoration: InputDecoration(
+                                labelText: 'Weave',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// Quantity + Composition
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: quantityController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Quantity',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: compositionController,
+                              decoration: InputDecoration(
+                                labelText: 'Composition',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// Rate
+                      TextField(
+                        controller: rateController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Rate',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// SAVE BUTTON
+                      CustomButton(
+                        text: "Save Order",
+                        width: double.maxFinite,
+                        onPressed: () async {
+                          final statusValue = selectedStatus;
+                          final rateText = rateController.text.trim();
+                          final qualityValue = qualityController.text.trim();
+                          final weaveValue = weaveController.text.trim();
+                          final quantityValue = quantityController.text.trim();
+                          final compositionValue = compositionController.text.trim();
+                          final buyerValue = buyerController.text.trim();
+
+                          final rateValue = rateText.isNotEmpty ? num.tryParse(rateText) : null;
+
+                          if (statusValue == null &&
+                              rateValue == null &&
+                              qualityValue.isEmpty &&
+                              weaveValue.isEmpty &&
+                              quantityValue.isEmpty &&
+                              compositionValue.isEmpty &&
+                              buyerValue.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Enter at least one field to update')),
+                            );
+                            return;
+                          }
+
+                          try {
+                            final updateOrderId =
+                                order.orderId.isNotEmpty ? order.orderId : order.id;
+
+                            await _chatRepository.updateFormByOrderId(
+                              orderId: updateOrderId,
+                              status: statusValue,
+                              rate: rateValue,
+                              quality: qualityValue.isNotEmpty ? qualityValue : null,
+                              weave: weaveValue.isNotEmpty ? weaveValue : null,
+                              quantity: quantityValue.isNotEmpty ? quantityValue : null,
+                              composition: compositionValue.isNotEmpty ? compositionValue : null,
+                              buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+                            );
+
+                            await _updateLocalFormByOrderId(
+                              orderId: updateOrderId,
+                              status: statusValue,
+                              rate: rateValue,
+                              quality: qualityValue.isNotEmpty ? qualityValue : null,
+                              weave: weaveValue.isNotEmpty ? weaveValue : null,
+                              quantity: quantityValue.isNotEmpty ? quantityValue : null,
+                              composition: compositionValue.isNotEmpty ? compositionValue : null,
+                              buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+                            );
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Order updated successfully')),
+                              );
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Update failed: $e')),
+                              );
+                            }
+                          }
+                        },
+                      ),
+
+                      const SizedBox(height: 6),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  const Divider(height: 1, thickness: 1),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Update any fields below (leave blank to keep current value)',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: buyerController,
-                    decoration: InputDecoration(
-                      labelText: 'Buyer name',
-                      hintText: 'Add or update the buyer name',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: statusController,
-                    decoration: InputDecoration(
-                      labelText: 'Status',
-                      hintText: 'Confirmed / Declined / Pending',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: qualityController,
-                          decoration: InputDecoration(
-                            labelText: 'Quality',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: weaveController,
-                          decoration: InputDecoration(
-                            labelText: 'Weave',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: quantityController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Quantity',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: compositionController,
-                          decoration: InputDecoration(
-                            labelText: 'Composition',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: rateController,
-                    keyboardType: TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'Rate',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  CustomButton(
-                    text: "Save Order",
-                    width: double.maxFinite,
-                    onPressed: () async {
-                      final statusValue = statusController.text.trim();
-                      final rateText = rateController.text.trim();
-                      final qualityValue = qualityController.text.trim();
-                      final weaveValue = weaveController.text.trim();
-                      final quantityValue = quantityController.text.trim();
-                      final compositionValue = compositionController.text.trim();
-                      final buyerValue = buyerController.text.trim();
-                      final rateValue = rateText.isNotEmpty ? num.tryParse(rateText) : null;
-
-                      if (statusValue.isEmpty &&
-                          rateValue == null &&
-                          qualityValue.isEmpty &&
-                          weaveValue.isEmpty &&
-                          quantityValue.isEmpty &&
-                          compositionValue.isEmpty &&
-                          buyerValue.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Enter at least one field to update')),
-                        );
-                        return;
-                      }
-
-                      try {
-                        final updateOrderId = order.orderId.isNotEmpty ? order.orderId : order.id;
-                        await _chatRepository.updateFormByOrderId(
-                          orderId: updateOrderId,
-                          status: statusValue.isNotEmpty ? statusValue : null,
-                          rate: rateValue,
-                          quality: qualityValue.isNotEmpty ? qualityValue : null,
-                          weave: weaveValue.isNotEmpty ? weaveValue : null,
-                          quantity: quantityValue.isNotEmpty ? quantityValue : null,
-                          composition: compositionValue.isNotEmpty ? compositionValue : null,
-                          buyerName: buyerValue.isNotEmpty ? buyerValue : null,
-                        );
-
-                        await _updateLocalFormByOrderId(
-                          orderId: updateOrderId,
-                          status: statusValue.isNotEmpty ? statusValue : null,
-                          rate: rateValue,
-                          quality: qualityValue.isNotEmpty ? qualityValue : null,
-                          weave: weaveValue.isNotEmpty ? weaveValue : null,
-                          quantity: quantityValue.isNotEmpty ? quantityValue : null,
-                          composition: compositionValue.isNotEmpty ? compositionValue : null,
-                          buyerName: buyerValue.isNotEmpty ? buyerValue : null,
-                        );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Order updated successfully')),
-                          );
-                          Navigator.pop(context);
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Update failed: $e')),
-                          );
-                        }
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 6),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
+
+  // Future<void> _showUpdateOrderByIdSheet(FormDataModel order) async {
+  //   final statusController = TextEditingController(text: order.status);
+  //   final rateController = TextEditingController(text: order.rate);
+  //   final qualityController = TextEditingController(text: order.quality);
+  //   final weaveController = TextEditingController(text: order.weave);
+  //   final quantityController = TextEditingController(text: order.quantity);
+  //   final compositionController = TextEditingController(text: order.composition);
+  //   final buyerController = TextEditingController(text: order.buyerName);
+  //   final customerDisplayName = order.customerName.isNotEmpty ? order.customerName : 'Not provided';
+  //   final buyerDisplayName = order.buyerName.isNotEmpty ? order.buyerName : 'Not provided';
+
+  //   await showModalBottomSheet(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     backgroundColor: Colors.transparent,
+  //     shape: const RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  //     ),
+  //     builder: (context) {
+  //       return SafeArea(
+  //         child: Container(
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black.withOpacity(0.15),
+  //                 blurRadius: 14,
+  //                 offset: const Offset(0, -4),
+  //               ),
+  //             ],
+  //           ),
+  //           padding: EdgeInsets.only(
+  //             left: 18,
+  //             right: 18,
+  //             bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+  //             top: 14,
+  //           ),
+  //           child: SingleChildScrollView(
+  //             child: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               crossAxisAlignment: CrossAxisAlignment.start,
+  //               children: [
+  //                 Center(
+  //                   child: Container(
+  //                     width: 42,
+  //                     height: 5,
+  //                     margin: const EdgeInsets.only(bottom: 12),
+  //                     decoration: BoxDecoration(
+  //                       color: Colors.grey.shade300,
+  //                       borderRadius: BorderRadius.circular(4),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const Text(
+  //                   'Update Order Details',
+  //                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+  //                 ),
+  //                 const SizedBox(height: 6),
+  //                 Text(
+  //                   'Order ID: ${order.orderId.isNotEmpty ? order.orderId : order.id}',
+  //                   style: const TextStyle(fontWeight: FontWeight.w600),
+  //                 ),
+  //                 const SizedBox(height: 12),
+  //                 Row(
+  //                   children: [
+  //                     Expanded(
+  //                       child: _buildPersonInfoChip('Customer', customerDisplayName, Colors.blue),
+  //                     ),
+  //                     const SizedBox(width: 8),
+  //                     Expanded(
+  //                       child: _buildPersonInfoChip('Buyer', buyerDisplayName, Colors.teal),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 14),
+  //                 const Divider(height: 1, thickness: 1),
+  //                 const SizedBox(height: 12),
+  //                 Text(
+  //                   'Update any fields below (leave blank to keep current value)',
+  //                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+  //                 ),
+  //                 const SizedBox(height: 12),
+  //                 TextField(
+  //                   controller: buyerController,
+  //                   decoration: InputDecoration(
+  //                     labelText: 'Buyer name',
+  //                     hintText: 'Add or update the buyer name',
+  //                     border: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(12),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 12),
+  //                 TextField(
+  //                   controller: statusController,
+  //                   decoration: InputDecoration(
+  //                     labelText: 'Status',
+  //                     hintText: 'Confirmed / Declined / Pending',
+  //                     border: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(12),
+  //                     ),
+  //                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 10),
+  //                 Row(
+  //                   children: [
+  //                     Expanded(
+  //                       child: TextField(
+  //                         controller: qualityController,
+  //                         decoration: InputDecoration(
+  //                           labelText: 'Quality',
+  //                           border: OutlineInputBorder(
+  //                             borderRadius: BorderRadius.circular(12),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(width: 10),
+  //                     Expanded(
+  //                       child: TextField(
+  //                         controller: weaveController,
+  //                         decoration: InputDecoration(
+  //                           labelText: 'Weave',
+  //                           border: OutlineInputBorder(
+  //                             borderRadius: BorderRadius.circular(12),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 10),
+  //                 Row(
+  //                   children: [
+  //                     Expanded(
+  //                       child: TextField(
+  //                         controller: quantityController,
+  //                         keyboardType: TextInputType.number,
+  //                         decoration: InputDecoration(
+  //                           labelText: 'Quantity',
+  //                           border: OutlineInputBorder(
+  //                             borderRadius: BorderRadius.circular(12),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                     const SizedBox(width: 10),
+  //                     Expanded(
+  //                       child: TextField(
+  //                         controller: compositionController,
+  //                         decoration: InputDecoration(
+  //                           labelText: 'Composition',
+  //                           border: OutlineInputBorder(
+  //                             borderRadius: BorderRadius.circular(12),
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const SizedBox(height: 10),
+  //                 TextField(
+  //                   controller: rateController,
+  //                   keyboardType: TextInputType.numberWithOptions(decimal: true),
+  //                   decoration: InputDecoration(
+  //                     labelText: 'Rate',
+  //                     border: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(12),
+  //                     ),
+  //                   ),
+  //                 ),
+  //                 const SizedBox(height: 10),
+  //                 CustomButton(
+  //                   text: "Save Order",
+  //                   width: double.maxFinite,
+  //                   onPressed: () async {
+  //                     final statusValue = statusController.text.trim();
+  //                     final rateText = rateController.text.trim();
+  //                     final qualityValue = qualityController.text.trim();
+  //                     final weaveValue = weaveController.text.trim();
+  //                     final quantityValue = quantityController.text.trim();
+  //                     final compositionValue = compositionController.text.trim();
+  //                     final buyerValue = buyerController.text.trim();
+  //                     final rateValue = rateText.isNotEmpty ? num.tryParse(rateText) : null;
+
+  //                     if (statusValue.isEmpty &&
+  //                         rateValue == null &&
+  //                         qualityValue.isEmpty &&
+  //                         weaveValue.isEmpty &&
+  //                         quantityValue.isEmpty &&
+  //                         compositionValue.isEmpty &&
+  //                         buyerValue.isEmpty) {
+  //                       ScaffoldMessenger.of(context).showSnackBar(
+  //                         const SnackBar(content: Text('Enter at least one field to update')),
+  //                       );
+  //                       return;
+  //                     }
+
+  //                     try {
+  //                       final updateOrderId = order.orderId.isNotEmpty ? order.orderId : order.id;
+  //                       await _chatRepository.updateFormByOrderId(
+  //                         orderId: updateOrderId,
+  //                         status: statusValue.isNotEmpty ? statusValue : null,
+  //                         rate: rateValue,
+  //                         quality: qualityValue.isNotEmpty ? qualityValue : null,
+  //                         weave: weaveValue.isNotEmpty ? weaveValue : null,
+  //                         quantity: quantityValue.isNotEmpty ? quantityValue : null,
+  //                         composition: compositionValue.isNotEmpty ? compositionValue : null,
+  //                         buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+  //                       );
+
+  //                       await _updateLocalFormByOrderId(
+  //                         orderId: updateOrderId,
+  //                         status: statusValue.isNotEmpty ? statusValue : null,
+  //                         rate: rateValue,
+  //                         quality: qualityValue.isNotEmpty ? qualityValue : null,
+  //                         weave: weaveValue.isNotEmpty ? weaveValue : null,
+  //                         quantity: quantityValue.isNotEmpty ? quantityValue : null,
+  //                         composition: compositionValue.isNotEmpty ? compositionValue : null,
+  //                         buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+  //                       );
+  //                       if (context.mounted) {
+  //                         ScaffoldMessenger.of(context).showSnackBar(
+  //                           const SnackBar(content: Text('Order updated successfully')),
+  //                         );
+  //                         Navigator.pop(context);
+  //                       }
+  //                     } catch (e) {
+  //                       if (context.mounted) {
+  //                         ScaffoldMessenger.of(context).showSnackBar(
+  //                           SnackBar(content: Text('Update failed: $e')),
+  //                         );
+  //                       }
+  //                     }
+  //                   },
+  //                 ),
+  //                 const SizedBox(height: 6),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   Future<void> _showCheckOrdersBottomSheet() async {
     if (!mounted) return;
