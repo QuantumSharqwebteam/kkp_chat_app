@@ -57,6 +57,10 @@ class ChatRepository {
     return chatService.updateFormRate(formId: formId, rate: rate);
   }
 
+  Future<void> updateInquiryForm(String formId, Map<String, dynamic> updates) async {
+    return chatService.updateFormDetails(formId: formId, updates: updates);
+  }
+
   Future<void> updateFormByOrderId({
     required String orderId,
     String? status,

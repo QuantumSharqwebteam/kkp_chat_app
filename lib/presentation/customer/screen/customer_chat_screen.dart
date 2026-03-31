@@ -1175,7 +1175,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                           buttonText: "Fill product details",
                                           onSubmit: _showFormOverlay,
                                         )
-                                      else if (msg.message == "Update form rate")
+                                      else if (msg.message == "Update form rate" && msg.form != null)
                                         FillFormButton(
                                           buttonText: "Update Form",
                                           onSubmit: () {

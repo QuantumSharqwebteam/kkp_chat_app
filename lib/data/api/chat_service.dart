@@ -386,6 +386,35 @@ class ChatService {
     }
   }
 
+  Future<void> updateFormDetails({
+    required String formId,
+    required Map<String, dynamic> updates,
+  }) async {
+    if (updates.isEmpty) return;
+    final token = await LocalDbHelper.getToken();
+    try {
+      final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(updates),
+      );
+      final responseBody = jsonDecode(response.body);
+
+      if (responseBody['status'] != 200) {
+        if (kDebugMode) {
+          debugPrint("Failed to update form: ${response.body}");
+        }
+        throw Exception('Failed to update form: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating form: $e');
+    }
+  }
+
   /// Update inquiry form by order ID (supports status/rate updates)
   Future<void> updateFormByOrderId({
     required String orderId,

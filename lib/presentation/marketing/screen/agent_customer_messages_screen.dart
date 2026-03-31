@@ -89,10 +89,8 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
   List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
     if (raw == null) return null;
     if (raw is List) {
-      final entries = raw
-          .where((entry) => entry is Map)
-          .map((entry) => Map<String, dynamic>.from(entry as Map))
-          .toList();
+      final entries =
+          raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
       return entries.isNotEmpty ? entries : null;
     }
     if (raw is Map) {
@@ -103,8 +101,7 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
 
   ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
     final normalizedForms = _normalizeFormData(messageJson.form);
-    final primaryForm =
-        normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
+    final primaryForm = normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
     return ChatMessageModel(
       message: messageJson.message ?? '',
       timestamp: DateTime.parse(messageJson.timestamp ?? DateTime.now().toIso8601String()),
@@ -210,7 +207,7 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
                                         onStatusUpdated: (String status, String id) {},
                                         onFormUpdateStart: () {},
                                         onFormUpdateEnd: () {},
-                                        onAskForRateUpdate: (Map<String, dynamic> formData) {},
+                                        // onAskForRateUpdate: (Map<String, dynamic> formData) {},
                                       )
                                     else if (msg.type == 'document')
                                       DocumentMessageBubble(
