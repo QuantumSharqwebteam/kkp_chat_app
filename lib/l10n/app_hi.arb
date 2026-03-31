@@ -1,0 +1,1071 @@
+{
+  "@@locale": "hi",
+  "appTitle": "केकेपी चैट ऐप",
+  "@appTitle": {
+    "description": "एप्लिकेशन का शीर्षक जिसे AppBar और splash स्क्रीन में दिखाया जाता है"
+  },
+  "login": "लॉगिन",
+  "@login": {
+    "description": "लॉगिन बटन का टेक्स्ट"
+  },
+  "signup": "साइन अप",
+  "@signup": {
+    "description": "साइन अप बटन का टेक्स्ट"
+  },
+  "welcome": "केकेपी चैट में आपका स्वागत है",
+  "@welcome": {
+    "description": "होम स्क्रीन पर स्वागत संदेश"
+  },
+  "logout": "लॉगआउट",
+  "@logout": {
+    "description": "लॉगआउट बटन का टेक्स्ट"
+  },
+  "changeLanguage": "भाषा बदलें",
+  "@changeLanguage": {
+    "description": "भाषा स्विचर ड्रॉपडाउन के लिए लेबल"
+  },
+  "email": "ईमेल",
+  "@email": {
+    "description": "ईमेल इनपुट फील्ड का लेबल"
+  },
+  "enterEmail": "अपना ईमेल दर्ज करें",
+  "@enterEmail": {
+    "description": "ईमेल इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "forgotPassword": "पासवर्ड भूल गए?",
+  "@forgotPassword": {
+    "description": "पासवर्ड भूल गए लिंक का टेक्स्ट"
+  },
+  "dontHaveAccount": "खाता नहीं है?",
+  "@dontHaveAccount": {
+    "description": "साइन-अप प्रॉम्प्ट का टेक्स्ट"
+  },
+  "enterYourEmail": "अपना ईमेल दर्ज करें",
+  "@enterYourEmail": {
+    "description": "ईमेल इनपुट फील्ड का प्लेसहोल्डर (वैकल्पिक)"
+  },
+  "enterPassword": "अपना पासवर्ड दर्ज करें",
+  "@enterPassword": {
+    "description": "पासवर्ड इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "resetPasswordMessage": "चिंता न करें! नीचे अपना ईमेल पता दर्ज करें, हम आपको पासवर्ड रीसेट करने का लिंक भेजेंगे",
+  "@resetPasswordMessage": {
+    "description": "पासवर्ड रीसेट निर्देश संदेश"
+  },
+  "submit": "सबमिट करें",
+  "@submit": {
+    "description": "सबमिट बटन का टेक्स्ट"
+  },
+  "validEmailError": "कृपया एक वैध ईमेल पता दर्ज करें",
+  "@validEmailError": {
+    "description": "अमान्य ईमेल प्रारूप त्रुटि संदेश"
+  },
+  "backToLogin": "लॉगिन पर वापस जाएं",
+  "@backToLogin": {
+    "description": "लॉगिन पर वापस जाने का लिंक टेक्स्ट"
+  },
+  "emailEmptyError": "ईमेल खाली नहीं हो सकता",
+  "@emailEmptyError": {
+    "description": "खाली ईमेल फील्ड त्रुटि संदेश"
+  },
+  "createNewPassword": "नया पासवर्ड बनाएं",
+  "@createNewPassword": {
+    "description": "नए पासवर्ड बनाने की स्क्रीन का शीर्षक"
+  },
+  "newPasswordRule": "आपका नया पासवर्ड पहले इस्तेमाल किए गए पासवर्ड से अलग होना चाहिए",
+  "@newPasswordRule": {
+    "description": "नए पासवर्ड बनाने का नियम"
+  },
+  "password": "पासवर्ड",
+  "@password": {
+    "description": "पासवर्ड इनपुट फील्ड का लेबल"
+  },
+  "newPassword": "नया पासवर्ड",
+  "@newPassword": {
+    "description": "नए पासवर्ड इनपुट फील्ड का लेबल"
+  },
+  "confirmNewPassword": "नया पासवर्ड पुष्टि करें",
+  "@confirmNewPassword": {
+    "description": "नए पासवर्ड पुष्टि इनपुट फील्ड का लेबल"
+  },
+  "enterPasswordLabel": "पासवर्ड दर्ज करें",
+  "@enterPasswordLabel": {
+    "description": "पासवर्ड इनपुट फील्ड का लेबल"
+  },
+  "reEnterPassword": "पासवर्ड पुनः दर्ज करें",
+  "@reEnterPassword": {
+    "description": "पासवर्ड पुनः दर्ज करने के इनपुट फील्ड का लेबल"
+  },
+  "resetPassword": "पासवर्ड रीसेट करें",
+  "@resetPassword": {
+    "description": "पासवर्ड रीसेट बटन का टेक्स्ट"
+  },
+  "createAccount": "खाता बनाएं",
+  "@createAccount": {
+    "description": "खाता बनाएं बटन का टेक्स्ट"
+  },
+  "fullName": "पूरा नाम",
+  "@fullName": {
+    "description": "पूरे नाम इनपुट फील्ड का लेबल"
+  },
+  "enterFullName": "अपना पूरा नाम दर्ज करें",
+  "@enterFullName": {
+    "description": "पूरे नाम इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "createPassword": "पासवर्ड बनाएं",
+  "@createPassword": {
+    "description": "पासवर्ड बनाएं इनपुट फील्ड का लेबल"
+  },
+  "confirmPassword": "पासवर्ड पुष्टि करें",
+  "@confirmPassword": {
+    "description": "पासवर्ड पुष्टि इनपुट फील्ड का लेबल"
+  },
+  "alreadyHaveAccount": "पहले से खाता है?",
+  "@alreadyHaveAccount": {
+    "description": "लॉगिन प्रॉम्प्ट का टेक्स्ट"
+  },
+  "emailVerification": "ईमेल सत्यापन",
+  "@emailVerification": {
+    "description": "ईमेल सत्यापन स्क्रीन का शीर्षक"
+  },
+  "verificationCodeSent": "हमने छह अंकों का सत्यापन कोड भेज दिया है",
+  "@verificationCodeSent": {
+    "description": "सत्यापन कोड भेजे जाने का संदेश"
+  },
+  "invalidCodeError": "अमान्य कोड, कृपया पुनः प्रयास करें",
+  "@invalidCodeError": {
+    "description": "अमान्य सत्यापन कोड त्रुटि संदेश"
+  },
+  "wrongOTPError": "गलत OTP कोड, कृपया पुनः प्रयास करें",
+  "@wrongOTPError": {
+    "description": "गलत OTP कोड त्रुटि संदेश"
+  },
+  "didntReceiveOTP": "OTP प्राप्त नहीं हुआ?",
+  "@didntReceiveOTP": {
+    "description": "OTP पुनः भेजने का प्रॉम्प्ट टेक्स्ट"
+  },
+  "resend": "पुनः भेजें",
+  "@resend": {
+    "description": "OTP पुनः भेजें बटन का टेक्स्ट"
+  },
+  "noAgentsAvailable": "कोई एजेंट उपलब्ध नहीं है",
+  "@noAgentsAvailable": {
+    "description": "कोई एजेंट उपलब्ध नहीं होने का संदेश"
+  },
+  "ongoingCall": "चल रही कॉल",
+  "@ongoingCall": {
+    "description": "चल रही कॉल की स्थिति का लेबल"
+  },
+  "incomingCall": "आने वाली कॉल",
+  "@incomingCall": {
+    "description": "आने वाली कॉल की स्थिति का लेबल"
+  },
+  "incomingCallFrom": "कॉल आ रही है:",
+  "@incomingCallFrom": {
+    "description": "आने वाली कॉल की सूचना का लेबल"
+  },
+  "callHistory": "कॉल इतिहास",
+  "@callHistory": {
+    "description": "कॉल इतिहास स्क्रीन का शीर्षक"
+  },
+  "privacyPolicy": "गोपनीयता नीति",
+  "@privacyPolicy": {
+    "description": "गोपनीयता नीति का शीर्षक"
+  },
+  "privacyPolicyAgreement": "केकेपी चैट एप्लिकेशन का उपयोग करके, आप सहमत होते हैं",
+  "@privacyPolicyAgreement": {
+    "description": "गोपनीयता नीति सहमति का टेक्स्ट"
+  },
+  "appDescription": "एक स्मार्ट और कुशल चैट-आधारित समाधान जो ग्राहकों को वास्तविक समय में मार्केटिंग एजेंटों से जोड़ता है। तुरंत पूछताछ प्रबंधित करें, स्टॉक उपलब्धता जांचें, और सभी ऑर्डर ट्रैक करें—एक ही जगह पर। व्यवसायों को निर्बाध संचार और कार्रवाई योग्य अंतर्दृष्टि के साथ सशक्त बनाना।",
+  "@appDescription": {
+    "description": "ऐप के उद्देश्य का वर्णन"
+  },
+  "appTagline": "तुरंत पूछताछ,\nनिर्बाध बिक्री।",
+  "@appTagline": {
+    "description": "ऐप का टैगलाइन"
+  },
+  "termsAndPrivacyAgreement": "केकेपी चैट एप्लिकेशन का उपयोग करके, आप सहमत होते हैं\nनियमों और गोपनीयता नीति के साथ",
+  "@termsAndPrivacyAgreement": {
+    "description": "नियमों और गोपनीयता नीति सहमति का टेक्स्ट"
+  },
+  "privacyPolicyFullText": "केकेपी चैट ऐप में, हम आपकी गोपनीयता का सम्मान करते हैं और आपके व्यक्तिगत जानकारी की सुरक्षा के लिए प्रतिबद्ध हैं। यह गोपनीयता नीति बताती है कि हम आपके डेटा को कैसे एकत्र, उपयोग, साझा और सुरक्षित रखते हैं जब आप हमारे चैट एप्लिकेशन का उपयोग करते हैं। हमारे सेवा का उपयोग करके, आप इस नीति में रेखांकित शर्तों से सहमत होते हैं।\n\nएकत्रित डेटा का उपयोग निर्बाध मैसेजिंग सेवा प्रदान करने, ऐप सुरक्षा बढ़ाने, उपयोग पैटर्न का विश्लेषण करने और ग्राहक सहायता में सुधार करने के लिए किया जाता है। आपके संदेशों को गोपनीयता बनाए रखने के लिए एंड-टू-एंड एन्क्रिप्टेड किया जाता है, और हम सुरक्षित क्लाउड स्टोरेज और प्रतिबंधित डेटा एक्सेस जैसे सुरक्षा उपाय लागू करते हैं ताकि आपकी जानकारी की रक्षा हो सके। हम आपका व्यक्तिगत डेटा तीसरे पक्ष के विज्ञापनदाताओं को नहीं बेचते या साझा नहीं करते। हालांकि, कानून द्वारा आवश्यक होने पर या धोखाधड़ी और सुरक्षा खतरों को रोकने के लिए डेटा को कानूनी अधिकारियों के साथ साझा किया जा सकता है।\n\nइस गोपनीयता नीति से संबंधित किसी भी प्रश्न या चिंता के लिए, आप हमें support@kkpchatapp.com पर संपर्क कर सकते हैं। केकेपी चैट ऐप का उपयोग जारी रखकर, आप इस नीति में रेखांकित शर्तों को स्वीकार करते और सहमत होते हैं।",
+  "@privacyPolicyFullText": {
+    "description": ""
+  },
+    "nameMinLengthError": "नाम कम से कम 3 अक्षर का होना चाहिए",
+  "@nameMinLengthError": {
+    "description": "नाम की न्यूनतम लंबाई के लिए त्रुटि संदेश"
+  },
+  "phoneNumberLengthError": "फोन नंबर 10 अंक का होना चाहिए",
+  "@phoneNumberLengthError": {
+    "description": "फोन नंबर की लंबाई के लिए त्रुटि संदेश"
+  },
+  "passwordMinLengthError": "पासवर्ड कम से कम 6 अक्षर का होना चाहिए",
+  "@passwordMinLengthError": {
+    "description": "पासवर्ड की न्यूनतम लंबाई के लिए त्रुटि संदेश"
+  },
+  "agentProfileCreated": "एजेंट प्रोफाइल बनाई गई",
+  "@agentProfileCreated": {
+    "description": "एजेंट प्रोफाइल बनने का सफलता संदेश"
+  },
+  "failedToAddAgent": "एजेंट जोड़ने में विफल, बाद में पुनः प्रयास करें!",
+  "@failedToAddAgent": {
+    "description": "एजेंट जोड़ने में विफलता का त्रुटि संदेश"
+  },
+  "phoneNumber": "फोन नंबर",
+  "@phoneNumber": {
+    "description": "फोन नंबर इनपुट फील्ड का लेबल"
+  },
+  "enterPhoneNumber": "फोन नंबर दर्ज करें",
+  "@enterPhoneNumber": {
+    "description": "फोन नंबर इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "role": "भूमिका",
+  "@role": {
+    "description": "भूमिका चयन का लेबल"
+  },
+  "addAgent": "एजेंट जोड़ें",
+  "@addAgent": {
+    "description": "एजेंट जोड़ने के बटन का टेक्स्ट"
+  },
+  "seeMoreDataInWeb": "वेब में और डेटा देखें",
+  "@seeMoreDataInWeb": {
+    "description": "वेब पर अधिक डेटा देखने का टेक्स्ट"
+  },
+  "userTrafficAnalytics": "यूजर ट्रैफिक विश्लेषण",
+  "@userTrafficAnalytics": {
+    "description": "यूजर ट्रैफिक विश्लेषण अनुभाग का शीर्षक"
+  },
+  "agentManagement": "एजेंट प्रबंधन",
+  "@agentManagement": {
+    "description": "एजेंट प्रबंधन अनुभाग का शीर्षक"
+  },
+  "posterManagement": "पोस्टर प्रबंधन",
+  "@posterManagement": {
+    "description": "पोस्टर प्रबंधन अनुभाग का शीर्षक"
+  },
+  "agent": "एजेंट",
+  "@agent": {
+    "description": "एजेंट का लेबल"
+  },
+  "offline": "ऑफलाइन",
+  "@offline": {
+    "description": "ऑफलाइन एजेंट्स के लिए स्टेटस लेबल"
+  },
+  "active": "सक्रिय",
+  "@active": {
+    "description": "सक्रिय एजेंट्स के लिए स्टेटस लेबल"
+  },
+  "confirmDeleteAgent": "क्या आप इस एजेंट को डिलीट करना निश्चित रूप से चाहते हैं?",
+  "@confirmDeleteAgent": {
+    "description": "एजेंट डिलीट करने की पुष्टि संदेश"
+  },
+  "deleteAgent": "एजेंट डिलीट करें",
+  "@deleteAgent": {
+    "description": "एजेंट डिलीट बटन का टेक्स्ट"
+  },
+  "agentDeletedSuccessfully": "एजेंट सफलतापूर्वक डिलीट हो गया",
+  "@agentDeletedSuccessfully": {
+    "description": "एजेंट डिलीट होने का सफलता संदेश"
+  },
+
+  "addNewAgent": "नया एजेंट जोड़ें",
+  "@addNewAgent": {
+    "description": "नया एजेंट जोड़ने का टेक्स्ट"
+  },
+  "agentEligibleToChat": "**यह एजेंट ग्राहकों के साथ चैट करने के योग्य है।**",
+  "@agentEligibleToChat": {
+    "description": "एजेंट चैट योग्यता का संदेश"
+  },
+  "agentNotEligibleToChat": "**यह एजेंट ग्राहकों के साथ चैट करने के योग्य नहीं है।**",
+  "@agentNotEligibleToChat": {
+    "description": "एजेंट चैट अयोग्यता का संदेश"
+  },
+
+  "searchByAnything": "कुछ भी खोजें...",
+  "@searchByAnything": {
+    "description": "खोज इनपुट फील्ड का प्लेसहोल्डर"
+  },
+  "posterAdsManagement": "पोस्टर विज्ञापन प्रबंधन",
+  "@posterAdsManagement": {
+    "description": "पोस्टर विज्ञापन प्रबंधन अनुभाग का शीर्षक"
+  },
+
+  "uploadPoster": "पोस्टर अपलोड करें",
+  "@uploadPoster": {
+    "description": "पोस्टर अपलोड करने का टेक्स्ट"
+  },
+  "deletePoster": "पोस्टर डिलीट करें",
+  "@deletePoster": {
+    "description": "पोस्टर डिलीट करने का टेक्स्ट"
+  },
+  "selectImageToUpload": "कृपया अपलोड करने के लिए एक छवि चुनें और सेलेक्ट करें!",
+  "@selectImageToUpload": {
+    "description": "अपलोड करने के लिए छवि चुनने का प्रॉम्प्ट"
+  },
+    "adminDashboard": "एडमिन डैशबोर्ड",
+  "@adminDashboard": {
+    "description": "एडमिन डैशबोर्ड का शीर्षक"
+  },
+  "visitors": "आगंतुक",
+  "@visitors": {
+    "description": "आगंतुकों की गिनती या अनुभाग का लेबल"
+  },
+  "messages": "संदेश",
+  "@messages": {
+    "description": "संदेशों की गिनती या अनुभाग का लेबल"
+  },
+ 
+  "chooseWhatToDo": "क्या करना है चुनें:",
+  "@chooseWhatToDo": {
+    "description": "उपयोगकर्ता को कार्रवाई चुनने के लिए प्रॉम्प्ट"
+  },
+  "unsendMessage": "संदेश वापस लें",
+  "@unsendMessage": {
+    "description": "संदेश वापस लेने का विकल्प"
+  },
+  "aboutUs": "हमारे बारे में",
+  "@aboutUs": {
+    "description": "हमारे बारे में अनुभाग का शीर्षक"
+  },
+  "kKP": "केकेपी",
+  "@kKP": {
+    "description": "कंपनी का नाम"
+  },
+  "kKPDescription": "केकेपी कपड़ा उद्योग में एक अग्रणी नाम है, जो गुणवत्तापूर्ण धागा उत्पादन और स्मार्ट सप्लाई चेन प्रबंधन के लिए जाना जाता है। वर्षों के विश्वसनीय सेवा के साथ, हम हर प्रक्रिया में पारदर्शिता, नवाचार और विश्वसनीयता लाते हैं।",
+  "@kKPDescription": {
+    "description": "केकेपी कंपनी का वर्णन"
+  },
+  "whoWeAre": "हम कौन हैं",
+  "@whoWeAre": {
+    "description": "हम कौन हैं अनुभाग का शीर्षक"
+  },
+  "whoWeAreDescription": "हम एक कपड़ा-केंद्रित कंपनी हैं जो प्रदान करती है:",
+  "@whoWeAreDescription": {
+    "description": "हम कौन हैं अनुभाग का परिचय"
+  },
+  "premiumQualityYarn": "• प्रीमियम क्वालिटी यार्न",
+  "@premiumQualityYarn": {
+    "description": "प्रीमियम क्वालिटी यार्न के लिए बुलेट पॉइंट"
+  },
+  "timelyDeliveries": "• समय पर डिलीवरी",
+  "@timelyDeliveries": {
+    "description": "समय पर डिलीवरी के लिए बुलेट पॉइंट"
+  },
+  "transparentOperations": "• पारदर्शी संचालन",
+  "@transparentOperations": {
+    "description": "पारदर्शी संचालन के लिए बुलेट पॉइंट"
+  },
+  "platformDescription": "हमारा प्लेटफॉर्म एजेंट्स, खरीदारों और मिलों को एक एकीकृत प्रणाली में जोड़ता है—जिससे ऑर्डर प्रबंधन पहले से कभी भी आसान हो जाता है।",
+  "@platformDescription": {
+    "description": "प्लेटफॉर्म के उद्देश्य का वर्णन"
+  },
+  "ourMission": "हमारा मिशन",
+  "@ourMission": {
+    "description": "हमारा मिशन अनुभाग का शीर्षक"
+  },
+  "missionStatement": "गति, स्पष्टता और डिजिटल टूल्स के साथ कपड़ा संचालन को सरल बनाना।",
+  "@missionStatement": {
+    "description": "कंपनी के मिशन का बयान"
+  },
+  "ourVision": "हमारा विजन",
+  "@ourVision": {
+    "description": "हमारा विजन अनुभाग का शीर्षक"
+  },
+  "visionStatement": "कपड़ा उद्योग में अग्रणी तकनीक-संचालित समाधान बनना।",
+  "@visionStatement": {
+    "description": "कंपनी के विजन का बयान"
+  },
+
+  "john": "जॉन",
+  "@john": {
+    "description": "उदाहरण उपयोगकर्ता नाम"
+  },
+  "accountAuthenticityInfo": "हमारे समुदाय को प्रामाणिक बनाए रखने में मदद करने के लिए, हम केकेपी ऐप पर खातों के बारे में जानकारी दिखा रहे हैं। लोग इसे आपके प्रोफाइल पर टैप करके और 'इस खाते के बारे में' चुनकर देख सकते हैं।",
+  "@accountAuthenticityInfo": {
+    "description": "खाते की प्रामाणिकता के बारे में जानकारी"
+  },
+  "dateJoined": "जुड़ने की तारीख",
+  "@dateJoined": {
+    "description": "जुड़ने की तारीख के लिए लेबल"
+  },
+  "february2025": "फरवरी २०२५",
+  "@february2025": {
+    "description": "जुड़ने की उदाहरण तारीख"
+  },
+
+  "loginAndRecovery": "लॉगिन और रिकवरी",
+  "@loginAndRecovery": {
+    "description": "लॉगिन और रिकवरी अनुभाग का शीर्षक"
+  },
+  "manageYourPassword": "अपना पासवर्ड प्रबंधित करें",
+  "@manageYourPassword": {
+    "description": "पासवर्ड प्रबंधित करने का लेबल"
+  },
+  "loginPreferenceAndRecovery": ", लॉगिन प्राथमिकता और रिकवरी विधियाँ",
+  "@loginPreferenceAndRecovery": {
+    "description": "लॉगिन प्राथमिकता और रिकवरी विधियों का लेबल"
+  },
+
+  "deleteAccountPermanently": "खाता स्थायी रूप से हटाएं",
+  "@deleteAccountPermanently": {
+    "description": "स्थायी रूप से खाता हटाने का लेबल"
+  },
+  "confirmAccountDeletion": "खाता हटाने की पुष्टि करें",
+  "@confirmAccountDeletion": {
+    "description": "खाता हटाने की पुष्टि करने का शीर्षक"
+  },
+  "reasonForDeleting": "खाता हटाने का कारण",
+  "@reasonForDeleting": {
+    "description": "खाता हटाने के कारण के लिए लेबल"
+  },
+  "confirmDelete": "हटाने की पुष्टि करें",
+  "@confirmDelete": {
+    "description": "हटाने की पुष्टि करने का लेबल"
+  },
+  "deleteAccountConfirmation": "ईमेल और पासवर्ड दर्ज करके, आप पुष्टि करते हैं कि यह खाता स्थायी रूप से हटा दिया जाएगा और किसी भी तरीके से पुनर्प्राप्त नहीं किया जा सकता।",
+  "@deleteAccountConfirmation": {
+    "description": "स्थायी खाता हटाने की पुष्टि संदेश"
+  },
+  "emailLabel": "ईमेल",
+  "@emailLabel": {
+    "description": "खाता हटाने में ईमेल इनपुट फील्ड के लिए लेबल"
+  },
+  "passwordLabel": "पासवर्ड",
+  "@passwordLabel": {
+    "description": "खाता हटाने में पासवर्ड इनपुट फील्ड के लिए लेबल"
+  },
+   "archive": "आर्काइव",
+  "@archive": {
+    "description": "आर्काइव एक्शन के लिए लेबल"
+  },
+  "searchPlaceholder": "खोजें...",
+  "@searchPlaceholder": {
+    "description": "खोज इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "delete": "हटाएं",
+  "@delete": {
+    "description": "हटाने के एक्शन के लिए लेबल"
+  },
+  "fieldsCannotBeEmpty": "फील्ड्स खाली नहीं हो सकते!",
+  "@fieldsCannotBeEmpty": {
+    "description": "खाली फील्ड्स के लिए त्रुटि संदेश"
+  },
+  "passwordChangedSuccessfully": "पासवर्ड सफलतापूर्वक बदल गया!",
+  "@passwordChangedSuccessfully": {
+    "description": "पासवर्ड बदलने के लिए सफलता संदेश"
+  },
+  "pleaseWaitPasswordChange": "कृपया प्रतीक्षा करें जबकि पासवर्ड बदल रहा है।",
+  "@pleaseWaitPasswordChange": {
+    "description": "पासवर्ड बदलते समय लोडिंग संदेश"
+  },
+  "passwordAndSecurity": "पासवर्ड और सुरक्षा",
+  "@passwordAndSecurity": {
+    "description": "पासवर्ड और सुरक्षा अनुभाग का शीर्षक"
+  },
+  "currentPassword": "वर्तमान पासवर्ड",
+  "@currentPassword": {
+    "description": "वर्तमान पासवर्ड फील्ड के लिए लेबल"
+  },
+
+  "retypeNewPassword": "नया पासवर्ड पुनः टाइप करें",
+  "@retypeNewPassword": {
+    "description": "नए पासवर्ड पुनः टाइप करने के फील्ड के लिए लेबल"
+  },
+  "changePassword": "पासवर्ड बदलें",
+  "@changePassword": {
+    "description": "पासवर्ड बदलने के बटन के लिए लेबल"
+  },
+   "subjectCannotBeEmpty": "विषय खाली नहीं हो सकता",
+  "@subjectCannotBeEmpty": {
+    "description": "शिकायतों में खाली विषय क्षेत्र के लिए त्रुटि संदेश"
+  },
+  "descriptionCannotBeEmpty": "विवरण खाली नहीं हो सकता",
+  "@descriptionCannotBeEmpty": {
+    "description": "शिकायतों में खाली विवरण क्षेत्र के लिए त्रुटि संदेश"
+  },
+  "complaintSubmittedSuccessfully": "शिकायत सफलतापूर्वक जमा की गई",
+  "@complaintSubmittedSuccessfully": {
+    "description": "शिकायत जमा करने के लिए सफलता संदेश"
+  },
+ 
+  "subject": "विषय",
+  "@subject": {
+    "description": "शिकायतों में विषय क्षेत्र के लिए लेबल"
+  },
+
+  "submitComplaint": "शिकायत जमा करें",
+  "@submitComplaint": {
+    "description": "शिकायत जमा करने के बटन के लिए लेबल"
+  },
+  "settings": "सेटिंग्स",
+  "@settings": {
+    "description": "सेटिंग्स अनुभाग का शीर्षक"
+  },
+  "changeLocale": "लोकेल बदलें:",
+  "@changeLocale": {
+    "description": "भाषा/लोकेल चयन के लिए लेबल"
+  },
+  "accountAndOrders": "खाता और आपके ऑर्डर",
+  "@accountAndOrders": {
+    "description": "खाता और ऑर्डर अनुभाग का शीर्षक"
+  },
+ 
+  "accountManagement": "खाता प्रबंधन",
+  "@accountManagement": {
+    "description": "खाता प्रबंधन अनुभाग का शीर्षक"
+  },
+  "passwordChange": "पासवर्ड परिवर्तन",
+  "@passwordChange": {
+    "description": "पासवर्ड परिवर्तन अनुभाग का शीर्षक"
+  },
+  "orderEnquires": "ऑर्डर पूछताछ",
+  "@orderEnquires": {
+    "description": "ऑर्डर पूछताछ अनुभाग का शीर्षक"
+  },
+  "trackAllOrderEnquires": "सभी ऑर्डर पूछताछ को एक जगह ट्रैक करें",
+  "@trackAllOrderEnquires": {
+    "description": "ऑर्डर पूछताछ ट्रैकिंग सुविधा का वर्णन"
+  },
+  "preferences": "प्राथमिकताएँ",
+  "@preferences": {
+    "description": "प्राथमिकताएँ अनुभाग का शीर्षक"
+  },
+ 
+  "yourNotificationsHub": "आपका सूचना केंद्र",
+  "@yourNotificationsHub": {
+    "description": "सूचना केंद्र का वर्णन"
+  },
+  "complaints": "शिकायतें",
+  "@complaints": {
+    "description": "शिकायतें अनुभाग का शीर्षक"
+  },
+  "manageComplaints": "शिकायतें प्रबंधित करें",
+  "@manageComplaints": {
+    "description": "शिकायत प्रबंधन का शीर्षक"
+  },
+  "termsAndPolicy": "नियम और नीति",
+  "@termsAndPolicy": {
+    "description": "नियम और नीति अनुभाग का शीर्षक"
+  },
+
+  "manageTermsAndPolicy": "नियम और नीति प्रबंधित करें",
+  "@manageTermsAndPolicy": {
+    "description": "नियम और नीति प्रबंधन का शीर्षक"
+  },
+  "logOut": "लॉग आउट",
+  "@logOut": {
+    "description": "लॉग आउट बटन का लेबल"
+  },
+  "pushNotificationsEnabled": "पुश सूचनाएँ सक्षम की गईं।",
+  "@pushNotificationsEnabled": {
+    "description": "पुश सूचनाएँ सक्षम होने पर पुष्टिकरण संदेश"
+  },
+  "permissionDenied": "अनुमति अस्वीकार की गई। कृपया सेटिंग्स से सक्षम करें।",
+  "@permissionDenied": {
+    "description": "सूचना अनुमति अस्वीकार होने पर त्रुटि संदेश"
+  },
+  "notificationSettings": "सूचना सेटिंग्स",
+  "@notificationSettings": {
+    "description": "सूचना सेटिंग्स अनुभाग का शीर्षक"
+  },
+  "pushNotificationsForMessages": "संदेशों के लिए पुश सूचनाएँ",
+  "@pushNotificationsForMessages": {
+    "description": "संदेशों के लिए पुश सूचनाएँ टॉगल के लिए लेबल"
+  },
+  "enablePushNotifications": "पुश सूचनाएँ सक्षम करें",
+  "@enablePushNotifications": {
+    "description": "पुश सूचनाएँ सक्षम करने के लिए बटन लेबल"
+  },
+  "pushNotificationsDisabled": "पुश सूचनाएँ अक्षम हैं। अलर्ट प्राप्त करने के लिए सक्षम करें।",
+  "@pushNotificationsDisabled": {
+    "description": "पुश सूचनाएँ अक्षम होने पर संदेश"
+  },
+  "couldNotOpenAppSettings": "ऐप सेटिंग्स नहीं खोली जा सकीं।",
+  "@couldNotOpenAppSettings": {
+    "description": "ऐप सेटिंग्स नहीं खोलने पर त्रुटि संदेश"
+  },
+  "orderEnquiries": "ऑर्डर पूछताछ",
+  "@orderEnquiries": {
+    "description": "ऑर्डर पूछताछ अनुभाग का शीर्षक"
+  },
+ 
+  "cottonTShirt": "कॉटन टी-शर्ट",
+  "@cottonTShirt": {
+    "description": "कॉटन टी-शर्ट उत्पाद का नाम"
+  },
+  "newProducts": "नए उत्पाद",
+  "@newProducts": {
+    "description": "नए उत्पाद अनुभाग का शीर्षक"
+  },
+  "previousProducts": "पिछले उत्पाद",
+  "@previousProducts": {
+    "description": "पिछले उत्पाद अनुभाग का शीर्षक"
+  },
+
+  "productEnquirers": "उत्पाद पूछताछ",
+  "@productEnquirers": {
+    "description": "उत्पाद पूछताछ अनुभाग का शीर्षक"
+  },
+  "howMayIHelpYou": "मैं आपकी कैसे मदद कर सकता हूँ?",
+  "@howMayIHelpYou": {
+    "description": "ग्राहक सेवा स्वागत संदेश"
+  },
+ 
+
+  "searchHere": "यहाँ खोजें...",
+  "@searchHere": {
+    "description": "उत्पाद खोज इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "noMatchingProductsFound": "कोई मिलान उत्पाद नहीं मिला",
+  "@noMatchingProductsFound": {
+    "description": "जब कोई उत्पाद खोज मानदंडों से मेल न खाए तो संदेश"
+  },
+  "profile": "प्रोफाइल",
+  "@profile": {
+    "description": "उपयोगकर्ता प्रोफाइल अनुभाग के लिए लेबल"
+  },
+  
+ 
+  "saveChanges": "परिवर्तनों को सहेजें",
+  "@saveChanges": {
+    "description": "परिवर्तनों को सहेजने के लिए बटन लेबल"
+  },
+   "addressDetails": "पता विवरण",
+  "@addressDetails": {
+    "description": "पता विवरण अनुभाग का शीर्षक"
+  },
+  "businessDetails": "व्यापार विवरण",
+  "@businessDetails": {
+    "description": "व्यापार विवरण अनुभाग का शीर्षक"
+  },
+  "profileDetailsUpdatedSuccessfully": "प्रोफाइल विवरण सफलतापूर्वक अपडेट हो गया!",
+  "@profileDetailsUpdatedSuccessfully": {
+    "description": "प्रोफाइल अपडेट होने के बाद सफलता संदेश"
+  },
+  "message": "संदेश",
+  "@message": {
+    "description": "संदेशों के लिए सामान्य लेबल"
+  },
+  "updateProfile": "प्रोफाइल अपडेट करें",
+  "@updateProfile": {
+    "description": "प्रोफाइल अपडेट करने के लिए बटन लेबल"
+  },
+  "back": "वापस",
+  "@back": {
+    "description": "वापस जाने के लिए बटन लेबल"
+  },
+  "finish": "समाप्त करें",
+  "@finish": {
+    "description": "प्रक्रिया पूर्ण करने के लिए बटन लेबल"
+  },
+  "next": "अगला",
+  "@next": {
+    "description": "अगले चरण पर जाने के लिए बटन लेबल"
+  },
+  "pressBackAgainToExit": "बाहर निकलने के लिए वापस फिर दबाएं",
+  "@pressBackAgainToExit": {
+    "description": "ऐप से बाहर निकलने की पुष्टि संदेश"
+  },
+  "someBasicInformation": "शुरुआत करने के लिए कुछ मूल जानकारी।",
+  "@someBasicInformation": {
+    "description": "प्रोफाइल सेटअप के लिए परिचयात्मक टेक्स्ट"
+  },
+  
+  "enterYourName": "अपना नाम दर्ज करें",
+  "@enterYourName": {
+    "description": "नाम इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "customerType": "ग्राहक प्रकार",
+  "@customerType": {
+    "description": "ग्राहक प्रकार चयन के लिए लेबल"
+  },
+  "export": "निर्यात",
+  "@export": {
+    "description": "निर्यात ग्राहक प्रकार विकल्प"
+  },
+  "domestic": "घरेलू",
+  "@domestic": {
+    "description": "घरेलू ग्राहक प्रकार विकल्प"
+  },
+  "mobileNumber": "मोबाइल नंबर",
+  "@mobileNumber": {
+    "description": "मोबाइल नंबर फील्ड के लिए लेबल"
+  },
+  "enterYourMobileNumber": "अपना मोबाइल नंबर दर्ज करें",
+  "@enterYourMobileNumber": {
+    "description": "मोबाइल नंबर इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "gstNumber": "जीएसटी नंबर",
+  "@gstNumber": {
+    "description": "जीएसटी नंबर फील्ड के लिए लेबल"
+  },
+  "enterGSTNo": "जीएसटी नंबर दर्ज करें",
+  "@enterGSTNo": {
+    "description": "जीएसटी नंबर इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "panNumber": "पैन नंबर",
+  "@panNumber": {
+    "description": "पैन नंबर फील्ड के लिए लेबल"
+  },
+  "enterPANNo": "पैन नंबर दर्ज करें",
+  "@enterPANNo": {
+    "description": "पैन नंबर इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "houseFlatNo": "मकान/फ्लैट नंबर",
+  "@houseFlatNo": {
+    "description": "मकान/फ्लैट नंबर फील्ड के लिए लेबल"
+  },
+  "enterHouseFlatNo": "मकान/फ्लैट नंबर दर्ज करें",
+  "@enterHouseFlatNo": {
+    "description": "मकान/फ्लैट नंबर इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "streetName": "गली का नाम",
+  "@streetName": {
+    "description": "गली के नाम फील्ड के लिए लेबल"
+  },
+  "enterStreetName": "गली का नाम दर्ज करें",
+  "@enterStreetName": {
+    "description": "गली के नाम इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "cityName": "शहर का नाम",
+  "@cityName": {
+    "description": "शहर के नाम फील्ड के लिए लेबल"
+  },
+  "enterCityName": "शहर का नाम दर्ज करें",
+  "@enterCityName": {
+    "description": "शहर के नाम इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "pinCode": "पिन कोड",
+  "@pinCode": {
+    "description": "पिन कोड फील्ड के लिए लेबल"
+  },
+  "enterPincode": "पिन कोड दर्ज करें",
+  "@enterPincode": {
+    "description": "पिन कोड इनपुट फील्ड के लिए प्लेसहोल्डर"
+  },
+  "validationError": "सत्यापन त्रुटि",
+  "@validationError": {
+    "description": "सत्यापन त्रुटि संदेशों के लिए शीर्षक"
+  },
+  "pleaseSelectCustomerType": "कृपया एक ग्राहक प्रकार चुनें।",
+  "@pleaseSelectCustomerType": {
+    "description": "जब ग्राहक प्रकार नहीं चुना गया हो तो त्रुटि संदेश"
+  },
+  "ok": "ठीक है",
+  "@ok": {
+    "description": "पुष्टि के लिए बटन लेबल"
+  },
+
+  "addProduct": "उत्पाद जोड़ें",
+"@addProduct": {
+  "description": "नए उत्पाद जोड़ने के लिए बटन या लेबल टेक्स्ट"
+},
+"pleaseFillAllFields": "कृपया सभी फ़ील्ड सही से भरें!",
+"@pleaseFillAllFields": {
+  "description": "जब उपयोगकर्ता फ़ील्ड खाली छोड़ता है या गलत भरता है तो दिखाया जाने वाला संदेश"
+},
+"productAddedSuccessfully": "उत्पाद सफलतापूर्वक जोड़ा गया!",
+"@productAddedSuccessfully": {
+  "description": "जब कोई उत्पाद सफलतापूर्वक जोड़ा जाता है तब दिखाया जाने वाला पुष्टिकरण संदेश"
+},
+"uploadProductImage": "उत्पाद की छवि अपलोड करें",
+"@uploadProductImage": {
+  "description": "उत्पाद की छवि अपलोड करने के लिए बटन या लेबल टेक्स्ट"
+},
+"chooseFile": "फ़ाइल चुनें",
+"@chooseFile": {
+  "description": "फ़ाइल चुनने के लिए बटन या लेबल टेक्स्ट"
+},
+
+"name": "नाम",
+"@name": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता अपना नाम दर्ज करता है"
+},
+"price": "मूल्य",
+"@price": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का मूल्य दर्ज करता है"
+},
+"size": "आकार",
+"@size": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का आकार चुनता या दर्ज करता है"
+},
+"color": "रंग",
+"@color": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का रंग चुनता या दर्ज करता है"
+},
+"stockAvailable": "स्टॉक उपलब्ध है",
+"@stockAvailable": {
+  "description": "लेबल जो उत्पाद के उपलब्ध स्टॉक की मात्रा दर्शाता है"
+},
+"description": "विवरण",
+"@description": {
+  "description": "वह फ़ील्ड लेबल जहाँ उपयोगकर्ता उत्पाद का विवरण दर्ज करता है"
+},
+"describeProduct": "उत्पाद के बारे में विवरण दें.......",
+"@describeProduct": {
+  "description": "उत्पाद विवरण इनपुट फ़ील्ड के लिए प्लेसहोल्डर टेक्स्ट"
+},
+"pickColor": "रंग चुनें",
+"@pickColor": {
+  "description": "उत्पाद का रंग चुनने के लिए प्लेसहोल्डर या प्रॉम्प्ट टेक्स्ट"
+},
+"cancel": "रद्द करें",
+"@cancel": {
+  "description": "रद्द करें बटन या क्रिया के लिए टेक्स्ट"
+},
+"select": "चुनें",
+"@select": {
+  "description": "चुनें बटन या ड्रॉपडाउन विकल्प के लिए टेक्स्ट"
+},
+"updateForm": "फॉर्म अपडेट करें",
+"@updateForm": {
+  "description": "Label or button text for updating a form in Hindi"
+},
+"fillProductDetails": "उत्पाद विवरण भरें",
+"@fillProductDetails": {
+  "description": "Prompt or label asking the user to fill product details in Hindi"
+},
+"noCustomerForms": "नेविगेट करने के लिए कोई ग्राहक फॉर्म नहीं मिला",
+"@noCustomerForms": {
+  "description": "Message shown when there are no customer forms available for navigation in Hindi"
+},
+"orderConfirmed": "आपका ऑर्डर फॉर्म आईडी के साथ पुष्टि हो गई है",
+"@orderConfirmed": {
+  "description": "Message shown to confirm the order along with the form Id in Hindi"
+},
+"orderDeclined": "आपका ऑर्डर फॉर्म आईडी के साथ अस्वीकार कर दिया गया है",
+"@orderDeclined": {
+  "description": "Message shown when the order is declined along with the form Id in Hindi"
+},
+"customersList": "ग्राहकों की सूची",
+"@customersList": {
+  "description": "Title for displaying the list of customers in Hindi"
+},
+"user": "उपयोगकर्ता",
+"@user": {
+  "description": "Label or title for a user in Hindi"
+},
+"customer": "ग्राहक",
+"@customer": {
+  "description": "Label or title for a customer in Hindi"
+},
+"customerInquiries": "ग्राहक पूछताछ",
+"@customerInquiries": {
+  "description": "Title or section label for customer inquiries in Hindi"
+},
+"findLatestMessages": "आइए नवीनतम संदेश ढूंढते हैं",
+"@findLatestMessages": {
+  "description": "Message or prompt shown when looking for the latest messages in Hindi"
+},
+"search": "खोजें",
+"@search": {
+  "description": "Label or placeholder text for search functionality in Hindi"
+},
+"unnamed": "बेनाम",
+"@unnamed": {
+  "description": "Label used when something (like a user or item) does not have a name in Hindi"
+},
+"online": "ऑनलाइन",
+"@online": {
+  "description": "Status label indicating a user is currently active or connected in Hindi"
+},
+"analyticsManagement": "विश्लेषण प्रबंधन",
+"@analyticsManagement": {
+  "description": "Title or label for the analytics management section in Hindi"
+},
+"confirmDownloadExcel": "क्या आप सुनिश्चित हैं कि आप सभी डेटा को एक्सेल फ़ॉर्मेट में डाउनलोड करना चाहते हैं?",
+"@confirmDownloadExcel": {
+  "description": "Confirmation message shown before downloading all data in Excel format in Hindi"
+},
+"confirm": "पुष्टि करें",
+"@confirm": {
+  "description": "Text for confirm button or action in Hindi"
+},
+"noActivitiesFound": "कोई गतिविधियाँ नहीं मिलीं",
+"@noActivitiesFound": {
+  "description": "Message displayed when no activities are available in Hindi"
+},
+"confirmDeleteAllActivities": "क्या आप वाकई सभी गतिविधियाँ हटाना चाहते हैं?",
+"@confirmDeleteAllActivities": {
+  "description": "Confirmation message shown before deleting all activities in Hindi"
+},
+"allDataDeletedSuccessfully": "सारी जानकारी सफलतापूर्वक हटा दी गई",
+"@allDataDeletedSuccessfully": {
+  "description": "Message shown when all data is deleted successfully in Hindi"
+},
+"failedToDeleteAllData": "सारी जानकारी हटाने में असफल",
+"@failedToDeleteAllData": {
+  "description": "Message shown when deleting all data fails in Hindi"
+},
+"editProduct": "उत्पाद संपादित करें",
+"@editProduct": {
+  "description": "Text for editing a product in Hindi"
+},
+"updateProduct": "उत्पाद अपडेट करें",
+"@updateProduct": {
+  "description": "Text for updating a product in Hindi"
+},
+"productName": "उत्पाद का नाम",
+"@productName": {
+  "description": "Label for the product name field in Hindi"
+},
+"pinnedMessages": "पिन किए गए संदेश",
+"@pinnedMessages": {
+  "description": "Label for pinned messages section in Hindi"
+},
+"noAgentsFound": "कोई एजेंट नहीं मिला",
+"@noAgentsFound": {
+  "description": "Message shown when no agents are available in Hindi"
+},
+"clickToSeeChats": "चैट देखने के लिए क्लिक करें....",
+"@clickToSeeChats": {
+  "description": "Prompt text in Hindi to click and view chats"
+},
+"availableColors": "उपलब्ध रंग:",
+"@availableColors": {
+  "description": "Label in Hindi showing the available colors of a product"
+},
+"outOfStock": "स्टॉक समाप्त",
+"@outOfStock": {
+  "description": "Label in Hindi indicating the product is out of stock"
+},
+"leftInStock": "शेष स्टॉक",
+"@leftInStock": {
+  "description": "Label in Hindi indicating remaining stock"
+},
+"only": "केवल",
+"@only": {
+  "description": "Label in Hindi indicating limitation, e.g., 'केवल 2 बचा है'"
+},
+"notAvailable": "उपलब्ध नहीं",
+"@notAvailable": {
+  "description": "Label in Hindi indicating item/product is not available"
+},
+"edit": "संपादित करें",
+"@edit": {
+  "description": "Label in Hindi for editing an item or product"
+},
+"remove": "हटाएँ",
+"@remove": {
+  "description": "Label in Hindi for removing an item or product"
+},
+"noProductsAvailable": "कोई उत्पाद उपलब्ध नहीं हैं",
+"@noProductsAvailable": {
+  "description": "Message in Hindi when no products are available"
+},
+"noMatchingProducts": "कोई मेल खाने वाला उत्पाद नहीं मिला",
+"@noMatchingProducts": {
+  "description": "Message in Hindi when no products match the search/filter criteria"
+},
+"searchProducts": "उत्पाद खोजें...",
+"@searchProducts": {
+  "description": "Message in Hindi for product search input field"
+},
+"uploadNewProduct": "नया उत्पाद अपलोड करें",
+"@uploadNewProduct": {
+  "description": "Hindi translation for uploading a new product"
+},
+"uploadHere": "यहाँ अपलोड करें",
+"@uploadHere": {
+  "description": "Hindi translation for uploading a file or product"
+},
+"product": "उत्पाद",
+"@product": {
+  "description": "Hindi translation for product"
+},
+"notifications": "सूचनाएं",
+"@notifications": {
+  "description": "Hindi translation for notifications"
+},
+"markAllRead": "सभी पढ़ा हुआ मार्क करें",
+"@markAllRead": {
+  "description": "Hindi translation for marking all notifications/messages as read"
+},
+"myAccount": "मेरा खाता",
+"@myAccount": {
+  "description": "Hindi translation for user's account section"
+},
+
+"confirmLogout": "क्या आप वाकई लॉगआउट करना चाहते हैं?",
+"@confirmLogout": {
+  "description": "Hindi translation for logout confirmation message"
+},
+"noCustomersAvailable": "कोई ग्राहक उपलब्ध नहीं हैं",
+"@noCustomersAvailable": {
+  "description": "Hindi translation for no customers available message"
+},
+"searchCustomer": "ग्राहक खोजें...",
+"@searchCustomer": {
+  "description": "Hindi placeholder text for searching a customer"
+},
+"manage": "प्रबंधित करें",
+"@manage": {
+  "description": "Hindi label for manage action or button"
+},
+"settingsAndActivity": "सेटिंग्स और गतिविधियाँ",
+"@settingsAndActivity": {
+  "description": "Hindi label for settings and activity section"
+},
+
+"account": "खाता",
+"@account": {
+  "description": "Hindi label for account section"
+},
+"accountAndSecurity": "खाता और सुरक्षा",
+"@accountAndSecurity": {
+  "description": "Hindi label for account and security settings section"
+},
+"accountManagementPasswordChange": "खाता प्रबंधन, पासवर्ड बदलें",
+"@accountManagementPasswordChange": {
+  "description": "Hindi label describing account management and password change options"
+},
+"management": "प्रबंधन",
+"@management": {
+  "description": "Hindi label for management"
+},
+"userManagement": "उपयोगकर्ता प्रबंधन",
+"@userManagement": {
+  "description": "Hindi label for user management section"
+},
+"viewCustomers": "ग्राहक देखें",
+"@viewCustomers": {
+  "description": "Hindi label for viewing customer list"
+},
+"manageAnalyticsData": "एनालिटिक्स डेटा प्रबंधित करें",
+"@manageAnalyticsData": {
+  "description": "Hindi label for managing analytics data"
+},
+"termsPolicy": "नियम और नीति",
+"@termsPolicy": {
+  "description": "Hindi label for terms and policy section"
+},
+"about": "के बारे में",
+"@about": {
+  "description": "Hindi label for about section"
+},
+"manageTermsPolicy": "नियम और नीति प्रबंधित करें",
+"@manageTermsPolicy": {
+  "description": "Hindi label for managing terms and policy section"
+},
+ "allComplaint": "सभी शिकायतें",
+  "@allComplaint": {
+    "description": "सभी शिकायतों को दिखाने वाले अनुभाग का शीर्षक"
+  },
+  "viewComplaints": "शिकायतें देखें",
+  "@viewComplaints": {
+    "description": "शिकायतें देखने के लिए बटन/लेबल"
+  },
+  "searchProducts": "उत्पादों को खोजें",
+  "@searchProducts": {
+    "description": "उत्पाद खोज कार्यक्षमता के लिए प्लेसहोल्डर या लेबल"
+  },
+  "complaintsNotFound": "कोई शिकायत नहीं मिली",
+  "@complaintsNotFound": {
+    "description": "जब कोई शिकायत नहीं मिलती तो प्रदर्शित संदेश"
+  },
+   "upcomingMeetings": "आगामी बैठकें",
+  "@upcomingMeetings": {
+    "description": "नियोजित भविष्य की बैठकों को प्रदर्शित करने वाले अनुभाग का शीर्षक"
+  }
+  }

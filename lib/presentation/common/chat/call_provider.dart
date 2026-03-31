@@ -10,130 +10,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// class CallProvider with ChangeNotifier {
-//   final CallService _callService = CallService();
-//   final GlobalKey<NavigatorState> navigatorKey;
-
-//   CallProvider(this.navigatorKey);
-
-//   bool _isCallScreenVisible = false;
-//   bool _isOutgoingCallVisible = false;
-//   ChatMessageModel? _callDetailsMessage;
-
-//   OverlayEntry? _outgoingCallOverlay;
-
-//   // Call metadata
-//   String? _channelName;
-//   String? _remoteUserName;
-//   int? _uid;
-//   String? _callId;
-//   bool _isCaller = false;
-
-//   bool get isCallScreenVisible => _isCallScreenVisible;
-//   bool get isOutgoingCallVisible => _isOutgoingCallVisible;
-//   ChatMessageModel? get callDetailsMessage => _callDetailsMessage;
-
-//   String? get channelName => _channelName;
-//   String? get remoteUserName => _remoteUserName;
-//   int? get uid => _uid;
-//   String? get callId => _callId;
-//   bool get isCaller => _isCaller;
-
-//   Future<void> initializeCallService() async {
-//     await _callService.initialize();
-//   }
-
-//   Future<void> startNewCall({
-//     required String channelName,
-//     required String remoteUserName,
-//     required int uid,
-//     required String callId,
-//     required bool isCaller,
-//   }) async {
-//     _channelName = channelName;
-//     _remoteUserName = remoteUserName;
-//     _uid = uid;
-//     _callId = callId;
-//     _isCaller = isCaller;
-
-//     await initializeCallService();
-//     await _callService.join(channelName, uid, callId);
-//     showCallScreen();
-
-//     navigatorKey.currentState?.push(
-//       MaterialPageRoute(builder: (_) => const AgoraAudioCallScreen()),
-//     );
-//   }
-
-//   void showCallScreen() {
-//     _isCallScreenVisible = true;
-//     _isOutgoingCallVisible = false;
-//     removeOutgoingCallOverlay(); // remove if present
-//     notifyListeners();
-//   }
-
-//   void minimizeCallScreen() {
-//     _isCallScreenVisible = false;
-//     _isOutgoingCallVisible = true;
-
-//     if (navigatorKey.currentState?.canPop() ?? false) {
-//       navigatorKey.currentState?.pop();
-//     }
-
-//     showOutgoingCallOverlay(); // Show minimized UI in overlay
-//     notifyListeners();
-//   }
-
-//   void showOutgoingCallOverlay() {
-//     removeOutgoingCallOverlay();
-
-//     _outgoingCallOverlay = OverlayEntry(
-//       builder: (context) => Positioned(
-//         top: MediaQuery.of(context).padding.top + 12,
-//         left: 0,
-//         right: 0,
-//         child: SafeArea(
-//           child: Material(
-//             color: Colors.transparent,
-//             child: OutgoingCallUI(
-//               onTap: () {
-//                 showCallScreen();
-//                 navigatorKey.currentState?.push(
-//                   MaterialPageRoute(
-//                     builder: (_) => const AgoraAudioCallScreen(),
-//                   ),
-//                 );
-//               },
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-
-//     navigatorKey.currentState?.overlay?.insert(_outgoingCallOverlay!);
-//   }
-
-//   void removeOutgoingCallOverlay() {
-//     _outgoingCallOverlay?.remove();
-//     _outgoingCallOverlay = null;
-//   }
-
-//   void endCall() {
-//     _callService.releaseEngine();
-//     _isCallScreenVisible = false;
-//     _isOutgoingCallVisible = false;
-//     removeOutgoingCallOverlay();
-//     notifyListeners();
-//   }
-
-//   void setCallDetailsMessage(ChatMessageModel message) {
-//     _callDetailsMessage = message;
-//     notifyListeners();
-//   }
-
-//   CallService get callService => _callService;
-// }
-
 class CallProvider with ChangeNotifier {
   final GlobalKey<NavigatorState> navigatorKey;
   CallProvider(this.navigatorKey) {
@@ -155,8 +31,7 @@ class CallProvider with ChangeNotifier {
   Timer? _callTimeoutTimer;
   bool _isRinging = false;
   final AudioPlayer _ringingPlayer = AudioPlayer();
-  final StreamController<int> _callDurationController =
-      StreamController<int>.broadcast();
+  final StreamController<int> _callDurationController = StreamController<int>.broadcast();
   String? _callId;
   final ChatRepository _chatRepository = ChatRepository();
 
@@ -216,8 +91,7 @@ class CallProvider with ChangeNotifier {
     if (!micStatus.isGranted) throw Exception("Microphone permission denied");
 
     _agoraEngine = createAgoraRtcEngine();
-    await _agoraEngine
-        .initialize(RtcEngineContext(appId: dotenv.env['AGORA_APP_ID']!));
+    await _agoraEngine.initialize(RtcEngineContext(appId: dotenv.env['AGORA_APP_ID']!));
 
     _setupEventHandlers();
 
@@ -268,11 +142,13 @@ class CallProvider with ChangeNotifier {
         _callTimeoutTimer?.cancel();
         notifyListeners();
       },
-      onUserOffline: (RtcConnection connection, int remoteUid,
-          UserOfflineReasonType reason) {
+      onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
         debugPrint("❌ Remote user $remoteUid left due to $reason");
         if (remoteUid == _remoteUid) {
           final duration = _formatDuration(_callDuration);
+          // Create and set the call details message before ending the call
+          final message = createCallDetailsMessage("answered", duration);
+          setCallDetailsMessage(message);
           _updateCallData("answered", callDuration: duration);
           endCall();
         }
@@ -280,6 +156,9 @@ class CallProvider with ChangeNotifier {
       onLeaveChannel: (RtcConnection connection, RtcStats stats) {
         debugPrint("🚪 Local user left the channel");
         if (_remoteUid == null) {
+          // Create and set the call details message before ending the call
+          // final message = createCallDetailsMessage("not answered", "00:00");
+          // setCallDetailsMessage(message);
           _updateCallData("not answered");
         }
       },
@@ -363,8 +242,7 @@ class CallProvider with ChangeNotifier {
               onTap: () {
                 _showCallScreen();
                 navigatorKey.currentState?.push(
-                  MaterialPageRoute(
-                      builder: (_) => const AgoraAudioCallScreen()),
+                  MaterialPageRoute(builder: (_) => const AgoraAudioCallScreen()),
                 );
               },
             ),
@@ -435,8 +313,7 @@ class CallProvider with ChangeNotifier {
   Future<void> _updateCallData(String status, {String? callDuration}) async {
     if (_callId == null) return;
     try {
-      await _chatRepository.updateCallData(_callId!, status,
-          callDuration: callDuration);
+      await _chatRepository.updateCallData(_callId!, status, callDuration: callDuration);
     } catch (e) {
       debugPrint("Failed to update call data: $e");
     }

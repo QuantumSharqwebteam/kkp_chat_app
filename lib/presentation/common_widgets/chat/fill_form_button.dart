@@ -11,10 +11,13 @@ class FillFormButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+            final isTablet = Utils().width(context) >= 600;
     return Container(
       margin: const EdgeInsets.only(top: 20, bottom: 15, left: 10, right: 30),
       padding: const EdgeInsets.only(left: 20, right: 25, top: 10, bottom: 10),
-      constraints: BoxConstraints(maxWidth: Utils().width(context) * 0.8),
+      constraints: BoxConstraints(
+      maxWidth: isTablet? MediaQuery.of(context).size.width * 0.35:MediaQuery.of(context).size.width * 0.7,
+        ),
       decoration: BoxDecoration(
         color: Color(0xffF2F2F2),
         borderRadius: BorderRadius.only(

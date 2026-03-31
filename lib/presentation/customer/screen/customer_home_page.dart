@@ -1,13 +1,18 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:provider/provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
 import 'package:kkpchatapp/presentation/customer/widget/custom_app_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/products/product_item.dart';
+import 'package:responsive_grid_list/responsive_grid_list.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
@@ -23,16 +28,36 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   bool _initialized = false;
   int _currentCarouselIndex = 0;
 
+  Future<void> _safeLoadHomeData() async {
+    try {
+      await _provider.loadUserInfo();
+      await _provider.fetchProducts();
+      await _provider.fetchPosters();
+      _provider.initSocketService();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('CustomerHomePage init load error: $e');
+      }
+    }
+  }
+
+  Future<void> _safeRefresh() async {
+    try {
+      await _provider.fetchNotificationCount();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('CustomerHomePage refresh error: $e');
+      }
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _provider = Provider.of<CustomerHomeProvider>(context);
     if (!_initialized) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _provider.loadUserInfo();
-        _provider.fetchProducts();
-        _provider.fetchPosters();
-        _provider.initSocketService();
+        _safeLoadHomeData();
       });
       _initialized = true;
     }
@@ -40,6 +65,9 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
+    final isTablet = Utils().width(context) >= 600;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: PreferredSize(
@@ -52,7 +80,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _provider.fetchNotificationCount,
+          onRefresh: _safeRefresh,
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -62,14 +90,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 _buildCarouselIndicator(),
                 const SizedBox(height: 10),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+                  margin: EdgeInsets.symmetric(horizontal: 5),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(15),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,33 +107,30 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                         },
                         notificationCount: _provider.notificationCount,
                       ),
-                      const SizedBox(height: 20),
-                      Text('New Products',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 20),
                       _provider.isLoading
                           ? ShimmerGrid()
-                          : _provider.newProducts != null &&
-                                  _provider.previousProducts != null
+                          : (_provider.newProducts?.isNotEmpty ?? false)
                               ? Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    GridView.builder(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 5, vertical: 15),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 10,
-                                        mainAxisSpacing: 10,
-                                        mainAxisExtent: 250,
+                                    Text(
+                                      AppLocalizations.of(context)!.newProducts,
+                                      style: AppTextStyles.black16_500,
+                                    ),
+                                    ResponsiveGridList(
+                                      horizontalGridSpacing: Utils().width(context) * 0.025,
+                                      verticalGridSpacing: Utils().height(context) * 0.0125,
+                                      horizontalGridMargin: Utils().width(context) * 0.025,
+                                      verticalGridMargin: Utils().height(context) * 0.015,
+                                      minItemWidth: isTablet ? (isLandscape ? 420 : 340) : 200,
+                                      minItemsPerRow: isLandscape ? 1 : 2,
+                                      maxItemsPerRow: isLandscape ? 2 : 2,
+                                      listViewBuilderOptions: ListViewBuilderOptions(
+                                        physics: NeverScrollableScrollPhysics(),
+                                        shrinkWrap: true,
                                       ),
-                                      itemCount: _provider.newProducts!.length,
-                                      itemBuilder: (context, index) {
-                                        final product =
-                                            _provider.newProducts![index];
+                                      children: _provider.newProducts!.map((product) {
                                         return ProductItem(
                                           product: product,
                                           onTap: () {
@@ -122,49 +144,48 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                             );
                                           },
                                         );
-                                      },
+                                      }).toList(),
                                     ),
-                                    const SizedBox(height: 20),
-                                    Text('Previous Products',
-                                        style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold)),
-                                    GridView.builder(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 5, vertical: 15),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      gridDelegate:
-                                          const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        crossAxisSpacing: 10,
-                                        mainAxisSpacing: 10,
-                                        mainAxisExtent: 250,
+                                    if ((_provider.products?.length ?? 0) >= 3 &&
+                                        (_provider.previousProducts?.isNotEmpty ?? false)) ...[
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        AppLocalizations.of(context)!.previousProducts,
+                                        style: AppTextStyles.black16_500,
                                       ),
-                                      itemCount:
-                                          _provider.previousProducts!.length,
-                                      itemBuilder: (context, index) {
-                                        final product =
-                                            _provider.previousProducts![index];
-                                        return ProductItem(
-                                          product: product,
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    CustomerProductDescriptionPage(
-                                                        product: product),
-                                              ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
+                                      ResponsiveGridList(
+                                        horizontalGridSpacing: Utils().width(context) * 0.025,
+                                        verticalGridSpacing: Utils().height(context) * 0.0125,
+                                        horizontalGridMargin: Utils().width(context) * 0.025,
+                                        verticalGridMargin: Utils().height(context) * 0.015,
+                                        minItemWidth: isTablet ? (isLandscape ? 420 : 340) : 200,
+                                        minItemsPerRow: isLandscape ? 1 : 2,
+                                        maxItemsPerRow: isLandscape ? 2 : 2,
+                                        listViewBuilderOptions: ListViewBuilderOptions(
+                                          physics: NeverScrollableScrollPhysics(),
+                                          shrinkWrap: true,
+                                        ),
+                                        children: _provider.previousProducts!.map((product) {
+                                          return ProductItem(
+                                            product: product,
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      CustomerProductDescriptionPage(
+                                                          product: product),
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        }).toList(),
+                                      ),
+                                      const SizedBox(height: 20),
+                                    ],
                                   ],
                                 )
-                              : Center(child: Text("No products available")),
+                              : Center(child: SizedBox.shrink()),
                     ],
                   ),
                 ),
@@ -278,27 +299,11 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
             radius: 25,
             backgroundImage: AssetImage("assets/images/user.jpg"),
           ),
-          // Positioned(
-          //   bottom: 0,
-          //   right: 0,
-          //   child: Material(
-          //     elevation: 5,
-          //     color: Colors.transparent,
-          //     type: MaterialType.circle,
-          //     child: Container(
-          //       height: 12,
-          //       width: 12,
-          //       decoration: BoxDecoration(
-          //         borderRadius: BorderRadius.circular(50),
-          //         color: Colors.green,
-          //       ),
-          //     ),
-          //   ),
-          // ),
         ]),
-        title: Text('Product Enquirers',
+        title: Text(AppLocalizations.of(context)!.productEnquirers,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        subtitle: Text('How may I Help you?', style: TextStyle(fontSize: 12)),
+        subtitle:
+            Text(AppLocalizations.of(context)!.howMayIHelpYou, style: TextStyle(fontSize: 12)),
         trailing: notificationCount != null && notificationCount > 0
             ? Container(
                 padding: EdgeInsets.all(6),

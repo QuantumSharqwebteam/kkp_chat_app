@@ -1,4 +1,4 @@
-import 'package:kkpchatapp/core/services/chat_service.dart';
+import 'package:kkpchatapp/data/api/chat_service.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
@@ -7,8 +7,7 @@ class ChatRepository {
   final ChatService chatService = ChatService();
 
   /// Get previous chat messages
-  Future<List<MessageModel>> fetchPreviousChats(
-      String agentEmail, String customerEmail) async {
+  Future<List<MessageModel>> fetchPreviousChats(String agentEmail, String customerEmail) async {
     return await chatService.fetchPreviousMessages(
         agentEmail: agentEmail, customerEmail: customerEmail);
   }
@@ -16,8 +15,7 @@ class ChatRepository {
   /// Fetch agent messages with pagination
 
   /// Get the list of assigned customers to that agent
-  Future<List<Map<String, dynamic>>> fetchAssignedCustomerList(
-      String agentId) async {
+  Future<List<Map<String, dynamic>>> fetchAssignedCustomerList(String agentId) async {
     return await chatService.getAssignedCustomers(agentId);
   }
 
@@ -37,8 +35,7 @@ class ChatRepository {
   }
 
   // Fetch form data for a specific agent
-  Future<List<FormDataModel>> fetchFormDataForEnquiery(
-      String agentEmail) async {
+  Future<List<FormDataModel>> fetchFormDataForEnquiery(String agentEmail) async {
     return await chatService.getFormDataForEnquiery(email: agentEmail);
   }
 
@@ -60,11 +57,31 @@ class ChatRepository {
     return chatService.updateFormRate(formId: formId, rate: rate);
   }
 
+  Future<void> updateFormByOrderId({
+    required String orderId,
+    String? status,
+    num? rate,
+    String? quality,
+    String? weave,
+    String? quantity,
+    String? composition,
+    String? buyerName,
+  }) async {
+    return chatService.updateFormByOrderId(
+      orderId: orderId,
+      status: status,
+      rate: rate,
+      quality: quality,
+      weave: weave,
+      quantity: quantity,
+      composition: composition,
+      buyerName: buyerName,
+    );
+  }
+
   /// Update Call Data
-  Future<void> updateCallData(String messageId, String callStatus,
-      {String? callDuration}) async {
-    return chatService.updateCallData(messageId, callStatus,
-        callDuration: callDuration);
+  Future<void> updateCallData(String messageId, String callStatus, {String? callDuration}) async {
+    return chatService.updateCallData(messageId, callStatus, callDuration: callDuration);
   }
 
   /// Get call logs for a given email
@@ -96,5 +113,16 @@ class ChatRepository {
       before: before,
       limit: limit,
     );
+  }
+
+  /// Get agnet last seend message timestamp for customer side
+  Future<DateTime?> fetchUserLastTimestamp(String userEmail) async {
+    return await chatService.getAgentLastTimestampForCustomer(userEmail);
+  }
+
+  /// Get Last Message Timestamp of customer last seen chat messages
+  Future<Map<String, dynamic>?> fetchCustomerLastMessageTimestampForAgent(
+      {required String customerEmail, required String agentEmail}) async {
+    return await chatService.getCustomerLastMessageTimestampForAgent(customerEmail, agentEmail);
   }
 }

@@ -1,4 +1,4 @@
-import '../../core/services/product_service.dart';
+import '../api/product_service.dart';
 import '../models/product_model.dart';
 
 class ProductRepository {

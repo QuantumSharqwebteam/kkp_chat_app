@@ -6,6 +6,7 @@ import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -21,6 +22,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final SocketService _socketService = SocketService(navigatorKey);
   late Profile? profile;
+  String? selectedGender;
 
   @override
   void initState() {
@@ -48,11 +50,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text("My Account"),
+        title: Text(locale.myAccount),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -64,7 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildDetailsCard(),
             // const SizedBox(height: 10),
             // _buildSettingsSection(context),
-            const SizedBox(height: 10),
+            // const SizedBox(height: 10),
             _buildLogoutButton(),
             const SizedBox(height: 25),
           ],
@@ -78,19 +81,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.maxFinite,
       decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(width: 1, color: AppColors.dividerD9D9D9),
-          ),
+              bottom: BorderSide(width: 8, color: AppColors.backgroundDCEBFF),
+              top: BorderSide(width: 5, color: AppColors.backgroundDCEBFF)),
           color: Colors.white,
           boxShadow: [
-            BoxShadow(
-              blurRadius: 4,
-              spreadRadius: 0,
-              color: AppColors.shadowColor,
-              offset: const Offset(0, 4),
-            )
+            // BoxShadow(
+            //   blurRadius: 4,
+            //   spreadRadius: 0,
+            //   color: AppColors.shadowColor,
+            //   offset: const Offset(0, 4),
+            // )
           ]),
       child: Column(
         children: [
+          const SizedBox(
+            height: 5,
+          ),
           Initicon(
             text: profile!.name!,
             size: 100,
@@ -110,65 +116,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Widget _buildStatsSection() {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-  //     decoration: BoxDecoration(color: Colors.white, boxShadow: [
-  //       BoxShadow(
-  //         blurRadius: 4,
-  //         spreadRadius: 0,
-  //         color: AppColors.shadowColor,
-  //         offset: const Offset(0, 4),
-  //       )
-  //     ]),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //       children: [
-  //         _buildStatCard("128", "Total chats"),
-  //         Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
-  //         _buildStatCard("45", "Active Inquiries"),
-  //         Container(height: 60, width: 1, color: AppColors.dividerD9D9D9),
-  //         _buildStatCard("83", "Resolved"),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildStatCard(String value, String label) {
-  //   return Column(
-  //     children: [
-  //       Text(value, style: AppTextStyles.blue4A76CD_24_600),
-  //       Text(label,
-  //           style: AppTextStyles.grey5C5C5C_16_600.copyWith(fontSize: 12)),
-  //     ],
-  //   );
-  // }
-
   Widget _buildDetailsCard() {
     return Container(
       decoration: BoxDecoration(color: Colors.white, boxShadow: [
-        BoxShadow(
-            spreadRadius: 0,
-            blurRadius: 4,
-            offset: const Offset(0, 4),
-            color: AppColors.shadowColor)
+        BoxShadow(spreadRadius: 6, blurRadius: 4, offset: const Offset(0, 4), color: Colors.white)
       ]),
-      padding: const EdgeInsets.all(10.0),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ProfileDetailsField(
-            icon: Icons.person,
-            label: 'Name',
+            icon: Icons.person_outlined,
+            label: 'Full Name',
             value: profile?.name ?? "NA",
           ),
-          ProfileDetailsField(
-            icon: Icons.email,
-            label: 'Email',
-            value: profile?.email ?? "NA",
+          SizedBox(
+            height: 10,
           ),
           ProfileDetailsField(
-            icon: Icons.phone,
+            icon: Icons.email_outlined,
+            label: 'Email Address',
+            value: profile?.email ?? "NA",
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          ProfileDetailsField(
+            icon: Icons.phone_outlined,
             label: 'Mobile No.',
             value: profile?.mobile.toString() ?? "",
           ),
@@ -177,84 +151,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Widget _buildSettingsSection(BuildContext context) {
-  //   return Container(
-  //     padding: EdgeInsets.symmetric(horizontal: 16),
-  //     margin: EdgeInsets.symmetric(vertical: 10),
-  //     decoration: BoxDecoration(color: Colors.white, boxShadow: [
-  //       BoxShadow(
-  //         blurRadius: 4,
-  //         spreadRadius: 0,
-  //         color: AppColors.shadowColor,
-  //         offset: const Offset(0, 4),
-  //       )
-  //     ]),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Text(
-  //           "Settings",
-  //           style: AppTextStyles.black15_500.copyWith(fontSize: 18),
-  //         ),
-  //         _buildSettingsTile(
-  //           context,
-  //           Icons.notifications_none_rounded,
-  //           "Notification",
-  //           MarketingRoutes.marketingNotifications,
-  //         ),
-  //         _buildSettingsTile(context, Icons.lock_outline_rounded, "Privacy",
-  //             MarketingRoutes.privacy),
-  //         _buildSettingsTile(context, Icons.settings_rounded, "Settings",
-  //             MarketingRoutes.marketingSettings),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildSettingsTile(
-  //     BuildContext context, IconData icon, String title, String routeName) {
-  //   return Container(
-  //     width: double.maxFinite,
-  //     decoration: BoxDecoration(
-  //       border: Border(
-  //         bottom: BorderSide(width: 2, color: AppColors.dividerD9D9D9),
-  //       ),
-  //     ),
-  //     child: ListTile(
-  //       leading: Icon(icon, color: Colors.black),
-  //       title: Text(
-  //         title,
-  //         style: AppTextStyles.black16_500,
-  //       ),
-  //       trailing: const Icon(
-  //         Icons.arrow_forward_ios,
-  //         size: 20,
-  //       ),
-  //       onTap: () {
-  //         Navigator.pushNamed(context, routeName);
-  //       },
-  //     ),
-  //   );
-  // }
-
   Widget _buildLogoutButton() {
+    final locale = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: CustomButton(
         onPressed: () {
           Utils().showDialogWithActions(
             context,
-            "Log out",
+            locale.logout,
             icon: Icons.logout_outlined,
-            "Are you sure you want to logOut",
-            "LogOut",
+            locale.confirmLogout,
+            locale.logout,
             logout,
           );
         },
         borderWidth: 0,
         fontSize: 16,
-        backgroundColor: AppColors.marketingNavBarColor,
-        text: "Logout",
+        backgroundColor: AppColors.redF11515,
+        text: locale.logout,
+        icon: Icons.logout_outlined,
       ),
     );
   }

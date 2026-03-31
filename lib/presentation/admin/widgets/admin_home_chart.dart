@@ -50,7 +50,9 @@ class AdminHomeChart extends StatelessWidget {
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => Colors.black87,
             tooltipRoundedRadius: 6,
-            tooltipPadding: const EdgeInsets.all(8),
+            tooltipPadding: const EdgeInsets.all(14),
+            fitInsideHorizontally: true,
+            fitInsideVertically: true,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final index = spot.x.toInt();
@@ -88,8 +90,7 @@ class AdminHomeChart extends StatelessWidget {
               getTitlesWidget: (value, _) {
                 int index = value.toInt();
                 if (index >= 0 && index < sortedData.length) {
-                  return Text(sortedData[index]['month'],
-                      style: TextStyle(fontSize: 8));
+                  return Text(sortedData[index]['month'], style: TextStyle(fontSize: 8));
                 }
                 return const SizedBox.shrink();
               },
@@ -121,8 +122,7 @@ class AdminHomeChart extends StatelessWidget {
           ),
         ],
       ),
-      duration:
-          enableAnimation ? const Duration(milliseconds: 500) : Duration.zero,
+      duration: enableAnimation ? const Duration(milliseconds: 500) : Duration.zero,
       curve: Curves.easeInOut,
     );
   }

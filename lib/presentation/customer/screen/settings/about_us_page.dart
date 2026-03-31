@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 
 class AboutUsPage extends StatelessWidget {
   const AboutUsPage({super.key});
@@ -11,8 +12,8 @@ class AboutUsPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'About Us',
+        title: Text(
+          AppLocalizations.of(context)!.aboutUs,
           style: AppTextStyles.black18_600,
         ),
         centerTitle: false,
@@ -22,58 +23,54 @@ class AboutUsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'KKP',
+            Text(
+              AppLocalizations.of(context)!.kKP,
               style: AppTextStyles.black16_700,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'KKP is a leading name in the textile industry, known for quality yarn production and smart supply chain management. '
-              'With years of trusted service, we bring transparency, innovation, and reliability to every process.',
-            ),
+            Text(AppLocalizations.of(context)!.kKPDescription),
             const SizedBox(height: 16),
-            const Text(
-              'Who We Are',
+            Text(
+              AppLocalizations.of(context)!.whoWeAre,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text("We’re a textile-focused company delivering:"),
+            Text(AppLocalizations.of(context)!.whoWeAreDescription),
             const SizedBox(height: 8),
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(left: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("• Premium quality yarn"),
-                  Text("• Timely deliveries"),
-                  Text("• Transparent operations"),
+                  Text(AppLocalizations.of(context)!.premiumQualityYarn),
+                  Text(AppLocalizations.of(context)!.timelyDeliveries),
+                  Text(AppLocalizations.of(context)!.transparentOperations),
                   Padding(
                     padding: EdgeInsets.only(left: 12),
                     child: Text(
-                      "Our platform connects agents, buyers, and mills in one unified system — "
-                      "making order management easier than ever.",
+                      AppLocalizations.of(context)!.platformDescription,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Our Mission',
+            Text(
+              AppLocalizations.of(context)!.ourMission,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'To simplify textile operations with speed, clarity, and digital tools.',
+            Text(
+              AppLocalizations.of(context)!.missionStatement,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Our Vision',
+            Text(
+              AppLocalizations.of(context)!.ourVision,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'To be the leading tech-powered solution in the textile industry.',
+            Text(
+              AppLocalizations.of(context)!.visionStatement,
             ),
           ],
         ),

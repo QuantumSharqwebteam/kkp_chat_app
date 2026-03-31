@@ -1,16 +1,16 @@
 // Ensure all necessary imports
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/services/auth_service.dart';
+import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
@@ -43,6 +43,9 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
+        toolbarHeight: kToolbarHeight,
+        title: Text(AppLocalizations.of(context)!.accountAndSecurity,
+            style: AppTextStyles.black20_500),
       ),
       body: Center(
         child: SizedBox(
@@ -50,13 +53,16 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Account & Security', style: AppTextStyles.black20_500),
+              // Text(AppLocalizations.of(context)!.accountAndSecurity,
+              //     style: AppTextStyles.black20_500),
               SizedBox(height: 16),
-              Text('Login & recovery', style: AppTextStyles.black16_500),
+              Text(AppLocalizations.of(context)!.loginAndRecovery,
+                  style: AppTextStyles.black16_500),
               Text(
-                'Manage your password, login preference and recovery methods',
+                "Manage your account",
                 style: AppTextStyles.black14_400,
               ),
+              Text("Login preference and recovery methods", style: AppTextStyles.black14_400),
               SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
@@ -64,13 +70,12 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: SettingsTile(
-                  titles: ['Change password'],
+                  titles: [AppLocalizations.of(context)!.changePassword],
                   numberOfTiles: 1,
                   isDense: true,
                   onTaps: [
                     () {
-                      Navigator.pushNamed(
-                          context, CustomerRoutes.changePassword);
+                      Navigator.pushNamed(context, CustomerRoutes.changePassword);
                     }
                   ],
                 ),
@@ -83,11 +88,9 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: SettingsTile(
-                    titles: ['Delete Account Permanently'],
-                    tileTitleStyle: TextStyle(
-                        color: Colors.red,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700),
+                    titles: [AppLocalizations.of(context)!.deleteAccountPermanently],
+                    tileTitleStyle:
+                        TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w700),
                     numberOfTiles: 1,
                     isDense: true,
                     onTaps: [
@@ -100,7 +103,7 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                     iconColor: Colors.red,
                   ),
                 ),
-              SizedBox(height: 20),
+              SizedBox(height: 100),
             ],
           ),
         ),
@@ -139,8 +142,7 @@ class ConfirmDeleteBottomSheet extends StatefulWidget {
   const ConfirmDeleteBottomSheet({super.key, required this.scaffoldMessenger});
 
   @override
-  State<ConfirmDeleteBottomSheet> createState() =>
-      _ConfirmDeleteBottomSheetState();
+  State<ConfirmDeleteBottomSheet> createState() => _ConfirmDeleteBottomSheetState();
 }
 
 class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
@@ -155,37 +157,84 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
 
   final AuthApi authApi = AuthApi();
 
-  Future<void> deleteAccount(BuildContext context) async {
-    setState(() {
-      isLoading = true; // Start loading
-    });
+  Future<void> _showFinalDeleteConfirmationDialog(
+    BuildContext sheetContext,
+  ) async {
+    return showDialog<void>(
+      context: sheetContext,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text("Final Confirmation"),
+          content: const Text(
+            "Are you absolutely sure you want to delete your account?",
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // close dialog
+              },
+            ),
+            TextButton(
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // close dialog
+                deleteAccount(sheetContext); // ✅ pass SHEET context
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> deleteAccount(BuildContext sheetContext) async {
+    setState(() => isLoading = true);
 
     try {
-      authApi
-          .deleteUserAccount(email.text, password.text, feedback.text)
-          .then((response) async {
-        final message = response['message'];
-        if (message == "User marked as deleted successfully") {
-          widget.scaffoldMessenger
-              .showSnackBar(SnackBar(content: Text(message)));
+      final response = await authApi.deleteUserAccount(
+        email.text,
+        password.text,
+        feedback.text,
+      );
 
-          await clearHiveStorage();
-          if (context.mounted) {
-            logOut(context);
-          }
-        } else {
-          widget.scaffoldMessenger
-              .showSnackBar(SnackBar(content: Text(message)));
+      final message = response['message'];
+
+      if (message == "User marked as deleted successfully") {
+        // Close bottom sheet first
+        if (sheetContext.mounted) {
+          Navigator.of(sheetContext).pop();
         }
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print("error in deleting account : ${e.toString()}");
+
+        // Show success message on parent scaffold
+        widget.scaffoldMessenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text("Account deleted successfully")),
+          );
+
+        // Keep the message visible briefly before navigation
+        await Future.delayed(const Duration(seconds: 1));
+
+        await clearHiveStorage();
+        await logOut();
+      } else {
+        widget.scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text("Cannot delete account! Incorrect details provided"),
+          ),
+        );
       }
+    } catch (e) {
+      debugPrint("Error deleting account: $e");
     } finally {
-      setState(() {
-        isLoading = false; // End loading
-      });
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -206,19 +255,20 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(height: 10),
-            Text("Confirm Account Deletion", style: AppTextStyles.black18_600),
+            Text(AppLocalizations.of(context)!.confirmAccountDeletion,
+                style: AppTextStyles.black18_600),
             SizedBox(height: 10),
             SizedBox(
               width: Utils().width(context) * 0.9,
               child: Text(
-                "By entering email and password you confirm that this account can be permanently deleted, and cannot be recovered in any way.",
+                AppLocalizations.of(context)!.deleteAccountConfirmation,
                 style: AppTextStyles.black14_400,
               ),
             ),
             SizedBox(height: 10),
             CustomTextField(
               controller: email,
-              hintText: "Email",
+              hintText: AppLocalizations.of(context)!.emailLabel,
               errorText: emailError,
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.emailAddress,
@@ -227,7 +277,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             CustomTextField(
               controller: password,
               errorText: passwordError,
-              hintText: "Password",
+              hintText: AppLocalizations.of(context)!.password,
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.visiblePassword,
               isPassword: true,
@@ -236,7 +286,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             CustomTextField(
               controller: feedback,
               errorText: feedbackError,
-              hintText: "Reason for deleting the account ",
+              hintText: AppLocalizations.of(context)!.reasonForDeleting,
               width: Utils().width(context) * 0.8,
               keyboardType: TextInputType.text,
               isPassword: false,
@@ -245,26 +295,22 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             isLoading
                 ? CupertinoActivityIndicator(radius: 20)
                 : CustomButton(
-                    text: "Confirm Delete",
+                    text: AppLocalizations.of(context)!.confirmDelete,
                     onPressed: isLoading
                         ? null
                         : () {
                             setState(() {
-                              emailError = email.text.trim().isEmpty
-                                  ? "Email is required"
-                                  : null;
-                              passwordError = password.text.trim().isEmpty
-                                  ? "Password is required"
-                                  : null;
-                              feedbackError = feedback.text.trim().isEmpty
-                                  ? "Feedback is required"
-                                  : null;
+                              emailError = email.text.trim().isEmpty ? "Email is required" : null;
+                              passwordError =
+                                  password.text.trim().isEmpty ? "Password is required" : null;
+                              feedbackError =
+                                  feedback.text.trim().isEmpty ? "Feedback is required" : null;
                             });
 
                             if (emailError == null &&
                                 passwordError == null &&
                                 feedbackError == null) {
-                              deleteAccount(context);
+                              _showFinalDeleteConfirmationDialog(context);
                             }
                           },
                     width: Utils().width(context) * 0.8,
@@ -278,9 +324,8 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
   }
 }
 
-void logOut(BuildContext context) async {
+Future<void> logOut() async {
   try {
-    // 1. Clear all persistent data
     await Future.wait([
       LocalDbHelper.removeToken(),
       LocalDbHelper.removeUserType(),
@@ -291,18 +336,15 @@ void logOut(BuildContext context) async {
       NotificationService.deleteFCMToken(),
     ]);
 
-    // 2. Dispose socket
     SocketService socketService = SocketService(navigatorKey);
     socketService.dispose();
 
-    // 3. If still in UI, navigate:
-    if (context.mounted) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        "/login", // ← the named route you defined
-        (Route<dynamic> route) => false, // ← clears everything
-      );
-    }
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      "/login",
+      (route) => false,
+    );
   } catch (e) {
     debugPrint("Error during logout: $e");
   }
 }
+

@@ -15,6 +15,7 @@ class _FormOverlayState extends State<FormOverlay> {
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController weaveController = TextEditingController();
   final TextEditingController compositionController = TextEditingController();
+  final TextEditingController buyernameController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +32,16 @@ class _FormOverlayState extends State<FormOverlay> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
+            TextFormField(
+              decoration: InputDecoration(labelText: "Buyer Name"),
+              controller: buyernameController,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter buyer name';
+                }
+                return null;
+              },
+            ),
             TextFormField(
               decoration: InputDecoration(labelText: "Quality"),
               controller: qualityController,
@@ -76,6 +87,7 @@ class _FormOverlayState extends State<FormOverlay> {
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   final formData = {
+                    "buyerName": buyernameController.text,
                     "quality": qualityController.text,
                     "quantity": quantityController.text,
                     "weave": weaveController.text,

@@ -4,6 +4,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
@@ -42,7 +43,7 @@ class _ChangePasswordState extends State<ChangePassword> {
         _newPass.text.trim().isEmpty ||
         _newRepass.text.trim().isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Fields can not be empty!")));
+          .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.fieldsCannotBeEmpty)));
       return;
     }
 
@@ -54,23 +55,21 @@ class _ChangePasswordState extends State<ChangePassword> {
       final String? email = LocalDbHelper.getProfile()?.email;
 
       final response = await auth.updatePassword(
-          currentPassword: _currentPass.text,
-          newPassword: _newPass.text,
-          email: email!);
+          currentPassword: _currentPass.text, newPassword: _newPass.text, email: email!);
 
       if (response['success'] == true) {
-        Utils()
-            .showSuccessDialog(context, "Password changed successfully!", true);
+        Utils().showSuccessDialog(context, "Password changed successfully!", true);
 
         Future.delayed(Duration(seconds: 2), () {
           Navigator.pop(context);
         });
       } else {
-        Utils().showSuccessDialog(
-            context, response['message'] ?? "Failed to update password", false);
+        Utils()
+            .showSuccessDialog(context, response['message'] ?? "Failed to update password", false);
       }
     } catch (e) {
-      Utils().showSuccessDialog(context, "Error: ${e.toString()}", false);
+      Utils()
+          .showSuccessDialog(context, "Wrong current password :Failed to update password", false);
     } finally {
       setState(() {
         _isLoading = false;
@@ -88,9 +87,7 @@ class _ChangePasswordState extends State<ChangePassword> {
         onWillPop: () async {
           if (_isLoading) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content:
-                      Text("Please wait while the password is being changed.")),
+              SnackBar(content: Text(AppLocalizations.of(context)!.pleaseWaitPasswordChange)),
             );
             return false; // Prevent navigation
           }
@@ -108,7 +105,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Password and Security',
+                    AppLocalizations.of(context)!.passwordAndSecurity,
                     style: AppTextStyles.black20_500,
                   ),
                   SizedBox(height: 16),
@@ -116,21 +113,21 @@ class _ChangePasswordState extends State<ChangePassword> {
                     controller: _currentPass,
                     errorText: currentPassErrorText,
                     height: 50,
-                    hintText: 'Current Password',
+                    hintText: AppLocalizations.of(context)!.currentPassword,
                   ),
                   SizedBox(height: 10),
                   CustomTextField(
                     controller: _newPass,
                     errorText: newPassErrorText,
                     height: 50,
-                    hintText: 'New Password',
+                    hintText: AppLocalizations.of(context)!.newPassword,
                   ),
                   SizedBox(height: 10),
                   CustomTextField(
                     controller: _newRepass,
                     errorText: newRePassErrorText,
                     height: 50,
-                    hintText: 'Retype New Password',
+                    hintText: AppLocalizations.of(context)!.retypeNewPassword,
                   ),
                   SizedBox(height: 20),
                   // TextButton(
@@ -146,7 +143,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                   _isLoading
                       ? Center(child: CircularProgressIndicator())
                       : CustomButton(
-                          text: 'Change Password',
+                          text: AppLocalizations.of(context)!.changePassword,
                           onPressed: () => _changePassword(context),
                           borderRadius: 30,
                           height: 50,
@@ -154,7 +151,7 @@ class _ChangePasswordState extends State<ChangePassword> {
                           fontSize: 16,
                           backgroundColor: AppColors.blue00ABE9,
                         ),
-                  SizedBox(height: 20),
+                  SizedBox(height: 50),
                 ],
               ),
             ),

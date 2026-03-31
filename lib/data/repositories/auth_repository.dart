@@ -1,4 +1,4 @@
-import 'package:kkpchatapp/core/services/auth_service.dart';
+import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/models/notification_model.dart';

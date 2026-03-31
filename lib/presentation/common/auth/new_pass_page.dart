@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/auth/new_pass_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -21,6 +22,7 @@ class _NewPassPageState extends State<NewPassPage> {
   @override
   Widget build(BuildContext context) {
     final newPassProvider = Provider.of<NewPassProvider>(context);
+    final l = AppLocalizations.of(context)!;
 
     Widget content = GestureDetector(
       onTap: () {
@@ -41,13 +43,12 @@ class _NewPassPageState extends State<NewPassPage> {
                       height: 300,
                     ),
                     Text(
-                      'Create new Password',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      l.createNewPassword,
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 10),
                     Text(
-                      'Your new password must be different from the previously used password',
+                      l.newPasswordRule,
                       style: TextStyle(fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
@@ -58,9 +59,8 @@ class _NewPassPageState extends State<NewPassPage> {
                         Padding(
                           padding: const EdgeInsets.only(left: 5),
                           child: Text(
-                            'New Password',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
+                            l.newPassword,
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           ),
                         ),
                         SizedBox(height: 5),
@@ -69,18 +69,16 @@ class _NewPassPageState extends State<NewPassPage> {
                           maxLines: 1,
                           isPassword: true,
                           keyboardType: TextInputType.emailAddress,
-                          hintText: 'Enter Password',
+                          hintText: l.enterPassword,
                           errorText: newPassProvider.newPassError,
-                          onChanged: (value) =>
-                              newPassProvider.setNewPassword(value),
+                          onChanged: (value) => newPassProvider.setNewPassword(value),
                         ),
                         SizedBox(height: 10),
                         Padding(
                           padding: const EdgeInsets.only(left: 5),
                           child: Text(
-                            'Confirm New Password',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600),
+                            l.confirmNewPassword,
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           ),
                         ),
                         SizedBox(height: 5),
@@ -89,21 +87,18 @@ class _NewPassPageState extends State<NewPassPage> {
                           maxLines: 1,
                           isPassword: true,
                           keyboardType: TextInputType.emailAddress,
-                          hintText: 'Re-enter Password',
+                          hintText: l.reEnterPassword,
                           errorText: newPassProvider.rePassError,
-                          onChanged: (value) =>
-                              newPassProvider.setRePassword(value),
+                          onChanged: (value) => newPassProvider.setRePassword(value),
                         ),
                         SizedBox(height: 40),
-                        newPassProvider.isLoading
-                            ? const CircularProgressIndicator()
-                            : CustomButton(
-                                text: 'Reset Password',
-                                onPressed: () {
-                                  newPassProvider.changePassword(
-                                      context, widget.email);
-                                },
-                              ),
+                        CustomButton(
+                          text: l.resetPassword,
+                          isLoading: newPassProvider.isLoading,
+                          onPressed: () {
+                            newPassProvider.changePassword(context, widget.email);
+                          },
+                        ),
                         SizedBox(height: 20),
                       ],
                     ),

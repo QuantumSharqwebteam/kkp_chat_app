@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:indian_pincode_validator/indian_pincode_validator.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -10,6 +12,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
@@ -45,16 +48,35 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   AuthRepository auth = AuthRepository();
   String? _customerType;
   DateTime? _lastPressed;
+  String? _completePhoneNumber;
+  String? _countryCode;
+  bool _isSavingProfile = false;
 
   // Error texts for each field
   String? _nameError;
   String? _phoneNumberError;
-  String? _gstNumberError;
-  String? _panNumberError;
   String? _houseFlatNumberError;
   String? _streetNumberError;
   String? _cityNameError;
   String? _pinCodeError;
+  String? _gstNumberError;
+  String? _panNumberError;
+
+  bool _isValidPinCode(String pinCode) {
+    // Fast format check; full validation is done via package on submit.
+    return IndianPinCodeValidator.isValidFormat(pinCode);
+  }
+
+  bool _isValidCityName(String city) {
+    // Allows alphabetic city names with spaces/dot/hyphen/apostrophe separators.
+    return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(city);
+  }
+
+  bool _isSameCity(String inputCity, String pinCity) {
+    String normalize(String value) =>
+        value.toLowerCase().replaceAll(RegExp(r"[^a-z]"), "");
+    return normalize(inputCity) == normalize(pinCity);
+  }
 
   @override
   void initState() {
@@ -67,7 +89,25 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     // Initialize fields with passed arguments if updating
     if (widget.forUpdate && widget.profile != null) {
       _name.text = widget.profile!.name ?? '';
-      _phoneNumber.text = widget.profile!.mobile.toString();
+
+      // Parse the phone number for international field
+      String phoneStr = widget.profile!.mobile.toString();
+      if (phoneStr.startsWith('+')) {
+        _completePhoneNumber = phoneStr;
+        // Extract country code and phone number
+        if (phoneStr.startsWith('+91')) {
+          _countryCode = '+91';
+          _phoneNumber.text = phoneStr.substring(3);
+        } else {
+          // For other countries, you might need more sophisticated parsing
+          _phoneNumber.text = phoneStr;
+        }
+      } else {
+        _phoneNumber.text = phoneStr;
+        _countryCode = '+91'; // Default to India
+        _completePhoneNumber = '+91$phoneStr';
+      }
+
       _gstNumber.text = widget.profile!.gstNo ?? '';
       _panNumber.text = widget.profile!.panNo ?? '';
       if (widget.profile!.address != null &&
@@ -84,12 +124,54 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       // Set default customer type to Export
       _isExportSelected = true;
       _isDomesticSelected = false;
+      _countryCode = '+91'; // Default to India
     }
     _customerType = _isExportSelected ? 'Export' : 'Domestic';
   }
 
-  Future<void> _saveUserProfile(context) async {
+  Future<void> _saveUserProfile() async {
     if (!mounted) return;
+
+    if (_pinCode.text.isNotEmpty && !_isValidPinCode(_pinCode.text.trim())) {
+      setState(() {
+        _pinCodeError = 'Please enter a valid Indian PIN code';
+        _isSavingProfile = false;
+      });
+      return;
+    }
+
+    if (_cityName.text.isNotEmpty && !_isValidCityName(_cityName.text.trim())) {
+      setState(() {
+        _cityNameError = 'Please enter a valid city name';
+        _isSavingProfile = false;
+      });
+      return;
+    }
+
+    if (_pinCode.text.isNotEmpty) {
+      final pinValidationResult = await IndianPinCodeValidator.validate(
+        _pinCode.text.trim(),
+      );
+
+      if (!pinValidationResult.isValid) {
+        setState(() {
+          _pinCodeError =
+              pinValidationResult.message ?? 'Please enter a valid Indian PIN code';
+          _isSavingProfile = false;
+        });
+        return;
+      }
+
+      final enteredCity = _cityName.text.trim();
+      final pinCity = (pinValidationResult.city ?? '').trim();
+      if (enteredCity.isNotEmpty && pinCity.isNotEmpty && !_isSameCity(enteredCity, pinCity)) {
+        setState(() {
+          _cityNameError = 'City does not match the selected PIN code';
+          _isSavingProfile = false;
+        });
+        return;
+      }
+    }
 
     // Construct the address object with only changed values
     Address? addressDetails;
@@ -109,7 +191,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     try {
       final response = await auth.updateUserDetails(
         name: _name.text.isNotEmpty ? _name.text : widget.name,
-        number: _phoneNumber.text.isNotEmpty ? _phoneNumber.text : null,
+        number: _completePhoneNumber ?? _phoneNumber.text,
         customerType: _customerType,
         gstNo: _gstNumber.text.isNotEmpty ? _gstNumber.text : null,
         panNo: _panNumber.text.isNotEmpty ? _panNumber.text : null,
@@ -122,8 +204,10 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         Profile updatedProfile = Profile.fromJson(response["data"]);
 
         await LocalDbHelper.saveProfile(updatedProfile);
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Profile details updated Successfully!")));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.of(context)!
+                .profileDetailsUpdatedSuccessfully)));
 
         // Return the updated profile and image URL to the previous screen
         if (widget.forUpdate) {
@@ -134,8 +218,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       } else {
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response['message'])));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(response[AppLocalizations.of(context)!.message])));
       }
     } catch (e) {
       if (!mounted) return;
@@ -145,6 +229,12 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       }
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingProfile = false;
+        });
+      }
     }
   }
 
@@ -166,7 +256,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     Navigator.pop(context);
                   },
                 ),
-                title: Text('Update Profile'),
+                title: Text(AppLocalizations.of(context)!.updateProfile),
               )
             : null,
         persistentFooterAlignment: AlignmentDirectional.center,
@@ -177,7 +267,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               children: [
                 if (_currentStep > 0)
                   CustomButton(
-                    text: 'Back',
+                    text: AppLocalizations.of(context)!.back,
                     backgroundColor: Colors.white,
                     textColor: AppColors.blue,
                     width: Utils().width(context) * 0.4,
@@ -193,21 +283,32 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   text: _currentStep == getSteps(context).length - 1
                       ? 'Finish'
                       : 'Next',
-                  onPressed: () {
-                    if (widget.forUpdate || validateStep()) {
-                      if (_currentStep < getSteps(context).length - 1) {
-                        setState(() {
-                          _currentStep++;
-                        });
-                      } else {
-                        if (!_isDataChanged()) {
-                          Navigator.pop(context);
-                        } else {
-                          _saveUserProfile(context);
-                        }
-                      }
-                    }
-                  },
+                  isLoading: _currentStep == getSteps(context).length - 1 &&
+                      _isSavingProfile,
+                  onPressed: _isSavingProfile
+                      ? null
+                      : () async {
+                          if (widget.forUpdate || validateStep()) {
+                            if (_currentStep < getSteps(context).length - 1) {
+                              setState(() {
+                                _currentStep++;
+                              });
+                            } else {
+                              if (!_isDataChanged()) {
+                                Navigator.pop(context);
+                              } else {
+                                setState(() {
+                                  _isSavingProfile = true;
+                                });
+                                // Give UI one frame so button loader is visible immediately.
+                                await Future<void>.delayed(Duration.zero);
+                                if (!mounted) return;
+                                await _saveUserProfile();
+                              }
+                            }
+                          }
+                        },
+                  // Keep button behavior unchanged apart from loading state.
                   backgroundColor: AppColors.blue,
                   width: Utils().width(context) * 0.4,
                   height: 50,
@@ -246,7 +347,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 _lastPressed = now;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("Press back again to exit"),
+                    content: Text(
+                        AppLocalizations.of(context)!.pressBackAgainToExit),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -265,7 +367,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 _lastPressed = now;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text("Press back again to exit"),
+                    content: Text(
+                        AppLocalizations.of(context)!.pressBackAgainToExit),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -296,7 +399,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 width: Utils().width(context) * 0.7,
                 child: Text(
                   textAlign: TextAlign.center,
-                  'Some basic information to get you started.',
+                  AppLocalizations.of(context)!.someBasicInformation,
                   style: AppTextStyles.black22_600,
                 ),
               ),
@@ -318,14 +421,14 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Name',
+                    AppLocalizations.of(context)!.name,
                     style: AppTextStyles.black14_600,
                   ),
                   CustomTextField(
                     controller: _name,
                     height: 50,
                     keyboardType: TextInputType.name,
-                    hintText: 'Enter your name',
+                    hintText: AppLocalizations.of(context)!.enterYourName,
                     errorText: widget.forUpdate ? null : _nameError,
                   ),
                 ],
@@ -349,7 +452,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 width: Utils().width(context) * 0.7,
                 child: Text(
                   textAlign: TextAlign.center,
-                  'Some basic information to get you started.',
+                  AppLocalizations.of(context)!.someBasicInformation,
                   style: AppTextStyles.black22_600,
                 ),
               ),
@@ -358,7 +461,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Customer Type',
+                    AppLocalizations.of(context)!.customerType,
                     style: AppTextStyles.black14_600,
                   ),
                   Row(
@@ -376,11 +479,16 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                                 _isDomesticSelected = !_isExportSelected;
                                 _customerType =
                                     _isExportSelected ? 'Export' : 'Domestic';
+                                // Clear GST and PAN errors when switching to Export
+                                if (_isExportSelected) {
+                                  _gstNumberError = null;
+                                  _panNumberError = null;
+                                }
                               });
                             },
                           ),
                           Text(
-                            'Export',
+                            AppLocalizations.of(context)!.export,
                             style: AppTextStyles.black14_600,
                           ),
                         ],
@@ -397,11 +505,16 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                                 _isExportSelected = !_isDomesticSelected;
                                 _customerType =
                                     _isDomesticSelected ? 'Domestic' : 'Export';
+                                // Clear GST and PAN errors when switching to Export
+                                if (_isExportSelected) {
+                                  _gstNumberError = null;
+                                  _panNumberError = null;
+                                }
                               });
                             },
                           ),
                           Text(
-                            'Domestic',
+                            AppLocalizations.of(context)!.domestic,
                             style: AppTextStyles.black14_600,
                           ),
                         ],
@@ -415,16 +528,41 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mobile number',
+                    AppLocalizations.of(context)!.mobileNumber,
                     style: AppTextStyles.black14_600,
                   ),
-                  CustomTextField(
+                  IntlPhoneField(
                     controller: _phoneNumber,
-                    height: 50,
-                    maxLength: 10,
-                    keyboardType: TextInputType.phone,
-                    hintText: 'Enter your mobile number',
-                    errorText: widget.forUpdate ? null : _phoneNumberError,
+                    decoration: InputDecoration(
+                      hintText:
+                          AppLocalizations.of(context)!.enterYourMobileNumber,
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(),
+                      ),
+                      errorText: widget.forUpdate ? null : _phoneNumberError,
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 15, horizontal: 12),
+                    ),
+                    initialCountryCode:
+                        _countryCode?.replaceAll('+', '') ?? 'IN',
+                    onChanged: (phone) {
+                      _completePhoneNumber = phone.completeNumber;
+                      _countryCode = phone.countryCode;
+                      if (_currentStep < getSteps(context).length - 1) {
+                        setState(() {
+                          _phoneNumberError = null; // Clear error on change
+                        });
+                      }
+                    },
+                    onCountryChanged: (country) {
+                      _countryCode = '+${country.dialCode}';
+                    },
+                    validator: (phone) {
+                      if (phone == null || phone.number.isEmpty) {
+                        return 'Mobile number is required';
+                      }
+                      return null;
+                    },
                   ),
                 ],
               ),
@@ -432,14 +570,28 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'GST number',
-                    style: AppTextStyles.black14_600,
+                  Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.gstNumber,
+                        style: AppTextStyles.black14_600,
+                      ),
+                      if (_isDomesticSelected)
+                        Text(
+                          ' *',
+                          style: TextStyle(color: Colors.red, fontSize: 14),
+                        ),
+                      if (_isExportSelected)
+                        Text(
+                          ' (Optional)',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                    ],
                   ),
                   CustomTextField(
                     controller: _gstNumber,
                     height: 50,
-                    hintText: 'Enter GST No.',
+                    hintText: AppLocalizations.of(context)!.enterGSTNo,
                     keyboardType: TextInputType.text,
                     maxLength: 15,
                     errorText: widget.forUpdate ? null : _gstNumberError,
@@ -450,14 +602,28 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'PAN number',
-                    style: AppTextStyles.black14_600,
+                  Row(
+                    children: [
+                      Text(
+                        AppLocalizations.of(context)!.panNumber,
+                        style: AppTextStyles.black14_600,
+                      ),
+                      if (_isDomesticSelected)
+                        Text(
+                          ' *',
+                          style: TextStyle(color: Colors.red, fontSize: 14),
+                        ),
+                      if (_isExportSelected)
+                        Text(
+                          ' (Optional)',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                    ],
                   ),
                   CustomTextField(
                     controller: _panNumber,
                     height: 50,
-                    hintText: 'Enter PAN No.',
+                    hintText: AppLocalizations.of(context)!.enterPANNo,
                     keyboardType: TextInputType.text,
                     maxLength: 10,
                     errorText: widget.forUpdate ? null : _panNumberError,
@@ -480,7 +646,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
             width: Utils().width(context) * 0.7,
             child: Text(
               textAlign: TextAlign.center,
-              'Some basic information to get you started.',
+              AppLocalizations.of(context)!.someBasicInformation,
               style: AppTextStyles.black22_600,
             ),
           ),
@@ -493,13 +659,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'House/Flat No.',
+                      AppLocalizations.of(context)!.houseFlatNo,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _houseFlatNumber,
                       height: 50,
-                      hintText: 'Enter house/flat no.',
+                      hintText: AppLocalizations.of(context)!.enterHouseFlatNo,
                       keyboardType: TextInputType.text,
                       errorText:
                           widget.forUpdate ? null : _houseFlatNumberError,
@@ -511,13 +677,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Street Name',
+                      AppLocalizations.of(context)!.streetName,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _streetNumber,
                       height: 50,
-                      hintText: 'Enter Street Name',
+                      hintText: AppLocalizations.of(context)!.enterStreetName,
                       keyboardType: TextInputType.text,
                       errorText: widget.forUpdate ? null : _streetNumberError,
                     ),
@@ -528,15 +694,23 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'City Name',
+                      AppLocalizations.of(context)!.cityName,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _cityName,
                       height: 50,
-                      hintText: 'Enter City Name',
-                      errorText: widget.forUpdate ? null : _cityNameError,
+                      hintText: AppLocalizations.of(context)!.enterCityName,
+                      errorText: _cityNameError,
                       keyboardType: TextInputType.text,
+                      onChanged: (value) {
+                        final city = value.trim();
+                        if (city.isEmpty || _isValidCityName(city)) {
+                          setState(() {
+                            _cityNameError = null;
+                          });
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -545,16 +719,26 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pin Code',
+                      AppLocalizations.of(context)!.pinCode,
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
                       controller: _pinCode,
                       height: 50,
                       maxLength: 6,
-                      hintText: 'Enter Pincode',
-                      errorText: widget.forUpdate ? null : _pinCodeError,
+                      hintText: AppLocalizations.of(context)!.enterPincode,
+                      errorText: _pinCodeError,
                       keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        final pinCode = value.trim();
+                        if (pinCode.isEmpty ||
+                            (pinCode.length == 6 &&
+                                _isValidPinCode(pinCode))) {
+                          setState(() {
+                            _pinCodeError = null;
+                          });
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -577,46 +761,59 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _nameError = null;
+        setState(() {
+          _nameError = null;
+        });
       }
     } else if (_currentStep == 1) {
+      // Phone number validation
       if (_phoneNumber.text.isEmpty) {
         setState(() {
           _phoneNumberError = 'Mobile number is required';
         });
         isValid = false;
       } else {
-        _phoneNumberError = null;
+        setState(() {
+          _phoneNumberError = null;
+        });
       }
 
-      if (_gstNumber.text.isEmpty) {
+      // GST validation - mandatory for domestic, optional for export
+      if (_isDomesticSelected && _gstNumber.text.isEmpty) {
         setState(() {
-          _gstNumberError = 'GST number is required';
+          _gstNumberError = 'GST number is required for domestic customers';
         });
         isValid = false;
       } else {
-        _gstNumberError = null;
+        setState(() {
+          _gstNumberError = null;
+        });
       }
 
-      if (_panNumber.text.isEmpty) {
+      // PAN validation - mandatory for domestic, optional for export
+      if (_isDomesticSelected && _panNumber.text.isEmpty) {
         setState(() {
-          _panNumberError = 'PAN number is required';
+          _panNumberError = 'PAN number is required for domestic customers';
         });
         isValid = false;
       } else {
-        _panNumberError = null;
+        setState(() {
+          _panNumberError = null;
+        });
       }
 
+      // Customer type validation
       if (_customerType == null) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Validation Error'),
-            content: Text('Please select a customer type.'),
+            title: Text(AppLocalizations.of(context)!.validationError),
+            content:
+                Text(AppLocalizations.of(context)!.pleaseSelectCustomerType),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('OK'),
+                child: Text(AppLocalizations.of(context)!.ok),
               ),
             ],
           ),
@@ -630,7 +827,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _houseFlatNumberError = null;
+        setState(() {
+          _houseFlatNumberError = null;
+        });
       }
 
       if (_streetNumber.text.isEmpty) {
@@ -639,7 +838,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else {
-        _streetNumberError = null;
+        setState(() {
+          _streetNumberError = null;
+        });
       }
 
       if (_cityName.text.isEmpty) {
@@ -647,8 +848,15 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
           _cityNameError = 'City name is required';
         });
         isValid = false;
+      } else if (!_isValidCityName(_cityName.text.trim())) {
+        setState(() {
+          _cityNameError = 'Please enter a valid city name';
+        });
+        isValid = false;
       } else {
-        _cityNameError = null;
+        setState(() {
+          _cityNameError = null;
+        });
       }
 
       if (_pinCode.text.isEmpty) {
@@ -656,8 +864,15 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
           _pinCodeError = 'Pin code is required';
         });
         isValid = false;
+      } else if (!_isValidPinCode(_pinCode.text.trim())) {
+        setState(() {
+          _pinCodeError = 'Please enter a valid Indian PIN code';
+        });
+        isValid = false;
       } else {
-        _pinCodeError = null;
+        setState(() {
+          _pinCodeError = null;
+        });
       }
     }
 
@@ -665,8 +880,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   }
 
   bool _isDataChanged() {
+    String currentPhone = _completePhoneNumber ?? _phoneNumber.text;
+    String originalPhone = widget.profile?.mobile.toString() ?? '';
+
     return _name.text != widget.profile?.name ||
-        _phoneNumber.text != widget.profile?.mobile.toString() ||
+        currentPhone != originalPhone ||
         _gstNumber.text != widget.profile?.gstNo ||
         _panNumber.text != widget.profile?.panNo ||
         _houseFlatNumber.text != widget.profile?.address?[0].houseNo ||

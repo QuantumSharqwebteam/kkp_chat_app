@@ -4,10 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
-import 'package:kkpchatapp/core/services/product_service.dart';
+import 'package:kkpchatapp/data/api/product_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
@@ -40,12 +41,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
   void initState() {
     super.initState();
     nameController = TextEditingController(text: widget.product.productName);
-    priceController =
-        TextEditingController(text: widget.product.price.toString());
-    stockController =
-        TextEditingController(text: widget.product.stock.toString());
-    descriptionController =
-        TextEditingController(text: widget.product.description.toString());
+    priceController = TextEditingController(text: widget.product.price.toString());
+    stockController = TextEditingController(text: widget.product.stock.toString());
+    descriptionController = TextEditingController(text: widget.product.description.toString());
     selectedSizes = widget.product.sizes.toSet();
     selectedColors = widget.product.colors.map((color) {
       return Color.fromRGBO(
@@ -59,8 +57,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   void pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         selectedImage = File(pickedFile.path);
@@ -82,8 +79,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           isLoading = false;
         });
         if (mounted) {
-          Utils().showSuccessDialog(
-              context, "Image upload failed. Try again.", false);
+          Utils().showSuccessDialog(context, "Image upload failed. Try again.", false);
         }
         return;
       }
@@ -93,8 +89,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     List<ProductColor> colorList = selectedColors.map((color) {
       return ProductColor(
         colorName: color.toString(), // You may replace this with proper names
-        colorCode:
-            '#${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}' // Red
+        colorCode: '#${(color.r * 255).toInt().toRadixString(16).padLeft(2, '0')}' // Red
             '${(color.g * 255).toInt().toRadixString(16).padLeft(2, '0')}' // Green
             '${(color.b * 255).toInt().toRadixString(16).padLeft(2, '0')}', // Blue
       );
@@ -112,8 +107,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     };
 
     // Call update API
-    bool success = await productService.updateProduct(
-        widget.product.productId!, updatedData);
+    bool success = await productService.updateProduct(widget.product.productId!, updatedData);
 
     setState(() {
       isLoading = false;
@@ -121,8 +115,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
     if (success) {
       if (mounted) {
-        Utils()
-            .showSuccessDialog(context, "Product updated successfully!", true);
+        Utils().showSuccessDialog(context, "Product updated successfully!", true);
       }
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
@@ -133,84 +126,89 @@ class _EditProductScreenState extends State<EditProductScreen> {
       });
     } else {
       if (mounted) {
-        Utils().showSuccessDialog(
-            context, "Failed to update product. Try again later!", false);
+        Utils().showSuccessDialog(context, "Failed to update product. Try again later!", false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final locale = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
-        title: const Text("Edit Product"),
+        title: Text(locale.editProduct),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              spacing: 20,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildImagePickerContainer(selectedImage, pickImage),
-                _buildProductDetails(),
-                const SizedBox(height: 20),
-                CustomButton(
-                  onPressed: updateProduct,
-                  text: "Update Product",
-                  fontSize: 18,
-                  borderColor: AppColors.blue00ABE9,
-                  backgroundColor: AppColors.blue00ABE9,
-                ),
-              ],
+      body: SafeArea(
+        bottom: Platform.isAndroid,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                spacing: 20,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildImagePickerContainer(selectedImage, pickImage),
+                  _buildProductDetails(),
+                  const SizedBox(height: 20),
+                  CustomButton(
+                    onPressed: updateProduct,
+                    text: locale.updateProduct,
+                    fontSize: 18,
+                    borderColor: AppColors.blue00ABE9,
+                    backgroundColor: AppColors.blue00ABE9,
+                  ),
+                  const SizedBox(
+                    height: 80,
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (isLoading) FullScreenLoader(), // Loader overlay
-        ],
+            if (isLoading) FullScreenLoader(), // Loader overlay
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildProductDetails() {
+    final locale = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.all(10),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 3,
-              spreadRadius: 0,
-              offset: Offset(0, 1),
-              color: Colors.black.withValues(alpha: 0.15),
-            )
-          ]),
+      decoration:
+          BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [
+        BoxShadow(
+          blurRadius: 3,
+          spreadRadius: 0,
+          offset: Offset(0, 1),
+          color: Colors.black.withValues(alpha: 0.15),
+        )
+      ]),
       child: Column(
         spacing: 10,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           //product name
-          Text("Product Name", style: AppTextStyles.black14_600),
+          Text(locale.productName, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: nameController,
-            hintText: 'Name',
+            hintText: locale.name,
           ),
           // price and review textfields
           Row(
             spacing: 10,
             children: [
               Expanded(
-                child: Text("Price", style: AppTextStyles.black14_600),
+                child: Text(locale.price, style: AppTextStyles.black14_600),
               ),
               Expanded(
-                child: Text("Size", style: AppTextStyles.black14_600),
+                child: Text(locale.size, style: AppTextStyles.black14_600),
               ),
             ],
           ),
@@ -229,10 +227,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
               ),
             ],
           ),
-          Text("Color", style: AppTextStyles.black14_600),
+          Text(locale.color, style: AppTextStyles.black14_600),
           //color selector list
           _buildColorPickerWidget(),
-          Text("Stock Availaible", style: AppTextStyles.black14_600),
+          Text(locale.stockAvailable, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: stockController,
             hintText: "2000 Stocks Available",
@@ -240,10 +238,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           //description field
-          Text("Description", style: AppTextStyles.black14_600),
+          Text(locale.description, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: descriptionController,
-            hintText: "Describe about the product....... ",
+            hintText: locale.describeProduct,
             maxLines: 16,
             minLines: 2,
             height: 120,
@@ -272,9 +270,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey),
             ),
-            child: Text(size,
-                style:
-                    TextStyle(color: isSelected ? Colors.white : Colors.black)),
+            child: Text(size, style: TextStyle(color: isSelected ? Colors.white : Colors.black)),
           ),
         );
       }).toList(),
@@ -310,8 +306,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
     );
   }
 
-  Widget _buildImagePickerContainer(
-      File? selectedImage, VoidCallback pickImage) {
+  Widget _buildImagePickerContainer(File? selectedImage, VoidCallback pickImage) {
+    final locale = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: pickImage,
       child: Card(
@@ -332,12 +328,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
                     )
                   : Column(
                       children: [
-                        const Icon(Icons.cloud_upload_rounded,
-                            size: 50, color: Colors.grey),
-                        const Text("Upload Product Image"),
+                        const Icon(Icons.cloud_upload_rounded, size: 50, color: Colors.grey),
+                        Text(locale.uploadProductImage),
                         ElevatedButton(
                           onPressed: pickImage,
-                          child: const Text("Choose File"),
+                          child: Text(locale.chooseFile),
                         ),
                       ],
                     ))
@@ -356,8 +351,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   void pickColor() async {
-    Color pickedColor =
-        selectedColors.isNotEmpty ? selectedColors.last : Colors.black;
+    Color pickedColor = selectedColors.isNotEmpty ? selectedColors.last : Colors.black;
 
     Color? newColor = await showDialog(
       context: context,

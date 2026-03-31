@@ -5,6 +5,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -48,8 +49,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
   Future<void> _playRingtone() async {
     try {
-      await _audioPlayer
-          .setReleaseMode(ReleaseMode.loop); // Set to loop the ringtone
+      await _audioPlayer.setReleaseMode(ReleaseMode.loop); // Set to loop the ringtone
       await _audioPlayer.play(AssetSource('sounds/ringtone.mp3'));
       isPlaying = true;
     } catch (e) {
@@ -62,16 +62,14 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     isPlaying = false;
   }
 
-  Future<void> _updateCallData(String callStatus,
-      {String? callDuration}) async {
+  Future<void> _updateCallData(String callStatus, {String? callDuration}) async {
     try {
       await chatRepository.updateCallData(
         widget.callId,
         callStatus,
         callDuration: callDuration,
       );
-      debugPrint(
-          "✅ ✅ Call data updated successfully: $callStatus, Duration: $callDuration");
+      debugPrint("✅ ✅ Call data updated successfully: $callStatus, Duration: $callDuration");
     } catch (e) {
       debugPrint("❌ Error updating call data: $e");
       // Handle the error as needed, e.g., show a message to the user
@@ -87,9 +85,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Incoming Call'),
+        title: Text(l.incomingCall),
         automaticallyImplyLeading: false, // Remove the back button
       ),
       body: Center(
@@ -99,7 +98,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
             const Icon(Icons.call, size: 80, color: Colors.green),
             const SizedBox(height: 20),
             Text(
-              'Incoming call from:',
+              l.incomingCallFrom,
               style: AppTextStyles.black16_500,
             ),
             Text(
@@ -121,8 +120,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   ),
                   child: const Text(
                     'Reject',
@@ -130,7 +128,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     // Remove the incoming call screen from the navigation stack
                     _stopRingtone();
                     // Navigator.pushReplacement(
@@ -147,20 +145,23 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                     //         ),
                     //   ),
                     // );
-                    context.read<CallProvider>().startNewCall(
-                          channelName: widget.channelName,
-                          remoteUserName: widget.callerName,
-                          uid: generateUniqueId(),
-                          callId: widget.callId,
-                          isCaller: false,
-                        );
+                    Navigator.of(context).pop();
+                    await Future.delayed(const Duration(milliseconds: 150));
+                    if (context.mounted) {
+                      context.read<CallProvider>().startNewCall(
+                            channelName: widget.channelName,
+                            remoteUserName: widget.callerName,
+                            uid: generateUniqueId(),
+                            callId: widget.callId,
+                            isCaller: false,
+                          );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Answer',
                     style: TextStyle(fontSize: 18),
                   ),

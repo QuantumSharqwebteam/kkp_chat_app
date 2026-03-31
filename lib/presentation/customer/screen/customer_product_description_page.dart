@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/colored_circles.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../data/models/product_model.dart';
 
@@ -31,6 +34,10 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                   size: 30,
                 ),
               ),
+              Text(
+                product.productName,
+                style: AppTextStyles.black16_600,
+              ),
             ],
           ),
         ),
@@ -40,18 +47,26 @@ class CustomerProductDescriptionPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Display product image from API
-            Image.network(
-              product.imageUrl,
+            CachedNetworkImage(
+              imageUrl: product.imageUrl,
               height: Utils().height(context) * 0.6,
               width: Utils().width(context),
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.broken_image, size: 120);
-              },
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  height: Utils().height(context) * 0.6,
+                  width: Utils().width(context),
+                  color: Colors.white,
+                ),
+              ),
+              errorWidget: (context, url, error) => const Icon(Icons.broken_image, size: 120),
+              fadeInDuration: const Duration(milliseconds: 400),
+              fadeInCurve: Curves.easeIn,
             ),
             Padding(
-              padding:
-                  const EdgeInsets.only(top: 10, right: 8, left: 8, bottom: 10),
+              padding: const EdgeInsets.only(top: 10, right: 8, left: 8, bottom: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -63,7 +78,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
 
                   const SizedBox(height: 8),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -76,13 +91,10 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                             ),
                             Row(
                               children: [
-                                Text("Sizes: ",
-                                    style: AppTextStyles.black16_500),
+                                Text("Sizes: ", style: AppTextStyles.black16_500),
                                 ...product.sizes.map((size) => Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 3),
-                                      child: Text(size,
-                                          style: AppTextStyles.black16_500),
+                                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                                      child: Text(size, style: AppTextStyles.black16_500),
                                     )),
                               ],
                             ),
@@ -91,7 +103,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                         SizedBox(height: 8),
                         // Available Colors
                         Text(
-                          'Available Colors',
+                          AppLocalizations.of(context)!.availableColors,
                           style: AppTextStyles.black16_500.copyWith(
                             color: Colors.black,
                             fontSize: 17,
@@ -100,8 +112,7 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                         const SizedBox(height: 5),
                         ColoredCircles(
                           colors: product.colors.map((color) {
-                            return Color(int.parse(
-                                color.colorCode.replaceAll("#", "0xff")));
+                            return Color(int.parse(color.colorCode.replaceAll("#", "0xff")));
                           }).toList(),
                           size: 35,
                         ),
@@ -112,35 +123,37 @@ class CustomerProductDescriptionPage extends StatelessWidget {
                               ? 'Only ${product.stock} left in Stock'
                               : 'Out of Stock',
                           style: AppTextStyles.black12_400.copyWith(
-                            color: product.stock > 0
-                                ? AppColors.activeGreen
-                                : AppColors.inActiveRed,
+                            color:
+                                product.stock > 0 ? AppColors.activeGreen : AppColors.inActiveRed,
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: Text(
-                            product.description ?? "Not Available ",
+                            product.description ?? AppLocalizations.of(context)!.notAvailable,
                             style: AppTextStyles.black60alpha_12_500,
                             textAlign: TextAlign.justify,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 24),
                         // Buttons
-                        Center(
-                          child: CustomButton(
-                            text: product.stock > 0
-                                ? 'Available'
-                                : 'Out of Stock',
-                            onPressed: () {},
-                            width: Utils().width(context) * 0.8,
-                            height: 35,
-                            borderRadius: 5,
-                            backgroundColor: Colors.white,
-                            textColor: product.stock > 0
-                                ? AppColors.blue
-                                : Colors.grey,
-                          ),
+                        // Center(
+                        //   child: CustomButton(
+                        //     text: product.stock > 0
+                        //         ? AppLocalizations.of(context)!.available
+                        //         : AppLocalizations.of(context)!.outOfStock,
+                        //     onPressed: () {},
+                        //     width: Utils().width(context) * 1.5,
+                        //     height: 35,
+                        //     borderRadius: 5,
+                        //     backgroundColor: Colors.white,
+                        //     textColor: product.stock > 0
+                        //         ? AppColors.blue
+                        //         : Colors.grey,
+                        //   ),
+                        // ),
+                        SizedBox(
+                          height: 40,
                         )
                       ],
                     ),

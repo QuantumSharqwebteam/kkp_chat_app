@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -45,6 +46,11 @@ class AuthApi {
     final endPoint = "user/getRefreshToken";
     final url = Uri.parse("$baseUrl$endPoint");
 
+    LoggingService.instance.logNetwork(
+      "Refreshing token",
+      level: LogLevel.info,
+    );
+
     try {
       final response = await client.get(
         url,
@@ -53,15 +59,51 @@ class AuthApi {
           "Authorization": "Bearer $oldToken",
         },
       );
-      return json.decode(response.body);
-    } catch (e) {
-      throw Exception(e);
+
+      LoggingService.instance.logNetwork(
+        "Refresh token status: ${response.statusCode}",
+        level: LogLevel.debug,
+      );
+
+      // ✅ Log FULL RAW RESPONSE
+      LoggingService.instance.logNetwork(
+        "Refresh token raw response: ${response.body}",
+        level: LogLevel.debug,
+      );
+
+      // ✅ SAFETY CHECK: response must be JSON
+      if (!response.body.trim().startsWith('{')) {
+        LoggingService.instance.logNetwork(
+          "Non-JSON response received during token refresh",
+          level: LogLevel.error,
+        );
+
+        return {"success": false, "message": "Session expired. Please login again."};
+      }
+
+      final decoded = json.decode(response.body);
+
+      LoggingService.instance.logNetwork(
+        "Decoded refresh token response: $decoded",
+        level: LogLevel.debug,
+      );
+
+      return decoded;
+    } catch (e, stackTrace) {
+      LoggingService.instance.logNetwork(
+        "Exception during refresh token",
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stackTrace,
+      );
+
+      // ✅ DO NOT CRASH APP
+      return {"success": false, "message": "Unable to refresh token"};
     }
   }
 
   // login
-  Future<Map<String, dynamic>> login(
-      {required String email, required String password}) async {
+  Future<Map<String, dynamic>> login({required String email, required String password}) async {
     const endPoint = 'user/login';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {
@@ -89,8 +131,7 @@ class AuthApi {
   }
 
   //signup
-  Future<Map<String, dynamic>> signup(
-      {required String email, required String password}) async {
+  Future<Map<String, dynamic>> signup({required String email, required String password}) async {
     const endPoint = 'user/signup';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {
@@ -200,7 +241,7 @@ class AuthApi {
       {required String password, required String email}) async {
     const endPoint = 'user/changePassword';
     final url = Uri.parse("$baseUrl$endPoint");
-
+    final token = await LocalDbHelper.getToken();
     try {
       final body = {
         "email": email,
@@ -210,7 +251,8 @@ class AuthApi {
       final response = await client.post(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -269,11 +311,15 @@ class AuthApi {
   Future<Map<String, dynamic>> sendOtp({required String email}) async {
     const endPoint = "user/getOTP/";
     final url = Uri.parse('$baseUrl$endPoint$email');
-
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url, headers: {
-        "Content-Type": "application/json",
-      });
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
@@ -292,10 +338,8 @@ class AuthApi {
     final token = await LocalDbHelper.getToken();
 
     try {
-      final response = await http.get(url, headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token"
-      });
+      final response = await http.get(url,
+          headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"});
 
       // Parse the JSON response into a Profile object
       final jsonResponse = jsonDecode(response.body);
@@ -306,8 +350,7 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> verifyOtp(
-      {required String email, required int otp}) async {
+  Future<Map<String, dynamic>> verifyOtp({required String email, required int otp}) async {
     const endPoint = "user/verifyOtp";
     final url = Uri.parse('$baseUrl$endPoint');
     final body = jsonEncode({
@@ -315,12 +358,14 @@ class AuthApi {
       "otp": otp,
     });
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await http.Client().post(
         url,
         body: body,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -339,8 +384,15 @@ class AuthApi {
     const endPoint = 'user/getAgent';
     final url = Uri.parse("$baseUrl$endPoint");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         return parseAgents(response.body);
@@ -358,8 +410,15 @@ class AuthApi {
     const endPoint = 'user/getAssignedAgent';
     final url = Uri.parse("$baseUrl$endPoint");
 
+    final token = await LocalDbHelper.getToken();
     try {
-      final response = await client.get(url);
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+      );
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
@@ -374,15 +433,17 @@ class AuthApi {
   }
 
   // create new  Agent / add new agent
-  Future<Map<String, dynamic>> addAgent(
-      {required Map<String, dynamic> body}) async {
+  Future<Map<String, dynamic>> addAgent({required Map<String, dynamic> body}) async {
     const endPoint = 'user/signup';
     final url = Uri.parse("$baseUrl$endPoint");
+
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.post(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -406,18 +467,21 @@ class AuthApi {
       "agentNames": [email]
     };
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.post(
         url,
         body: jsonEncode(body),
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
       );
 
       final jsonResponse = jsonDecode(response.body);
       return jsonResponse;
     } catch (e) {
-      throw Exception(
-          "Failed to add agent in the Assigned agent list:${e.toString()}");
+      throw Exception("Failed to add agent in the Assigned agent list:${e.toString()}");
     }
   }
 
@@ -427,12 +491,14 @@ class AuthApi {
       "agentNames": [email]
     };
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.put(
         url,
         body: jsonEncode(body),
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -455,11 +521,13 @@ class AuthApi {
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {"role": role};
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.post(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -480,11 +548,13 @@ class AuthApi {
     final endPoint = 'user/getUsersByAgentId/$agentEmail';
     final url = Uri.parse("$baseUrl$endPoint");
 
+    final token = await LocalDbHelper.getToken();
     try {
       final response = await client.get(
         url,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -500,14 +570,11 @@ class AuthApi {
   }
 
   Future<Map<String, dynamic>> deleteUserAccount(
-    String email, String password , String feedback) async {
+      String email, String password, String feedback) async {
     final endPoint = "user/deleteUserAccount";
     final url = Uri.parse("$baseUrl$endPoint");
     final token = await LocalDbHelper.getToken();
-    final body = jsonEncode({
-      "email": email,
-       "password": password,
-       "feedback":feedback});
+    final body = jsonEncode({"email": email, "password": password, "feedback": feedback});
     try {
       final response = await client.delete(url,
           headers: {
@@ -515,7 +582,7 @@ class AuthApi {
             "Authorization": "Bearer $token",
           },
           body: body);
-          debugPrint("Response : ${response.body.toString()}");
+      debugPrint("Response : ${response.body.toString()}");
       return json.decode(response.body);
     } catch (e) {
       throw Exception(e);
@@ -540,15 +607,51 @@ class AuthApi {
 
       final reponseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 &&
-          reponseData['message'] == "Agent deleted successfully") {
+      if (response.statusCode == 200 && reponseData['message'] == "Agent deleted successfully") {
         return reponseData;
       } else {
-        throw Exception(
-            'Failed to delete agent: ${reponseData['message'] ?? response.body}');
+        throw Exception('Failed to delete agent: ${reponseData['message'] ?? response.body}');
       }
     } catch (e) {
       throw Exception('Delete request failed: $e');
+    }
+  }
+
+  // change agent head role
+  Future<Map<String, dynamic>> changeAgentRole({required String email}) async {
+    const endPoint = "agent/change-role";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper.getToken();
+    final body = jsonEncode({"email": email});
+
+    debugPrint("[AuthApi.changeAgentRole] endpoint: $endPoint");
+    debugPrint("[AuthApi.changeAgentRole] method: PUT");
+    debugPrint("[AuthApi.changeAgentRole] url: $url");
+    debugPrint("[AuthApi.changeAgentRole] body: $body");
+    debugPrint("[AuthApi.changeAgentRole] token exists: ${token != null}");
+
+    try {
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: body,
+      );
+
+      debugPrint("[AuthApi.changeAgentRole] statusCode: ${response.statusCode}");
+      debugPrint("[AuthApi.changeAgentRole] response: ${response.body}");
+
+      final responseData = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return responseData;
+      }
+
+      throw Exception(responseData['message'] ?? 'Failed to change agent role');
+    } catch (e) {
+      debugPrint("[AuthApi.changeAgentRole] error: $e");
+      throw Exception('Change role request failed: $e');
     }
   }
 
@@ -556,8 +659,7 @@ class AuthApi {
   Future<Map<String, dynamic>> getNotifications() async {
     final endPoint = "user/getNotification";
     final url = Uri.parse("$baseUrl$endPoint");
-    final token = await LocalDbHelper
-        .getToken(); // Assuming you have a method to get the token
+    final token = await LocalDbHelper.getToken(); // Assuming you have a method to get the token
 
     try {
       final response = await client.get(
@@ -579,8 +681,7 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> updateNotificationRead(
-      {required String notificationId}) async {
+  Future<Map<String, dynamic>> updateNotificationRead({required String notificationId}) async {
     final endPoint = "user/updateNotification/$notificationId";
     final url = Uri.parse('$baseUrl$endPoint');
     final token = await LocalDbHelper.getToken();

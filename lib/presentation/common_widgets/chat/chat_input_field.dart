@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 
@@ -16,6 +17,9 @@ class ChatInputField extends StatefulWidget {
   final bool isRecording;
   final int recordedSeconds; // Add this line
   final VoidCallback onShareProduct;
+  final VoidCallback? onCheckOrders;
+  final bool showFormAndProduct; // Add this parameter
+  final bool showCheckOrders;
 
   const ChatInputField({
     super.key,
@@ -29,14 +33,16 @@ class ChatInputField extends StatefulWidget {
     required this.recordedSeconds,
     required this.onSendImageByCamera,
     required this.onShareProduct, // Add this line
+    this.onCheckOrders,
+    this.showFormAndProduct = true, // Default to true for backward compatibility
+    this.showCheckOrders = false,
   });
 
   @override
   State<ChatInputField> createState() => _ChatInputFieldState();
 }
 
-class _ChatInputFieldState extends State<ChatInputField>
-    with SingleTickerProviderStateMixin {
+class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
 
@@ -47,15 +53,14 @@ class _ChatInputFieldState extends State<ChatInputField>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _animation =
-        Tween<double>(begin: 1.0, end: 1.5).animate(_animationController)
-          ..addStatusListener((status) {
-            if (status == AnimationStatus.completed) {
-              _animationController.reverse();
-            } else if (status == AnimationStatus.dismissed) {
-              _animationController.forward();
-            }
-          });
+    _animation = Tween<double>(begin: 1.0, end: 1.5).animate(_animationController)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          _animationController.reverse();
+        } else if (status == AnimationStatus.dismissed) {
+          _animationController.forward();
+        }
+      });
 
     if (widget.isRecording) {
       _animationController.forward();
@@ -83,25 +88,32 @@ class _ChatInputFieldState extends State<ChatInputField>
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 23),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.attachment),
             onPressed: () {
-              showAttachmentMenu(context, (selectedItem) {
-                if (selectedItem == "Photos") {
-                  widget.onSendImage();
-                } else if (selectedItem == "Inquiry Form") {
-                  widget.onSendForm();
-                } else if (selectedItem == "Camera") {
-                  widget.onSendImageByCamera();
-                } else if (selectedItem == "Documents") {
-                  widget.onSendDocument();
-                } else if (selectedItem == "Share Product") {
-                  widget.onShareProduct();
-                }
-              });
+              showAttachmentMenu(
+                context,
+                (selectedItem) {
+                  if (selectedItem == "Photos") {
+                    widget.onSendImage();
+                  } else if (selectedItem == "Inquiry Form") {
+                    widget.onSendForm();
+                  } else if (selectedItem == "Camera") {
+                    widget.onSendImageByCamera();
+                  } else if (selectedItem == "Documents") {
+                    widget.onSendDocument();
+                  } else if (selectedItem == "Share Product") {
+                    widget.onShareProduct();
+                  } else if (selectedItem == "Check Orders") {
+                    widget.onCheckOrders?.call();
+                  }
+                },
+                showFormAndProduct: widget.showFormAndProduct,
+                showCheckOrders: widget.showCheckOrders,
+              );
             },
           ),
           Expanded(
@@ -128,8 +140,7 @@ class _ChatInputFieldState extends State<ChatInputField>
                     ),
                   ),
                   IconButton(
-                      icon: const Icon(Icons.camera_alt),
-                      onPressed: widget.onSendImageByCamera),
+                      icon: const Icon(Icons.camera_alt), onPressed: widget.onSendImageByCamera),
                   const SizedBox(
                     width: 10,
                   ),
@@ -156,8 +167,7 @@ class _ChatInputFieldState extends State<ChatInputField>
                               height: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color:
-                                    AppColors.blue00ABE9.withValues(alpha: 0.5),
+                                color: AppColors.blue00ABE9.withValues(alpha: 0.5),
                               ),
                             ),
                           ),
@@ -212,88 +222,105 @@ final List<Map<String, String>> attachmentItemsforCustomer = [
   {"image": ImageConstants.shareProduct, "label": "Share Product"},
 ];
 
+final List<Map<String, String>> attachmentItemsforInternalChat = [
+  {"image": ImageConstants.camera, "label": "Camera"},
+  {"image": ImageConstants.photos, "label": "Photos"},
+  {"image": ImageConstants.documents, "label": "Documents"},
+];
+
 final String? currentUser = LocalDbHelper.getProfile()?.role;
 
-void showAttachmentMenu(BuildContext context, Function(String) onItemSelected) {
+void showAttachmentMenu(BuildContext context, Function(String) onItemSelected,
+    {bool showFormAndProduct = true, bool showCheckOrders = false}) {
   showModalBottomSheet(
-    context: context,
-    elevation: 10,
-    backgroundColor: Colors.transparent, // Makes the corners visible
-    isScrollControlled: true, // Ensures proper spacing
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
-    ),
-    builder: (context) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        margin: const EdgeInsets.only(bottom: 30, left: 10, right: 10),
-        padding:
-            const EdgeInsets.all(10.0), // Adds padding inside the bottom sheet
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4, // 4 items per row
-                crossAxisSpacing: 2,
-                mainAxisSpacing: 0,
-                childAspectRatio: 0.9, // Keeps square shape
-              ),
-              itemCount: currentUser == "User"
-                  ? attachmentItemsforCustomer.length
-                  : attachmentItems.length,
-              itemBuilder: (context, index) {
-                final item = currentUser == "User"
-                    ? attachmentItemsforCustomer[index]
-                    : attachmentItems[index];
-                return GestureDetector(
-                  onTap: () {
-                    if (item['label'] == "Share Product") {
-                      Navigator.pop(context); // Close the current bottom sheet
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        onItemSelected(
-                            item['label']!); // Open the product bottom sheet
-                      });
-                    } else {
-                      onItemSelected(item['label']!);
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
+      context: context,
+      elevation: 10,
+      backgroundColor: Colors.transparent, // Makes the corners visible
+      isScrollControlled: true, // Ensures proper spacing
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+      ),
+      builder: (context) {
+        // Determine which items to show
+        List<Map<String, String>> itemsToShow;
+        if (!showFormAndProduct) {
+          // For internal chat - only camera, photos, documents
+          itemsToShow = attachmentItemsforInternalChat;
+        } else if (currentUser == "User") {
+          // For customers - camera, photos, documents, share product
+          itemsToShow = attachmentItemsforCustomer;
+        } else {
+          // For agents - all items
+          itemsToShow = List<Map<String, String>>.from(attachmentItems);
+          if (showCheckOrders) {
+            itemsToShow.insert(0, {"image": ImageConstants.checkCircle, "label": "Check Orders"});
+          }
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20.0),
+          ),
+          margin: EdgeInsets.only(bottom: Utils().height(context) * 0.1, left: 10, right: 10),
+          padding: const EdgeInsets.all(10.0),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 🛑 Fix: Add SizedBox or ConstrainedBox
+                SizedBox(
+                  height: 200, // Adjust height as needed (e.g., 2 rows of GridView)
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 2,
+                      mainAxisSpacing: 0,
+                      childAspectRatio: 0.9,
+                    ),
+                    itemCount: itemsToShow.length,
+                    itemBuilder: (context, index) {
+                      final item = itemsToShow[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            onItemSelected(item['label']!);
+                          });
+                        },
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Image.asset(
+                                item['image']!,
+                                height: 30,
+                                width: 30,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              item['label']!,
+                              style: AppTextStyles.black10_500,
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
-                        child: Image.asset(
-                          item['image']!,
-                          height: 30,
-                          width: 30,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item['label']!,
-                        style: AppTextStyles.black10_500,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    },
-  );
+          ),
+        );
+      });
 }

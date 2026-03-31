@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,8 @@ import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
@@ -47,6 +50,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/generated/app_localizations.dart';
+
 class CustomerChatScreen extends StatefulWidget {
   final String? customerName;
   final String? agentName;
@@ -67,8 +72,7 @@ class CustomerChatScreen extends StatefulWidget {
   State<CustomerChatScreen> createState() => _CustomerChatScreenState();
 }
 
-class _CustomerChatScreenState extends State<CustomerChatScreen>
-    with WidgetsBindingObserver {
+class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBindingObserver {
   final _chatController = TextEditingController();
   late final SocketService _socketService;
   final S3UploadService _s3uploadService = S3UploadService();
@@ -106,46 +110,26 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     bool boxExists = await Hive.boxExists(boxName);
 
     // Fetch the latest 20 messages from the API
-    final List<MessageModel> fetchedMessages =
-        await _chatRepository.fetchCustomerMessages(
+    final List<MessageModel> fetchedMessages = await _chatRepository.fetchCustomerMessages(
       customerEmail: widget.customerEmail!,
       limit: 20,
     );
 
     // Convert MessageModel to ChatMessageModel
-    final chatMessages = fetchedMessages.map((messageJson) {
-      return ChatMessageModel(
-        message: messageJson.message ?? '',
-        timestamp: DateTime.parse(
-            messageJson.timestamp ?? DateTime.now().toIso8601String()),
-        sender: messageJson.senderId!,
-        type: messageJson.type,
-        mediaUrl: messageJson.mediaUrl,
-        form: messageJson.form != null && messageJson.form!.isNotEmpty
-            ? Map<String, dynamic>.from(messageJson.form![0])
-            : null,
-        callDuration: messageJson.callDuration,
-        callStatus: messageJson.callStatus,
-        callId: messageJson.callId,
-        messageId: messageJson.messageId,
-        isDeleted: messageJson.isDeleted ?? false,
-      );
-    }).toList();
+    final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
 
     if (boxExists) {
       // Load messages from Hive
-      final loadedMessages =
-          await _chatStorageService.getCustomerMessages(boxName);
+      final loadedMessages = await _chatStorageService.getCustomerMessages(boxName);
       final newLoadedMessages = _removeDuplicates(loadedMessages);
 
       // Replace local messages with fetched messages where the fetched message has an empty string
-      final messagesToReplace = chatMessages
-          .where((fetchedMessage) => fetchedMessage.message == "")
-          .toList();
+      final messagesToReplace =
+          chatMessages.where((fetchedMessage) => fetchedMessage.message == "").toList();
 
       for (var fetchedMessage in messagesToReplace) {
-        final index = newLoadedMessages.indexWhere((localMessage) =>
-            localMessage.messageId == fetchedMessage.messageId);
+        final index = newLoadedMessages
+            .indexWhere((localMessage) => localMessage.messageId == fetchedMessage.messageId);
         if (index != -1) {
           newLoadedMessages[index] = fetchedMessage;
         }
@@ -181,6 +165,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       });
     }
 
+    // Fetch the last message seen timestamp of the agent for customer
+    final DateTime? lastMessageTimestamp =
+        await _chatRepository.fetchUserLastTimestamp(widget.customerEmail!);
+    debugPrint("✅fetched lastMessage time stamp for customer :$lastMessageTimestamp");
+
+    // Update the read status of messages up to the lastMessageTimestamp
+    if (lastMessageTimestamp != null) {
+      _updateMessagesReadStatus(lastMessageTimestamp);
+    }
+
     // Scroll to bottom after loading messages
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
@@ -194,8 +188,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         before = messages.first.timestamp.toIso8601String();
       }
 
-      final List<MessageModel> fetchedMessages =
-          await _chatRepository.fetchCustomerMessages(
+      final List<MessageModel> fetchedMessages = await _chatRepository.fetchCustomerMessages(
         customerEmail: widget.customerEmail!,
         limit: 20,
         before: before,
@@ -207,24 +200,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       }
 
       // Convert MessageModel to ChatMessageModel
-      final chatMessages = fetchedMessages.map((messageJson) {
-        return ChatMessageModel(
-          message: messageJson.message ?? '',
-          timestamp: DateTime.parse(
-              messageJson.timestamp ?? DateTime.now().toIso8601String()),
-          sender: messageJson.senderId!,
-          type: messageJson.type,
-          mediaUrl: messageJson.mediaUrl,
-          form: messageJson.form != null && messageJson.form!.isNotEmpty
-              ? Map<String, dynamic>.from(messageJson.form![0])
-              : null,
-          callDuration: messageJson.callDuration,
-          callStatus: messageJson.callStatus,
-          callId: messageJson.callId,
-          messageId: messageJson.messageId,
-          isDeleted: messageJson.isDeleted ?? false,
-        );
-      }).toList();
+      final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
 
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
@@ -242,8 +218,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  List<ChatMessageModel> _removeDuplicates(
-      List<ChatMessageModel> messagesList) {
+  List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> messagesList) {
     return messagesList.where((message) {
       if (message.type == 'call') {
         // Use callId for call messages
@@ -255,8 +230,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         }
       } else {
         // Use messageId for all other messages
-        if (message.messageId == null ||
-            _loadedMessageIds.contains(message.messageId)) {
+        if (message.messageId == null || _loadedMessageIds.contains(message.messageId)) {
           return false;
         } else {
           _loadedMessageIds.add(message.messageId!);
@@ -264,6 +238,42 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         }
       }
     }).toList();
+  }
+
+  List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is List) {
+      final entries =
+          raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
+      return entries.isNotEmpty ? entries : null;
+    }
+    if (raw is Map) {
+      return [Map<String, dynamic>.from(raw)];
+    }
+    return null;
+  }
+
+  ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
+    final normalizedForms = _normalizeFormData(messageJson.form);
+    final primaryForm =
+        normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
+    return ChatMessageModel(
+      message: messageJson.message ?? '',
+      timestamp: DateTime.parse(
+        messageJson.timestamp ?? DateTime.now().toIso8601String(),
+      ),
+      sender: messageJson.senderId!,
+      type: messageJson.type,
+      mediaUrl: messageJson.mediaUrl,
+      form: primaryForm,
+      forms: normalizedForms,
+      callDuration: messageJson.callDuration,
+      callStatus: messageJson.callStatus,
+      callId: messageJson.callId,
+      messageId: messageJson.messageId,
+      isDeleted: messageJson.isDeleted ?? false,
+      read: messageJson.read,
+    );
   }
 
   void _showFloatingDateHeader() {
@@ -293,20 +303,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleScroll() {
-    if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.forward) {
+    if (_scrollController.position.userScrollDirection == ScrollDirection.forward) {
       _showFloatingDateHeader();
     }
 
     // Hide header when scrolling down (optional, but could improve UX)
-    if (_scrollController.position.userScrollDirection ==
-        ScrollDirection.reverse) {
+    if (_scrollController.position.userScrollDirection == ScrollDirection.reverse) {
       _hideFloatingDateHeader();
     }
 
     // Check if at the top edge, then load more messages
-    if (_scrollController.position.atEdge &&
-        _scrollController.position.pixels == 0) {
+    if (_scrollController.position.atEdge && _scrollController.position.pixels == 0) {
       _loadMoreMessages();
     }
 
@@ -322,6 +329,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         }
       }
     }
+
+    // Emit markAsReadUpTo when user scrolls or reaches bottom
+    // if (_scrollController.position.atEdge &&
+    //     _scrollController.position.pixels != 0) {
+    //   if (messages.isNotEmpty) {
+    //     final lastVisibleMessageTimestamp =
+    //         messages.last.timestamp.toIso8601String();
+    //     _socketService.sendMarkAsReadUpTo(
+    //       customerEmail: widget.customerEmail!,
+    //       role: 'user',
+    //       lastMessageTimestamp: lastVisibleMessageTimestamp,
+    //     );
+    //   }
+    // }
   }
 
   int? _getFirstVisibleIndex() {
@@ -343,8 +364,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   void _checkIfAtBottom() {
     if (_scrollController.position.atEdge) {
-      bool isBottom = _scrollController.position.pixels ==
-          _scrollController.position.maxScrollExtent;
+      bool isBottom =
+          _scrollController.position.pixels == _scrollController.position.maxScrollExtent;
       if (isBottom != _isAtBottom) {
         setState(() {
           _isAtBottom = isBottom;
@@ -389,16 +410,25 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     super.initState();
     _socketService = SocketService(widget.navigatorKey);
     WidgetsBinding.instance.addObserver(this);
+
     _socketService.setChatPageState(
       isOpen: true,
-      customerId: widget.customerEmail, // This is targetId in incoming message
+      customerId: widget.customerEmail,
     );
+
     _socketService.onReceiveMessage(_handleIncomingMessage);
     _socketService.onMessageDeleted(_handleMessageDeleted);
+    _socketService.onChatStatus(_handleChatStatus);
+    _socketService.onMessagesReadUpTo(_handleMessagesReadUpTo);
     _loadPreviousMessages();
     _initializeRecorder();
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _emitChatOpened();
+      _scrollToBottom();
+    });
 
     _resetMessageCount();
   }
@@ -407,6 +437,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     final boxNameWithCount = '${widget.customerEmail}count';
     final box = await Hive.openBox<int>(boxNameWithCount);
     await box.put('count', 0);
+    if (mounted) {
+      context.read<CustomerHomeProvider>().fetchNotificationCount();
+    }
   }
 
   @override
@@ -418,6 +451,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _timer?.cancel();
     _scrollController.removeListener(_handleScroll);
     _scrollController.removeListener(_checkIfAtBottom);
+    _socketService.sendChatClosed(
+      customerEmail: widget.customerEmail!,
+      role: 'user',
+    );
     _socketService.toggleChatPageOpen(false);
     _dateHeaderTimer?.cancel();
 
@@ -426,15 +463,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _socketService.sendChatClosed(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+      );
       _socketService.setChatPageState(isOpen: false);
     } else if (state == AppLifecycleState.resumed) {
       _socketService.setChatPageState(
         isOpen: true,
-        customerId:
-            widget.customerEmail, // This is targetId in incoming message
+        customerId: widget.customerEmail, // This is targetId in incoming message
       );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _emitChatOpened();
+      });
     }
   }
 
@@ -449,6 +491,95 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
+  void _updateMessagesReadStatus(DateTime lastMessageTimestamp) {
+    setState(() {
+      // Update the read status of messages up to the lastMessageTimestamp
+      for (var message in messages) {
+        if (message.timestamp.isBefore(lastMessageTimestamp) ||
+            message.timestamp == lastMessageTimestamp) {
+          message.read = true;
+        }
+      }
+    });
+
+    // Save the updated messages to local storage
+    final boxName = widget.customerEmail!;
+    for (var message in messages) {
+      if (message.timestamp.isBefore(lastMessageTimestamp) ||
+          message.timestamp == lastMessageTimestamp) {
+        _chatStorageService.saveMessage(message, boxName);
+      }
+    }
+  }
+
+  void _emitChatOpened() {
+    if (messages.isNotEmpty) {
+      final lastMessageTimestamp = messages.last.timestamp.toIso8601String();
+      _socketService.sendChatOpened(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: lastMessageTimestamp,
+      );
+      _socketService.sendMarkAsReadUpTo(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: DateTime.now().toIso8601String(),
+      );
+    } else {
+      _socketService.sendChatOpened(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: DateTime.now().toIso8601String(),
+      );
+      _socketService.sendMarkAsReadUpTo(
+        customerEmail: widget.customerEmail!,
+        role: 'user',
+        lastMessageTimestamp: DateTime.now().toIso8601String(),
+      );
+    }
+  }
+
+  void _handleChatStatus(Map<String, dynamic> data) {
+    final status = data['status'];
+    final lastMessageTimestampStr = data['lastMessageTimestamp'];
+    debugPrint("Chat Status Updated: $status");
+
+    if (status == 'opened' && lastMessageTimestampStr != null) {
+      final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
+      if (lastMessageTimestamp != null) {
+        // Set the receiver as on the chat page
+        LocalDbHelper.saveReceiverOnChatPageStatus(true);
+        // Update the read status of messages
+        _updateMessagesReadStatus(lastMessageTimestamp);
+      }
+    } else if (status == 'closed') {
+      // Set the receiver as not on the chat page
+      LocalDbHelper.saveReceiverOnChatPageStatus(false);
+    }
+  }
+
+  void _handleMessagesReadUpTo(Map<String, dynamic> data) {
+    // final customerEmail = data['customerEmail'];
+    // final lastMessageTimestampStr = data['lastMessageTimestamp'];
+    // if (customerEmail == widget.customerEmail &&
+    //     lastMessageTimestampStr != null) {
+    //   final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
+    //   if (lastMessageTimestamp != null) {
+    //     setState(() {
+    //       messages.forEach((message) {
+    //         if (message.sender == widget.agentEmail &&
+    //             (message.timestamp.isBefore(lastMessageTimestamp) ||
+    //                 message.timestamp == lastMessageTimestamp)) {
+    //           message.read = true;
+    //         }
+    //       });
+    //     });
+    //     // Save updated messages to local database
+    //     _saveMessagesToLocalDatabase();
+    //   }
+    // }
+  }
+
   void _handleIncomingMessage(Map<String, dynamic> data) {
     debugPrint("Received Message: ${data.toString()}");
 
@@ -456,16 +587,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     try {
       timestamp = DateTime.parse(data["timestamp"]);
     } catch (_) {
-      timestamp = DateTime.now(); // fallback in case of bad format
+      timestamp = DateTime.now();
     }
 
+    final incomingForms = _normalizeFormData(data["form"]);
+    final incomingPrimaryForm =
+        incomingForms?.isNotEmpty == true ? incomingForms!.first : null;
     final message = ChatMessageModel(
       message: data["message"],
       timestamp: timestamp,
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
-      form: data["form"],
+      form: incomingPrimaryForm,
+      forms: incomingForms,
       messageId: data['messageId'],
     );
 
@@ -485,8 +620,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     if (mounted) {
       // Check if the widget is currently mounted
       setState(() {
-        final index =
-            messages.indexWhere((message) => message.messageId == messageId);
+        final index = messages.indexWhere((message) => message.messageId == messageId);
         if (index != -1) {
           messages[index].isDeleted = true;
           messages[index].message = "This message is deleted";
@@ -498,8 +632,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     final boxName = widget.customerEmail!;
     _chatStorageService.saveMessage(
-        messages.firstWhere((message) => message.messageId == messageId),
-        boxName);
+        messages.firstWhere((message) => message.messageId == messageId), boxName);
   }
 
   void _sendMessage({
@@ -512,15 +645,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     final currentTime = DateTime.now();
     final messageId = ChatUtils().generateMessageId();
+    // Set the receiverIsOnChatPage to false when the app is paused or inactive
+    final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
+    final normalizedForms = form != null ? [Map<String, dynamic>.from(form)] : null;
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
       sender: widget.customerEmail!,
       type: type!,
       mediaUrl: mediaUrl,
-      form: form,
+      form: normalizedForms?.first,
+      forms: normalizedForms,
       messageId: messageId,
       isDeleted: false,
+      read: isReceiverOnChatPage,
     );
 
     if (!_loadedMessageIds.contains(messageId)) {
@@ -541,6 +679,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         form: form,
         timestamp: currentTime.toIso8601String(), // ✅ Send timestamp
         messageId: messageId,
+        read: isReceiverOnChatPage ?? false,
       );
 
       _chatStorageService.saveMessage(message, widget.customerEmail!);
@@ -549,28 +688,58 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _chatController.clear();
   }
 
-  void _showDeleteDialog(BuildContext context, String messageId) {
-    showDialog(
+  void _showMessageOptionBottomSheet(BuildContext context, String messageId,
+      {String? textToCopy, bool isMedia = false}) {
+    showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Unsend Message"),
-          content: const Text("Are you sure you want to unsend this message?"),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text("unsend"),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteMessage(messageId);
-              },
-            ),
-          ],
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!.chooseWhatToDo,
+                      style: AppTextStyles.grey12_600.copyWith(fontSize: 16),
+                    ),
+                    IconButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.clear_rounded))
+                  ],
+                ),
+              ),
+              if (textToCopy != null) // Only show the copy option if textToCopy is not null
+                ListTile(
+                  leading: const Icon(Icons.content_copy),
+                  title: Text(
+                    isMedia ? 'Copy Media URL' : 'Copy Message',
+                    style: AppTextStyles.black15_500,
+                  ),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: textToCopy));
+                    Navigator.pop(context);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: Text(
+                  AppLocalizations.of(context)!.unsendMessage,
+                  // 'Unsend Message',
+                  style: AppTextStyles.black15_500,
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(messageId);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -581,8 +750,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     // Update the local message state to reflect deletion
     setState(() {
-      final index =
-          messages.indexWhere((message) => message.messageId == messageId);
+      final index = messages.indexWhere((message) => message.messageId == messageId);
       if (index != -1) {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
@@ -593,8 +761,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
     final boxName = widget.customerEmail!;
     _chatStorageService.saveMessage(
-        messages.firstWhere((message) => message.messageId == messageId),
-        boxName);
+        messages.firstWhere((message) => message.messageId == messageId), boxName);
   }
 
   void _scrollToBottom() {
@@ -627,8 +794,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _timer?.cancel(); // Stop the timer
     if (path != null) {
       final File voiceFile = File(path);
-      final voiceUrl =
-          await _s3uploadService.uploadFile(voiceFile, isVoiceMessage: true);
+      final voiceUrl = await _s3uploadService.uploadFile(voiceFile, isVoiceMessage: true);
       if (voiceUrl != null) {
         _sendMessage(messageText: "voice", type: 'voice', mediaUrl: voiceUrl);
       }
@@ -656,7 +822,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   void _sendProductMessage(Product product) {
     // Convert the product object to a JSON string
-    final productJson = jsonEncode(product.toJson());
+    final productJson = jsonEncode(product.toCreateJson());
 
     _sendMessage(
       messageText: productJson,
@@ -677,8 +843,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       if (imageUrl != null) {
         // Remove the temporary message
         setState(() {
-          messages
-              .removeWhere((message) => message.message == "Sending image...");
+          messages.removeWhere((message) => message.message == "Sending image...");
         });
 
         // Send the actual message
@@ -705,13 +870,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       if (documentUrl != null) {
         // Remove the temporary message
         setState(() {
-          messages.removeWhere(
-              (message) => message.message == "Sending document...");
+          messages.removeWhere((message) => message.message == "Sending document...");
         });
 
         // Send the actual message
-        _sendMessage(
-            messageText: "document", type: 'document', mediaUrl: documentUrl);
+        _sendMessage(messageText: "document", type: 'document', mediaUrl: documentUrl);
       }
     }
   }
@@ -757,6 +920,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
       builder: (BuildContext context) {
         return FormUpdateAlertDialog(
           formId: formData["_id"],
+          buyerName: formData["buyerName"],
           quality: formData['quality'],
           quantity: formData['quantity'],
           weave: formData['weave'],
@@ -777,15 +941,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
   }
 
-  Future<void> _updateFormRate(BuildContext context,
-      Map<String, dynamic> formData, String newRate) async {
+  Future<void> _updateFormRate(
+      BuildContext context, Map<String, dynamic> formData, String newRate) async {
     setState(() {
       isFormUpdating = true;
     });
     final id = formData['_id']?.toString();
     if (id == null) {
-      debugPrint(
-          "No form id is found to update: $id in the ${formData.toString()}");
+      debugPrint("No form id is found to update: $id in the ${formData.toString()}");
       return;
     }
 
@@ -799,9 +962,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
       final updatedFormData = Map<String, dynamic>.from(formData);
       updatedFormData['rate'] = newRate;
-      _sendMessage(
-          messageText:
-              "Rate updated as $newRate for form with Id : ${formData["_id"]}");
+      _sendMessage(messageText: "Rate updated as $newRate for form with Id : ${formData["_id"]}");
+
+      // Trigger real-time update of inquiries
+      if (context.mounted) {
+        Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error updating rate of the form: $e');
@@ -819,9 +985,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
 
     try {
-      final dateTime = timestamp is DateTime
-          ? timestamp
-          : DateTime.parse(timestamp.toString());
+      final dateTime = timestamp is DateTime ? timestamp : DateTime.parse(timestamp.toString());
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
       return DateFormat('hh:mm a').format(DateTime.now());
@@ -839,10 +1003,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         appBar: AppBar(
           title: Row(
             children: [
-              Initicon(text: "Agent"),
+              Initicon(text: AppLocalizations.of(context)!.agent),
               const SizedBox(width: 5),
               Text(
-                widget.agentName ?? "Agent",
+                widget.agentName ?? AppLocalizations.of(context)!.agent,
                 style: AppTextStyles.black14_400,
               ),
             ],
@@ -852,15 +1016,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
               onPressed: () async {
                 final callProvider = context.read<CallProvider>();
 
-                final uid =
-                    Utils().generateIntUidFromEmail(widget.customerEmail!);
+                final uid = Utils().generateIntUidFromEmail(widget.customerEmail!);
                 final timestamp = DateTime.now();
                 final callId = Uuid().v4();
 
                 // Unique channel name per call
                 final rawChannel = '${widget.customerEmail}_$callId';
-                final channelName =
-                    sha256.convert(utf8.encode(rawChannel)).toString();
+                final channelName = sha256.convert(utf8.encode(rawChannel)).toString();
 
                 debugPrint("📞 Customer (caller) UID: $uid");
                 debugPrint("📞 Generated Channel: $channelName");
@@ -885,8 +1047,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
                 // 3. ⏳ Wait for call message to be available
                 void handleCallMessage(ChatMessageModel message) async {
-                  await _chatStorageService.saveMessage(
-                      message, widget.customerEmail!);
+                  await _chatStorageService.saveMessage(message, widget.customerEmail!);
 
                   if (!mounted) return;
                   setState(() {
@@ -935,39 +1096,33 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
                                 final msg = messages[index];
-                                final isCustomer =
-                                    msg.sender == widget.customerEmail;
+                                final isCustomer = msg.sender == widget.customerEmail;
                                 final valueKey = ValueKey('chat-msg-$index');
                                 final globalKey = GlobalKey();
                                 _messageKeys[valueKey] = globalKey;
                                 String? dateHeader;
 
                                 if (index == 0 ||
-                                    !ChatUtils().isSameDay(
-                                        messages[index - 1].timestamp,
-                                        msg.timestamp)) {
-                                  dateHeader = ChatUtils()
-                                      .formatDateHeader(msg.timestamp);
+                                    !ChatUtils()
+                                        .isSameDay(messages[index - 1].timestamp, msg.timestamp)) {
+                                  dateHeader = ChatUtils().formatDateHeader(msg.timestamp);
                                 }
 
                                 return Container(
                                   key: globalKey,
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      if (dateHeader != null)
-                                        DateHeader(date: dateHeader),
+                                      if (dateHeader != null) DateHeader(date: dateHeader),
                                       if (msg.type == 'media')
                                         ImageMessageBubble(
+                                          read: msg.read,
                                           imageUrl: msg.mediaUrl!,
-                                          isMe: msg.sender ==
-                                              widget.customerEmail,
-                                          timestamp:
-                                              formatTimestamp(msg.timestamp),
+                                          isMe: msg.sender == widget.customerEmail,
+                                          timestamp: formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () => _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -975,22 +1130,20 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                         )
                                       else if (msg.type == 'form')
                                         FormMessageBubble(
-                                          formData: msg.form!,
+                                          forms: msg.formEntries,
                                           isMe: msg.sender == widget.agentEmail,
-                                          timestamp: formatTimestamp(
-                                              msg.timestamp.toIso8601String()),
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp.toIso8601String()),
                                           userRole: userRole!,
                                         )
                                       else if (msg.type == 'document')
                                         DocumentMessageBubble(
                                           documentUrl: msg.mediaUrl!,
-                                          isMe: msg.sender ==
-                                              widget.customerEmail,
-                                          timestamp:
-                                              formatTimestamp(msg.timestamp),
+                                          isMe: msg.sender == widget.customerEmail,
+                                          timestamp: formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () => _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -999,13 +1152,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       else if (msg.type == 'voice')
                                         VoiceMessageBubble(
                                           voiceUrl: msg.mediaUrl!,
-                                          isMe: msg.sender ==
-                                              widget.customerEmail,
-                                          timestamp:
-                                              formatTimestamp(msg.timestamp),
+                                          isMe: msg.sender == widget.customerEmail,
+                                          timestamp: formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () => _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
                                                   )
@@ -1014,8 +1165,8 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       else if (msg.type == 'call')
                                         CallMessageBubble(
                                           isMe: msg.sender == widget.agentEmail,
-                                          timestamp: formatTimestamp(
-                                              msg.timestamp.toIso8601String()),
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp.toIso8601String()),
                                           callStatus: msg.callStatus ?? "",
                                           callDuration: msg.callDuration ?? '',
                                         )
@@ -1024,33 +1175,24 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                           buttonText: "Fill product details",
                                           onSubmit: _showFormOverlay,
                                         )
-                                      else if (msg.message ==
-                                          "Update form rate")
+                                      else if (msg.message == "Update form rate")
                                         FillFormButton(
                                           buttonText: "Update Form",
                                           onSubmit: () {
-                                            openFormDialogToUpdateRate(
-                                                msg.form!);
+                                            openFormDialogToUpdateRate(msg.form!);
                                           },
                                         )
                                       else if (msg.type == 'product')
-                                        (msg.message != null &&
-                                                msg.message!.isNotEmpty)
+                                        (msg.message != null && msg.message!.isNotEmpty)
                                             ? ProductMessageBubble(
                                                 productJson: msg.message!,
-                                                isMe: msg.sender ==
-                                                    widget.customerEmail,
-                                                timestamp:
-                                                    ChatUtils().formatTimestamp(
-                                                  msg.timestamp
-                                                      .toIso8601String(),
+                                                isMe: msg.sender == widget.customerEmail,
+                                                timestamp: ChatUtils().formatTimestamp(
+                                                  msg.timestamp.toIso8601String(),
                                                 ),
                                                 onTap: () {
-                                                  final productMap =
-                                                      jsonDecode(msg.message!);
-                                                  final product =
-                                                      Product.fromJson(
-                                                          productMap);
+                                                  final productMap = jsonDecode(msg.message!);
+                                                  final product = Product.fromJson(productMap);
 
                                                   Navigator.push(
                                                     context,
@@ -1064,30 +1206,27 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                                 },
                                                 isDeleted: msg.isDeleted,
                                                 onLongPress: isCustomer
-                                                    ? () => _showDeleteDialog(
+                                                    ? () => _showMessageOptionBottomSheet(
                                                           context,
                                                           msg.messageId!,
                                                         )
                                                     : null,
                                               )
                                             : DeletedMessageBubble(
-                                                isMe: msg.sender ==
-                                                    widget.customerEmail,
-                                                timestamp:
-                                                    ChatUtils().formatTimestamp(
-                                                  msg.timestamp
-                                                      .toIso8601String(),
+                                                isMe: msg.sender == widget.customerEmail,
+                                                timestamp: ChatUtils().formatTimestamp(
+                                                  msg.timestamp.toIso8601String(),
                                                 ),
                                               )
                                       else
                                         MessageBubble(
                                           message: msg,
-                                          isMe: msg.sender ==
-                                              widget.customerEmail,
+                                          isMe: msg.sender == widget.customerEmail,
                                           onLongPress: isCustomer
-                                              ? () => _showDeleteDialog(
+                                              ? () => _showMessageOptionBottomSheet(
                                                     context,
                                                     msg.messageId!,
+                                                    textToCopy: msg.message,
                                                   )
                                               : null,
                                         ),
@@ -1097,28 +1236,31 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                               },
                             ),
                 ),
-                ChatInputField(
-                  controller: _chatController,
-                  onSend: () => _sendMessage(messageText: _chatController.text),
-                  onSendImage: () {
-                    _pickAndSendImage(ImageSource.gallery);
-                  },
-                  onSendImageByCamera: () {
-                    _pickAndSendImage(ImageSource.camera);
-                  },
-                  onSendForm: _showFormOverlay,
-                  onSendDocument: _pickAndSendDocument,
-                  onShareProduct: () => _showProductsBottomSheet(context),
-                  onSendVoice: _isRecording ? _stopRecording : _startRecording,
-                  isRecording: _isRecording,
-                  recordedSeconds: _recordedSeconds,
+                SafeArea(
+                  minimum: const EdgeInsets.only(bottom: 5),
+                  child: ChatInputField(
+                    controller: _chatController,
+                    onSend: () => _sendMessage(messageText: _chatController.text),
+                    onSendImage: () {
+                      _pickAndSendImage(ImageSource.gallery);
+                    },
+                    onSendImageByCamera: () {
+                      _pickAndSendImage(ImageSource.camera);
+                    },
+                    onSendForm: _showFormOverlay,
+                    onSendDocument: _pickAndSendDocument,
+                    onShareProduct: () => _showProductsBottomSheet(context),
+                    onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                    isRecording: _isRecording,
+                    recordedSeconds: _recordedSeconds,
+                  ),
                 ),
               ],
             ),
             if (isFormUpdating) FullScreenLoader(),
             if (!_isAtBottom)
               Positioned(
-                bottom: 80, // Adjust the position as needed
+                bottom: 120, // Adjust the position as needed
                 right: 16, // Adjust the position as needed
                 child: FloatingActionButton(
                   onPressed: _scrollToBottom,

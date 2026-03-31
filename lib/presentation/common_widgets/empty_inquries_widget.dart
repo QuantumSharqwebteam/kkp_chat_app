@@ -17,7 +17,7 @@ class EmptyInquriesWidget extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            "No inquries yet !!",
+            "No inquries yet.",
             style: TextStyle(fontSize: 18),
           )
         ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/config/theme/image_constants.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/media_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
@@ -16,11 +17,17 @@ class AgoraAudioCallScreen extends StatefulWidget {
 
 class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
   late CallProvider _callProvider;
+  String? role;
 
   @override
   void initState() {
     super.initState();
     _callProvider = Provider.of<CallProvider>(context, listen: false);
+    LocalDbHelper.getUserType().then((value) {
+      setState(() {
+        role = value;
+      });
+    });
   }
 
   void _toggleMute() {
@@ -46,7 +53,7 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
     }
 
     _callProvider.endCall();
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop(); // no  need to navigate pop from here navigateing directly from the provider
   }
 
   @override
@@ -55,12 +62,26 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
 
     final scaffold = Scaffold(
       backgroundColor: AppColors.backgroundDCEBFF,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.fullscreen_exit_rounded,
+            size: 30,
+            color: Colors.black,
+          ),
+          onPressed: () {
+            _callProvider.minimizeCallScreen();
+          },
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
             const SizedBox(height: 30),
             Text(
-              call.remoteUserName ?? "",
+              role == "0" ? "Agent" : call.remoteUserName ?? "",
               style: AppTextStyles.black24_700,
             ),
             const SizedBox(height: 20),
@@ -126,13 +147,13 @@ class _AgoraAudioCallScreenState extends State<AgoraAudioCallScreen> {
       canPop: true,
       onPopInvoked: (didPop) {
         if (!didPop) {
-          debugPrint("🌀 Pop intercepted by PopScope → minimizing call screen");
+          // debugPrint("🌀 Pop intercepted by PopScope → minimizing call screen");
           _callProvider.minimizeCallScreen();
         }
       },
       child: WillPopScope(
         onWillPop: () async {
-          debugPrint("↩️ Back press intercepted → minimizing call screen");
+          // debugPrint("↩️ Back press intercepted → minimizing call screen");
           _callProvider.minimizeCallScreen();
           return false;
         },

@@ -22,9 +22,7 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       imageUrl: json['imageUrl'],
-      colors: (json['colors'] as List)
-          .map((color) => ProductColor.fromJson(color))
-          .toList(),
+      colors: (json['colors'] as List).map((color) => ProductColor.fromJson(color)).toList(),
       stock: json['stock'],
       sizes: List<String>.from(json['sizes']),
       price: (json['price'] as num).toDouble(),
@@ -34,16 +32,43 @@ class Product {
     );
   }
 
-  // Convert Product object to JSON
+  /// For local persistence/cache (keeps stable identifiers).
   Map<String, dynamic> toJson() {
     return {
+      "productId": productId,
       "productName": productName,
       "imageUrl": imageUrl,
-      "colors": colors.map((color) => color.toJson()).toList(),
+      "colors": colors.map((c) => c.toJson()).toList(),
       "sizes": sizes,
       "stock": stock,
       "price": price,
-      "description": description
+      "description": description,
+    };
+  }
+
+  /// ✅ FOR ADD PRODUCT (NO productId)
+  Map<String, dynamic> toCreateJson() {
+    return {
+      "productName": productName,
+      "imageUrl": imageUrl,
+      "colors": colors.map((c) => c.toJson()).toList(),
+      "sizes": sizes,
+      "stock": stock,
+      "price": price,
+      "description": description,
+    };
+  }
+
+  /// ✅ FOR UPDATE PRODUCT (NO productId in body)
+  Map<String, dynamic> toUpdateJson() {
+    return {
+      "productName": productName,
+      "imageUrl": imageUrl,
+      "colors": colors.map((c) => c.toJson()).toList(),
+      "sizes": sizes,
+      "stock": stock,
+      "price": price,
+      "description": description,
     };
   }
 }

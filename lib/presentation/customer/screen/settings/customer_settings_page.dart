@@ -1,22 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
+import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
-
-import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart';
+import 'package:kkpchatapp/presentation/common_widgets/locale/locale_switcher.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/settings/account_and_security.dart';
+import 'package:kkpchatapp/presentation/customer/screen/settings/customer_complaint_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CustomerSettingsPage extends StatefulWidget {
   const CustomerSettingsPage({super.key});
 
   @override
   State<CustomerSettingsPage> createState() => _CustomerSettingsPageState();
+}
+
+Future<void> _launchDialer(BuildContext context, String phoneNumber) async {
+  final Uri uri = Uri(scheme: 'tel', path: phoneNumber);
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
+  } else {
+    if (context.mounted) {
+      Utils.showCustomToast(context, title: 'Error', subtitle: 'No Supported App Found');
+    }
+  }
 }
 
 class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
@@ -56,12 +72,31 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        surfaceTintColor: AppColors.background,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         title: Text(
-          'Settings',
+          AppLocalizations.of(context)!.settings,
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
+        actions: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.changeLocale,
+                style: AppTextStyles.black10_600,
+              ),
+              const SizedBox(
+                width: 4,
+              ),
+              LanguageSwitcher(),
+              const SizedBox(
+                width: 16,
+              )
+            ],
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -78,116 +113,399 @@ class _CustomerSettingsPageState extends State<CustomerSettingsPage> {
             //     hintText: 'Search',
             //   ),
             // ),
-            SettingsTile(
-              numberOfTiles: 1,
-              leadingIcons: [Icons.shield_moon_outlined],
-              onTaps: [
-                () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return AccountAndSecurity();
-                  }));
-                }
+            // SettingsTile(
+            //   numberOfTiles: 1,
+            //   leadingIcons: [Icons.shield_moon_outlined],
+            // onTaps: [
+            //   () {
+            //     Navigator.push(context, MaterialPageRoute(builder: (context) {
+            //       return AccountAndSecurity();
+            //     }));
+            //   }
+            // ],
+            //   title: 'Your account',
+            //   titles: ['Account and Security'],
+            //   subtitles: ['Account managment, password change'],
+            //   description:
+            //       'Manage your data and security for  better experience',
+            // ),
+            // SizedBox(height: 10),
+            // Divider(
+            //   color: Colors.black,
+            //   thickness: 1,
+            // ),
+            // SettingsTile(
+            //   numberOfTiles: 1,
+            //   leadingIcons: [
+            //     Icons.archive_outlined,
+            //     Icons.notifications_none_outlined
+            //   ],
+            //   title: 'How you use KKP',
+            //   titles: [
+            //     // 'Archive',
+            //     'Notifications',
+            //   ],
+            // onTaps: [
+            //   // () {
+            //   //   Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
+            //   // },
+            //   () {
+            //     Navigator.pushNamed(
+            //         context, CustomerRoutes.notificationSettings);
+            //   }
+            // ],
+            // ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              // mainAxisAlignment: MainAxisAlignment.center,
+              // mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          spreadRadius: 1,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CustomSettingsTile(
+                          numberOfTiles: 1,
+                          leadingWidgets: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue.shade50,
+                              radius: 20,
+                              child: Image.asset(
+                                'assets/icons/Vector.png',
+                                height: 24,
+                                width: 24,
+                              ),
+                            ),
+                          ],
+                          onTaps: [
+                            () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                                return AccountAndSecurity();
+                              }));
+                            }
+                          ],
+                          title: Text(
+                            AppLocalizations.of(context)!.accountAndOrders,
+                            style: TextStyle(
+                                color: AppColors.grey7B7B7B,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14),
+                          ),
+                          showDividerAfterTitle: true,
+                          titles: [AppLocalizations.of(context)!.accountAndSecurity],
+                          subtitles: [AppLocalizations.of(context)!.accountManagement],
+                        ),
+                        // SizedBox(
+                        //   height: 10,
+                        // ),
+                        Divider(
+                          thickness: 1,
+                          height: 0,
+                          color: AppColors.greyE5E7EB, // light gray
+                        ),
+                        // user management , inaquiry mangement , notifications and reports and system settins tiles
+                        CustomSettingsTile(
+                          numberOfTiles: 1,
+                          titles: [AppLocalizations.of(context)!.orderEnquires],
+                          leadingWidgets: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue.shade50,
+                              radius: 20,
+                              child: Image.asset(
+                                'assets/icons/Vector(1).png',
+                                height: 24,
+                                width: 24,
+                              ),
+                            ),
+                          ],
+                          subtitles: [AppLocalizations.of(context)!.trackAllOrderEnquires],
+                          onTaps: [
+                            () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                                return CustomerInquiriesPage();
+                              }));
+                            }
+                          ],
+                        ),
+                        Divider(
+                          thickness: 1,
+                          height: 0,
+                          color: AppColors.greyE5E7EB, // light gray
+                        ),
+                        // user management , inaquiry mangement , notifications and reports and system settins tiles
+                        CustomSettingsTile(
+                          numberOfTiles: 1,
+                          titles: ['Contact Us'],
+                          leadingWidgets: [
+                            CircleAvatar(
+                              backgroundColor: Colors.blue.shade50,
+                              radius: 20,
+                              child: Icon(Icons.phone_android),
+                            ),
+                          ],
+                          subtitles: ["Tap To Get Help"],
+                          onTaps: [
+                            () => _launchDialer(context, "+91 9789965789"),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
-              title: 'Your account',
-              titles: ['Account and Security'],
-              subtitles: ['Account managment, password change'],
-              description:
-                  'Manage your data and security for  better experience',
             ),
             SizedBox(height: 10),
-            Divider(
-              color: Colors.black,
-              thickness: 1,
+            // Divider(
+            //   color: Colors.black,
+            //   thickness: 1,
+            // ),
+            // SettingsTile(
+            //   title: 'Your Orders',
+            //   numberOfTiles: 1,
+            //   leadingIcons: [Icons.shopping_cart_outlined],
+            //   titles: ['Order Enquiries'],
+            //   onTaps: [
+            //     () {
+            //       Navigator.push(context, MaterialPageRoute(builder: (context) {
+            //         return CustomerInquiriesPage();
+            //       }));
+            //     }
+            //   ],
+            // ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          spreadRadius: 1,
+                          blurRadius: 6,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: CustomSettingsTile(
+                      numberOfTiles: 1,
+                      title: Text(
+                        AppLocalizations.of(context)!.preferences,
+                        style: TextStyle(
+                            color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                      ),
+                      showDividerAfterTitle: true,
+                      titles: [AppLocalizations.of(context)!.notifications],
+                      leadingWidgets: [
+                        CircleAvatar(
+                          backgroundColor: Colors.blue.shade50,
+                          radius: 20,
+                          child: Image.asset(
+                            'assets/icons/Vector(2).png',
+                            height: 24,
+                            width: 24,
+                          ),
+                        ),
+                      ],
+                      subtitles: [AppLocalizations.of(context)!.yourNotificationsHub],
+                      onTaps: [
+                        () {
+                          Navigator.pushNamed(context, CustomerRoutes.notificationSettings);
+                        }
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            SettingsTile(
-              numberOfTiles: 1,
-              leadingIcons: [
-                Icons.archive_outlined,
-                Icons.notifications_none_outlined
-              ],
-              title: 'How you use KKP',
-              titles: [
-                // 'Archive',
-                'Notifications',
-              ],
-              onTaps: [
-                // () {
-                //   Navigator.pushNamed(context, CustomerRoutes.archiveSettings);
-                // },
-                () {
-                  Navigator.pushNamed(
-                      context, CustomerRoutes.notificationSettings);
-                }
-              ],
-            ),
+
             SizedBox(height: 10),
-            Divider(
-              color: Colors.black,
-              thickness: 1,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      spreadRadius: 1,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: CustomSettingsTile(
+                  numberOfTiles: 1,
+                  leadingWidgets: [
+                    CircleAvatar(
+                      backgroundColor: Colors.blue.shade50,
+                      radius: 20,
+                      child: Image.asset(
+                        'assets/icons/complaint.png',
+                        height: 24,
+                        width: 24,
+                      ),
+                    ),
+                  ],
+                  title: Text(
+                    AppLocalizations.of(context)!.complaints,
+                    style: TextStyle(
+                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                  ),
+                  showDividerAfterTitle: true,
+                  titles: [AppLocalizations.of(context)!.complaints],
+                  subtitles: [AppLocalizations.of(context)!.manageComplaints],
+                  onTaps: [
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CustomerComplaintPage()),
+                      );
+                    },
+                  ],
+                ),
+              ),
             ),
-            SettingsTile(
-              title: 'Your Orders',
-              numberOfTiles: 1,
-              leadingIcons: [Icons.shopping_cart_outlined],
-              titles: ['Order Enquiries'],
-              onTaps: [
-                () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return CustomerInquiriesPage();
-                  }));
-                }
-              ],
+
+            // SettingsTile(
+            //   numberOfTiles: 1,
+            //   leadingIcons: [
+            //     Icons.info_outline_rounded,
+            //     Icons.info_outline_rounded,
+            //   ],
+            //   title: 'More info and support',
+            //   titles: [
+            //     // 'Help',
+            //     'About',
+            //   ],
+            //   onTaps: [
+            //     // () {},
+            //     () {
+            //       Navigator.push(context, MaterialPageRoute(builder: (context) {
+            //         return AboutUsPage();
+            //       }));
+            //     }
+            //   ],
+            // ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      spreadRadius: 1,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: CustomSettingsTile(
+                  numberOfTiles: 1,
+                  leadingWidgets: [
+                    CircleAvatar(
+                      backgroundColor: Colors.blue.shade50,
+                      radius: 20,
+                      child: Image.asset(
+                        'assets/icons/Vector(3).png',
+                        height: 24,
+                        width: 24,
+                      ),
+                    ),
+                  ],
+                  title: Text(
+                    AppLocalizations.of(context)!.termsAndPolicy,
+                    style: TextStyle(
+                        color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                  ),
+                  showDividerAfterTitle: true,
+                  titles: [AppLocalizations.of(context)!.about],
+                  subtitles: [AppLocalizations.of(context)!.manageTermsAndPolicy],
+                  onTaps: [
+                    () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        return AboutUsPage();
+                      }));
+                    },
+                  ],
+                ),
+              ),
             ),
-            SizedBox(height: 10),
-            Divider(
-              color: Colors.black,
-              thickness: 1,
-            ),
-            SettingsTile(
-              numberOfTiles: 1,
-              leadingIcons: [
-                Icons.info_outline_rounded,
-                Icons.info_outline_rounded,
-              ],
-              title: 'More info and support',
-              titles: [
-                // 'Help',
-                'About',
-              ],
-              onTaps: [
-                // () {},
-                () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return AboutUsPage();
-                  }));
-                }
-              ],
-            ),
-            Divider(
-              color: Colors.black,
-              thickness: 1,
-            ),
-            SettingsTile(
-              onTaps: [
-                () {
+            // Divider(
+            //   color: Colors.black,
+            //   thickness: 1,
+            // ),
+            // SettingsTile(
+            //   onTaps: [
+            //     () {
+            //       Utils().showDialogWithActions(
+            //         context,
+            //         "Log out",
+            //         icon: Icons.logout_outlined,
+            //         "Are you sure you want to logOut",
+            //         "LogOut",
+            //         logOut,
+            //       );
+            //     }
+            //   ],
+            //   numberOfTiles: 1,
+            //   leadingIcons: [
+            //     Icons.logout_rounded,
+            //   ],
+            //   titles: ['Log out'],
+            //   tileTitleStyle: TextStyle(
+            //       color: AppColors.redF11515, fontWeight: FontWeight.w600),
+            //   iconColor: AppColors.redF11515,
+            // ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+              child: CustomButton(
+                onPressed: () {
                   Utils().showDialogWithActions(
                     context,
+                    "Log Out",
+                    "Are you sure you want to logout?",
                     "Log out",
-                    icon: Icons.logout_outlined,
-                    "Are you sure you want to logOut",
-                    "LogOut",
                     logOut,
+                    icon: Icons.logout_outlined,
                   );
-                }
-              ],
-              numberOfTiles: 1,
-              leadingIcons: [
-                Icons.logout_rounded,
-              ],
-              titles: ['Log out'],
-              tileTitleStyle: TextStyle(
-                  color: AppColors.redF11515, fontWeight: FontWeight.w600),
-              iconColor: AppColors.redF11515,
+                },
+                text: AppLocalizations.of(context)!.logOut,
+                icon: Icons.logout_outlined,
+                backgroundColor: AppColors.redF11515,
+                textColor: Colors.white,
+                fontSize: 16,
+                borderRadius: 10,
+                borderWidth: 0,
+                height: 50,
+              ),
             ),
             SizedBox(height: 20),
           ],

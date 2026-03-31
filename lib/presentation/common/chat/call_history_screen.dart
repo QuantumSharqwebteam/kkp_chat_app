@@ -3,6 +3,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/empty_call_logs_widget.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/settings/call_log_tile.dart';
 
@@ -17,25 +18,35 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   final _chatRepo = ChatRepository();
   List<CallLogModel> callLogs = [];
   bool isLoading = true;
+  String? role;
 
   @override
   void initState() {
     super.initState();
     fetchCallLogs();
+    fetchUserRole();
+  }
+
+  void fetchUserRole() {
+    LocalDbHelper.getUserType().then((value) {
+      setState(() {
+        role = value;
+      });
+    });
   }
 
   Future<void> fetchCallLogs() async {
     final email = LocalDbHelper.getEmail();
     try {
       final fetchedLogs = await _chatRepo.fetchCallLogs(email!);
-      if (!mounted) return; 
+      if (!mounted) return;
       setState(() {
         callLogs = fetchedLogs;
         isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching call logs: $e');
-      if (!mounted) return; 
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
@@ -46,7 +57,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Call History", style: AppTextStyles.black16_500),
+        title: Text(AppLocalizations.of(context)!.callHistory, style: AppTextStyles.black16_500),
         backgroundColor: Colors.white,
       ),
       body: buildCallLogList(),
@@ -98,6 +109,7 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
             ),
             ...entry.value.map(
               (log) => CallLogTile(
+                role: role,
                 log: log,
                 currentUserId: currentUserId!,
               ),

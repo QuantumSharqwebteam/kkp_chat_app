@@ -50,15 +50,32 @@ class SignupProvider with ChangeNotifier {
     if (password.trim().isEmpty) {
       setPasswordError("Password can't be Empty");
     } else if (!_validatePassword(password)) {
-      setPasswordError("Password should be at least 6 characters");
+      setPasswordError("Password does not match the criteria");
     } else {
       setPasswordError(null); // Clear the error if the input is valid
     }
+
+    // Keep confirm password error in sync when password changes.
+    if (_rePassword.trim().isNotEmpty) {
+      if (_password != _rePassword) {
+        setRePasswordError("Password doesn't match");
+      } else {
+        setRePasswordError(null);
+      }
+    }
+
     notifyListeners();
   }
 
   void setRePassword(String rePassword) {
     _rePassword = rePassword;
+    if (rePassword.trim().isEmpty) {
+      setRePasswordError("Re-enter Password can't be Empty");
+    } else if (_password != rePassword) {
+      setRePasswordError("Password doesn't match");
+    } else {
+      setRePasswordError(null);
+    }
     notifyListeners();
   }
 
@@ -92,7 +109,8 @@ class SignupProvider with ChangeNotifier {
   }
 
   bool _validatePassword(String password) {
-    return password.length >= 6;
+    return RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$')
+        .hasMatch(password);
   }
 
   Future<void> signup(BuildContext context) async {
@@ -133,7 +151,7 @@ class SignupProvider with ChangeNotifier {
     }
 
     if (!_validatePassword(_password)) {
-      setPasswordError("Password should be at least 6 characters");
+      setPasswordError("Password does not match the criteria");
       setIsLoading(false);
       return;
     }
@@ -159,12 +177,12 @@ class SignupProvider with ChangeNotifier {
 
       if (response['message'] == "User signed up successfully") {
         try {
-          await LocalDbHelper.saveToken(response['token'].toString());
-          await LocalDbHelper.saveUserType("0");
+          // await LocalDbHelper.saveToken(response['token'].toString());
+          //await LocalDbHelper.saveUserType("0");
 
-          if (context.mounted) {
-            await _saveUser(context, _name);
-          }
+          // if (context.mounted) {
+          //   await saveUser(context, _name);
+          // }
 
           final result = await AuthRepository().sendOtp(email: _email);
           if (result['message'] == "OTP sent") {
@@ -177,6 +195,7 @@ class SignupProvider with ChangeNotifier {
                       email: _email,
                       isNewAccount: true,
                       name: _name,
+                      token: response['token'].toString(),
                     );
                   },
                 ),
@@ -184,10 +203,9 @@ class SignupProvider with ChangeNotifier {
             }
           } else {
             if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(result['message'] + ' Try again later')));
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (_) {
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(result['message'] + ' Try again later')));
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
                 return LoginPage();
               }));
             }
@@ -212,15 +230,10 @@ class SignupProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _saveUser(BuildContext context, String name) async {
+  Future<void> saveUser(BuildContext context, String name) async {
     try {
       final response = await AuthRepository().updateUserDetails(
-          name: name,
-          address: null,
-          customerType: null,
-          gstNo: null,
-          number: null,
-          panNo: null);
+          name: name, address: null, customerType: null, gstNo: null, number: null, panNo: null);
 
       if (response['message'] == "Item updated successfully") {
         await LocalDbHelper.saveName(response['data']['name'].toString());
@@ -240,8 +253,7 @@ class SignupProvider with ChangeNotifier {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
       return;
     }

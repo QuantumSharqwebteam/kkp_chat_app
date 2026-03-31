@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/auth/signup_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
@@ -21,10 +22,12 @@ class _SignupPageState extends State<SignupPage> {
   final _email = TextEditingController();
   final _pass = TextEditingController();
   final _repass = TextEditingController();
+  bool _showPasswordRules = false;
 
   @override
   Widget build(BuildContext context) {
     final signupProvider = Provider.of<SignupProvider>(context);
+    final l = AppLocalizations.of(context)!;
 
     Widget content = GestureDetector(
       onTap: () {
@@ -52,42 +55,21 @@ class _SignupPageState extends State<SignupPage> {
               child: Column(
                 children: [
                   Text(
-                    'Create Account',
+                    l.createAccount,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   SizedBox(height: 20),
-                  // CustomButton(
-                  //   text: 'Signup with Google',
-                  //   fontSize: 14,
-                  //   height: 45,
-                  //   image: SvgPicture.asset('assets/icons/google.svg'),
-                  //   onPressed: () {},
-                  //   textColor: Colors.black,
-                  //   backgroundColor: Colors.white,
-                  //   borderRadius: 10,
-                  //   elevation: 0,
-                  //   borderColor: Colors.grey.shade300,
-                  //   borderWidth: 1,
-                  // ),
-                  // SizedBox(height: 10),
-                  // Text(
-                  //   'OR',
-                  //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  // ),
-                  // SizedBox(height: 10),
-                  // Name textField
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Full Name',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.fullName,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -96,7 +78,7 @@ class _SignupPageState extends State<SignupPage> {
                         errorText: signupProvider.nameError,
                         maxLines: 1,
                         keyboardType: TextInputType.name,
-                        hintText: 'Enter your full name',
+                        hintText: l.enterFullName,
                         onChanged: (value) => signupProvider.setName(value),
                       ),
                     ],
@@ -109,9 +91,8 @@ class _SignupPageState extends State<SignupPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Email',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.email,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -120,7 +101,7 @@ class _SignupPageState extends State<SignupPage> {
                         controller: _email,
                         maxLines: 1,
                         keyboardType: TextInputType.emailAddress,
-                        hintText: 'Enter your Email',
+                        hintText: l.enterEmail,
                         onChanged: (value) => signupProvider.setEmail(value),
                       ),
                     ],
@@ -133,21 +114,80 @@ class _SignupPageState extends State<SignupPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Password',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.password,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
                       CustomTextField(
                         controller: _pass,
                         errorText: signupProvider.passwordError,
-                        //helperText: 'Must be at least 6 characters',
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
-                        hintText: 'Create a Password',
+                        hintText: l.createPassword,
                         onChanged: (value) => signupProvider.setPassword(value),
+                      ),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () {
+                          setState(() {
+                            _showPasswordRules = !_showPasswordRules;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade600),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Password requirements',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blueGrey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                _showPasswordRules
+                                    ? Icons.keyboard_arrow_up
+                                    : Icons.keyboard_arrow_down,
+                                size: 18,
+                                color: Colors.blueGrey.shade600,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 5),
+                      AnimatedCrossFade(
+                        firstChild: const SizedBox.shrink(),
+                        secondChild: Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 6),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.blueGrey.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blueGrey.withValues(alpha: 0.2)),
+                          ),
+                          child: const Text(
+                            'Must contain:\n'
+                            '- At least 8 characters\n'
+                            '- One uppercase letter\n'
+                            '- One lowercase letter\n'
+                            '- One number\n'
+                            '- One special character',
+                            style: TextStyle(fontSize: 12, height: 1.3, color: Colors.black87),
+                          ),
+                        ),
+                        crossFadeState: _showPasswordRules
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: const Duration(milliseconds: 180),
                       ),
                     ],
                   ),
@@ -159,24 +199,21 @@ class _SignupPageState extends State<SignupPage> {
                       Padding(
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
-                          'Confirm Password',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
+                          l.confirmPassword,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
                       CustomTextField(
                         controller: _repass,
                         errorText: signupProvider.rePasswordError,
-                        //helperText: 'Must be at least 6 characters',
                         borderRadius: 10,
                         height: 45,
                         maxLines: 1,
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
-                        hintText: 'Confirm Password',
-                        onChanged: (value) =>
-                            signupProvider.setRePassword(value),
+                        hintText: l.confirmPassword,
+                        onChanged: (value) => signupProvider.setRePassword(value),
                       ),
                     ],
                   ),
@@ -184,7 +221,7 @@ class _SignupPageState extends State<SignupPage> {
                   signupProvider.isLoading
                       ? CupertinoActivityIndicator(radius: 20)
                       : CustomButton(
-                          text: 'Create Account',
+                          text: l.createAccount,
                           onPressed: () {
                             signupProvider.signup(context);
                           },
@@ -192,7 +229,7 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 20),
                   Text.rich(
                     TextSpan(
-                      text: 'Already have an Account? ',
+                      text: l.alreadyHaveAccount,
                       style: AppTextStyles.black10_500,
                       children: [
                         WidgetSpan(
@@ -204,7 +241,7 @@ class _SignupPageState extends State<SignupPage> {
                               }));
                             },
                             child: Text(
-                              'Login',
+                              l.login,
                               style: AppTextStyles.black12_700,
                             ),
                           ),

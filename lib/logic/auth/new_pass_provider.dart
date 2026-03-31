@@ -3,6 +3,7 @@ import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 
 class NewPassProvider with ChangeNotifier {
+  static const String _minLengthError = 'Please enter at least 6 digit password';
   String _newPassword = '';
   String _rePassword = '';
   String? _newPassError;
@@ -17,11 +18,13 @@ class NewPassProvider with ChangeNotifier {
 
   void setNewPassword(String newPassword) {
     _newPassword = newPassword;
+    _clearValidationErrorsIfResolved();
     notifyListeners();
   }
 
   void setRePassword(String rePassword) {
     _rePassword = rePassword;
+    _clearValidationErrorsIfResolved();
     notifyListeners();
   }
 
@@ -50,6 +53,16 @@ class NewPassProvider with ChangeNotifier {
     }
     if (_rePassword.trim().isEmpty) {
       setRePassError("Field can't be empty");
+      setIsLoading(false);
+      return;
+    }
+    if (_newPassword.trim().length < 6) {
+      setNewPassError(_minLengthError);
+      setIsLoading(false);
+      return;
+    }
+    if (_rePassword.trim().length < 6) {
+      setRePassError(_minLengthError);
       setIsLoading(false);
       return;
     }
@@ -86,6 +99,33 @@ class NewPassProvider with ChangeNotifier {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
+  void _clearValidationErrorsIfResolved() {
+    if (_newPassword.trim().isNotEmpty && _newPassError == "Field can't be empty") {
+      _newPassError = null;
+    }
+
+    if (_rePassword.trim().isNotEmpty && _rePassError == "Field can't be empty") {
+      _rePassError = null;
+    }
+
+    if (_newPassword.trim().length >= 6 && _newPassError == _minLengthError) {
+      _newPassError = null;
+    }
+
+    if (_rePassword.trim().length >= 6 && _rePassError == _minLengthError) {
+      _rePassError = null;
+    }
+
+    if (_newPassError == "Passwords doesn't match" || _rePassError == "Passwords doesn't match") {
+      if (_newPassword.trim().isNotEmpty &&
+          _rePassword.trim().isNotEmpty &&
+          _newPassword.trim() == _rePassword.trim()) {
+        _newPassError = null;
+        _rePassError = null;
       }
     }
   }

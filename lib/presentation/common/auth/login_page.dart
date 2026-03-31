@@ -9,6 +9,7 @@ import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:provider/provider.dart';
+import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,170 +23,162 @@ class _LoginPageState extends State<LoginPage> {
   final _pass = TextEditingController();
 
   @override
+  void dispose() {
+    _email.dispose();
+    _pass.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final loginProvider = Provider.of<LoginProvider>(context);
+    final locale = AppLocalizations.of(context)!;
 
     Widget content = GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: Image.asset(
-                'assets/icons/logo.png',
-                height: 25,
+        resizeToAvoidBottomInset: true,
+        body: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: Column(
+            children: [
+              Container(
+                height: Utils().height(context) * 0.4,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/bg.png'),
+                    fit: BoxFit.fill,
+                  ),
+                ),
               ),
-            )
-          ],
-        ),
-        body: Center(
-          heightFactor: 1.5,
-          child: SizedBox(
-            width: Utils().width(context) * 0.8,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Text(
-                    'Login',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 30),
-                  // CustomButton(
-                  //   text: 'Signup with Google',
-                  //   fontSize: 14,
-                  //   height: 45,
-                  //   image: SvgPicture.asset('assets/icons/google.svg'),
-                  //   onPressed: () {},
-                  //   textColor: Colors.black,
-                  //   backgroundColor: Colors.white,
-                  //   borderRadius: 10,
-                  //   elevation: 0,
-                  //   borderColor: Colors.grey.shade300,
-                  //   borderWidth: 1,
-                  // ),
-                  // SizedBox(height: 15),
-                  // Text(
-                  //   'OR',
-                  //   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  // ),
-                  // SizedBox(height: 15),
-                  // Email textField
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 5),
-                        child: Text(
-                          'Email',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      CustomTextField(
-                        errorText: loginProvider.emailError.trim().isEmpty
-                            ? null
-                            : loginProvider.emailError,
-                        controller: _email,
-                        maxLines: 1,
-                        keyboardType: TextInputType.emailAddress,
-                        hintText: 'Enter your Email',
-                        onChanged: (value) => loginProvider.setEmail(value),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  // Password textField
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 5),
-                        child: Text(
-                          'Password',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      CustomTextField(
-                        errorText: loginProvider.passwordError.trim().isEmpty
-                            ? null
-                            : loginProvider.passwordError,
-                        controller: _pass,
-                        maxLines: 1,
-                        isPassword: true,
-                        keyboardType: TextInputType.visiblePassword,
-                        hintText: 'Enter your Password',
-                        onChanged: (value) => loginProvider.setPassword(value),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 5),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ForgotPassPage(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'Forgot Password?',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 3, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Welcome",
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  SizedBox(height: 40),
-                  loginProvider.isLoading
-                      ? CupertinoActivityIndicator(radius: 20)
-                      : CustomButton(
-                          text: 'Login',
-                          onPressed: () {
-                            loginProvider.login(
-                                context, _email.text, _pass.text);
-                          },
-                        ),
-                  SizedBox(height: 30),
-                  Text.rich(
-                    TextSpan(
-                      text: 'Don\'t have an Account? ',
-                      style: AppTextStyles.black10_500,
+                    const SizedBox(height: 24),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        WidgetSpan(
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SignupPage(),
-                                ),
-                              );
-                            },
-                            child: Text(
-                              'Signup',
-                              style: AppTextStyles.black12_700,
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 5),
+                          child: Text(
+                            locale.email,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           ),
+                        ),
+                        const SizedBox(height: 5),
+                        CustomTextField(
+                          errorText: loginProvider.emailError.trim().isEmpty
+                              ? null
+                              : loginProvider.emailError,
+                          controller: _email,
+                          maxLines: 1,
+                          keyboardType: TextInputType.emailAddress,
+                          hintText: locale.enterYourEmail,
+                          onChanged: (value) => loginProvider.setEmail(value),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 5),
+                          child: Text(
+                            locale.password,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        CustomTextField(
+                          errorText: loginProvider.passwordError.trim().isEmpty
+                              ? null
+                              : loginProvider.passwordError,
+                          controller: _pass,
+                          maxLines: 1,
+                          isPassword: true,
+                          keyboardType: TextInputType.visiblePassword,
+                          hintText: locale.enterPassword,
+                          onChanged: (value) => loginProvider.setPassword(value),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ForgotPassPage(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Forgot Password?",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 26),
+                    loginProvider.isLoading
+                        ? Center(child: const CupertinoActivityIndicator(radius: 20))
+                        : CustomButton(
+                            text: locale.login,
+                            onPressed: () {
+                              loginProvider.login(context, _email.text, _pass.text);
+                            },
+                          ),
+                    const SizedBox(height: 22),
+                    Center(
+                      child: Text.rich(
+                        TextSpan(
+                          text: locale.dontHaveAccount,
+                          style: AppTextStyles.black10_500,
+                          children: [
+                            WidgetSpan(
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => SignupPage(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  locale.signup,
+                                  style: AppTextStyles.black12_700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

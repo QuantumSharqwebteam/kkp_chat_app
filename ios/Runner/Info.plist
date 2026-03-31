@@ -2,6 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>http</string>
+		<string>https</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.hertzworkworkz.kkpgroupchatapp.refresh</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -25,39 +34,34 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
+	<true/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>MinimumOSVersion</key>
 	<string>13.0</string>
-
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowArbitraryLoads</key>
 		<true/>
 	</dict>
-
-	<!-- ✅ Added for Flutter Dart VM Service & local sockets (already present) -->
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>This app uses the local network to communicate with nearby devices.</string>
-
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_dartobservatory._tcp</string>
 	</array>
-	<!-- ✅ End of local network permission section -->
-
 	<key>NSCameraUsageDescription</key>
-	<string>$(PRODUCT_NAME) Camera Usage!</string>
+	<string>Used to scan fabric QR codes or take fabric photos for enquiries.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app uses the local network to communicate with nearby devices.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to locate nearby offline fabric stores for sampling or pickup.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs access to your microphone to record audio for calls or voice messages.</string>
+	<string>Used for voice chat and support queries within the app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Need permission</string>
-	<key>NSUserNotificationUsageDescription</key>
-	<string>This app needs notifications to alert you about updates.</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to deliver personalized ads to you.</string>
-
+	<string>Allows users to upload fabric images for product enquiries.</string>
+	<key>NSPrivacyAccessedAPICategoryUserDefaults</key>
+	<string>This app uses UserDefaults to store user preferences and app settings.</string>
+	<key>NSPrivacyAccessedAPICategoryFileTimestamp</key>
+	<string>This app accesses file timestamps to manage local data storage.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -69,6 +73,8 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIStatusBarHidden</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -82,5 +88,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>UNUserNotificationCenterUsageDescription</key>
+	<string>This app sends alerts for order updates, restocks, and support replies.</string>
 </dict>
 </plist>
