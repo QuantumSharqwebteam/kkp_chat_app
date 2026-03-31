@@ -5,6 +5,7 @@ import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
+import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
@@ -85,6 +86,41 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
     }
   }
 
+  List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is List) {
+      final entries = raw
+          .where((entry) => entry is Map)
+          .map((entry) => Map<String, dynamic>.from(entry as Map))
+          .toList();
+      return entries.isNotEmpty ? entries : null;
+    }
+    if (raw is Map) {
+      return [Map<String, dynamic>.from(raw)];
+    }
+    return null;
+  }
+
+  ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
+    final normalizedForms = _normalizeFormData(messageJson.form);
+    final primaryForm =
+        normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
+    return ChatMessageModel(
+      message: messageJson.message ?? '',
+      timestamp: DateTime.parse(messageJson.timestamp ?? DateTime.now().toIso8601String()),
+      sender: messageJson.senderId!,
+      type: messageJson.type,
+      mediaUrl: messageJson.mediaUrl,
+      form: primaryForm,
+      forms: normalizedForms,
+      callDuration: messageJson.callDuration,
+      callStatus: messageJson.callStatus,
+      callId: messageJson.callId,
+      messageId: messageJson.messageId,
+      isDeleted: messageJson.isDeleted!,
+    );
+  }
+
   Future<void> _fetchMessages() async {
     try {
       final fetchedMessages = await _chatRepository.fetchPreviousChats(
@@ -93,23 +129,7 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
       );
 
       setState(() {
-        messages = fetchedMessages.map((messageJson) {
-          return ChatMessageModel(
-            message: messageJson.message ?? '',
-            timestamp: DateTime.parse(messageJson.timestamp ?? DateTime.now().toIso8601String()),
-            sender: messageJson.senderId!,
-            type: messageJson.type,
-            mediaUrl: messageJson.mediaUrl,
-            form: messageJson.form != null && messageJson.form!.isNotEmpty
-                ? Map<String, dynamic>.from(messageJson.form![0])
-                : null,
-            callDuration: messageJson.callDuration,
-            callStatus: messageJson.callStatus,
-            callId: messageJson.callId,
-            messageId: messageJson.messageId, // Ensure messageId is mapped
-            isDeleted: messageJson.isDeleted!,
-          );
-        }).toList();
+        messages = fetchedMessages.map(_chatMessageFromModel).toList();
         _isLoading = false;
       });
 
@@ -181,7 +201,7 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
                                       )
                                     else if (msg.type == 'form')
                                       FormMessageBubble(
-                                        formData: msg.form!,
+                                        forms: msg.formEntries,
                                         isMe: isAgent,
                                         timestamp: ChatUtils()
                                             .formatTimestamp(msg.timestamp.toIso8601String()),
