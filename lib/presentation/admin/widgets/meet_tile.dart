@@ -104,7 +104,7 @@ class MeetingTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDateTime(meeting.startTime),
+                        _formatMeetingDate(meeting.startTime),
                         style: AppTextStyles.grey12_600.copyWith(fontSize: 12),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -309,6 +309,12 @@ class MeetingTile extends StatelessWidget {
         ),
       ],
     );
+  }
+
+
+  String _formatMeetingDate(String isoDateTime) {
+    final dateTime = DateTime.parse(isoDateTime).toLocal();
+    return ChatUtils().formatDateHeader(dateTime);
   }
 
   String _formatDateTime(String isoDateTime) {

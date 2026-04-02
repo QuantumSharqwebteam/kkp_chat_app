@@ -1005,9 +1005,13 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
             children: [
               Initicon(text: AppLocalizations.of(context)!.agent),
               const SizedBox(width: 5),
-              Text(
-                widget.agentName ?? AppLocalizations.of(context)!.agent,
-                style: AppTextStyles.black14_400,
+              Expanded(
+                child: Text(
+                  widget.agentName ?? AppLocalizations.of(context)!.agent,
+                  style: AppTextStyles.black14_400,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

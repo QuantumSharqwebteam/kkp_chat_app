@@ -36,6 +36,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
   }
 
   Future<void> _selectDateTime(BuildContext context) async {
+    final now = DateTime.now();
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -46,17 +47,25 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
     if (pickedDate != null) {
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.now(),
+        initialTime: TimeOfDay.fromDateTime(now),
       );
 
       if (pickedTime != null) {
-        final DateTime combined = DateTime(
+        DateTime combined = DateTime(
           pickedDate.year,
           pickedDate.month,
           pickedDate.day,
           pickedTime.hour,
           pickedTime.minute,
         );
+
+        if (pickedDate.year == now.year &&
+            pickedDate.month == now.month &&
+            pickedDate.day == now.day &&
+            combined.isBefore(now)) {
+          combined = now.add(const Duration(minutes: 1));
+        }
+
         _startTimeController.text = combined.toIso8601String();
       }
     }
@@ -97,7 +106,20 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
       setState(() => _startTimeError = "Please select a start time");
       isValid = false;
     } else {
-      setState(() => _startTimeError = null);
+      try {
+        final selectedDateTime = DateTime.parse(_startTimeController.text).toLocal();
+        final now = DateTime.now();
+
+        if (!selectedDateTime.isAfter(now)) {
+          setState(() => _startTimeError = "Start time must be in the future");
+          isValid = false;
+        } else {
+          setState(() => _startTimeError = null);
+        }
+      } catch (e) {
+        setState(() => _startTimeError = "Invalid start time");
+        isValid = false;
+      }
     }
 
     return isValid;

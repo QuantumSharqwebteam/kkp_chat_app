@@ -279,7 +279,12 @@ class LocalDbHelper {
       debugPrint("📦 [LocalDbHelper] Fetching products from Hive...");
       final box = await Hive.openBox<dynamic>(_productBoxKey);
       final productMaps = box.values.toList();
-      final products = productMaps.map((map) => Product.fromJson(map)).toList();
+      final products = productMaps.map((map) {
+        if (map is Map) {
+          return Product.fromJson(Map<String, dynamic>.from(map));
+        }
+        return Product.fromJson({});
+      }).toList();
       debugPrint("📋 [LocalDbHelper] Found ${products.length} products in Hive.");
       return products;
     } catch (e) {

@@ -140,6 +140,19 @@ class MeetingManagement with ChangeNotifier {
     required String link,
     required String startTime,
   }) async {
+    try {
+      final selectedTime = DateTime.parse(startTime).toLocal();
+      if (!selectedTime.isAfter(DateTime.now())) {
+        _error = "Start time must be in the future";
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      _error = "Invalid start time provided";
+      notifyListeners();
+      return false;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();

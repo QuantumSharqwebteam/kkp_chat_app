@@ -54,9 +54,13 @@ class FeedListCard extends StatelessWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Text(
-              name,
-              style: AppTextStyles.black14_600.copyWith(fontSize: 13),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.black14_600.copyWith(fontSize: 13),
+              ),
             ),
             const SizedBox(width: 6),
             if (isAccountDeleted)

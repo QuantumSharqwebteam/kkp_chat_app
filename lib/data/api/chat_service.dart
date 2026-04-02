@@ -199,6 +199,13 @@ class ChatService {
       "agentId": agentEmail,
     };
 
+    /// 🔍 DEBUG LOGS (REQUEST)
+    debugPrint("📤 API REQUEST");
+    debugPrint("➡️ URL: $url");
+    debugPrint("📧 Customer Email: $customerEmail");
+    debugPrint("🧑‍💼 Agent Email: $agentEmail");
+    debugPrint("📦 Body: ${jsonEncode(body)}");
+
     try {
       final response = await client.put(
         url,

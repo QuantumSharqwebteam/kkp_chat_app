@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:indian_pincode_validator/indian_pincode_validator.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -43,6 +44,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   final _streetNumber = TextEditingController();
   final _pinCode = TextEditingController();
   final _cityName = TextEditingController();
+  final TextInputFormatter _panUpperCaseFormatter =
+      TextInputFormatter.withFunction((oldValue, newValue) {
+    final upperCaseText = newValue.text.toUpperCase();
+    return newValue.copyWith(text: upperCaseText);
+  });
   late bool _isExportSelected = true;
   late bool _isDomesticSelected = false;
   AuthRepository auth = AuthRepository();
@@ -72,10 +78,34 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(city);
   }
 
+  bool _isValidFullName(String name) {
+    return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(name);
+  }
+
+  bool _isValidPhoneNumber(String phoneNumber) {
+    return RegExp(r'^[0-9]{10}$').hasMatch(phoneNumber);
+  }
+
+  bool _isValidPanNumber(String panNumber) {
+    return RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(panNumber.toUpperCase());
+  }
+
   bool _isSameCity(String inputCity, String pinCity) {
     String normalize(String value) =>
         value.toLowerCase().replaceAll(RegExp(r"[^a-z]"), "");
-    return normalize(inputCity) == normalize(pinCity);
+    final normalizedInput = normalize(inputCity);
+    final normalizedPin = normalize(pinCity);
+
+    if (normalizedInput.isEmpty || normalizedPin.isEmpty) {
+      return false;
+    }
+
+    if (normalizedInput == normalizedPin) {
+      return true;
+    }
+
+    return normalizedInput.contains(normalizedPin) ||
+        normalizedPin.contains(normalizedInput);
   }
 
   @override
@@ -132,7 +162,17 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   Future<void> _saveUserProfile() async {
     if (!mounted) return;
 
-    if (_pinCode.text.isNotEmpty && !_isValidPinCode(_pinCode.text.trim())) {
+    if (_pinCodeError != null || _cityNameError != null) {
+      setState(() {
+        _pinCodeError = null;
+        _cityNameError = null;
+      });
+    }
+
+    final trimmedPinCode = _pinCode.text.trim();
+    final trimmedCityName = _cityName.text.trim();
+
+    if (trimmedPinCode.isNotEmpty && !_isValidPinCode(trimmedPinCode)) {
       setState(() {
         _pinCodeError = 'Please enter a valid Indian PIN code';
         _isSavingProfile = false;
@@ -140,7 +180,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       return;
     }
 
-    if (_cityName.text.isNotEmpty && !_isValidCityName(_cityName.text.trim())) {
+    if (trimmedCityName.isNotEmpty && !_isValidCityName(trimmedCityName)) {
       setState(() {
         _cityNameError = 'Please enter a valid city name';
         _isSavingProfile = false;
@@ -148,9 +188,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       return;
     }
 
-    if (_pinCode.text.isNotEmpty) {
+    if (trimmedPinCode.isNotEmpty) {
       final pinValidationResult = await IndianPinCodeValidator.validate(
-        _pinCode.text.trim(),
+        trimmedPinCode,
       );
 
       if (!pinValidationResult.isValid) {
@@ -162,7 +202,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         return;
       }
 
-      final enteredCity = _cityName.text.trim();
+      final enteredCity = trimmedCityName;
       final pinCity = (pinValidationResult.city ?? '').trim();
       if (enteredCity.isNotEmpty && pinCity.isNotEmpty && !_isSameCity(enteredCity, pinCity)) {
         setState(() {
@@ -173,28 +213,34 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       }
     }
 
+    final trimmedName = _name.text.trim();
+    final trimmedPhone = _phoneNumber.text.trim();
+    final trimmedGst = _gstNumber.text.trim();
+    final trimmedPan = _panNumber.text.trim().toUpperCase();
+
     // Construct the address object with only changed values
+    final trimmedHouseFlat = _houseFlatNumber.text.trim();
+    final trimmedStreet = _streetNumber.text.trim();
     Address? addressDetails;
-    if (_houseFlatNumber.text.isNotEmpty ||
-        _streetNumber.text.isNotEmpty ||
-        _cityName.text.isNotEmpty ||
-        _pinCode.text.isNotEmpty) {
+    if (trimmedHouseFlat.isNotEmpty ||
+        trimmedStreet.isNotEmpty ||
+        trimmedCityName.isNotEmpty ||
+        trimmedPinCode.isNotEmpty) {
       addressDetails = Address(
-        houseNo:
-            _houseFlatNumber.text.isNotEmpty ? _houseFlatNumber.text : null,
-        streetName: _streetNumber.text.isNotEmpty ? _streetNumber.text : null,
-        city: _cityName.text.isNotEmpty ? _cityName.text : null,
-        pincode: _pinCode.text.isNotEmpty ? _pinCode.text : null,
+        houseNo: trimmedHouseFlat.isNotEmpty ? trimmedHouseFlat : null,
+        streetName: trimmedStreet.isNotEmpty ? trimmedStreet : null,
+        city: trimmedCityName.isNotEmpty ? trimmedCityName : null,
+        pincode: trimmedPinCode.isNotEmpty ? trimmedPinCode : null,
       );
     }
 
     try {
       final response = await auth.updateUserDetails(
-        name: _name.text.isNotEmpty ? _name.text : widget.name,
-        number: _completePhoneNumber ?? _phoneNumber.text,
+        name: trimmedName.isNotEmpty ? trimmedName : widget.name,
+        number: _completePhoneNumber ?? trimmedPhone,
         customerType: _customerType,
-        gstNo: _gstNumber.text.isNotEmpty ? _gstNumber.text : null,
-        panNo: _panNumber.text.isNotEmpty ? _panNumber.text : null,
+        gstNo: trimmedGst.isNotEmpty ? trimmedGst : null,
+        panNo: trimmedPan.isNotEmpty ? trimmedPan : null,
         address: addressDetails,
       );
 
@@ -430,6 +476,17 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     keyboardType: TextInputType.name,
                     hintText: AppLocalizations.of(context)!.enterYourName,
                     errorText: widget.forUpdate ? null : _nameError,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                    ],
+                    onChanged: (value) {
+                      final trimmed = value.trim();
+                      if (trimmed.isEmpty || _isValidFullName(trimmed)) {
+                        setState(() {
+                          _nameError = null;
+                        });
+                      }
+                    },
                   ),
                 ],
               ),
@@ -561,6 +618,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       if (phone == null || phone.number.isEmpty) {
                         return 'Mobile number is required';
                       }
+                      if (!_isValidPhoneNumber(phone.number)) {
+                        return 'Enter a 10-digit mobile number';
+                      }
                       return null;
                     },
                   ),
@@ -627,6 +687,18 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     keyboardType: TextInputType.text,
                     maxLength: 10,
                     errorText: widget.forUpdate ? null : _panNumberError,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                      _panUpperCaseFormatter,
+                    ],
+                    onChanged: (value) {
+                      final trimmed = value.trim();
+                      if (trimmed.isEmpty || _isValidPanNumber(trimmed)) {
+                        setState(() {
+                          _panNumberError = null;
+                        });
+                      }
+                    },
                   ),
                 ],
               ),
@@ -698,14 +770,17 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       style: AppTextStyles.black14_600,
                     ),
                     CustomTextField(
-                      controller: _cityName,
-                      height: 50,
-                      hintText: AppLocalizations.of(context)!.enterCityName,
-                      errorText: _cityNameError,
-                      keyboardType: TextInputType.text,
-                      onChanged: (value) {
-                        final city = value.trim();
-                        if (city.isEmpty || _isValidCityName(city)) {
+                    controller: _cityName,
+                    height: 50,
+                    hintText: AppLocalizations.of(context)!.enterCityName,
+                    errorText: _cityNameError,
+                    keyboardType: TextInputType.text,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                    ],
+                    onChanged: (value) {
+                      final city = value.trim();
+                      if (city.isEmpty || _isValidCityName(city)) {
                           setState(() {
                             _cityNameError = null;
                           });
@@ -729,6 +804,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       hintText: AppLocalizations.of(context)!.enterPincode,
                       errorText: _pinCodeError,
                       keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       onChanged: (value) {
                         final pinCode = value.trim();
                         if (pinCode.isEmpty ||
@@ -755,9 +833,15 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     bool isValid = true;
 
     if (_currentStep == 0) {
-      if (_name.text.isEmpty) {
+      final nameInput = _name.text.trim();
+      if (nameInput.isEmpty) {
         setState(() {
           _nameError = 'Name is required';
+        });
+        isValid = false;
+      } else if (!_isValidFullName(nameInput)) {
+        setState(() {
+          _nameError = 'Please enter a valid name';
         });
         isValid = false;
       } else {
@@ -766,10 +850,15 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
       }
     } else if (_currentStep == 1) {
-      // Phone number validation
-      if (_phoneNumber.text.isEmpty) {
+      final phoneInput = _phoneNumber.text.trim();
+      if (phoneInput.isEmpty) {
         setState(() {
           _phoneNumberError = 'Mobile number is required';
+        });
+        isValid = false;
+      } else if (!_isValidPhoneNumber(phoneInput)) {
+        setState(() {
+          _phoneNumberError = 'Enter a valid 10-digit mobile number';
         });
         isValid = false;
       } else {
@@ -778,8 +867,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
       }
 
-      // GST validation - mandatory for domestic, optional for export
-      if (_isDomesticSelected && _gstNumber.text.isEmpty) {
+      final gstInput = _gstNumber.text.trim();
+      if (_isDomesticSelected && gstInput.isEmpty) {
         setState(() {
           _gstNumberError = 'GST number is required for domestic customers';
         });
@@ -790,10 +879,16 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
       }
 
-      // PAN validation - mandatory for domestic, optional for export
-      if (_isDomesticSelected && _panNumber.text.isEmpty) {
+      final panInput = _panNumber.text.trim().toUpperCase();
+      final panProvided = panInput.isNotEmpty;
+      if (_isDomesticSelected && !panProvided) {
         setState(() {
           _panNumberError = 'PAN number is required for domestic customers';
+        });
+        isValid = false;
+      } else if (panProvided && !_isValidPanNumber(panInput)) {
+        setState(() {
+          _panNumberError = 'Please enter a valid 10-character PAN number';
         });
         isValid = false;
       } else {
@@ -802,7 +897,6 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
       }
 
-      // Customer type validation
       if (_customerType == null) {
         showDialog(
           context: context,
@@ -843,12 +937,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
       }
 
-      if (_cityName.text.isEmpty) {
+      final cityInput = _cityName.text.trim();
+      if (cityInput.isEmpty) {
         setState(() {
           _cityNameError = 'City name is required';
         });
         isValid = false;
-      } else if (!_isValidCityName(_cityName.text.trim())) {
+      } else if (!_isValidCityName(cityInput)) {
         setState(() {
           _cityNameError = 'Please enter a valid city name';
         });
@@ -859,12 +954,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
       }
 
-      if (_pinCode.text.isEmpty) {
+      final pinInput = _pinCode.text.trim();
+      if (pinInput.isEmpty) {
         setState(() {
           _pinCodeError = 'Pin code is required';
         });
         isValid = false;
-      } else if (!_isValidPinCode(_pinCode.text.trim())) {
+      } else if (!_isValidPinCode(pinInput)) {
         setState(() {
           _pinCodeError = 'Please enter a valid Indian PIN code';
         });

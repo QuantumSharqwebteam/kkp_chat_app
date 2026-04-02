@@ -76,6 +76,7 @@ class AgentChatScreen extends StatefulWidget {
 class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _isFormUpdating = false;
+  final RegExp _buyerNamePattern = RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$");
   final _chatController = TextEditingController();
   final ChatRepository _chatRepository = ChatRepository();
   final SocketService _socketService = SocketService(navigatorKey);
@@ -1170,6 +1171,10 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     await _applyFormUpdates(formData, updates);
   }
 
+  bool _isValidBuyerName(String name) {
+    return _buyerNamePattern.hasMatch(name);
+  }
+
   Future<Map<String, dynamic>?> _showFormUpdateSheet(Map<String, dynamic> formData) async {
     final buyerController = TextEditingController(text: formData['buyerName']?.toString() ?? '');
     final qualityController = TextEditingController(text: formData['quality']?.toString() ?? '');
@@ -1230,7 +1235,13 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                   ),
                   const SizedBox(height: 12),
-                  _buildField('Buyer name', buyerController),
+                  _buildField(
+                    'Buyer name',
+                    buyerController,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                    ],
+                  ),
                   const SizedBox(height: 10),
                   _buildField('Quality', qualityController),
                   const SizedBox(height: 10),
@@ -1246,6 +1257,16 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                     text: 'Send updates',
                     onPressed: () {
                       final updates = <String, dynamic>{};
+                      final buyerValue = buyerController.text.trim();
+                      if (buyerValue.isNotEmpty && !_isValidBuyerName(buyerValue)) {
+                        ScaffoldMessenger.of(sheetContext).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'Buyer name may only contain letters, spaces, dots, hyphens, or apostrophes.'),
+                          ),
+                        );
+                        return;
+                      }
                       void addField(String key, TextEditingController controller) {
                         final value = controller.text.trim();
                         if (value.isNotEmpty) {
@@ -1337,9 +1358,14 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     }
   }
 
-  Widget _buildField(String label, TextEditingController controller) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    List<TextInputFormatter>? inputFormatters,
+  }) {
     return TextField(
       controller: controller,
+      inputFormatters: inputFormatters,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(
@@ -1529,9 +1555,13 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
           children: [
             Initicon(text: widget.customerName ?? ""),
             const SizedBox(width: 5),
-            Text(
-              widget.customerName!,
-              style: AppTextStyles.black12_700,
+            Expanded(
+              child: Text(
+                widget.customerName ?? '',
+                style: AppTextStyles.black12_700,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
