@@ -263,6 +263,43 @@ class GroupProvider extends ChangeNotifier {
     }
   }
 
+  /// Add member to group
+  Future<bool> addMember({
+    required String groupId,
+    required String email,
+  }) async {
+    _state = GroupState.loading;
+    notifyListeners();
+    try {
+      final response = await _groupService.addMember(
+        groupId: groupId,
+        email: email,
+      );
+      if (response.success) {
+        _logger.logGeneral('âœ… Member added successfully');
+        await fetchAllGroups(forceRefresh: true);
+        _state = GroupState.success;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message;
+        _logger.logGeneral(
+          'âŒ Failed to add member: ${response.message}',
+          level: LogLevel.error,
+        );
+        _state = GroupState.error;
+        notifyListeners();
+        return false;
+      }
+    } catch (e, s) {
+      _errorMessage = 'Failed to add member: $e';
+      _logger.error('GROUP_PROVIDER', 'addMember failed', error: e, stackTrace: s);
+      _state = GroupState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
   /// Add admin to group
   Future<bool> addAdmin({
     required String groupId,

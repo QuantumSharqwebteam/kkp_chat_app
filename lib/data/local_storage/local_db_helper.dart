@@ -8,6 +8,7 @@ import 'package:kkpchatapp/data/models/group_message_model.dart';
 import 'package:kkpchatapp/data/models/group_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/data/models/form_data_model.dart';
 
 class LocalDbHelper {
   static const String _keyToken = 'token';
@@ -33,6 +34,7 @@ class LocalDbHelper {
   // Product-related keys and methods
   static const String _productBoxKey = 'productBox';
   static const String _lastProductFetchTimeKey = 'lastProductFetchTime';
+  static const String _inquiryFormsBoxKey = 'inquiryFormsBox';
 
   // feed
   static const String _pinnedAgentsKey = 'pinnedAgents';
@@ -576,5 +578,53 @@ class LocalDbHelper {
 // Get user groups timestamp
   static Future<int?> getUserGroupsTimestamp() async {
     return _box.get('lastUserGroupsFetchTime');
+  }
+
+  static Future<Box<dynamic>> _inquiryFormsBox() async {
+    return await Hive.openBox<dynamic>(_inquiryFormsBoxKey);
+  }
+
+  static Future<void> saveInquiryForms(String email, List<FormDataModel> forms) async {
+    try {
+      final box = await _inquiryFormsBox();
+      final serialized = forms.map((form) => form.toMap()).toList();
+      await box.put(email, serialized);
+      debugPrint("✅ [LocalDbHelper] Cached \${forms.length} inquiry forms for $email");
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to cache inquiry forms: $e");
+    }
+  }
+
+  static Future<List<FormDataModel>> getInquiryForms(String email) async {
+    try {
+      final box = await _inquiryFormsBox();
+      final stored = box.get(email);
+      if (stored is List) {
+        final List<FormDataModel> forms = [];
+        for (var item in stored) {
+          if (item is Map) {
+            forms.add(FormDataModel.fromJson(Map<String, dynamic>.from(item)));
+          } else if (item is String) {
+            final json = jsonDecode(item);
+            if (json is Map) {
+              forms.add(FormDataModel.fromJson(Map<String, dynamic>.from(json)));
+            }
+          }
+        }
+        return forms;
+      }
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to read cached inquiry forms: $e");
+    }
+    return [];
+  }
+
+  static Future<void> clearInquiryForms(String email) async {
+    try {
+      final box = await _inquiryFormsBox();
+      await box.delete(email);
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to clear cached inquiry forms: $e");
+    }
   }
 }

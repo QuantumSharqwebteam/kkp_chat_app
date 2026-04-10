@@ -13,6 +13,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
@@ -52,6 +53,8 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   OverlayEntry? _activeCallOverlay;
+  Timer? _incomingCallTimeoutTimer;
+  String? _activeIncomingCallId;
 
   //OverlayEntry? _disconnectOverlay;
 
@@ -89,6 +92,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onCallTerminated(_handleCallTermination);
         _socketService.onProductAdd(_handleProductAdd);
         _socketService.onProductUpdate(_handleProductUpdate);
         _socketService.onProductDelete(_handleProductDelete);
@@ -179,6 +183,9 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _socketService.offCallTerminated(_handleCallTermination);
+    _incomingCallTimeoutTimer?.cancel();
+    _removeIncomingCallOverlay();
     _audioPlayer?.stop();
     // _socketService.disconnect(); // Disconnect when leaving the host screen
     super.dispose();
@@ -217,6 +224,27 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _refreshCustomerInquiries();
+      });
+    }
+  }
+
+  Future<void> _refreshCustomerInquiries() async {
+    if (!mounted) return;
+    try {
+      final provider = Provider.of<InquiryProvider>(context, listen: false);
+      final role = await LocalDbHelper.getUserType();
+      final currentUserEmail = LocalDbHelper.getProfile()?.email;
+      await provider.fetchInquiries(
+        userEmail: currentUserEmail,
+        role: role,
+        forceRefresh: true,
+      );
+    } catch (error) {
+      debugPrint('Failed to refresh customer inquiries: $error');
+    }
   }
 
   void _navigateToChat({
@@ -327,38 +355,49 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
         .deleteProductLocal(productId);
   }
 
-  void _handleIncomingCall(Map<String, dynamic> callData) {
-    // debugPrint("Incoming call data2: ${callData.toString()}");
-    // Remove previous overlay if exists
+  Future<void> _removeIncomingCallOverlay() async {
+    _incomingCallTimeoutTimer?.cancel();
+    _incomingCallTimeoutTimer = null;
+
+    try {
+      await _audioPlayer?.stop();
+      await _audioPlayer?.dispose();
+    } catch (e) {
+      debugPrint("⚠️ Failed to stop incoming ringtone: $e");
+    }
+
     _activeCallOverlay?.remove();
     _activeCallOverlay = null;
+    _activeIncomingCallId = null;
+    _audioPlayer = null;
+  }
+
+  void _handleCallTermination(Map<String, dynamic> data) {
+    final terminatedCallId = data['callId']?.toString();
+    if (terminatedCallId == null || terminatedCallId.isEmpty) return;
+
+    if (_activeIncomingCallId == terminatedCallId && _activeCallOverlay != null) {
+      debugPrint("🔚 MarketingHost closing incoming call overlay for callId: $terminatedCallId");
+      _removeIncomingCallOverlay();
+    }
+  }
+
+  Future<void> _handleIncomingCall(Map<String, dynamic> callData) async {
+    // debugPrint("Incoming call data2: ${callData.toString()}");
+    // Remove previous overlay if exists
+    await _removeIncomingCallOverlay();
 
     final channelName = callData['channelName'];
     final callerName = callData['callerName'];
     final callerId = callData['callerId'];
     final incomingCallId = callData["callId"];
+    _activeIncomingCallId = incomingCallId?.toString();
     final uid = Utils().generateIntUidFromEmail(agentEmail!);
     final overlayState = Overlay.of(context);
+    if (overlayState == null) return;
 
     late OverlayEntry overlayEntry;
-    Timer? timeoutTimer;
-    _audioPlayer?.stop();
     _audioPlayer = AudioPlayer();
-    Future<void> stopAndRemoveOverlay() async {
-      try {
-        debugPrint("🛑 Stopping ringtone...");
-
-        await _audioPlayer?.stop();
-        debugPrint("✅ Ringtone stopped");
-      } catch (e) {
-        debugPrint("⚠️ Failed to stop ringtone: $e");
-      }
-
-      timeoutTimer?.cancel();
-      overlayEntry.remove();
-      _activeCallOverlay = null;
-      _audioPlayer = null;
-    }
 
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -368,7 +407,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
         child: IncomingCallWidget(
           callerName: callerName,
           onAnswer: () async {
-            await stopAndRemoveOverlay();
+            await _removeIncomingCallOverlay();
             if (context.mounted) {
               context.read<CallProvider>().startNewCall(
                   channelName: channelName,
@@ -379,8 +418,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
             }
           },
           onReject: () async {
-            await stopAndRemoveOverlay();
-            await _audioPlayer?.stop();
+            await _removeIncomingCallOverlay();
             await Future.delayed(const Duration(milliseconds: 100));
             await chatRepository.updateCallData(incomingCallId, "not answered");
             // Optionally emit reject event
@@ -403,8 +441,8 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
     }
 
     // Auto-dismiss after 30 seconds
-    timeoutTimer = Timer(const Duration(seconds: 30), () async {
-      await stopAndRemoveOverlay();
+    _incomingCallTimeoutTimer = Timer(const Duration(seconds: 30), () async {
+      await _removeIncomingCallOverlay();
       // Optionally emit missed call
       await chatRepository.updateCallData(incomingCallId, "missed");
     });

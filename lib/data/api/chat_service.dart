@@ -79,6 +79,7 @@ class ChatService {
 
       if (response.statusCode == 200 && jsonResponse["message"] is List) {
         // Success: Return the list of assigned users
+        debugPrint("📌 ${response.body}");
         return List<Map<String, dynamic>>.from(jsonResponse["message"]);
       } else if (response.statusCode == 404 ||
           jsonResponse["message"] == "No users found for this agent") {
@@ -345,13 +346,33 @@ class ChatService {
     }
   }
 
-  Future<void> updateFormStatus({required String formId, required status}) async {
+  Future<void> updateFormStatus({
+    required String formId,
+    required String status,
+    String? reason,
+  }) async {
+    final token = await LocalDbHelper.getToken();
     try {
       final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
+      final normalizedReason = reason?.trim();
+      final body = <String, dynamic>{
+        "status": status,
+      };
+
+      if (status.toLowerCase() == 'declined') {
+        if (normalizedReason == null || normalizedReason.isEmpty) {
+          throw ArgumentError('Decline reason is required when status is Declined');
+        }
+        body["reason"] = normalizedReason;
+      }
+
       final response = await client.put(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"status": status}),
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
       );
 
       if (response.statusCode != 200) {

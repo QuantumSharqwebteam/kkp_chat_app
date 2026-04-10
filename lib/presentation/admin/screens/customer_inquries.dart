@@ -14,8 +14,9 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
+import 'package:kkpchatapp/core/utils/route_observer.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:excel/excel.dart' hide Border;
+import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 
@@ -27,7 +28,7 @@ class CustomerInquiriesPage extends StatefulWidget {
 }
 
 class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   final _searchController = TextEditingController();
   final chatRepository = ChatRepository();
   late InquiryProvider _inquiryProvider;
@@ -47,12 +48,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   @override
   void initState() {
     super.initState();
-
     _inquiryProvider = Provider.of<InquiryProvider>(context, listen: false);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _fetchInitialData();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
   }
 
   Future<void> _fetchInitialData() async {
@@ -64,10 +61,37 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     );
   }
 
+  bool _isRouteObserverSubscribed = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isRouteObserverSubscribed) {
+      final modalRoute = ModalRoute.of(context);
+      if (modalRoute is PageRoute) {
+        routeObserver.subscribe(this, modalRoute);
+        _isRouteObserverSubscribed = true;
+      }
+    }
+  }
+
   @override
   void dispose() {
+    if (_isRouteObserverSubscribed) {
+      routeObserver.unsubscribe(this);
+    }
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didPush() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
+  }
+
+  @override
+  void didPopNext() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
   }
 
   String _getFormattedDate(String rawDate) {
@@ -112,6 +136,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         TextCellValue('Rate'),
         TextCellValue('Agent Name'),
         TextCellValue('Customer Name'),
+        TextCellValue('Reason'),
         TextCellValue('Status'),
         TextCellValue('ID'),
         TextCellValue('Time'),
@@ -127,6 +152,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           TextCellValue(inquiry.rate),
           TextCellValue(inquiry.agentName),
           TextCellValue(inquiry.customerName),
+          TextCellValue(inquiry.reason),
           TextCellValue(inquiry.status),
           TextCellValue(inquiry.id),
           TextCellValue(_getFormattedTime(inquiry.date)),
@@ -165,7 +191,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   Widget build(BuildContext context) {
     return Consumer<InquiryProvider>(
       builder: (context, provider, child) {
-        final hasInquiries = provider.inquiries.isNotEmpty;
+        final hasInquiries = provider.hasAnyInquiries;
 
         return Scaffold(
           appBar: AppBar(
@@ -319,6 +345,10 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   Widget _buildInquiryList() {
     final inquiries = _inquiryProvider.inquiries;
 
+    if (!_inquiryProvider.hasAnyInquiries) {
+      return const Center(child: EmptyInquriesWidget());
+    }
+
     if (inquiries.isEmpty) {
       return const Center(child: EmptyInquriesWidget());
     }
@@ -337,36 +367,62 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   Widget _buildInquiryCard(FormDataModel inquiry) {
+    final hasReason = inquiry.reason.trim().isNotEmpty;
+    final summaryChips = <MapEntry<String, String>>[
+      MapEntry('Buyer', inquiry.buyerName),
+      MapEntry('Quantity', inquiry.quantity),
+      MapEntry('Rate', inquiry.rate),
+    ].where((entry) => entry.value.trim().isNotEmpty).toList();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Color(0xFFF8FBFF),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _statusTextColor(inquiry.status).withOpacity(0.14),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 2),
+              color: const Color(0xFF0F172A).withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: () => toggleExpandedState(inquiry.id),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// Header Row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: const Color(0xFFDCFCE7), // Light green background
-                      child: Icon(Icons.person, color: Colors.green), // Optional: icon color
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFE0F2FE),
+                            Color(0xFFDCFCE7),
+                          ],
+                        ),
+                      ),
+                      child: const Icon(Icons.groups_rounded, color: Color(0xFF166534)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -374,9 +430,10 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            inquiry.agentName,
-                            style: AppTextStyles.black14_600,
+                            inquiry.agentName.isEmpty ? 'Agent not assigned' : inquiry.agentName,
+                            style: AppTextStyles.black16_600,
                           ),
+                          const SizedBox(height: 4),
                           Text(
                             'Customer: ${inquiry.customerName}',
                             style: AppTextStyles.black12_400
@@ -392,33 +449,21 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                           _getFormattedDate(inquiry.date),
                           style: AppTextStyles.black12_400.copyWith(color: Colors.black45),
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 8,
                         ),
-                        // Text(
-                        //   _getFormattedTime(inquiry.date),
-                        //   style: AppTextStyles.black12_400,
-                        // ),
                         Container(
                           margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: inquiry.status == "Confirmed"
-                                ? Color(0xFFDCFCE7)
-                                : inquiry.status == "Declined"
-                                    ? AppColors.inActiveRed.withOpacity(0.1)
-                                    : AppColors.helperOrange.withOpacity(0.1),
+                            color: _statusBackground(inquiry.status),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             inquiry.status,
                             style: AppTextStyles.black12_400.copyWith(
-                              color: inquiry.status == "Confirmed"
-                                  ? const Color.fromARGB(255, 4, 127, 10)
-                                  : inquiry.status == "Declined"
-                                      ? AppColors.inActiveRed
-                                      : AppColors.helperOrange,
-                              fontWeight: FontWeight.w300,
+                              color: _statusTextColor(inquiry.status),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -427,6 +472,20 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                     const SizedBox(width: 8),
                   ],
                 ),
+                if (summaryChips.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: summaryChips
+                        .map((entry) => _buildSummaryChip(entry.key, entry.value))
+                        .toList(),
+                  ),
+                ],
+                if (hasReason) ...[
+                  const SizedBox(height: 12),
+                  _buildReasonCard(inquiry.reason),
+                ],
 
                 if (expandedStates[inquiry.id] ?? false) ...[
                   const SizedBox(height: 12),
@@ -458,23 +517,109 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         _buildDetailRow('Quantity', inquiry.quantity),
         _buildDetailRow('Composition', inquiry.composition),
         _buildDetailRow('Rate', inquiry.rate),
+        if (inquiry.reason.trim().isNotEmpty) _buildDetailRow('Reason', inquiry.reason),
       ],
     );
   }
 
+  Widget _buildSummaryChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label\n',
+              style: AppTextStyles.black12_400.copyWith(color: Colors.grey.shade600),
+            ),
+            TextSpan(
+              text: value,
+              style: AppTextStyles.black14_600.copyWith(color: const Color(0xFF0F172A)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReasonCard(String reason) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(Icons.report_gmailerrorred_rounded, color: Color(0xFFEA580C), size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Reason',
+                  style: AppTextStyles.black12_500.copyWith(color: const Color(0xFF9A3412)),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  reason,
+                  style: AppTextStyles.black14_400.copyWith(color: const Color(0xFF7C2D12)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _statusBackground(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized == 'confirmed') return const Color(0xFFDCFCE7);
+    if (normalized == 'declined') return AppColors.inActiveRed.withOpacity(0.1);
+    return AppColors.helperOrange.withOpacity(0.1);
+  }
+
+  Color _statusTextColor(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized == 'confirmed') return const Color.fromARGB(255, 4, 127, 10);
+    if (normalized == 'declined') return AppColors.inActiveRed;
+    return AppColors.helperOrange;
+  }
+
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
           ),
-          Text(value,
-              style: AppTextStyles.black14_600
-                  .copyWith(color: Colors.grey.shade700, fontWeight: FontWeight.w100)),
+          const SizedBox(height: 4),
+          Text(
+            value.isEmpty ? 'N/A' : value,
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            style: AppTextStyles.black14_600.copyWith(
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w100,
+              height: 1.35,
+            ),
+          ),
         ],
       ),
     );

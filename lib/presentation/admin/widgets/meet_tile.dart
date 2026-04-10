@@ -23,6 +23,10 @@ class MeetingTile extends StatelessWidget {
     required this.showButtons,
   });
 
+  bool _isValidFutureMeetingTime(DateTime selectedDateTime) {
+    return selectedDateTime.isAfter(DateTime.now());
+  }
+
   Future<void> _launchUrl(String url) async {
     if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
       if (kDebugMode) {
@@ -333,19 +337,27 @@ class MeetingTile extends StatelessWidget {
     final startTimeController = TextEditingController(text: _formatDateTime(meeting.startTime));
     String status = meeting.status;
     DateTime? updatedTime;
+    String? titleError;
+    String? locationError;
+    String? linkError;
+    String? startTimeError;
 
-    Future<void> selectDateTime(BuildContext context) async {
+    Future<void> selectDateTime(BuildContext context, StateSetter setState) async {
+      final now = DateTime.now();
+      final initialMeetingTime = DateTime.parse(meeting.startTime).toLocal();
       final DateTime? pickedDate = await showDatePicker(
         context: context,
-        initialDate: DateTime.parse(meeting.startTime).toLocal(),
-        firstDate: DateTime(2000),
+        initialDate: initialMeetingTime.isAfter(now) ? initialMeetingTime : now,
+        firstDate: DateTime(now.year, now.month, now.day),
         lastDate: DateTime(2100),
       );
 
       if (pickedDate != null) {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime: TimeOfDay.fromDateTime(DateTime.parse(meeting.startTime).toLocal()),
+          initialTime: TimeOfDay.fromDateTime(
+            initialMeetingTime.isAfter(now) ? initialMeetingTime : now,
+          ),
         );
 
         if (pickedTime != null) {
@@ -356,15 +368,62 @@ class MeetingTile extends StatelessWidget {
             pickedTime.hour,
             pickedTime.minute,
           );
+          if (!_isValidFutureMeetingTime(combined)) {
+            setState(() {
+              startTimeError =
+                  "Invalid time. Please choose a future time for today";
+            });
+            return;
+          }
           updatedTime = combined;
-          startTimeController.text = _formatDateTime(combined.toIso8601String());
+          setState(() {
+            startTimeController.text = _formatDateTime(combined.toIso8601String());
+            startTimeError = null;
+          });
         }
       }
     }
 
+    bool validateFields(StateSetter setState) {
+      bool isValid = true;
+      final title = titleController.text.trim();
+      final location = locationController.text.trim();
+      final link = linkController.text.trim();
+      final selectedStartTime = updatedTime ?? DateTime.tryParse(meeting.startTime)?.toLocal();
+
+      setState(() {
+        titleError = title.isEmpty ? "Please enter a title" : null;
+        locationError = location.isEmpty ? "Please enter a platform" : null;
+
+        if (link.isEmpty) {
+          linkError = "Please enter a meeting link";
+        } else {
+          linkError = MeetingManagement.validateMeetingUrl(link);
+        }
+
+        if (selectedStartTime == null) {
+          startTimeError = "Please select a start time";
+        } else if (!_isValidFutureMeetingTime(selectedStartTime)) {
+          startTimeError = "Invalid time. Please choose a future time";
+        } else {
+          startTimeError = null;
+        }
+      });
+
+      if (titleError != null ||
+          locationError != null ||
+          linkError != null ||
+          startTimeError != null) {
+        isValid = false;
+      }
+
+      return isValid;
+    }
+
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         title: const Text("Update Meeting"),
@@ -376,23 +435,49 @@ class MeetingTile extends StatelessWidget {
                 controller: titleController,
                 hintText: "Enter title",
                 prefixIcon: const Icon(Icons.title),
+                errorText: titleError,
+                onChanged: (_) {
+                  if (titleError != null) {
+                    setState(() => titleError = null);
+                  }
+                },
               ),
               CustomTextField(
                 controller: locationController,
                 hintText: "Enter location",
                 prefixIcon: const Icon(Icons.location_on),
+                errorText: locationError,
+                onChanged: (_) {
+                  if (locationError != null) {
+                    setState(() => locationError = null);
+                  }
+                },
               ),
               CustomTextField(
                 controller: linkController,
                 hintText: "Enter link",
                 prefixIcon: const Icon(Icons.link),
+                errorText: linkError,
+                keyboardType: TextInputType.url,
+                maxLength: MeetingManagement.meetingUrlMaxLength,
+                helperText:
+                    "Supported: Zoom, Google Meet, Microsoft Teams. HTTPS only.",
+                onChanged: (_) {
+                  final value = linkController.text.trim();
+                  setState(() {
+                    linkError = value.isEmpty
+                        ? null
+                        : MeetingManagement.validateMeetingUrl(value);
+                  });
+                },
               ),
               CustomTextField(
                 controller: startTimeController,
                 hintText: "Select start time",
                 prefixIcon: const Icon(Icons.calendar_today),
+                errorText: startTimeError,
                 readOnly: true,
-                onTap: () => selectDateTime(context),
+                onTap: () => selectDateTime(context, setState),
               ),
               DropdownButton<String>(
                 isExpanded: true,
@@ -443,11 +528,15 @@ class MeetingTile extends StatelessWidget {
                   : CustomButton(
                       width: Utils().width(context) * 0.3,
                       onPressed: () async {
+                        if (!validateFields(setState)) {
+                          return;
+                        }
+
                         await meetingManagement.updateMeeting(
                           id: meeting.id,
-                          title: titleController.text,
-                          location: locationController.text,
-                          link: linkController.text,
+                          title: titleController.text.trim(),
+                          location: locationController.text.trim(),
+                          link: linkController.text.trim(),
                           startTime: updatedTime?.toIso8601String() ?? meeting.startTime,
                           status: status,
                         );
@@ -458,6 +547,7 @@ class MeetingTile extends StatelessWidget {
             },
           ),
         ],
+        ),
       ),
     );
   }

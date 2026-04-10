@@ -39,20 +39,7 @@ class _MeetingsListScreenState extends State<MeetingsListScreen> {
   }
 
   String? validateMeetingLink(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Meeting link is required";
-    }
-
-    if (!value.startsWith("https://")) {
-      return "Meeting link must start with https://";
-    }
-
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasAbsolutePath) {
-      return "Enter a valid meeting URL";
-    }
-
-    return null;
+    return MeetingManagement.validateMeetingUrl(value);
   }
 
   @override

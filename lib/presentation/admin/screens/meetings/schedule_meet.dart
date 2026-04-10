@@ -26,6 +26,10 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
   String? _linkError;
   String? _startTimeError;
 
+  bool _isValidFutureMeetingTime(DateTime selectedDateTime) {
+    return selectedDateTime.isAfter(DateTime.now());
+  }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -39,8 +43,8 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
     final now = DateTime.now();
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
+      initialDate: now,
+      firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime(2100),
     );
 
@@ -51,7 +55,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
       );
 
       if (pickedTime != null) {
-        DateTime combined = DateTime(
+        final combined = DateTime(
           pickedDate.year,
           pickedDate.month,
           pickedDate.day,
@@ -59,22 +63,24 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
           pickedTime.minute,
         );
 
-        if (pickedDate.year == now.year &&
-            pickedDate.month == now.month &&
-            pickedDate.day == now.day &&
-            combined.isBefore(now)) {
-          combined = now.add(const Duration(minutes: 1));
+        if (!_isValidFutureMeetingTime(combined)) {
+          setState(() {
+            _startTimeError =
+                "Invalid time. Please choose a future time for today";
+          });
+          return;
         }
 
-        _startTimeController.text = combined.toIso8601String();
+        setState(() {
+          _startTimeController.text = combined.toIso8601String();
+          _startTimeError = null;
+        });
       }
     }
   }
 
   bool _validateFields() {
     bool isValid = true;
-
-    final RegExp httpsUrlRegex = RegExp(r'^https:\/\/[^\s/$.?#].[^\s]*$');
 
     if (_titleController.text.trim().isEmpty) {
       setState(() => _titleError = "Please enter a title");
@@ -95,11 +101,14 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
     if (link.isEmpty) {
       setState(() => _linkError = "Please enter a meeting link");
       isValid = false;
-    } else if (!httpsUrlRegex.hasMatch(link)) {
-      setState(() => _linkError = "Meeting link must start with https://");
-      isValid = false;
     } else {
-      setState(() => _linkError = null);
+      final linkValidationMessage = MeetingManagement.validateMeetingUrl(link);
+      if (linkValidationMessage != null) {
+        setState(() => _linkError = linkValidationMessage);
+        isValid = false;
+      } else {
+        setState(() => _linkError = null);
+      }
     }
 
     if (_startTimeController.text.isEmpty) {
@@ -107,11 +116,11 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
       isValid = false;
     } else {
       try {
-        final selectedDateTime = DateTime.parse(_startTimeController.text).toLocal();
-        final now = DateTime.now();
+        final selectedDateTime =
+            DateTime.parse(_startTimeController.text).toLocal();
 
-        if (!selectedDateTime.isAfter(now)) {
-          setState(() => _startTimeError = "Start time must be in the future");
+        if (!_isValidFutureMeetingTime(selectedDateTime)) {
+          setState(() => _startTimeError = "Invalid time. Please choose a future time");
           isValid = false;
         } else {
           setState(() => _startTimeError = null);
@@ -130,9 +139,9 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
 
     final meetingManagement = Provider.of<MeetingManagement>(context, listen: false);
     final success = await meetingManagement.createMeeting(
-      title: _titleController.text,
-      location: _locationController.text,
-      link: _linkController.text,
+      title: _titleController.text.trim(),
+      location: _locationController.text.trim(),
+      link: _linkController.text.trim(),
       startTime: _startTimeController.text,
     );
 
@@ -188,6 +197,11 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                             hintText: "Enter title",
                             prefixIcon: const Icon(Icons.title),
                             errorText: _titleError,
+                            onChanged: (_) {
+                              if (_titleError != null) {
+                                setState(() => _titleError = null);
+                              }
+                            },
                           ),
                           const SizedBox(height: 10),
                           const Text("Platform"),
@@ -196,6 +210,11 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                             hintText: "Platform(Zoom, meet, teams) ",
                             prefixIcon: const Icon(Icons.location_on),
                             errorText: _locationError,
+                            onChanged: (_) {
+                              if (_locationError != null) {
+                                setState(() => _locationError = null);
+                              }
+                            },
                           ),
                           const SizedBox(height: 10),
                           const Text("Link"),
@@ -204,6 +223,18 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                             hintText: "Enter link",
                             prefixIcon: const Icon(Icons.link),
                             errorText: _linkError,
+                            keyboardType: TextInputType.url,
+                            maxLength: MeetingManagement.meetingUrlMaxLength,
+                            helperText:
+                                "Supported: Zoom, Google Meet, Microsoft Teams. HTTPS only.",
+                            onChanged: (_) {
+                              final value = _linkController.text.trim();
+                              setState(() {
+                                _linkError = value.isEmpty
+                                    ? null
+                                    : MeetingManagement.validateMeetingUrl(value);
+                              });
+                            },
                           ),
                           const SizedBox(height: 10),
                           const Text("Start Time"),

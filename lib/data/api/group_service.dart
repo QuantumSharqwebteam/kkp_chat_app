@@ -102,11 +102,28 @@ class GroupService {
     //   if (token == null) {
     //     throw Exception("No token found in storage");
     //   }
-    final body = {"email": email};
+    final body = {"userId": email};
     _logger.logNetwork('Removing member: $email from group: $groupId');
     return await _apiHelper.delete<Map<String, dynamic>>(
       'group/$groupId/member/remove',
       body: body,
+      // headers: {"Authorization": "Bearer $token"},
+    );
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> addMember({
+    required String groupId,
+    required String email,
+  }) async {
+    //  final token = await LocalDbHelper.getToken();
+    //   if (token == null) {
+    //     throw Exception("No token found in storage");
+    //   }
+    final body = {"userId": email};
+    _logger.logNetwork('Adding member: $email to group: $groupId');
+    return await _apiHelper.post<Map<String, dynamic>>(
+      'group/$groupId/member/add',
+      body,
       // headers: {"Authorization": "Bearer $token"},
     );
   }

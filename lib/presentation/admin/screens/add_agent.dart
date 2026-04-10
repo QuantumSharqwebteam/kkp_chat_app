@@ -29,7 +29,8 @@ class _AddAgentState extends State<AddAgent> {
   String? phoneError;
   String? passwordError;
   final RegExp _namePattern = RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$");
-  final RegExp _gmailPattern = RegExp(r'^[A-Za-z0-9._%+-]+@gmail\.com$');
+  final RegExp _emailPattern =
+      RegExp(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$");
 
   bool validateName(String name) {
     final trimmedName = name.trim();
@@ -54,9 +55,9 @@ class _AddAgentState extends State<AddAgent> {
 
   bool validateEmail(String email) {
     final trimmedEmail = email.trim().toLowerCase();
-    if (!_gmailPattern.hasMatch(trimmedEmail)) {
+    if (!_emailPattern.hasMatch(trimmedEmail)) {
       setState(() {
-        emailError = 'Please enter a valid Gmail address';
+        emailError = 'Please enter a valid email address';
       });
       return false;
     } else {

@@ -145,6 +145,15 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
     }
   }
 
+  Agent? _getCurrentAgentHead() {
+    for (final agent in _agentsList) {
+      if (agent.role == 'AgentHead') {
+        return agent;
+      }
+    }
+    return null;
+  }
+
   Future<void> _showChangeAgentHeadDialog({
     required Agent currentHead,
     required String actionType,
@@ -364,7 +373,9 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Stack(
+      children: [
+        Scaffold(
       appBar: AppBar(
         title: const Text("Agent Profiles List"),
         // leading: IconButton(
@@ -372,7 +383,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         //   onPressed: () => Navigator.pop(context),
         // ),
       ),
-      body: Padding(
+          body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,6 +401,32 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
           ],
         ),
       ),
+        ),
+        if (_isChangingAgentHead)
+          Positioned.fill(
+            child: AbsorbPointer(
+              child: Container(
+                color: Colors.black.withValues(alpha: .2),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 12),
+                      Text(
+                        'Updating agent head...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -644,8 +681,15 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   } else if (value == "Remove agent from assign list") {
                     removeAgentFromList(agent.email);
                   } else if (value == "Change Agent Head") {
+                    final actualCurrentHead = _getCurrentAgentHead();
+                    if (actualCurrentHead == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Current Agent Head not found.")),
+                      );
+                      return;
+                    }
                     _showChangeAgentHeadDialog(
-                      currentHead: agent,
+                      currentHead: actualCurrentHead,
                       actionType: "Change Agent Head",
                     );
                   }

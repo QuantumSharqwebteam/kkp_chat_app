@@ -57,10 +57,6 @@ class _IncomingCallWidgetState extends State<IncomingCallWidget>
 
   @override
   void dispose() {
-    debugPrint('Stopping ringtone...');
-    widget.audioPlayer.stop();
-    widget.audioPlayer.dispose();
-    debugPrint('Ringtone stopped and disposed.');
     _controller.dispose();
     super.dispose();
   }

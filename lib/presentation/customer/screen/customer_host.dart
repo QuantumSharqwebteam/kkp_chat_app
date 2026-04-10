@@ -297,13 +297,14 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
             await stopAndRemoveOverlay();
             if (context.mounted) {
               context.read<CallProvider>().startNewCall(
-                  channelName: channelName,
-                  remoteUserName: callerName,
-                  uid: uid,
-                  callId: incomingCallId,
-                  isCaller: false);
-            }
-          },
+                    channelName: channelName,
+                    remoteUserName: callerName,
+                    uid: uid,
+                    callId: incomingCallId,
+                    isCaller: false,
+                    targetUserId: callerId);
+              }
+            },
           onReject: () async {
             await stopAndRemoveOverlay();
             await chatRepository.updateCallData(incomingCallId, "not answered");

@@ -4,6 +4,8 @@ import 'package:kkpchatapp/data/api/meeting_service.dart';
 import 'package:kkpchatapp/data/models/meet_model.dart';
 
 class MeetingManagement with ChangeNotifier {
+  static const int meetingUrlMinLength = 12;
+  static const int meetingUrlMaxLength = 2048;
   final MeetingService _meetingService;
   final LoggingService _logger = LoggingService.instance;
   List<MeetingModel> _meetings = [];
@@ -42,6 +44,49 @@ class MeetingManagement with ChangeNotifier {
     final isScheduledPerson = meeting.scheduledPerson.email == currentUserEmail;
     return isScheduledPerson ||
         _isPrivilegedMeetingEditor(userType: userType, roleName: roleName);
+  }
+
+  static String? validateMeetingUrl(String? value) {
+    final trimmedValue = value?.trim() ?? '';
+
+    if (trimmedValue.isEmpty) {
+      return "Meeting link is required";
+    }
+
+    if (trimmedValue.length > meetingUrlMaxLength) {
+      return "Meeting link must be $meetingUrlMaxLength characters or less";
+    }
+
+    if (trimmedValue.contains(' ')) {
+      return "Meeting link cannot contain spaces";
+    }
+
+    final uri = Uri.tryParse(trimmedValue);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      return "Enter a valid https meeting URL";
+    }
+
+    if (trimmedValue.length < meetingUrlMinLength) {
+      return "Meeting link is too short";
+    }
+
+    final host = uri.host.toLowerCase();
+    final hasMeetingTarget = uri.pathSegments.isNotEmpty ||
+        uri.queryParameters.isNotEmpty ||
+        uri.fragment.isNotEmpty;
+    if (!hasMeetingTarget) {
+      return "Enter a complete meeting link";
+    }
+
+    final isZoomHost = host == 'zoom.us' || host.endsWith('.zoom.us');
+    final isGoogleMeetHost = host == 'meet.google.com';
+    final isTeamsHost = host == 'teams.microsoft.com' || host == 'teams.live.com';
+
+    if (!isZoomHost && !isGoogleMeetHost && !isTeamsHost) {
+      return "Only Zoom, Google Meet, or Microsoft Teams links are allowed";
+    }
+
+    return null;
   }
 
   // Fetch all meetings
@@ -140,6 +185,25 @@ class MeetingManagement with ChangeNotifier {
     required String link,
     required String startTime,
   }) async {
+    if (title.trim().isEmpty) {
+      _error = "Title is required";
+      notifyListeners();
+      return false;
+    }
+
+    if (location.trim().isEmpty) {
+      _error = "Platform is required";
+      notifyListeners();
+      return false;
+    }
+
+    final linkError = validateMeetingUrl(link);
+    if (linkError != null) {
+      _error = linkError;
+      notifyListeners();
+      return false;
+    }
+
     try {
       final selectedTime = DateTime.parse(startTime).toLocal();
       if (!selectedTime.isAfter(DateTime.now())) {
@@ -198,6 +262,42 @@ class MeetingManagement with ChangeNotifier {
     String? startTime,
     String? status,
   }) async {
+    if (title != null && title.trim().isEmpty) {
+      _error = "Title is required";
+      notifyListeners();
+      return false;
+    }
+
+    if (location != null && location.trim().isEmpty) {
+      _error = "Platform is required";
+      notifyListeners();
+      return false;
+    }
+
+    if (link != null) {
+      final linkError = validateMeetingUrl(link);
+      if (linkError != null) {
+        _error = linkError;
+        notifyListeners();
+        return false;
+      }
+    }
+
+    if (startTime != null) {
+      try {
+        final selectedTime = DateTime.parse(startTime).toLocal();
+        if (!selectedTime.isAfter(DateTime.now())) {
+          _error = "Start time must be in the future";
+          notifyListeners();
+          return false;
+        }
+      } catch (e) {
+        _error = "Invalid start time provided";
+        notifyListeners();
+        return false;
+      }
+    }
+
     _isUpdating = true; // Set updating state to true
     _error = null;
     notifyListeners();

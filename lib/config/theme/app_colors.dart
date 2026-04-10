@@ -8,6 +8,7 @@ class AppColors {
   static const activeGreen = Color(0xff12DD1B);
   static const inActiveRed = Color(0xffF31111);
   static const grey707070 = Color(0xff707070);
+  static const greyA0A0A0 = Color(0xffA0A0A0);
   static var shadowColor = Colors.black.withValues(alpha: 0.25);
   static const errorRed = Color(0xffF31111);
   static const marketingNavBarColor = Color(0xff0058CC);
@@ -34,4 +35,5 @@ class AppColors {
   static const grey474747 = Color(0xff474747);
   static const black2E2E2E = Color(0xff2E2E2E);
   static const recieverMessageBubble = Color(0xffF2F2F2);
+  static const greyF2F4F7 = Color(0xffF2F4F7);
 }

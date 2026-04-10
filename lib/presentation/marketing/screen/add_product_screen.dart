@@ -37,75 +37,91 @@ class AddProductScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: Consumer<AddProductProvider>(
-          builder: (context, provider, _) {
-            return Stack(
-              children: [
-                SafeArea(
-                  top: false,
-                  bottom: Platform.isAndroid,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildImagePickerContainer(context, provider),
-                        const SizedBox(height: 10),
-                        _buildProductDetails(context, provider),
-                        const SizedBox(height: 10),
-                        CustomButton(
-                          onPressed: () async {
-                            /// Check if size is selected
-                            if (provider.selectedSizes.isEmpty) {
-                              Utils().showSuccessDialog(
-                                  context, "Please select at least one size", false);
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Consumer<AddProductProvider>(
+            builder: (context, provider, _) {
+              return Stack(
+                children: [
+                  SafeArea(
+                    top: false,
+                    bottom: Platform.isAndroid,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildImagePickerContainer(context, provider),
+                          const SizedBox(height: 10),
+                          _buildProductDetails(context, provider),
+                          const SizedBox(height: 10),
+                          CustomButton(
+                            onPressed: () async {
+                              if (provider.selectedImage == null) {
+                                Utils().showSuccessDialog(context, "Please upload image", false);
 
-                              Future.delayed(const Duration(milliseconds: 800), () {
-                                if (context.mounted) {
-                                  Navigator.pop(context); // close dialog
-                                }
-                              });
-
-                              return;
-                            }
-                            bool success = await provider.addProduct();
-                            if (context.mounted) {
-                              if (!success) {
-                                Utils()
-                                    .showSuccessDialog(context, locale.pleaseFillAllFields, false);
-                                Future.delayed(const Duration(microseconds: 300), () {
+                                Future.delayed(const Duration(milliseconds: 800), () {
                                   if (context.mounted) {
-                                    Navigator.pop(context); // Close dialog
+                                    Navigator.pop(context);
                                   }
                                 });
+
                                 return;
                               }
-                            }
-                            if (context.mounted) {
-                              Utils().showSuccessDialog(
-                                  context, locale.productAddedSuccessfully, true);
-                            }
-                            Future.delayed(const Duration(seconds: 2), () {
-                              if (context.mounted) {
-                                Navigator.pop(context); // Close dialog
-                                Navigator.pop(context, true); // Go back with success
+
+                              /// Check if size is selected
+                              if (provider.selectedSizes.isEmpty) {
+                                Utils().showSuccessDialog(
+                                    context, "Please select at least one size", false);
+
+                                Future.delayed(const Duration(milliseconds: 800), () {
+                                  if (context.mounted) {
+                                    Navigator.pop(context); // close dialog
+                                  }
+                                });
+
+                                return;
                               }
-                            });
-                          },
-                          text: locale.addProduct,
-                          fontSize: 18,
-                          borderColor: AppColors.blue00ABE9,
-                          backgroundColor: AppColors.blue00ABE9,
-                        ),
-                      ],
+                              bool success = await provider.addProduct();
+                              if (context.mounted) {
+                                if (!success) {
+                                  Utils().showSuccessDialog(
+                                      context, locale.pleaseFillAllFields, false);
+                                  Future.delayed(const Duration(microseconds: 300), () {
+                                    if (context.mounted) {
+                                      Navigator.pop(context); // Close dialog
+                                    }
+                                  });
+                                  return;
+                                }
+                              }
+                              if (context.mounted) {
+                                Utils().showSuccessDialog(
+                                    context, locale.productAddedSuccessfully, true);
+                              }
+                              Future.delayed(const Duration(seconds: 2), () {
+                                if (context.mounted) {
+                                  Navigator.pop(context); // Close dialog
+                                  Navigator.pop(context, true); // Go back with success
+                                }
+                              });
+                            },
+                            text: locale.addProduct,
+                            fontSize: 18,
+                            borderColor: AppColors.blue00ABE9,
+                            backgroundColor: AppColors.blue00ABE9,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                if (provider.isLoading) const FullScreenLoader(),
-              ],
-            );
-          },
+                  if (provider.isLoading) const FullScreenLoader(),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

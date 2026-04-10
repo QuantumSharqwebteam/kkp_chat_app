@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -23,17 +22,12 @@ import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
-import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/form_overlay.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/form_update_alert_dialog.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dart';
@@ -44,7 +38,6 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -80,7 +73,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final ChatStorageService _chatStorageService = ChatStorageService();
   final ChatRepository _chatRepository = ChatRepository();
-  bool isFormUpdating = false;
   bool _isLoading = true;
   final _productRepository = ProductRepository();
 
@@ -240,23 +232,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
     }).toList();
   }
 
-  List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is List) {
-      final entries =
-          raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
-      return entries.isNotEmpty ? entries : null;
-    }
-    if (raw is Map) {
-      return [Map<String, dynamic>.from(raw)];
-    }
-    return null;
-  }
-
   ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
-    final normalizedForms = _normalizeFormData(messageJson.form);
-    final primaryForm =
-        normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
     return ChatMessageModel(
       message: messageJson.message ?? '',
       timestamp: DateTime.parse(
@@ -265,8 +241,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
       sender: messageJson.senderId!,
       type: messageJson.type,
       mediaUrl: messageJson.mediaUrl,
-      form: primaryForm,
-      forms: normalizedForms,
       callDuration: messageJson.callDuration,
       callStatus: messageJson.callStatus,
       callId: messageJson.callId,
@@ -590,29 +564,31 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
       timestamp = DateTime.now();
     }
 
-    final incomingForms = _normalizeFormData(data["form"]);
-    final incomingPrimaryForm =
-        incomingForms?.isNotEmpty == true ? incomingForms!.first : null;
+    final messageId = data['messageId'] as String?;
     final message = ChatMessageModel(
       message: data["message"],
       timestamp: timestamp,
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
-      form: incomingPrimaryForm,
-      forms: incomingForms,
-      messageId: data['messageId'],
+      callStatus: data["callStatus"],
+      callDuration: data["callDuration"],
+      callId: data["callId"],
+      messageId: messageId,
+      isDeleted: data['isDeleted'] ?? false,
+      read: data['read'],
     );
 
-    if (!_loadedMessageIds.contains(message.messageId)) {
+    if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
-        // messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
 
       _chatStorageService.saveMessage(message, widget.customerEmail!);
-      _loadedMessageIds.add(message.messageId!);
+      if (messageId != null) {
+        _loadedMessageIds.add(messageId);
+      }
     }
   }
 
@@ -637,25 +613,21 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
 
   void _sendMessage({
     required String messageText,
-    String? type = 'text',
+    String type = 'text',
     String? mediaUrl,
-    Map<String, dynamic>? form,
   }) {
-    if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
+    if (messageText.trim().isEmpty && mediaUrl == null) return;
 
     final currentTime = DateTime.now();
     final messageId = ChatUtils().generateMessageId();
     // Set the receiverIsOnChatPage to false when the app is paused or inactive
     final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
-    final normalizedForms = form != null ? [Map<String, dynamic>.from(form)] : null;
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
       sender: widget.customerEmail!,
-      type: type!,
+      type: type,
       mediaUrl: mediaUrl,
-      form: normalizedForms?.first,
-      forms: normalizedForms,
       messageId: messageId,
       isDeleted: false,
       read: isReceiverOnChatPage,
@@ -668,15 +640,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
         _scrollToBottom();
       });
 
-      final String? name = LocalDbHelper.getProfile()?.name;
+      final String name = LocalDbHelper.getProfile()?.name ?? '';
 
       _socketService.sendMessage(
         message: messageText,
         senderEmail: widget.customerEmail!,
-        senderName: name!,
+        senderName: name,
         type: type,
         mediaUrl: mediaUrl,
-        form: form,
         timestamp: currentTime.toIso8601String(), // ✅ Send timestamp
         messageId: messageId,
         read: isReceiverOnChatPage ?? false,
@@ -893,92 +864,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
     );
   }
 
-  void _showFormOverlay() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return FormOverlay(
-          onSubmit: (formData) {
-            _sendMessage(
-              messageText: "product",
-              type: 'form',
-              form: formData,
-            );
-          },
-        );
-      },
-    );
-  }
-
-  void openFormDialogToUpdateRate(Map<String, dynamic> formData) {
-    final rateController = TextEditingController();
-
-    showDialog(
-      barrierDismissible: false,
-      context: context,
-      builder: (BuildContext context) {
-        return FormUpdateAlertDialog(
-          formId: formData["_id"],
-          buyerName: formData["buyerName"],
-          quality: formData['quality'],
-          quantity: formData['quantity'],
-          weave: formData['weave'],
-          composition: formData['composition'],
-          rateController: rateController,
-          onCancel: () {
-            Navigator.of(context).pop();
-          },
-          onSubmit: () {
-            final newRate = rateController.text;
-            if (newRate.isNotEmpty) {
-              _updateFormRate(context, formData, newRate);
-              Navigator.of(context).pop();
-            }
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _updateFormRate(
-      BuildContext context, Map<String, dynamic> formData, String newRate) async {
-    setState(() {
-      isFormUpdating = true;
-    });
-    final id = formData['_id']?.toString();
-    if (id == null) {
-      debugPrint("No form id is found to update: $id in the ${formData.toString()}");
-      return;
-    }
-
-    try {
-      await _chatRepository.updateInquiryFormRate(id, newRate);
-      debugPrint("Rate updated successfully");
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Rate is updated: $newRate")));
-      }
-
-      final updatedFormData = Map<String, dynamic>.from(formData);
-      updatedFormData['rate'] = newRate;
-      _sendMessage(messageText: "Rate updated as $newRate for form with Id : ${formData["_id"]}");
-
-      // Trigger real-time update of inquiries
-      if (context.mounted) {
-        Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error updating rate of the form: $e');
-      }
-    } finally {
-      setState(() {
-        isFormUpdating = false;
-      });
-    }
-  }
-
   String formatTimestamp(dynamic timestamp) {
     if (timestamp == null) {
       return DateFormat('hh:mm a').format(DateTime.now());
@@ -1047,6 +932,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                   uid: uid,
                   callId: callId,
                   isCaller: true,
+                  targetUserId: widget.agentEmail,
                 );
 
                 // 3. ⏳ Wait for call message to be available
@@ -1132,14 +1018,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                                   )
                                               : null,
                                         )
-                                      else if (msg.type == 'form')
-                                        FormMessageBubble(
-                                          forms: msg.formEntries,
-                                          isMe: msg.sender == widget.agentEmail,
-                                          timestamp:
-                                              formatTimestamp(msg.timestamp.toIso8601String()),
-                                          userRole: userRole!,
-                                        )
                                       else if (msg.type == 'document')
                                         DocumentMessageBubble(
                                           documentUrl: msg.mediaUrl!,
@@ -1173,18 +1051,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                               formatTimestamp(msg.timestamp.toIso8601String()),
                                           callStatus: msg.callStatus ?? "",
                                           callDuration: msg.callDuration ?? '',
-                                        )
-                                      else if (msg.message == 'Fill details')
-                                        FillFormButton(
-                                          buttonText: "Fill product details",
-                                          onSubmit: _showFormOverlay,
-                                        )
-                                      else if (msg.message == "Update form rate" && msg.form != null)
-                                        FillFormButton(
-                                          buttonText: "Update Form",
-                                          onSubmit: () {
-                                            openFormDialogToUpdateRate(msg.form!);
-                                          },
                                         )
                                       else if (msg.type == 'product')
                                         (msg.message != null && msg.message!.isNotEmpty)
@@ -1244,6 +1110,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                   minimum: const EdgeInsets.only(bottom: 5),
                   child: ChatInputField(
                     controller: _chatController,
+                    showInquiryForm: false,
                     onSend: () => _sendMessage(messageText: _chatController.text),
                     onSendImage: () {
                       _pickAndSendImage(ImageSource.gallery);
@@ -1251,7 +1118,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                     onSendImageByCamera: () {
                       _pickAndSendImage(ImageSource.camera);
                     },
-                    onSendForm: _showFormOverlay,
+                    onSendForm: () {},
                     onSendDocument: _pickAndSendDocument,
                     onShareProduct: () => _showProductsBottomSheet(context),
                     onSendVoice: _isRecording ? _stopRecording : _startRecording,
@@ -1261,7 +1128,6 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                 ),
               ],
             ),
-            if (isFormUpdating) FullScreenLoader(),
             if (!_isAtBottom)
               Positioned(
                 bottom: 120, // Adjust the position as needed

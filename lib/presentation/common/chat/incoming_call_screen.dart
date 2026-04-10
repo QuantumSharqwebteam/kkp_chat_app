@@ -154,6 +154,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                             uid: generateUniqueId(),
                             callId: widget.callId,
                             isCaller: false,
+                            targetUserId: widget.remoteUserId,
                           );
                     }
                   },

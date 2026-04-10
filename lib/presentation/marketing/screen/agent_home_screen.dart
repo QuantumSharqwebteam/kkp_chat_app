@@ -122,9 +122,15 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                         body: StreamBuilder<List<String>>(
                           stream: provider.socketService.statusStream,
                           builder: (context, _) {
-                            return provider.filteredCustomers.isEmpty
-                                ? const NoCustomerAssignedWidget()
-                                : _buildCustomerInquiriesList(provider);
+                            if (provider.assignedCustomers.isEmpty) {
+                              return const NoCustomerAssignedWidget();
+                            }
+
+                            if (provider.filteredCustomers.isEmpty) {
+                              return _buildEmptySearchState(locale);
+                            }
+
+                            return _buildCustomerInquiriesList(provider);
                           },
                         ),
                       ),
@@ -188,10 +194,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
     // Get the list of valid customers from the provider (already sorted by the provider)
     final validCustomers = provider.filteredCustomers.where((customer) {
-      final email = customer['email'];
-      final name = customer['name'];
+      final email = customer['email']?.toString();
       final isDeleted = customer['isDeleted'] ?? false;
-      return email != null && name != null && email.toString().isNotEmpty && !isDeleted;
+      return email != null && email.isNotEmpty && !isDeleted;
     }).toList();
 
     // We don't need to sort here anymore since the provider handles it
@@ -263,6 +268,15 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildEmptySearchState(AppLocalizations locale) {
+    return Center(
+      child: Text(
+        locale.noCustomersAvailable,
+        style: AppTextStyles.grey12_600,
       ),
     );
   }

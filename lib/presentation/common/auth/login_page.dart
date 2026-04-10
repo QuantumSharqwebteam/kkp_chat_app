@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/logic/auth/login_provider.dart';
@@ -46,14 +47,15 @@ class _LoginPageState extends State<LoginPage> {
           ),
           child: Column(
             children: [
-              Container(
+              const SizedBox(height: 30),
+              SizedBox(
                 height: Utils().height(context) * 0.4,
                 width: double.infinity,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/images/bg.png'),
-                    fit: BoxFit.fill,
-                  ),
+                child: SvgPicture.asset(
+                  'assets/images/Login.svg',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
                 ),
               ),
               Padding(

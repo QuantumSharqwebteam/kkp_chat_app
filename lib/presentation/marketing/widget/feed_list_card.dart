@@ -71,7 +71,13 @@ class FeedListCard extends StatelessWidget {
               )
           ],
         ),
-        subtitle: Text(message ?? "Last Message", style: AppTextStyles.grey12_600),
+        subtitle: Text(
+          message ?? "Last Message",
+          style: AppTextStyles.grey12_600,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          softWrap: true,
+        ),
         trailing: isPinned
             ? const Icon(Icons.push_pin, color: AppColors.redF11515, size: 16)
             : Column(

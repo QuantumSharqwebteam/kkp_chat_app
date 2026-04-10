@@ -111,6 +111,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
             decoration: InputDecoration(
               filled: true,
               errorText: widget.errorText,
+              errorMaxLines: 4,
+              errorStyle: const TextStyle(
+                color: Colors.red,
+                fontSize: 12,
+                height: 1.35,
+              ),
               fillColor: widget.backgroundColor ?? Colors.white,
               hintText: widget.hintText,
               hintStyle: widget.hintStyle ?? const TextStyle(fontSize: 14.0, color: Colors.grey),

@@ -34,6 +34,20 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
   final TextEditingController _groupNameController = TextEditingController();
   final TextEditingController _groupDescriptionController = TextEditingController();
 
+  void _setLoading(bool value) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = value;
+    });
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -89,8 +103,9 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildGroupImageSection(),
-                    const SizedBox(height: 20),
+                    // Group image section hidden for now.
+                    // _buildGroupImageSection(),
+                    // const SizedBox(height: 20),
                     _buildGroupNameSection(),
                     const SizedBox(height: 20),
                     _buildGroupDescriptionSection(),
@@ -109,75 +124,75 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
     );
   }
 
-  Widget _buildGroupImageSection() {
-    return Center(
-      child: Stack(
-        children: [
-          GestureDetector(
-            onTap: _isEditing ? _pickImage : null,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: ClipOval(
-                child: _selectedImageFile != null
-                    ? Image.file(
-                        _selectedImageFile!,
-                        fit: BoxFit.cover,
-                        width: 120,
-                        height: 120,
-                      )
-                    : (_group.groupImage.isNotEmpty
-                        ? Image.network(
-                            _group.groupImage,
-                            fit: BoxFit.cover,
-                            width: 120,
-                            height: 120,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(Icons.group, size: 60, color: Colors.grey);
-                            },
-                          )
-                        : const Icon(Icons.group, size: 60, color: Colors.grey)),
-              ),
-            ),
-          ),
-          if (_isEditing && _selectedImageFile == null)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.blue,
-                ),
-                child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
-              ),
-            ),
-          if (_isLoading)
-            const Positioned.fill(
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildGroupImageSection() {
+  //   return Center(
+  //     child: Stack(
+  //       children: [
+  //         GestureDetector(
+  //           onTap: _isEditing ? _pickImage : null,
+  //           child: Container(
+  //             width: 120,
+  //             height: 120,
+  //             decoration: BoxDecoration(
+  //               shape: BoxShape.circle,
+  //               border: Border.all(color: Colors.grey[300]!),
+  //             ),
+  //             child: ClipOval(
+  //               child: _selectedImageFile != null
+  //                   ? Image.file(
+  //                       _selectedImageFile!,
+  //                       fit: BoxFit.cover,
+  //                       width: 120,
+  //                       height: 120,
+  //                     )
+  //                   : (_group.groupImage.isNotEmpty
+  //                       ? Image.network(
+  //                           _group.groupImage,
+  //                           fit: BoxFit.cover,
+  //                           width: 120,
+  //                           height: 120,
+  //                           loadingBuilder: (context, child, loadingProgress) {
+  //                             if (loadingProgress == null) return child;
+  //                             return Center(
+  //                               child: CircularProgressIndicator(
+  //                                 value: loadingProgress.expectedTotalBytes != null
+  //                                     ? loadingProgress.cumulativeBytesLoaded /
+  //                                         loadingProgress.expectedTotalBytes!
+  //                                     : null,
+  //                               ),
+  //                             );
+  //                           },
+  //                           errorBuilder: (context, error, stackTrace) {
+  //                             return const Icon(Icons.group, size: 60, color: Colors.grey);
+  //                           },
+  //                         )
+  //                       : const Icon(Icons.group, size: 60, color: Colors.grey)),
+  //             ),
+  //           ),
+  //         ),
+  //         if (_isEditing && _selectedImageFile == null)
+  //           Positioned(
+  //             bottom: 0,
+  //             right: 0,
+  //             child: Container(
+  //               padding: const EdgeInsets.all(4),
+  //               decoration: const BoxDecoration(
+  //                 shape: BoxShape.circle,
+  //                 color: Colors.blue,
+  //               ),
+  //               child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+  //             ),
+  //           ),
+  //         if (_isLoading)
+  //           const Positioned.fill(
+  //             child: Center(
+  //               child: CircularProgressIndicator(),
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildGroupNameSection() {
     return Column(
@@ -510,23 +525,23 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
                   trailing: IconButton(
                     icon: const Icon(Icons.add),
                     onPressed: () async {
+                      _setLoading(true);
                       final success = await groupProvider.addAdmin(
                         groupId: widget.groupId,
                         email: email,
                       );
+                      _setLoading(false);
 
                       if (success) {
-                        // Update local group data
                         setState(() {
                           _group = _group.copyWith(
                             admins: [..._group.admins, email],
                           );
                         });
+                        _showSnackBar('Admin added successfully');
                         Navigator.pop(context);
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Failed to add admin')),
-                        );
+                        _showSnackBar(groupProvider.errorMessage ?? 'Failed to add admin');
                       }
                     },
                   ),
@@ -546,7 +561,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
   }
 
   Future<void> _showAddMemberDialog() async {
-    Provider.of<GroupProvider>(context, listen: false);
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
     final agentEmail = LocalDbHelper.getEmail();
     final customers = await ChatRepository().fetchAssignedCustomerList(agentEmail ?? "");
 
@@ -584,13 +599,24 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
                   trailing: IconButton(
                     icon: const Icon(Icons.add),
                     onPressed: () async {
-                      // For adding members, we need to use a different approach
-                      // since there's no direct API method in GroupProvider
-                      // This is a placeholder - you'll need to implement the API call
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Adding members will be implemented in the next update')),
+                      _setLoading(true);
+                      final success = await groupProvider.addMember(
+                        groupId: widget.groupId,
+                        email: email,
                       );
+                      _setLoading(false);
+
+                      if (success) {
+                        setState(() {
+                          _group = _group.copyWith(
+                            members: [..._group.members, email],
+                          );
+                        });
+                        _showSnackBar('Member added successfully');
+                        Navigator.pop(context);
+                      } else {
+                        _showSnackBar(groupProvider.errorMessage ?? 'Failed to add member');
+                      }
                     },
                   ),
                 );
@@ -629,10 +655,12 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
     );
 
     if (shouldRemove == true) {
+      _setLoading(true);
       final success = await groupProvider.removeAdmin(
         groupId: widget.groupId,
         email: email,
       );
+      _setLoading(false);
 
       if (success) {
         setState(() {
@@ -640,10 +668,9 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
             admins: _group.admins.where((admin) => admin != email).toList(),
           );
         });
+        _showSnackBar('Admin removed successfully');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to remove admin')),
-        );
+        _showSnackBar(groupProvider.errorMessage ?? 'Failed to remove admin');
       }
     }
   }
@@ -669,10 +696,12 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
     );
 
     if (shouldRemove == true) {
+      _setLoading(true);
       final success = await groupProvider.removeMember(
         groupId: widget.groupId,
         email: email,
       );
+      _setLoading(false);
 
       if (success) {
         setState(() {
@@ -680,10 +709,9 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
             members: _group.members.where((member) => member != email).toList(),
           );
         });
+        _showSnackBar('Member removed successfully');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to remove member')),
-        );
+        _showSnackBar(groupProvider.errorMessage ?? 'Failed to remove member');
       }
     }
   }
@@ -710,23 +738,21 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
 
     if (shouldDelete == true) {
       final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+      _setLoading(true);
       final success = await groupProvider.deleteGroup(widget.groupId);
+      _setLoading(false);
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Group deleted successfully')),
-        );
+        _showSnackBar('Group deleted successfully');
         Navigator.pop(context, true); // Return true to indicate group was deleted
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete group')),
-        );
+        _showSnackBar(groupProvider.errorMessage ?? 'Failed to delete group');
       }
     }
   }
 
   Future<void> _saveChanges() async {
-    setState(() => _isLoading = true);
+    _setLoading(true);
 
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
     final updatedGroupName = _groupNameController.text.trim();
@@ -751,23 +777,16 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
             groupImage: updatedImageUrl,
           );
           _isEditing = false;
-          _isLoading = false;
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Group updated successfully')),
-        );
+        _setLoading(false);
+        _showSnackBar('Group updated successfully');
       } else {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update group')),
-        );
+        _setLoading(false);
+        _showSnackBar(groupProvider.errorMessage ?? 'Failed to update group');
       }
     } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      _setLoading(false);
+      _showSnackBar('Error: ${e.toString()}');
     }
   }
 

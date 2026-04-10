@@ -30,7 +30,7 @@ class SocketService {
   Function(String)? _onMessageDeleted;
   Function(Map<String, dynamic>)? _onIncomingCall;
   // Function(Map<String, dynamic>)? _onCallAnswered;
-  Function(Map<String, dynamic>)? _onCallTerminated;
+  final List<Function(Map<String, dynamic>)> _onCallTerminatedListeners = [];
   // Function? _onDisconnect;
   Function? _onConnect;
   Function(Map<String, dynamic>)? _onChatStatus;
@@ -227,7 +227,10 @@ class SocketService {
     _socket.on('callTerminated', (data) {
       debugPrint('📥 callTerminated from server: $data');
 
-      _onCallTerminated?.call(data);
+      final payload = Map<String, dynamic>.from((data as Map?) ?? const {});
+      for (final listener in List<Function(Map<String, dynamic>)>.from(_onCallTerminatedListeners)) {
+        listener(payload);
+      }
     });
 
     _socket.on('messageDeleted', (data) {
@@ -770,7 +773,13 @@ class SocketService {
   // }
 
   void onCallTerminated(Function(Map<String, dynamic>) callback) {
-    _onCallTerminated = callback;
+    if (!_onCallTerminatedListeners.contains(callback)) {
+      _onCallTerminatedListeners.add(callback);
+    }
+  }
+
+  void offCallTerminated(Function(Map<String, dynamic>) callback) {
+    _onCallTerminatedListeners.remove(callback);
   }
 
   // void _attemptReconnect(String userName, String userEmail, String role) {

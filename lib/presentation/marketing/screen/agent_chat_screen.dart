@@ -23,9 +23,7 @@ import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
-import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
-import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common/chat/transfer_agent_screen.dart';
@@ -34,8 +32,6 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/chat_input_field.dar
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
@@ -44,12 +40,12 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/product_bottom_sheet
 import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
-import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/agent_inquiry_forms_screen.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -75,8 +71,6 @@ class AgentChatScreen extends StatefulWidget {
 
 class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
-  bool _isFormUpdating = false;
-  final RegExp _buyerNamePattern = RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$");
   final _chatController = TextEditingController();
   final ChatRepository _chatRepository = ChatRepository();
   final SocketService _socketService = SocketService(navigatorKey);
@@ -104,9 +98,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
   final ValueNotifier<String?> _currentTopDate = ValueNotifier(null);
 
   final Map<Key, GlobalKey> _messageKeys = {};
-
-  bool _showFormNavigationButtons = false;
-  int? _currentFormIndex;
 
   @override
   void initState() {
@@ -371,7 +362,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
 
       setState(() {
         messages = newLoadedMessages;
-        messages = _mergeFormMessagesById(messages);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
@@ -381,7 +371,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
 
       setState(() {
         messages = chatMessages;
-        messages = _mergeFormMessagesById(messages);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
@@ -439,7 +428,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
           messages.insertAll(0, newChatMessages);
-          messages = _mergeFormMessagesById(messages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           _isLoading = false;
         });
@@ -617,22 +605,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     }).toList();
   }
 
-  List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
-    if (raw == null) return null;
-    if (raw is List) {
-      final entries =
-          raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
-      return entries.isNotEmpty ? entries : null;
-    }
-    if (raw is Map) {
-      return [Map<String, dynamic>.from(raw)];
-    }
-    return null;
-  }
-
   ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
-    final normalizedForms = _normalizeFormData(messageJson.form);
-    final primaryForm = normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
     return ChatMessageModel(
       message: messageJson.message ?? '',
       timestamp: DateTime.parse(
@@ -641,8 +614,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
       sender: messageJson.senderId!,
       type: messageJson.type,
       mediaUrl: messageJson.mediaUrl,
-      form: primaryForm,
-      forms: normalizedForms,
       callDuration: messageJson.callDuration,
       callStatus: messageJson.callStatus,
       callId: messageJson.callId,
@@ -652,213 +623,42 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     );
   }
 
-  List<Map<String, dynamic>> _cloneFormEntries(List<Map<String, dynamic>> entries) {
-    return entries.map((entry) => Map<String, dynamic>.from(entry)).toList();
-  }
-
-  void _updateMessageFormEntry(ChatMessageModel message, Map<String, dynamic> entry) {
-    final formId = entry['_id']?.toString();
-    if (formId == null || formId.isEmpty) return;
-    final entries = _cloneFormEntries(message.formEntries);
-    final index = entries.indexWhere((item) => item['_id']?.toString() == formId);
-    if (index != -1) {
-      entries[index] = Map<String, dynamic>.from(entry);
-    } else {
-      entries.add(Map<String, dynamic>.from(entry));
-    }
-    message.forms = entries;
-    message.form = entries.isNotEmpty ? entries.first : null;
-  }
-
-  num _parseRateValue(dynamic rateValue) {
-    if (rateValue is num) return rateValue;
-    if (rateValue is String) return num.tryParse(rateValue.trim()) ?? 0;
-    return 0;
-  }
-
-  String? _extractFormId(ChatMessageModel message) {
-    final form = message.primaryForm;
-    if (form == null) return null;
-    final formId = form['_id']?.toString();
-    if (formId == null || formId.isEmpty) return null;
-    return formId;
-  }
-
-  List<ChatMessageModel> _mergeFormMessagesById(List<ChatMessageModel> source) {
-    final sorted = [...source]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    final List<ChatMessageModel> merged = [];
-    final Map<String, ChatMessageModel> firstFormMessageById = {};
-
-    for (final message in sorted) {
-      if (message.type != 'form') {
-        merged.add(message);
-        continue;
-      }
-
-      final formId = _extractFormId(message);
-      if (formId == null) {
-        merged.add(message);
-        continue;
-      }
-
-      final primaryForm = message.primaryForm;
-      if (primaryForm == null) {
-        merged.add(message);
-        continue;
-      }
-
-      final incomingForm = Map<String, dynamic>.from(primaryForm);
-      final existing = firstFormMessageById[formId];
-
-      if (existing == null) {
-        incomingForm['_formOptionsUnlocked'] = _parseRateValue(incomingForm['rate']) > 0;
-        message.form = incomingForm;
-        firstFormMessageById[formId] = message;
-        merged.add(message);
-      } else {
-        final existingForm = Map<String, dynamic>.from(existing.primaryForm ?? incomingForm);
-        existingForm.addAll(incomingForm);
-        existingForm['_formOptionsUnlocked'] = true;
-        existing.form = existingForm;
-        _updateMessageFormEntry(existing, existingForm);
-      }
-    }
-
-    return merged;
-  }
-
-  ({String formId, num rate})? _extractRateUpdateInfo(String? messageText) {
-    if (messageText == null || messageText.isEmpty) return null;
-
-    final regex = RegExp(
-      r'Rate\s+updated\s+as\s+([0-9]+(?:\.[0-9]+)?)\s+for\s+form\s+with\s+Id\s*:\s*([A-Za-z0-9]+)',
-      caseSensitive: false,
-    );
-    final match = regex.firstMatch(messageText);
-    if (match == null) return null;
-
-    final parsedRate = num.tryParse(match.group(1) ?? '');
-    final formId = match.group(2);
-    if (parsedRate == null || formId == null || formId.isEmpty) return null;
-
-    return (formId: formId, rate: parsedRate);
-  }
-
-  Future<void> _updateFormRateLocally({
-    required String formId,
-    required num rate,
-  }) async {
-    final normalizedRate = rate % 1 == 0 ? rate.toInt() : rate;
-    final boxName = '${widget.agentEmail}${widget.customerEmail}';
-    bool updated = false;
-
-    for (int i = 0; i < messages.length; i++) {
-      final msg = messages[i];
-      final entryIndex = msg.formEntries.indexWhere((entry) => entry['_id']?.toString() == formId);
-      if (entryIndex == -1) continue;
-
-      final updatedEntry = Map<String, dynamic>.from(msg.formEntries[entryIndex]);
-      updatedEntry['rate'] = normalizedRate;
-      updatedEntry['_formOptionsUnlocked'] = true;
-      _updateMessageFormEntry(msg, updatedEntry);
-      await _chatStorageService.saveMessage(msg, boxName);
-      updated = true;
-    }
-
-    if (updated && mounted) {
-      setState(() {});
-    }
-  }
-
-  Future<bool> _upsertIncomingFormMessage(ChatMessageModel incomingMessage) async {
-    if (incomingMessage.type != 'form') return false;
-
-    final formId = _extractFormId(incomingMessage);
-    if (formId == null) return false;
-
-    final primaryForm = incomingMessage.primaryForm;
-    if (primaryForm == null) return false;
-
-    final incomingForm = Map<String, dynamic>.from(primaryForm);
-    final boxName = '${widget.agentEmail}${widget.customerEmail}';
-    final existingIndex = messages.indexWhere(
-      (msg) => msg.type == 'form' && _extractFormId(msg) == formId,
-    );
-
-    if (existingIndex == -1) {
-      incomingForm['_formOptionsUnlocked'] = _parseRateValue(incomingForm['rate']) > 0;
-      _updateMessageFormEntry(incomingMessage, incomingForm);
-      return false;
-    }
-
-    final existingMessage = messages[existingIndex];
-    final mergedForm = Map<String, dynamic>.from(existingMessage.primaryForm ?? incomingForm);
-    mergedForm.addAll(incomingForm);
-    mergedForm['_formOptionsUnlocked'] = true;
-    existingMessage.form = mergedForm;
-    _updateMessageFormEntry(existingMessage, mergedForm);
-    await _chatStorageService.saveMessage(existingMessage, boxName);
-
-    if (mounted) {
-      setState(() {});
-    }
-    return true;
-  }
-
   // In _handleIncomingMessage method
   void _handleIncomingMessage(Map<String, dynamic> data) async {
     debugPrint("message received: ${data.toString()}");
-    // saving last seen message
     if (data['type'] == "product") {
       _socketService.updateLastMessage(data["senderId"], "shared product");
     } else {
       _socketService.updateLastMessage(data['senderId'], data['message']);
     }
-    //converting data in to message model
-    final incomingForms = _normalizeFormData(data["form"]);
-    final incomingPrimaryForm = incomingForms?.isNotEmpty == true ? incomingForms!.first : null;
+
+    final timestamp = data["timestamp"];
+    final messageId = data["messageId"] as String?;
     final message = ChatMessageModel(
       message: data["message"],
-      timestamp: data["timestamp"] != null ? DateTime.parse(data["timestamp"]) : DateTime.now(),
+      timestamp: timestamp != null ? DateTime.parse(timestamp) : DateTime.now(),
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
-      form: incomingPrimaryForm,
-      forms: incomingForms,
-      messageId: data["messageId"], // Include the message ID
+      callStatus: data["callStatus"],
+      callDuration: data["callDuration"],
+      callId: data["callId"],
+      messageId: messageId,
+      isDeleted: data['isDeleted'] ?? false,
+      read: data['read'],
     );
 
-    if (message.type == 'form') {
-      final isMergedIntoExisting = await _upsertIncomingFormMessage(message);
-      if (isMergedIntoExisting) {
-        if (message.messageId != null) {
-          _loadedMessageIds.add(message.messageId!);
-        }
-        _saveLastMessageTime();
-        Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
-        return;
-      }
-    }
-
-    final rateUpdate = _extractRateUpdateInfo(data["message"]?.toString());
-    if (rateUpdate != null) {
-      _updateFormRateLocally(
-        formId: rateUpdate.formId,
-        rate: rateUpdate.rate,
-      );
-    }
-
-    if (!_loadedMessageIds.contains(message.messageId)) {
+    if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
-        messages.add(message); // Append to the end
-        messages = _mergeFormMessagesById(messages);
+        messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
 
-      // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(message, '${widget.agentEmail}${widget.customerEmail}');
-      _loadedMessageIds.add(message.messageId!);
+      if (messageId != null) {
+        _loadedMessageIds.add(messageId);
+      }
 
       _saveLastMessageTime();
       Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
@@ -887,26 +687,19 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     required String messageText,
     String? type = 'text',
     String? mediaUrl,
-    Map<String, dynamic>? form,
   }) {
-    if (messageText.trim().isEmpty && mediaUrl == null && form == null) return;
+    if (messageText.trim().isEmpty && mediaUrl == null) return;
     final currentTime = DateTime.now();
     // Generate a unique message ID
     final messageId = ChatUtils().generateMessageId();
     // Set the receiverIsOnChatPage to false when the app is paused or inactive
     final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
-
-    final messageType = form != null ? 'form' : type;
-
-    final normalizedForms = form != null ? [Map<String, dynamic>.from(form)] : null;
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
       sender: widget.agentEmail!,
-      type: messageType!,
+      type: type,
       mediaUrl: mediaUrl,
-      form: normalizedForms?.first,
-      forms: normalizedForms,
       messageId: messageId,
       isDeleted: false,
       read: isReceiverOnChatPage,
@@ -918,34 +711,19 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       });
 
-      // Always send text message event for non-form content
-      if (form == null || type != 'form') {
-        _socketService.sendMessage(
-          targetEmail: widget.customerEmail,
-          message: messageText,
-          senderEmail: widget.agentEmail!,
-          senderName: widget.agentName ?? "agent",
-          type: type ?? 'text',
-          mediaUrl: mediaUrl,
-          form: null,
-          timestamp: currentTime.toIso8601String(),
-          messageId: messageId,
-          read: isReceiverOnChatPage ?? false,
-        );
-      }
-
-      // Send form payload separately when form data exists
-      if (form != null) {
-        _socketService.sendForm(
-          senderId: widget.agentEmail!,
-          targetId: widget.customerEmail,
-          senderName: widget.agentName ?? 'agent',
-          form: form,
-          timestamp: currentTime.toIso8601String(),
-          messageId: messageId,
-          orderId: form['orderId']?.toString(),
-        );
-      }
+      // Send the message event to the socket
+      _socketService.sendMessage(
+        targetEmail: widget.customerEmail,
+        message: messageText,
+        senderEmail: widget.agentEmail!,
+        senderName: widget.agentName ?? "agent",
+        type: type ?? 'text',
+        mediaUrl: mediaUrl,
+        form: null,
+        timestamp: currentTime.toIso8601String(),
+        messageId: messageId,
+        read: isReceiverOnChatPage ?? false,
+      );
 
       // Save the message to Hive only if it's not already saved
       _chatStorageService.saveMessage(message, '${widget.agentEmail}${widget.customerEmail}');
@@ -1150,245 +928,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     }
   }
 
-  void sendFormButton() {
-    _sendMessage(messageText: "Fill details");
-  }
-
-  void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
-    _sendMessage(
-      messageText: "Form rate updated",
-      type: 'text',
-      form: updatedFormData,
-    );
-
-    // Trigger real-time update
-    Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
-  }
-
-  Future<void> _handleFormEditRequest(Map<String, dynamic> formData) async {
-    final updates = await _showFormUpdateSheet(formData);
-    if (updates == null || updates.isEmpty) return;
-    await _applyFormUpdates(formData, updates);
-  }
-
-  bool _isValidBuyerName(String name) {
-    return _buyerNamePattern.hasMatch(name);
-  }
-
-  Future<Map<String, dynamic>?> _showFormUpdateSheet(Map<String, dynamic> formData) async {
-    final buyerController = TextEditingController(text: formData['buyerName']?.toString() ?? '');
-    final qualityController = TextEditingController(text: formData['quality']?.toString() ?? '');
-    final weaveController = TextEditingController(text: formData['weave']?.toString() ?? '');
-    final quantityController = TextEditingController(text: formData['quantity']?.toString() ?? '');
-    final compositionController =
-        TextEditingController(text: formData['composition']?.toString() ?? '');
-    final rateController = TextEditingController(text: formData['rate']?.toString() ?? '');
-    final controllers = [
-      buyerController,
-      qualityController,
-      weaveController,
-      quantityController,
-      compositionController,
-      rateController,
-    ];
-
-    final sheetFuture = showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Container(
-            padding: EdgeInsets.only(
-              left: 18,
-              right: 18,
-              top: 14,
-              bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 18,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 42,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'Update Form Details',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Leave blank to keep the current value.',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildField(
-                    'Buyer name',
-                    buyerController,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _buildField('Quality', qualityController),
-                  const SizedBox(height: 10),
-                  _buildField('Weave', weaveController),
-                  const SizedBox(height: 10),
-                  _buildField('Quantity', quantityController),
-                  const SizedBox(height: 10),
-                  _buildField('Composition', compositionController),
-                  const SizedBox(height: 10),
-                  _buildField('Rate', rateController),
-                  const SizedBox(height: 16),
-                  CustomButton(
-                    text: 'Send updates',
-                    onPressed: () {
-                      final updates = <String, dynamic>{};
-                      final buyerValue = buyerController.text.trim();
-                      if (buyerValue.isNotEmpty && !_isValidBuyerName(buyerValue)) {
-                        ScaffoldMessenger.of(sheetContext).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                                'Buyer name may only contain letters, spaces, dots, hyphens, or apostrophes.'),
-                          ),
-                        );
-                        return;
-                      }
-                      void addField(String key, TextEditingController controller) {
-                        final value = controller.text.trim();
-                        if (value.isNotEmpty) {
-                          updates[key] = value;
-                        }
-                      }
-
-                      addField('buyerName', buyerController);
-                      addField('quality', qualityController);
-                      addField('weave', weaveController);
-                      addField('quantity', quantityController);
-                      addField('composition', compositionController);
-                      addField('rate', rateController);
-
-                      if (updates.isEmpty) {
-                        ScaffoldMessenger.of(sheetContext).showSnackBar(
-                          const SnackBar(content: Text('Please update at least one field.')),
-                        );
-                        return;
-                      }
-
-                      Navigator.pop(sheetContext, updates);
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    final result = await sheetFuture.whenComplete(() {
-      for (final controller in controllers) {
-        controller.dispose();
-      }
-    });
-
-    return result;
-  }
-
-  Future<void> _applyFormUpdates(
-    Map<String, dynamic> formData,
-    Map<String, dynamic> updates,
-  ) async {
-    final formId = formData['_id']?.toString();
-    if (formId == null || formId.isEmpty) return;
-
-    setState(() {
-      _isFormUpdating = true;
-    });
-
-    try {
-      await _chatRepository.updateInquiryForm(formId, updates);
-      final updatedForm = Map<String, dynamic>.from(formData)..addAll(updates);
-      if (mounted) {
-        setState(() {
-          for (final msg in messages) {
-            final msgFormId = msg.form?['_id']?.toString();
-            if (msgFormId != null && msgFormId == formId) {
-              msg.form = Map<String, dynamic>.from(updatedForm);
-              msg.forms = [Map<String, dynamic>.from(updatedForm)];
-            }
-          }
-        });
-        Utils.showCustomToast(
-          context,
-          title: 'Form updated',
-          subtitle: 'Changes have been sent to the customer.',
-        );
-      }
-      Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error updating form: $e');
-      }
-      // if (context.mounted) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(content: Text('Failed to update form: ${e.toString()}')),
-      //   );
-      // }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isFormUpdating = false;
-        });
-      }
-    }
-  }
-
-  Widget _buildField(
-    String label,
-    TextEditingController controller, {
-    List<TextInputFormatter>? inputFormatters,
-  }) {
-    return TextField(
-      controller: controller,
-      inputFormatters: inputFormatters,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      ),
-    );
-  }
-
-  void _handleStatusUpdated(String status, String id) {
-    final messageText = status == 'Confirmed'
-        ? "Your order is confirmed with form Id: $id"
-        : "Your order is declined with form Id: $id";
-    _sendMessage(
-      messageText: messageText,
-      type: 'text',
-    );
-
-    // Trigger real-time update after status change
-    Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
-  }
-
   void _showProductsBottomSheet(BuildContext context) {
     showModalBottomSheet(
       backgroundColor: Colors.white,
@@ -1403,148 +942,8 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
     );
   }
 
-  List<int> _getFormMessageIndices() {
-    List<int> formIndices = [];
-    for (int i = 0; i < messages.length; i++) {
-      final msg = messages[i];
-      // Check if it's a form message sent by the customer (not the agent)
-      if ((msg.type == 'form' || msg.form != null) && msg.sender == widget.customerEmail) {
-        formIndices.add(i);
-      }
-    }
-    return formIndices;
-  }
-
-  Map<String, int> _buildFormSerialMap() {
-    final Map<String, int> serialByFormId = {};
-    int serial = 0;
-
-    for (final msg in messages) {
-      if (msg.type != 'form') continue;
-      final formId = _extractFormId(msg);
-      if (formId == null) continue;
-      serialByFormId.putIfAbsent(formId, () => ++serial);
-    }
-    return serialByFormId;
-  }
-
-  void _navigateToForm(int direction) {
-    List<int> formIndices = _getFormMessageIndices();
-
-    if (formIndices.isEmpty) {
-      // Show a message that no forms are available
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No customer forms found to navigate to'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    if (_currentFormIndex == null) {
-      // If no current form is selected, start from the most recent form
-      _currentFormIndex = formIndices.length - 1;
-    } else {
-      // Calculate new index based on direction (1 for next/down, -1 for previous/up)
-      int newIndex = _currentFormIndex! + direction;
-
-      // Handle wraparound or bounds
-      if (newIndex < 0) {
-        newIndex = formIndices.length - 1; // Wrap to last form
-      } else if (newIndex >= formIndices.length) {
-        newIndex = 0; // Wrap to first form
-      }
-
-      _currentFormIndex = newIndex;
-    }
-
-    // Scroll to the selected form message
-    int messageIndex = formIndices[_currentFormIndex!];
-    _scrollToMessage(messageIndex);
-
-    // Optional: Show current form position
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Form ${_currentFormIndex! + 1} of ${formIndices.length}'),
-        duration: Duration(milliseconds: 800),
-      ),
-    );
-  }
-
-  void _scrollToMessage(int index) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients && index < messages.length) {
-        final key = ValueKey('chat-msg-$index');
-        final globalKey = _messageKeys[key];
-
-        if (globalKey?.currentContext != null) {
-          final context = globalKey!.currentContext!;
-          final box = context.findRenderObject() as RenderBox?;
-          if (box != null) {
-            try {
-              // Get the position of the message
-              final position = box.localToGlobal(Offset.zero);
-              final scrollOffset = _scrollController.offset;
-              final viewportHeight = _scrollController.position.viewportDimension;
-
-              // Calculate target scroll position to center the message
-              final targetOffset = scrollOffset + position.dy - (viewportHeight / 2);
-              final clampedOffset = targetOffset.clamp(
-                _scrollController.position.minScrollExtent,
-                _scrollController.position.maxScrollExtent,
-              );
-
-              _scrollController.animateTo(
-                clampedOffset,
-                duration: Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-              );
-            } catch (e) {
-              debugPrint('Error scrolling to message: $e');
-              // Fallback: scroll based on approximate item height
-              final approximatePosition =
-                  index * 100.0; // Adjust based on your average message height
-              _scrollController.animateTo(
-                approximatePosition,
-                duration: Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-              );
-            }
-          }
-        } else {
-          // Fallback scrolling method
-          final approximatePosition = index * 100.0;
-          _scrollController.animateTo(
-            approximatePosition,
-            duration: Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        }
-      }
-    });
-  }
-
-  void _toggleFormNavigationButtons() {
-    final formIndices = _getFormMessageIndices();
-    debugPrint('Found ${formIndices.length} customer form messages at indices: $formIndices');
-
-    // Debug: Print details about each form message
-    for (int i = 0; i < formIndices.length; i++) {
-      final msgIndex = formIndices[i];
-      final msg = messages[msgIndex];
-      debugPrint('Form $i: type=${msg.type}, sender=${msg.sender}, hasForm=${msg.form != null}');
-    }
-
-    setState(() {
-      _showFormNavigationButtons = !_showFormNavigationButtons;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final locale = AppLocalizations.of(context)!;
-    final formSerialMap = _buildFormSerialMap();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1609,6 +1008,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                 uid: uid,
                 callId: callId,
                 isCaller: true,
+                targetUserId: widget.customerEmail,
               );
 
               // 3. ⏳ Wait for call to complete and message to be returned
@@ -1640,6 +1040,23 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
               callProvider.addListener(subscription);
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChangeNotifierProvider(
+                    create: (_) => InquiryProvider(ChatRepository()),
+                    child: AgentInquiryFormsScreen(
+                      customerEmail: widget.customerEmail,
+                      customerName: widget.customerName ?? 'Customer',
+                    ),
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.assignment_outlined, color: Colors.black),
           ),
         ],
         shape: RoundedRectangleBorder(
@@ -1703,30 +1120,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                                                 context, msg.messageId!)
                                             : null,
                                       )
-                                    else if (msg.type == 'form')
-                                      FormMessageBubble(
-                                        forms: msg.formEntries,
-                                        serialNumber: msg.form?['_id'] != null
-                                            ? formSerialMap[msg.form!['_id'].toString()]
-                                            : null,
-                                        isMe: msg.sender == widget.agentEmail,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
-                                        userRole: userRole!,
-                                        onRateUpdated: _handleRateUpdated,
-                                        onStatusUpdated: _handleStatusUpdated,
-                                        onFormUpdateStart: () {
-                                          setState(() {
-                                            _isFormUpdating = true;
-                                          });
-                                        },
-                                        onFormUpdateEnd: () {
-                                          setState(() {
-                                            _isFormUpdating = false;
-                                          });
-                                        },
-                                        onFormEditRequested: _handleFormEditRequest,
-                                      )
                                     else if (msg.type == 'document')
                                       DocumentMessageBubble(
                                         documentUrl: msg.mediaUrl!,
@@ -1758,20 +1151,6 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                                             .formatTimestamp(msg.timestamp.toIso8601String()),
                                         callStatus: msg.callStatus ?? "",
                                         callDuration: msg.callDuration ?? '',
-                                      )
-                                    else if (msg.message == 'Fill details')
-                                      FillFormButton(
-                                        buttonText: locale.fillProductDetails,
-                                        onSubmit: () {
-                                          // Agent not allowed to fill the form
-                                        },
-                                      )
-                                    else if (msg.message == "Update form rate")
-                                      FillFormButton(
-                                        buttonText: locale.updateForm,
-                                        onSubmit: () {
-                                          // Only show the widget for history, not to do anything on the agent side
-                                        },
                                       )
                                     else if (msg.type == 'product')
                                       (msg.message != null && msg.message!.isNotEmpty)
@@ -1830,11 +1209,12 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
                   minimum: const EdgeInsets.only(bottom: 1),
                   child: ChatInputField(
                     controller: _chatController,
+                    showInquiryForm: false,
                     onSend: () => _sendMessage(messageText: _chatController.text),
                     onSendImage: () {
                       _pickAndSendImage(ImageSource.gallery);
                     },
-                    onSendForm: sendFormButton,
+                    onSendForm: () {},
                     onSendDocument: _pickAndSendDocument,
                     onSendImageByCamera: () {
                       _pickAndSendImage(ImageSource.camera);
@@ -1848,34 +1228,14 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
               const SizedBox(height: 10),
             ],
           ),
-          if (_isFormUpdating) FullScreenLoader(),
           if (!_isAtBottom)
             Positioned(
               bottom: 80,
               right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_showFormNavigationButtons) ...[
-                    IconButton(
-                      onPressed: () => _navigateToForm(-1),
-                      icon: Icon(Icons.arrow_upward),
-                    ),
-                    IconButton(
-                      onPressed: () => _navigateToForm(1),
-                      icon: Icon(Icons.arrow_downward),
-                    ),
-                  ],
-                  IconButton(
-                    onPressed: _toggleFormNavigationButtons,
-                    icon: Icon(Icons.push_pin),
-                  ),
-                  FloatingActionButton(
-                    onPressed: _scrollToBottom,
-                    mini: true,
-                    child: Icon(Icons.arrow_downward_rounded),
-                  ),
-                ],
+              child: FloatingActionButton(
+                onPressed: _scrollToBottom,
+                mini: true,
+                child: Icon(Icons.arrow_downward_rounded),
               ),
             ),
           //  Floating day/date header
