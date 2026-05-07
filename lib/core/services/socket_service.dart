@@ -44,6 +44,9 @@ class SocketService {
   Function(Map<String, dynamic>)? _onGroupMessageReceived;
   Function(Map<String, dynamic>)? _onGroupMessageDeleted;
   Function(Map<String, dynamic>)? _onGroupMessageEdited;
+  // Called when a group message arrives in the background (chat page not open)
+  // GroupListScreen registers this to refresh unread counts in real time
+  Function? _onGroupListUpdateCallback;
 
   bool isChatPageOpen = false;
   String? activeCustomerId;
@@ -384,6 +387,14 @@ class SocketService {
     _onGroupMessageEdited = callback;
   }
 
+  void onGroupListUpdate(Function callback) {
+    _onGroupListUpdateCallback = callback;
+  }
+
+  void clearGroupListUpdate() {
+    _onGroupListUpdateCallback = null;
+  }
+
   void sendGroupMessage({
     required String message,
     required String senderId,
@@ -420,49 +431,58 @@ class SocketService {
     debugPrint('📤 Sent group message: $payload');
   }
 
-  // Add these methods to handle background events
+  // Handle group message deletion in background (group-specific storage)
   void _handleBackgroundGroupMessageDeletion(Map<String, dynamic> data) async {
-    debugPrint("🗑️ Handling group message deletion in background: ${data.toString()}");
-    final messageId = data['messageId'];
+    debugPrint("🗑️ [Background] Group message deletion: ${data.toString()}");
+    final messageId = data['messageId']?.toString();
+    final groupId = data['groupId']?.toString();
+
+    if (messageId == null || groupId == null || groupId.isEmpty) {
+      debugPrint("⚠️ [Background] Missing messageId or groupId in deletion data");
+      return;
+    }
 
     try {
-      // Update the message in local storage
-      final localMessages = await LocalDbHelper.getGroupMessages();
+      final localMessages = await LocalDbHelper.getGroupMessages(groupId);
       final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
-
       if (index != -1) {
         final updatedMessage = localMessages[index].copyWith(
           isDeleted: true,
           message: "This message was deleted",
         );
-        await LocalDbHelper.updateGroupMessage(updatedMessage);
-        debugPrint("✅ Updated deleted message in local storage: $messageId");
+        await LocalDbHelper.updateGroupMessage(updatedMessage, groupId);
+        debugPrint("✅ [Background] Marked message $messageId as deleted in group $groupId");
       }
     } catch (e) {
-      debugPrint("❌ Error updating deleted message in background: $e");
+      debugPrint("❌ [Background] Error handling group message deletion: $e");
     }
   }
 
+  // Handle group message edit in background (group-specific storage)
   void _handleBackgroundGroupMessageEdit(Map<String, dynamic> data) async {
-    debugPrint("✏️ Handling group message edit in background: ${data.toString()}");
-    final messageId = data['messageId'];
-    final newMessage = data['newMessage'];
+    debugPrint("✏️ [Background] Group message edit: ${data.toString()}");
+    final messageId = data['messageId']?.toString();
+    final newMessage = data['newMessage']?.toString();
+    final groupId = data['groupId']?.toString();
+
+    if (messageId == null || newMessage == null || groupId == null || groupId.isEmpty) {
+      debugPrint("⚠️ [Background] Missing fields in group message edit data");
+      return;
+    }
 
     try {
-      // Update the message in local storage
-      final localMessages = await LocalDbHelper.getGroupMessages();
+      final localMessages = await LocalDbHelper.getGroupMessages(groupId);
       final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
-
       if (index != -1) {
         final updatedMessage = localMessages[index].copyWith(
           message: newMessage,
           isEdited: true,
         );
-        await LocalDbHelper.updateGroupMessage(updatedMessage);
-        debugPrint("✅ Updated edited message in local storage: $messageId");
+        await LocalDbHelper.updateGroupMessage(updatedMessage, groupId);
+        debugPrint("✅ [Background] Updated edited message $messageId in group $groupId");
       }
     } catch (e) {
-      debugPrint("❌ Error updating edited message in background: $e");
+      debugPrint("❌ [Background] Error handling group message edit: $e");
     }
   }
 
@@ -1287,16 +1307,35 @@ class SocketService {
         messageContent,
         notificationDetails,
         payload: jsonEncode({
-          'isGroupMessage': true, // This flag identifies it as a group message
+          'isGroupMessage': true,
           'notificationType': 'groupChat',
-          ...data, // Include all original data
+          ...data,
         }),
       );
 
-      // Increment unread count for group chat using LocalDbHelper
+      // Save last message preview + increment per-group unread count
+      final groupId = data['groupId']?.toString() ?? '';
+      if (groupId.isNotEmpty) {
+        try {
+          await LocalDbHelper.saveGroupLastMessage(groupId, messageContent, DateTime.now());
+          debugPrint("✅ Saved last message for group $groupId: $messageContent");
+        } catch (e) {
+          debugPrint("❌ Error saving group last message: $e");
+        }
+        try {
+          await LocalDbHelper.incrementGroupUnreadCount(groupId);
+        } catch (e) {
+          debugPrint("❌ Error incrementing group unread count: $e");
+        }
+      }
+
+      // Notify GroupListScreen to refresh unread badges in real time
+      _onGroupListUpdateCallback?.call();
+
+      // Increment global group chat unread count (used by nav badge)
       try {
         await LocalDbHelper.incrementGroupChatUnreadCount();
-        debugPrint("✅ Incremented group chat unread count");
+        debugPrint("✅ Incremented global group chat unread count");
       } catch (e) {
         debugPrint("❌ Error incrementing group chat unread count: $e");
       }

@@ -11,6 +11,7 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
@@ -18,7 +19,6 @@ import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
-import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 
@@ -91,6 +91,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
         _socketService.initSocket(agentName!, agentEmail!, rolename!, token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
+        _socketService.onGroupListUpdate(_handleBackgroundGroupMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
         _socketService.onCallTerminated(_handleCallTermination);
         _socketService.onProductAdd(_handleProductAdd);
@@ -111,7 +112,9 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
       Hive.openBox("lastSeenTimeBox"),
       Hive.openBox('feedBox'),
       Hive.openBox("lastMessageMap"),
-      // dotenv.load(fileName: "keys.env"), // Only if required again
+      Hive.openBox(LocalDbHelper.groupLastMessageBoxKey),
+      Hive.openBox<int>(LocalDbHelper.groupChatUnreadCountKey),
+      Hive.openBox<int>(LocalDbHelper.groupUnreadCountsBoxKey),
     ]);
   }
 
@@ -324,12 +327,15 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   }
 
   void _handleIcomingGroupMessage(Map<String, dynamic> data) {
-    Navigator.push(widget.navigatorKey.currentContext!, MaterialPageRoute(builder: (context) {
-      return InternalChatScreen(
-          agentName: data["senderName"],
-          agentEmail: data["senderId"],
-          navigatorKey: widget.navigatorKey);
-    }));
+    // Handled by InternalChatScreen when open; notifications handle the closed case.
+    debugPrint("[MarketingHost] Group message event — handled by InternalChatScreen or notification");
+  }
+
+  /// Called by SocketService whenever a group message arrives while the chat page is closed.
+  /// Updates GroupProvider so badges stay current on any page.
+  void _handleBackgroundGroupMessage() {
+    if (!mounted) return;
+    Provider.of<GroupProvider>(context, listen: false).loadUnreadCountsFromStorage();
   }
 
   Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
@@ -386,6 +392,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
     // debugPrint("Incoming call data2: ${callData.toString()}");
     // Remove previous overlay if exists
     await _removeIncomingCallOverlay();
+    if (!mounted) return;
 
     final channelName = callData['channelName'];
     final callerName = callData['callerName'];
@@ -394,7 +401,6 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
     _activeIncomingCallId = incomingCallId?.toString();
     final uid = Utils().generateIntUidFromEmail(agentEmail!);
     final overlayState = Overlay.of(context);
-    if (overlayState == null) return;
 
     late OverlayEntry overlayEntry;
     _audioPlayer = AudioPlayer();

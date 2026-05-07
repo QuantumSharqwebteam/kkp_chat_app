@@ -7,6 +7,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/logic/agent/agent_provider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/required_field_label.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 
@@ -29,8 +30,7 @@ class _AddAgentState extends State<AddAgent> {
   String? phoneError;
   String? passwordError;
   final RegExp _namePattern = RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$");
-  final RegExp _emailPattern =
-      RegExp(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$");
+  final RegExp _emailPattern = RegExp(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$");
 
   bool validateName(String name) {
     final trimmedName = name.trim();
@@ -204,7 +204,7 @@ class _AddAgentState extends State<AddAgent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-                        Text(l.fullName),
+                        RequiredFieldLabel(l.fullName),
                         CustomTextField(
                           controller: fullNameController,
                           hintText: l.enterFullName,
@@ -215,7 +215,7 @@ class _AddAgentState extends State<AddAgent> {
                             FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
                           ],
                         ),
-                        Text(l.email),
+                        RequiredFieldLabel(l.email),
                         CustomTextField(
                           controller: emailController,
                           hintText: l.enterEmail,
@@ -223,7 +223,7 @@ class _AddAgentState extends State<AddAgent> {
                           prefixIcon: const Icon(Icons.email),
                           errorText: emailError,
                         ),
-                        Text(l.phoneNumber),
+                        RequiredFieldLabel(l.phoneNumber),
                         CustomTextField(
                           controller: phoneController,
                           hintText: l.enterPhoneNumber,
@@ -235,7 +235,7 @@ class _AddAgentState extends State<AddAgent> {
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                         ),
-                        Text(l.password),
+                        RequiredFieldLabel(l.password),
                         CustomTextField(
                           controller: passwordController,
                           hintText: l.createPassword,

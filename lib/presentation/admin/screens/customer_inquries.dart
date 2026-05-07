@@ -199,11 +199,11 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             title: Text(AppLocalizations.of(context)!.customerInquiries),
             actions: [
               // Refresh button
-              if (hasInquiries)
-                IconButton(
-                  onPressed: () => provider.refreshInquiries(),
-                  icon: const Icon(Icons.refresh),
-                ),
+              // if (hasInquiries)
+              //   IconButton(
+              //     onPressed: () => provider.refreshInquiries(),
+              //     icon: const Icon(Icons.refresh),
+              //   ),
               if (hasInquiries && !provider.isLoading)
                 Padding(
                   padding: const EdgeInsets.only(right: 10),
@@ -486,7 +486,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                   const SizedBox(height: 12),
                   _buildReasonCard(inquiry.reason),
                 ],
-
                 if (expandedStates[inquiry.id] ?? false) ...[
                   const SizedBox(height: 12),
                   _buildInquiryDetails(inquiry),

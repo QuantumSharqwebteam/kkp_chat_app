@@ -14,6 +14,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/common_widgets/required_field_label.dart';
 import 'package:provider/provider.dart';
 
 class AddProductScreen extends StatelessWidget {
@@ -53,6 +54,7 @@ class AddProductScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          RequiredFieldLabel("Upload Image"),
                           _buildImagePickerContainer(context, provider),
                           const SizedBox(height: 10),
                           _buildProductDetails(context, provider),
@@ -221,16 +223,21 @@ class AddProductScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(locale.productName, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.productName, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.nameController,
             hintText: locale.name,
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9 ]'))],
+            condition: (value) {
+              final trimmed = value.trim();
+              return trimmed.isNotEmpty && RegExp(r'^[A-Za-z0-9 ]+$').hasMatch(trimmed);
+            },
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: Text(locale.price, style: AppTextStyles.black14_600)),
-              Expanded(child: Text(locale.size, style: AppTextStyles.black14_600)),
+              Expanded(child: RequiredFieldLabel(locale.price, style: AppTextStyles.black14_600)),
+              Expanded(child: RequiredFieldLabel(locale.size, style: AppTextStyles.black14_600)),
             ],
           ),
           const SizedBox(height: 5),
@@ -241,18 +248,25 @@ class AddProductScreen extends StatelessWidget {
                 child: CustomTextField(
                   controller: provider.priceController,
                   hintText: "₹0.00",
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^[0-9]*\.?[0-9]*$')),
+                  ],
+                  condition: (value) {
+                    final parsed = double.tryParse(value.trim());
+                    return parsed != null && parsed > 0;
+                  },
                 ),
               ),
               Expanded(child: _buildSizeSelection(provider)),
             ],
           ),
           const SizedBox(height: 10),
-          Text(locale.color, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.color, style: AppTextStyles.black14_600),
           const SizedBox(height: 5),
           _buildColorPickerWidget(context, provider),
           const SizedBox(height: 10),
-          Text(locale.stockAvailable, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.stockAvailable, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.stockController,
             hintText: "2000",
@@ -260,7 +274,7 @@ class AddProductScreen extends StatelessWidget {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           const SizedBox(height: 10),
-          Text(locale.description, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.description, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.descriptionController,
             hintText: locale.describeProduct,

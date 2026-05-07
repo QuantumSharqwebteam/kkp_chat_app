@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
-import 'package:indian_pincode_validator/indian_pincode_validator.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -147,9 +146,6 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       isValid = false;
     } else if (pincode.length != 6) {
       _pincodeError = 'Pincode must be exactly 6 digits';
-      isValid = false;
-    } else if (!IndianPinCodeValidator.isValidFormat(pincode)) {
-      _pincodeError = 'Please enter a valid Indian PIN code';
       isValid = false;
     }
 
@@ -425,7 +421,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   onChanged: (value) {
                     final trimmed = value.trim();
                     if (trimmed.isEmpty ||
-                        (trimmed.length == 6 && IndianPinCodeValidator.isValidFormat(trimmed))) {
+                        trimmed.length == 6) {
                       setState(() => _pincodeError = null);
                     }
                   },

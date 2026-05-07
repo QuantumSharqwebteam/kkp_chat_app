@@ -90,7 +90,12 @@ class _SplashState extends State<Splash> {
           await LocalDbHelper.saveToken(response['token']);
           await LocalDbHelper.saveLastRefreshTime(DateTime.now().millisecondsSinceEpoch);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'])));
+          final message = response['message']?.toString() ?? '';
+          final lowerMessage = message.toLowerCase();
+
+          if (!lowerMessage.contains('invalid token') && !lowerMessage.contains('expired')) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          }
         }
       });
     }

@@ -10,6 +10,7 @@ import 'package:kkpchatapp/data/models/poster_model.dart';
 import 'package:kkpchatapp/data/repositories/poster_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+import 'package:kkpchatapp/presentation/common_widgets/required_field_label.dart';
 
 import 'dart:io';
 import 'package:shimmer/shimmer.dart';
@@ -645,9 +646,8 @@ class _AddPosterBottomSheetState extends State<AddPosterBottomSheet> {
 
             const SizedBox(height: 20),
 
-            const Text(
+            RequiredFieldLabel(
               "Upload Poster",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
 
             const SizedBox(height: 20),

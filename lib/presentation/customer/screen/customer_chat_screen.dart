@@ -39,6 +39,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -70,7 +71,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
   late final SocketService _socketService;
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder(logLevel: Level.nothing);
   final ChatStorageService _chatStorageService = ChatStorageService();
   final ChatRepository _chatRepository = ChatRepository();
   bool _isLoading = true;

@@ -14,13 +14,37 @@ class GroupProvider extends ChangeNotifier {
   String? _errorMessage;
   List<GroupModel> _groups = [];
   List<GroupModel> _userGroups = [];
+  final Map<String, int> _groupUnreadCounts = {};
 
   GroupState get state => _state;
   String? get errorMessage => _errorMessage;
   List<GroupModel> get groups => _groups;
   List<GroupModel> get userGroups => _userGroups;
+  Map<String, int> get groupUnreadCounts => Map.unmodifiable(_groupUnreadCounts);
+  int get totalGroupUnreadCount =>
+      _groupUnreadCounts.values.fold(0, (sum, c) => sum + c);
 
   static const cacheValidity = Duration(minutes: 10);
+
+  // --- Unread count helpers (in-memory + storage) ---
+
+  Future<void> loadUnreadCountsFromStorage() async {
+    for (final group in _groups) {
+      _groupUnreadCounts[group.id] = await LocalDbHelper.getGroupUnreadCount(group.id);
+    }
+    notifyListeners();
+  }
+
+  void incrementUnreadCount(String groupId) {
+    _groupUnreadCounts[groupId] = (_groupUnreadCounts[groupId] ?? 0) + 1;
+    notifyListeners();
+  }
+
+  Future<void> clearUnreadCount(String groupId) async {
+    _groupUnreadCounts[groupId] = 0;
+    notifyListeners();
+    await LocalDbHelper.clearGroupUnreadCount(groupId);
+  }
 
   // GroupProvider() {
   //   _initialize();
@@ -57,6 +81,7 @@ class GroupProvider extends ChangeNotifier {
         _groups =
             groupsJson.map((json) => GroupModel.fromJson(Map<String, dynamic>.from(json))).toList();
         await LocalDbHelper.saveGroups(_groups);
+        await loadUnreadCountsFromStorage();
         _state = GroupState.success;
         _logger.logNetwork('✅ Groups refreshed (${_groups.length} items)');
       } else {

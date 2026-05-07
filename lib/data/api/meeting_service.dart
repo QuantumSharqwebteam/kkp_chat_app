@@ -126,16 +126,16 @@ class MeetingService {
         level: LogLevel.debug,
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         _logger.logNetwork('Meeting created successfully.', level: LogLevel.info);
         return true;
-      } else {
-        _logger.logNetwork(
-          'Failed to create meeting. Status: ${response.statusCode}, Body: ${response.body}',
-          level: LogLevel.warning,
-        );
-        return false;
       }
+
+      _logger.logNetwork(
+        'Failed to create meeting. Status: ${response.statusCode}, Body: ${response.body}',
+        level: LogLevel.warning,
+      );
+      return false;
     } catch (e, stackTrace) {
       _logger.logNetwork(
         'Exception while creating meeting',

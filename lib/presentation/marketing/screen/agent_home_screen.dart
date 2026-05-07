@@ -324,7 +324,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   }
 
   Widget _buildUpcomingMeetingCard(MeetingModel meeting, BuildContext context) {
-    final startTime = DateTime.parse(meeting.startTime);
+    final startTime = DateTime.parse(meeting.startTime).toLocal();
     final now = DateTime.now();
     final timeDifference = startTime.difference(now);
 

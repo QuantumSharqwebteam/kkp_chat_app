@@ -717,6 +717,9 @@ class ChatService {
     );
     final token = await LocalDbHelper.getToken();
 
+    debugPrint("📡 [ChatService] fetchGroupMessages → GET $url");
+    debugPrint("📡 [ChatService] Params: groupId=$groupId, limit=$limit, before=$before");
+
     try {
       final response = await client.get(
         url,
@@ -726,26 +729,30 @@ class ChatService {
         },
       );
 
+      debugPrint("📡 [ChatService] fetchGroupMessages ← status ${response.statusCode}");
+
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-
-        // Return both messages and nextCursor
-        return {
-          'messages':
-              (json['messages'] as List).map((msg) => GroupMessageModel.fromApiJson(msg)).toList(),
-          'nextCursor': json['nextCursor'],
-        };
+        final msgs =
+            (json['messages'] as List).map((msg) => GroupMessageModel.fromApiJson(msg)).toList();
+        final nextCursor = json['nextCursor'];
+        debugPrint("📡 [ChatService] Received ${msgs.length} messages, nextCursor: $nextCursor");
+        for (final m in msgs) {
+          debugPrint("   ↳ [${m.messageId}] type=${m.type} from=${m.senderId} at=${m.timestamp}");
+        }
+        return {'messages': msgs, 'nextCursor': nextCursor};
       } else if (response.statusCode == 404) {
         final json = jsonDecode(response.body);
         if (json['message'] == 'No group messages found') {
+          debugPrint("📡 [ChatService] No messages found for group $groupId");
           return {'messages': [], 'nextCursor': null};
         }
       }
 
-      debugPrint("Unexpected response (${response.statusCode}): ${response.body}");
+      debugPrint("📡 [ChatService] Unexpected response (${response.statusCode}): ${response.body}");
       return {'messages': [], 'nextCursor': null};
     } catch (e) {
-      debugPrint("Error fetching group messages: $e");
+      debugPrint("❌ [ChatService] fetchGroupMessages error: $e");
       throw Exception("Error fetching group messages: $e");
     }
   }

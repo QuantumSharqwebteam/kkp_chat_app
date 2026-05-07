@@ -66,6 +66,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   void updateProduct() async {
+    if (nameController.text.trim().isEmpty) {
+      Utils().showSuccessDialog(context, "Product name cannot be empty.", false);
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -199,6 +204,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
           CustomTextField(
             controller: nameController,
             hintText: locale.name,
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9 ]'))],
+            condition: (value) {
+              final trimmed = value.trim();
+              return trimmed.isNotEmpty && RegExp(r'^[A-Za-z0-9 ]+$').hasMatch(trimmed);
+            },
           ),
           // price and review textfields
           Row(
@@ -220,6 +230,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   controller: priceController,
                   hintText: "₹0.00",
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                  condition: (value) => double.tryParse(value) != null && double.parse(value) >= 0,
                 ),
               ),
               Expanded(

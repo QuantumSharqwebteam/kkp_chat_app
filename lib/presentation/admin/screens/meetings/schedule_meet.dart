@@ -5,6 +5,7 @@ import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
+import 'package:kkpchatapp/presentation/common_widgets/required_field_label.dart';
 import 'package:provider/provider.dart';
 
 class ScheduleMeetingScreen extends StatefulWidget {
@@ -65,14 +66,13 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
 
         if (!_isValidFutureMeetingTime(combined)) {
           setState(() {
-            _startTimeError =
-                "Invalid time. Please choose a future time for today";
+            _startTimeError = "Invalid time. Please choose a future time for today";
           });
           return;
         }
 
         setState(() {
-          _startTimeController.text = combined.toIso8601String();
+          _startTimeController.text = combined.toUtc().toIso8601String();
           _startTimeError = null;
         });
       }
@@ -116,8 +116,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
       isValid = false;
     } else {
       try {
-        final selectedDateTime =
-            DateTime.parse(_startTimeController.text).toLocal();
+        final selectedDateTime = DateTime.parse(_startTimeController.text).toLocal();
 
         if (!_isValidFutureMeetingTime(selectedDateTime)) {
           setState(() => _startTimeError = "Invalid time. Please choose a future time");
@@ -191,7 +190,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 20),
-                          const Text("Title"),
+                          const RequiredFieldLabel("Title"),
                           CustomTextField(
                             controller: _titleController,
                             hintText: "Enter title",
@@ -204,7 +203,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                             },
                           ),
                           const SizedBox(height: 10),
-                          const Text("Platform"),
+                          const RequiredFieldLabel("Platform"),
                           CustomTextField(
                             controller: _locationController,
                             hintText: "Platform(Zoom, meet, teams) ",
@@ -217,7 +216,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                             },
                           ),
                           const SizedBox(height: 10),
-                          const Text("Link"),
+                          const RequiredFieldLabel("Link"),
                           CustomTextField(
                             controller: _linkController,
                             hintText: "Enter link",
@@ -237,7 +236,7 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
                             },
                           ),
                           const SizedBox(height: 10),
-                          const Text("Start Time"),
+                          const RequiredFieldLabel("Start Time"),
                           CustomTextField(
                             controller: _startTimeController,
                             hintText: "Select start time",

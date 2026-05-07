@@ -9,9 +9,9 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:shimmer/shimmer.dart';
-// Import reusable shimmer list
 
 class AgentProfilesPage extends StatefulWidget {
   const AgentProfilesPage({super.key});
@@ -403,27 +403,9 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
       ),
         ),
         if (_isChangingAgentHead)
-          Positioned.fill(
+          const Positioned.fill(
             child: AbsorbPointer(
-              child: Container(
-                color: Colors.black.withValues(alpha: .2),
-                child: const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 12),
-                      Text(
-                        'Updating agent head...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              child: FullScreenLoader(),
             ),
           ),
       ],

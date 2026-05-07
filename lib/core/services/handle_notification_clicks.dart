@@ -137,21 +137,26 @@ Future<void> handleNotificationClickForAgent(
   );
 }
 
-/// Handles group chat notification tap
+/// Handles group chat notification tap (local notification, app in foreground/background)
 Future<void> handleGroupLocalNotificationTap(
     GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
   debugPrint("🔔 Group chat notification tapped: ${notificationData.toString()}");
 
   try {
-    // Clear the group chat unread count
+    final groupId = notificationData['groupId']?.toString() ?? '';
+    if (groupId.isEmpty) {
+      debugPrint("⚠️ handleGroupLocalNotificationTap: groupId missing in payload");
+      return;
+    }
+
+    // Clear the per-group unread count now that the user is opening the chat
+    await LocalDbHelper.clearGroupUnreadCount(groupId);
     await LocalDbHelper.clearGroupChatUnreadCount();
-    debugPrint("✅ Cleared group chat unread count");
 
-    // Get the current user's info
-    final agentName = notificationData["senderName"];
-    final agentEmail = notificationData["senderId"];
+    // Use the logged-in user's own credentials, not the sender's
+    final agentName = LocalDbHelper.getName() ?? '';
+    final agentEmail = LocalDbHelper.getEmail() ?? '';
 
-    // Navigate to the internal chat screen
     if (navigatorKey.currentContext != null) {
       Navigator.push(
         navigatorKey.currentContext!,
@@ -160,6 +165,7 @@ Future<void> handleGroupLocalNotificationTap(
             agentName: agentName,
             agentEmail: agentEmail,
             navigatorKey: navigatorKey,
+            groupId: groupId,
           ),
         ),
       );
@@ -300,7 +306,7 @@ Future<void> handleIncomingCall(
   });
 }
 
-/// Handles group push notification for agents
+/// Handles group push notification for agents (app was killed/backgrounded)
 Future<void> handleGroupPushNotification(
     GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
   final StreamController<bool> controller = StreamController<bool>();
@@ -308,8 +314,18 @@ Future<void> handleGroupPushNotification(
 
   // Function to trigger navigation to InternalChatScreen
   void triggerGroupNavigation() {
-    final agentName = notificationData["senderName"];
-    final agentEmail = notificationData["senderId"];
+    final groupId = notificationData['groupId']?.toString() ?? '';
+    if (groupId.isEmpty) {
+      debugPrint("⚠️ handleGroupPushNotification: groupId missing in payload");
+      return;
+    }
+
+    // Use the logged-in user's own credentials, not the sender's
+    final agentName = LocalDbHelper.getName() ?? '';
+    final agentEmail = LocalDbHelper.getEmail() ?? '';
+
+    LocalDbHelper.clearGroupUnreadCount(groupId);
+    LocalDbHelper.clearGroupChatUnreadCount();
 
     Navigator.push(
       navigatorKey.currentContext!,
@@ -318,6 +334,7 @@ Future<void> handleGroupPushNotification(
           agentName: agentName,
           agentEmail: agentEmail,
           navigatorKey: navigatorKey,
+          groupId: groupId,
         ),
       ),
     );

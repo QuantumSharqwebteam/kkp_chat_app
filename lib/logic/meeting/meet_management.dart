@@ -42,8 +42,7 @@ class MeetingManagement with ChangeNotifier {
     String? roleName,
   }) {
     final isScheduledPerson = meeting.scheduledPerson.email == currentUserEmail;
-    return isScheduledPerson ||
-        _isPrivilegedMeetingEditor(userType: userType, roleName: roleName);
+    return isScheduledPerson || _isPrivilegedMeetingEditor(userType: userType, roleName: roleName);
   }
 
   static String? validateMeetingUrl(String? value) {
@@ -71,9 +70,8 @@ class MeetingManagement with ChangeNotifier {
     }
 
     final host = uri.host.toLowerCase();
-    final hasMeetingTarget = uri.pathSegments.isNotEmpty ||
-        uri.queryParameters.isNotEmpty ||
-        uri.fragment.isNotEmpty;
+    final hasMeetingTarget =
+        uri.pathSegments.isNotEmpty || uri.queryParameters.isNotEmpty || uri.fragment.isNotEmpty;
     if (!hasMeetingTarget) {
       return "Enter a complete meeting link";
     }
@@ -127,7 +125,7 @@ class MeetingManagement with ChangeNotifier {
     final now = DateTime.now();
     final todaysMeetings = _meetings.where((meeting) {
       try {
-        final meetingDate = DateTime.parse(meeting.startTime);
+        final meetingDate = DateTime.parse(meeting.startTime).toLocal();
         // Check if meeting is today and in the future
         final isTodayAndFuture = meetingDate.year == now.year &&
             meetingDate.month == now.month &&
@@ -206,7 +204,12 @@ class MeetingManagement with ChangeNotifier {
 
     try {
       final selectedTime = DateTime.parse(startTime).toLocal();
-      if (!selectedTime.isAfter(DateTime.now())) {
+      final now = DateTime.now();
+      _logger.logUi(
+        'MeetingManagement.createMeeting startTime validation | selectedTime: $selectedTime, now: $now',
+        level: LogLevel.debug,
+      );
+      if (!selectedTime.isAfter(now)) {
         _error = "Start time must be in the future";
         notifyListeners();
         return false;
@@ -241,7 +244,7 @@ class MeetingManagement with ChangeNotifier {
     } catch (e, stackTrace) {
       _error = "Failed to create meeting: $e";
       _logger.logUi(
-        'MeetingManagement.createMeeting exception',
+        'MeetingManagement.createMeeting exception:${e.toString()}',
         level: LogLevel.error,
         error: e,
         stackTrace: stackTrace,

@@ -105,6 +105,9 @@ void main() async {
     Hive.openBox('feedBox'),
     Hive.openBox("lastMessageMap"),
     Hive.openBox("inquiryFormsBox"),
+    Hive.openBox(LocalDbHelper.groupLastMessageBoxKey),
+    Hive.openBox<int>(LocalDbHelper.groupChatUnreadCountKey),
+    Hive.openBox<int>(LocalDbHelper.groupUnreadCountsBoxKey),
     dotenv.load(fileName: "keys.env"),
   ]);
 

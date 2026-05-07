@@ -41,6 +41,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubb
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -76,7 +77,7 @@ class _AgentChatScreenState extends State<AgentChatScreen> with WidgetsBindingOb
   final SocketService _socketService = SocketService(navigatorKey);
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder(logLevel: Level.nothing);
   final ChatStorageService _chatStorageService = ChatStorageService();
   final _productRepository = ProductRepository();
   List<ChatMessageModel> messages = [];
