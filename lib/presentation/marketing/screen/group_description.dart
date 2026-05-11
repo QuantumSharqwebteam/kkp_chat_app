@@ -10,6 +10,7 @@ import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
+import 'package:intl/intl.dart';
 
 class GroupDescriptionScreen extends StatefulWidget {
   final String groupId;
@@ -105,83 +106,83 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
         if (!didPop) Navigator.pop(context, _group);
       },
       child: Scaffold(
-      backgroundColor: const Color(0xffF5F7FB),
-      appBar: AppBar(
-        backgroundColor: AppColors.bluePrimary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: Text(
-          _isEditing ? 'Edit Group' : 'Group Details',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 17,
+        backgroundColor: const Color(0xffF5F7FB),
+        appBar: AppBar(
+          backgroundColor: AppColors.bluePrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: false,
+          title: Text(
+            _isEditing ? 'Edit Group' : 'Group Details',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 17,
+            ),
           ),
+          actions: [
+            if (!_isEditing)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _isEditing = true),
+                  icon: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                  label: const Text(
+                    'Edit',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: TextButton.icon(
+                  onPressed: () => setState(() {
+                    _isEditing = false;
+                    _newImageUrl = null;
+                    _groupNameController.text = _group.groupName;
+                    _groupDescriptionController.text = _group.groupDescription;
+                  }),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
+                  label: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ),
+              ),
+          ],
         ),
-        actions: [
-          if (!_isEditing)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                onPressed: () => setState(() => _isEditing = true),
-                icon: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
-                label: const Text(
-                  'Edit',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                ),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                onPressed: () => setState(() {
-                  _isEditing = false;
-                  _newImageUrl = null;
-                  _groupNameController.text = _group.groupName;
-                  _groupDescriptionController.text = _group.groupDescription;
-                }),
-                icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
-                label: const Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          SafeArea(
-            bottom: Platform.isAndroid,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!_isEditing) ...[
-                    _buildHeroHeader(),
+        body: Stack(
+          children: [
+            SafeArea(
+              bottom: Platform.isAndroid,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!_isEditing) ...[
+                      _buildHeroHeader(),
+                      const SizedBox(height: 16),
+                      _buildGroupInfoCard(),
+                      const SizedBox(height: 16),
+                    ] else ...[
+                      _buildEditCard(),
+                      const SizedBox(height: 16),
+                    ],
+                    _buildAdminsSection(),
                     const SizedBox(height: 16),
-                    _buildGroupInfoCard(),
+                    _buildMembersSection(),
                     const SizedBox(height: 16),
-                  ] else ...[
-                    _buildEditCard(),
-                    const SizedBox(height: 16),
+                    if (_isEditing) _buildActionButtons(),
                   ],
-                  _buildAdminsSection(),
-                  const SizedBox(height: 16),
-                  _buildMembersSection(),
-                  const SizedBox(height: 16),
-                  if (_isEditing) _buildActionButtons(),
-                ],
+                ),
               ),
             ),
-          ),
-          if (_isLoading) const FullScreenLoader(),
-        ],
+            if (_isLoading) const FullScreenLoader(),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -293,9 +294,11 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
         children: [
           _sectionLabel('Group Info', Icons.info_outline_rounded),
           const SizedBox(height: 14),
-          _infoRow(Icons.calendar_today_rounded, 'Created', _formatDate(_group.createdAt)),
+          _infoRow(
+              Icons.calendar_today_rounded, 'Created', _formatDate(_group.createdAt.toLocal())),
           _divider(),
-          _infoRow(Icons.access_time_rounded, 'Last Activity', _formatDate(_group.lastActivity)),
+          _infoRow(Icons.access_time_rounded, 'Last Activity',
+              _formatDate(_group.lastActivity.toLocal())),
           _divider(),
           _infoRow(
             Icons.people_alt_rounded,
@@ -990,7 +993,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}  ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    return DateFormat('dd/MM/yyyy  h:mm a').format(date);
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:kkpchatapp/config/theme/app_colors.dart';
@@ -332,8 +333,9 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
     Color? unselectedColor,
     Color? labelColor,
   }) {
-    final backgroundColor =
-        selected ? (selectedColor ?? AppColors.blue.withOpacity(0.2)) : (unselectedColor ?? Colors.white);
+    final backgroundColor = selected
+        ? (selectedColor ?? AppColors.blue.withOpacity(0.2))
+        : (unselectedColor ?? Colors.white);
     final textColor = labelColor ?? (selected ? AppColors.blue : Colors.black87);
     final borderColor = selected ? AppColors.blue : Colors.grey.shade300;
 
@@ -498,9 +500,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: detailChips
-                        .map((entry) => _buildInfoChip(entry.key, entry.value))
-                        .toList(),
+                    children:
+                        detailChips.map((entry) => _buildInfoChip(entry.key, entry.value)).toList(),
                   ),
                 ],
                 if (hasReason) ...[
@@ -760,7 +761,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                           : RefreshIndicator(
                               onRefresh: provider.refreshInquiries,
                               child: ListView.builder(
-                                padding: const EdgeInsets.only(top: 12, bottom: 32, left: 4, right: 4),
+                                padding:
+                                    const EdgeInsets.only(top: 12, bottom: 32, left: 4, right: 4),
                                 itemCount: inquiries.length,
                                 itemBuilder: (context, index) {
                                   return _buildInquiryCard(inquiries[index]);
@@ -800,26 +802,26 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
       TextEditingController(text: widget.form.customerName);
   late final TextEditingController qualityController =
       TextEditingController(text: widget.form.quality);
-  late final TextEditingController weaveController =
-      TextEditingController(text: widget.form.weave);
+  late final TextEditingController weaveController = TextEditingController(text: widget.form.weave);
   late final TextEditingController quantityController =
       TextEditingController(text: widget.form.quantity);
   late final TextEditingController compositionController =
       TextEditingController(text: widget.form.composition);
-  late final TextEditingController rateController =
-      TextEditingController(text: widget.form.rate);
+  late final TextEditingController rateController = TextEditingController(text: widget.form.rate);
   late final TextEditingController reasonController =
       TextEditingController(text: widget.form.reason);
 
   final List<String> _statuses = ['Processed', 'Confirmed', 'Declined'];
   late String _selectedStatus;
   bool isSubmitting = false;
+  String? _quantityError;
+  String? _rateError;
+  String? _reasonError;
 
   @override
   void initState() {
     super.initState();
-    _selectedStatus =
-        _statuses.contains(widget.form.status) ? widget.form.status : _statuses.first;
+    _selectedStatus = _statuses.contains(widget.form.status) ? widget.form.status : _statuses.first;
   }
 
   @override
@@ -837,11 +839,46 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
 
   Future<void> _submit() async {
     if (isSubmitting) return;
+    // validate decline reason inline
     if (_selectedStatus == 'Declined' && reasonController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reason is required when declining an inquiry')),
-      );
+      setState(() => _reasonError = 'Reason is required when declining an inquiry');
       return;
+    }
+    setState(() {
+      _reasonError = null;
+      _quantityError = null;
+      _rateError = null;
+    });
+    // Prevent negative values for quantity and rate
+    final qtyText = quantityController.text.trim();
+    if (qtyText.isNotEmpty) {
+      final q = int.tryParse(qtyText.replaceAll(',', ''));
+      if (q == null) {
+        setState(() => _quantityError = 'Enter a valid quantity');
+        return;
+      }
+      if (q < 0) {
+        setState(() => _quantityError = 'Quantity cannot be negative');
+        return;
+      }
+    }
+
+    // final rateText = rateController.text.trim();
+    if (qtyText.isNotEmpty) {
+      // If there are digits in the input, ensure the numeric value is not negative.
+      final numericMatch = RegExp(r'\d+').firstMatch(qtyText.replaceAll(',', ''));
+      if (numericMatch != null) {
+        final q = int.tryParse(numericMatch.group(0)!);
+        if (q == null) {
+          setState(() => _quantityError = 'Please enter a valid quantity');
+          return;
+        }
+        if (q < 0) {
+          setState(() => _quantityError = 'Quantity cannot be negative');
+          return;
+        }
+      }
+      // If no digits present (e.g. "two metres" or "metres"), accept as textual quantity.
     }
     setState(() => isSubmitting = true);
     final updates = <String, dynamic>{
@@ -926,6 +963,14 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
               CustomTextField(
                 controller: quantityController,
                 hintText: 'Quantity',
+                // allow text like "2 metres" but block minus sign
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.deny(RegExp(r'-'))
+                ],
+                errorText: _quantityError,
+                onChanged: (_) {
+                  if (_quantityError != null) setState(() => _quantityError = null);
+                },
               ),
               const SizedBox(height: 12),
               CustomTextField(
@@ -937,7 +982,14 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
               CustomTextField(
                 controller: rateController,
                 hintText: 'Final rate',
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
+                errorText: _rateError,
+                onChanged: (_) {
+                  if (_rateError != null) setState(() => _rateError = null);
+                },
               ),
               const SizedBox(height: 12),
               InputDecorator(
@@ -971,6 +1023,10 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
                   hintText: 'Reason for declining',
                   minLines: 3,
                   maxLines: 4,
+                  errorText: _reasonError,
+                  onChanged: (_) {
+                    if (_reasonError != null) setState(() => _reasonError = null);
+                  },
                 ),
               ],
               const SizedBox(height: 20),
