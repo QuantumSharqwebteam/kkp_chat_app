@@ -7,8 +7,10 @@ class FormDataModel {
   final String rate;
   final String agentName;
   final String customerName;
+  final String buyerName;
   final String status;
   final String id;
+  final String orderId;
 
   FormDataModel({
     required this.date,
@@ -19,8 +21,10 @@ class FormDataModel {
     required this.rate,
     required this.agentName,
     required this.customerName,
+    required this.buyerName,
     required this.status,
     required this.id,
+    required this.orderId,
   });
 
   factory FormDataModel.fromJson(Map<String, dynamic> json) {
@@ -33,8 +37,10 @@ class FormDataModel {
       rate: json['rate']?.toString() ?? '',
       agentName: json['agentName'] ?? '',
       customerName: json['customerName'] ?? '',
+      buyerName: json['buyerName'] ?? '',
       status: json['status'] ?? '',
       id: json['_id'] ?? '',
+      orderId: json['orderId'] ?? json['_id'] ?? '',
     );
   }
 
@@ -48,8 +54,10 @@ class FormDataModel {
       'rate': rate,
       'agentName': agentName,
       'customerName': customerName,
+      'buyerName': buyerName,
       'status': status,
       '_id': id,
+      'orderId': orderId,
     };
   }
 }

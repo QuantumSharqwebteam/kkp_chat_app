@@ -24,6 +24,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
   final AuthApi _auth = AuthApi();
   List<Agent> _agentsList = [];
   bool _isLoading = true;
+  bool _isChangingAgentHead = false;
   final authRepository = AuthRepository();
   List<String> _assignedAgentEmails = [];
 
@@ -140,6 +141,223 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
       }
       if (mounted) {
         Utils().showSuccessDialog(context, "Try again later!", false);
+      }
+    }
+  }
+
+  Future<void> _showChangeAgentHeadDialog({
+    required Agent currentHead,
+    required String actionType,
+  }) async {
+    final candidateAgents = _agentsList
+        .where((agent) =>
+            agent.email != currentHead.email &&
+            agent.role != 'AgentHead' &&
+            _assignedAgentEmails.contains(agent.email))
+        .toList();
+
+    if (candidateAgents.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("No eligible assigned agents available to become Agent Head."),
+          ),
+        );
+      }
+      return;
+    }
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+          contentPadding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+          title: Row(
+            children: [
+              Container(
+                height: 34,
+                width: 34,
+                decoration: BoxDecoration(
+                  color: AppColors.blue.withValues(alpha: .1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.manage_accounts_outlined,
+                  color: AppColors.blue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  actionType,
+                  style: AppTextStyles.black16_600,
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Choose an eligible assigned agent to become the new Agent Head.",
+                  style: AppTextStyles.black12_400.copyWith(
+                    color: AppColors.black60opac,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Initicon(text: currentHead.name, size: 24),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Current Head: ${currentHead.name}",
+                          style: AppTextStyles.black12_400.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 320),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: candidateAgents.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final agent = candidateAgents[index];
+                      final createdAtDate = DateTime.tryParse(agent.createdAt);
+                      final createdAt = createdAtDate == null
+                          ? "-"
+                          : "${createdAtDate.day}/${createdAtDate.month}/${createdAtDate.year}";
+
+                      return Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () async {
+                            Navigator.of(dialogContext).pop();
+                            await _changeAgentHead(agent.email);
+                          },
+                          child: Ink(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Initicon(text: agent.name, size: 34),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        agent.name,
+                                        style: AppTextStyles.black14_600,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(agent.email, style: AppTextStyles.black10_500),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.activeGreen.withValues(alpha: .12),
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              "Eligible",
+                                              style: AppTextStyles.black12_400.copyWith(
+                                                color: AppColors.activeGreen,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                              "Joined: $createdAt",
+                                              style: AppTextStyles.black10_500,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.chevron_right_rounded, color: AppColors.blue),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _changeAgentHead(String newAgentHeadEmail) async {
+    if (_isChangingAgentHead) return;
+    setState(() {
+      _isChangingAgentHead = true;
+    });
+
+    try {
+      final result = await _auth.changeAgentRole(email: newAgentHeadEmail);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message']?.toString() ?? 'Agent head updated successfully')),
+      );
+      await _fetchAgents();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to update Agent Head: $e")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isChangingAgentHead = false;
+        });
       }
     }
   }
@@ -425,6 +643,11 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                     _deleteAgent(agent.email);
                   } else if (value == "Remove agent from assign list") {
                     removeAgentFromList(agent.email);
+                  } else if (value == "Change Agent Head") {
+                    _showChangeAgentHeadDialog(
+                      currentHead: agent,
+                      actionType: "Change Agent Head",
+                    );
                   }
                 },
                 itemBuilder: (BuildContext context) {
@@ -441,12 +664,21 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   }
 
                   // Logic to determine if 'Delete Agent Profile' should be shown
-                  if (currentUserRole == 'Admin') {
-                    // Admin can delete any agent profile
+                  if (currentUserRole == 'Admin' && agent.role != 'AgentHead') {
+                    // Admin can delete only non-AgentHead profiles
                     menuItems.add('Delete Agent Profile');
-                  } else if (currentUserRole == 'AgentHead' && agent.email != currentUserEmail) {
+                  } else if (currentUserRole == 'AgentHead' &&
+                      agent.email != currentUserEmail &&
+                      agent.role != 'AgentHead') {
                     // AgentHead can delete other agents but not themselves
                     menuItems.add('Delete Agent Profile');
+                  }
+
+                  if (currentUserRole == "1" && agent.role == 'AgentHead') {
+                    menuItems.add('Change Agent Head');
+                  }
+                  {
+                    menuItems.add('Change Agent Head');
                   }
 
                   return menuItems.map((String choice) {

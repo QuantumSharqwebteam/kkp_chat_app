@@ -116,24 +116,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
     );
 
     // Convert MessageModel to ChatMessageModel
-    final chatMessages = fetchedMessages.map((messageJson) {
-      return ChatMessageModel(
-        message: messageJson.message ?? '',
-        timestamp: DateTime.parse(messageJson.timestamp ?? DateTime.now().toIso8601String()),
-        sender: messageJson.senderId!,
-        type: messageJson.type,
-        mediaUrl: messageJson.mediaUrl,
-        form: messageJson.form != null && messageJson.form!.isNotEmpty
-            ? Map<String, dynamic>.from(messageJson.form![0])
-            : null,
-        callDuration: messageJson.callDuration,
-        callStatus: messageJson.callStatus,
-        callId: messageJson.callId,
-        messageId: messageJson.messageId,
-        isDeleted: messageJson.isDeleted ?? false,
-        read: messageJson.read,
-      );
-    }).toList();
+    final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
 
     if (boxExists) {
       // Load messages from Hive
@@ -217,24 +200,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
       }
 
       // Convert MessageModel to ChatMessageModel
-      final chatMessages = fetchedMessages.map((messageJson) {
-        return ChatMessageModel(
-          message: messageJson.message ?? '',
-          timestamp: DateTime.parse(messageJson.timestamp ?? DateTime.now().toIso8601String()),
-          sender: messageJson.senderId!,
-          type: messageJson.type,
-          mediaUrl: messageJson.mediaUrl,
-          form: messageJson.form != null && messageJson.form!.isNotEmpty
-              ? Map<String, dynamic>.from(messageJson.form![0])
-              : null,
-          callDuration: messageJson.callDuration,
-          callStatus: messageJson.callStatus,
-          callId: messageJson.callId,
-          messageId: messageJson.messageId,
-          isDeleted: messageJson.isDeleted ?? false,
-          read: messageJson.read,
-        );
-      }).toList();
+      final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
 
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
@@ -272,6 +238,42 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
         }
       }
     }).toList();
+  }
+
+  List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is List) {
+      final entries =
+          raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
+      return entries.isNotEmpty ? entries : null;
+    }
+    if (raw is Map) {
+      return [Map<String, dynamic>.from(raw)];
+    }
+    return null;
+  }
+
+  ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
+    final normalizedForms = _normalizeFormData(messageJson.form);
+    final primaryForm =
+        normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
+    return ChatMessageModel(
+      message: messageJson.message ?? '',
+      timestamp: DateTime.parse(
+        messageJson.timestamp ?? DateTime.now().toIso8601String(),
+      ),
+      sender: messageJson.senderId!,
+      type: messageJson.type,
+      mediaUrl: messageJson.mediaUrl,
+      form: primaryForm,
+      forms: normalizedForms,
+      callDuration: messageJson.callDuration,
+      callStatus: messageJson.callStatus,
+      callId: messageJson.callId,
+      messageId: messageJson.messageId,
+      isDeleted: messageJson.isDeleted ?? false,
+      read: messageJson.read,
+    );
   }
 
   void _showFloatingDateHeader() {
@@ -588,13 +590,17 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
       timestamp = DateTime.now();
     }
 
+    final incomingForms = _normalizeFormData(data["form"]);
+    final incomingPrimaryForm =
+        incomingForms?.isNotEmpty == true ? incomingForms!.first : null;
     final message = ChatMessageModel(
       message: data["message"],
       timestamp: timestamp,
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
-      form: data["form"],
+      form: incomingPrimaryForm,
+      forms: incomingForms,
       messageId: data['messageId'],
     );
 
@@ -641,13 +647,15 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
     final messageId = ChatUtils().generateMessageId();
     // Set the receiverIsOnChatPage to false when the app is paused or inactive
     final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
+    final normalizedForms = form != null ? [Map<String, dynamic>.from(form)] : null;
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
       sender: widget.customerEmail!,
       type: type!,
       mediaUrl: mediaUrl,
-      form: form,
+      form: normalizedForms?.first,
+      forms: normalizedForms,
       messageId: messageId,
       isDeleted: false,
       read: isReceiverOnChatPage,
@@ -1122,7 +1130,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                         )
                                       else if (msg.type == 'form')
                                         FormMessageBubble(
-                                          formData: msg.form!,
+                                          forms: msg.formEntries,
                                           isMe: msg.sender == widget.agentEmail,
                                           timestamp:
                                               formatTimestamp(msg.timestamp.toIso8601String()),

@@ -21,6 +21,7 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
+import 'package:kkpchatapp/data/models/form_data_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
@@ -36,6 +37,7 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubb
 import 'package:kkpchatapp/presentation/common_widgets/chat/document_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/fill_form_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/form_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/chat/sent_product_form_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/message_bubble.dart';
 import 'package:image_picker/image_picker.dart';
@@ -44,11 +46,17 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/product_bottom_sheet
 import 'package:kkpchatapp/presentation/common_widgets/chat/product_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/extracted_data_viewer_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:kkpchatapp/core/services/product_data_extraction_service.dart';
+import 'package:kkpchatapp/data/repositories/extracted_product_repository.dart';
+import 'package:kkpchatapp/data/models/extracted_product_data.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
 
 class AgentChatScreen extends StatefulWidget {
   final String? customerName;
@@ -84,6 +92,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final ChatStorageService _chatStorageService = ChatStorageService();
   final _productRepository = ProductRepository();
+  final ProductDataExtractionService _extractionService = ProductDataExtractionService();
+  final ExtractedProductRepository _extractedProductRepository = ExtractedProductRepository();
+  final LoggingService _logger = LoggingService.instance;
 
   List<ChatMessageModel> messages = [];
   bool _isRecording = false;
@@ -122,6 +133,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.onMessagesReadUpTo(_handleMessagesReadUpTo);
 
     _initializeRecorder();
+    _extractionService.initialize();
     _loadPreviousMessages(context);
 
     // Scroll to bottom when the chat page opens
@@ -341,25 +353,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
 
     // Convert MessageModel to ChatMessageModel
-    final chatMessages = fetchedMessages.map((messageJson) {
-      return ChatMessageModel(
-        message: messageJson.message ?? '',
-        timestamp: DateTime.parse(
-            messageJson.timestamp ?? DateTime.now().toIso8601String()),
-        sender: messageJson.senderId!,
-        type: messageJson.type,
-        mediaUrl: messageJson.mediaUrl,
-        form: messageJson.form != null && messageJson.form!.isNotEmpty
-            ? Map<String, dynamic>.from(messageJson.form![0])
-            : null,
-        callDuration: messageJson.callDuration,
-        callStatus: messageJson.callStatus,
-        callId: messageJson.callId,
-        messageId: messageJson.messageId,
-        isDeleted: messageJson.isDeleted!,
-        read: messageJson.read,
-      );
-    }).toList();
+    final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
 
     if (boxExists) {
       // Load messages from Hive
@@ -396,6 +390,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
       setState(() {
         messages = newLoadedMessages;
+        messages = _mergeFormMessagesById(messages);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
@@ -405,6 +400,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
       setState(() {
         messages = chatMessages;
+        messages = _mergeFormMessagesById(messages);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
@@ -456,25 +452,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       }
 
       // Convert MessageModel to ChatMessageModel
-      final chatMessages = fetchedMessages.map((messageJson) {
-        return ChatMessageModel(
-          message: messageJson.message ?? '',
-          timestamp: DateTime.parse(
-              messageJson.timestamp ?? DateTime.now().toIso8601String()),
-          sender: messageJson.senderId!,
-          type: messageJson.type,
-          mediaUrl: messageJson.mediaUrl,
-          form: messageJson.form != null && messageJson.form!.isNotEmpty
-              ? Map<String, dynamic>.from(messageJson.form![0])
-              : null,
-          callDuration: messageJson.callDuration,
-          callId: messageJson.callId,
-          callStatus: messageJson.callStatus,
-          messageId: messageJson.messageId,
-          isDeleted: messageJson.isDeleted!,
-          read: messageJson.read,
-        );
-      }).toList();
+      final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
 
       final newChatMessages = _removeDuplicates(chatMessages);
       if (newChatMessages.isNotEmpty) {
@@ -482,6 +460,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         await _chatStorageService.saveMessages(newChatMessages, boxName);
         setState(() {
           messages.insertAll(0, newChatMessages);
+          messages = _mergeFormMessagesById(messages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           _isLoading = false;
         });
@@ -666,8 +645,285 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     }).toList();
   }
 
+  List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is List) {
+      final entries = raw
+          .where((entry) => entry is Map)
+          .map((entry) => Map<String, dynamic>.from(entry as Map))
+          .toList();
+      return entries.isNotEmpty ? entries : null;
+    }
+    if (raw is Map) {
+      return [Map<String, dynamic>.from(raw)];
+    }
+    return null;
+  }
+
+  ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
+    final normalizedForms = _normalizeFormData(messageJson.form);
+    final primaryForm =
+        normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
+    return ChatMessageModel(
+      message: messageJson.message ?? '',
+      timestamp: DateTime.parse(
+        messageJson.timestamp ?? DateTime.now().toIso8601String(),
+      ),
+      sender: messageJson.senderId!,
+      type: messageJson.type,
+      mediaUrl: messageJson.mediaUrl,
+      form: primaryForm,
+      forms: normalizedForms,
+      callDuration: messageJson.callDuration,
+      callStatus: messageJson.callStatus,
+      callId: messageJson.callId,
+      messageId: messageJson.messageId,
+      isDeleted: messageJson.isDeleted!,
+      read: messageJson.read,
+    );
+  }
+
+  List<Map<String, dynamic>> _cloneFormEntries(List<Map<String, dynamic>> entries) {
+    return entries.map((entry) => Map<String, dynamic>.from(entry)).toList();
+  }
+
+  void _updateMessageFormEntry(ChatMessageModel message, Map<String, dynamic> entry) {
+    final formId = entry['_id']?.toString();
+    if (formId == null || formId.isEmpty) return;
+    final entries = _cloneFormEntries(message.formEntries);
+    final index = entries.indexWhere((item) => item['_id']?.toString() == formId);
+    if (index != -1) {
+      entries[index] = Map<String, dynamic>.from(entry);
+    } else {
+      entries.add(Map<String, dynamic>.from(entry));
+    }
+    message.forms = entries;
+    message.form = entries.isNotEmpty ? entries.first : null;
+  }
+
+  num _parseRateValue(dynamic rateValue) {
+    if (rateValue is num) return rateValue;
+    if (rateValue is String) return num.tryParse(rateValue.trim()) ?? 0;
+    return 0;
+  }
+
+  String? _extractFormId(ChatMessageModel message) {
+    final form = message.primaryForm;
+    if (form == null) return null;
+    final formId = form['_id']?.toString();
+    if (formId == null || formId.isEmpty) return null;
+    return formId;
+  }
+
+  String? _extractFormOrderKey(ChatMessageModel message) {
+    final form = message.primaryForm;
+    if (form == null) return null;
+
+    final orderId = form['orderId']?.toString();
+    if (orderId != null && orderId.isNotEmpty) {
+      return orderId;
+    }
+
+    return _extractFormId(message);
+  }
+
+  List<ChatMessageModel> _mergeFormMessagesById(List<ChatMessageModel> source) {
+    final sorted = [...source]..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final List<ChatMessageModel> merged = [];
+    final Map<String, ChatMessageModel> firstFormMessageById = {};
+
+    for (final message in sorted) {
+      if (message.type != 'form') {
+        merged.add(message);
+        continue;
+      }
+
+      final formId = _extractFormId(message);
+      if (formId == null) {
+        merged.add(message);
+        continue;
+      }
+
+      final primaryForm = message.primaryForm;
+      if (primaryForm == null) {
+        merged.add(message);
+        continue;
+      }
+
+      final incomingForm = Map<String, dynamic>.from(primaryForm);
+      final existing = firstFormMessageById[formId];
+
+      if (existing == null) {
+        incomingForm['_formOptionsUnlocked'] = _parseRateValue(incomingForm['rate']) > 0;
+        message.form = incomingForm;
+        firstFormMessageById[formId] = message;
+        merged.add(message);
+      } else {
+        final existingForm =
+            Map<String, dynamic>.from(existing.primaryForm ?? incomingForm);
+        existingForm.addAll(incomingForm);
+        existingForm['_formOptionsUnlocked'] = true;
+        existing.form = existingForm;
+        _updateMessageFormEntry(existing, existingForm);
+      }
+    }
+
+    return merged;
+  }
+
+  ({String formId, num rate})? _extractRateUpdateInfo(String? messageText) {
+    if (messageText == null || messageText.isEmpty) return null;
+
+    final regex = RegExp(
+      r'Rate\s+updated\s+as\s+([0-9]+(?:\.[0-9]+)?)\s+for\s+form\s+with\s+Id\s*:\s*([A-Za-z0-9]+)',
+      caseSensitive: false,
+    );
+    final match = regex.firstMatch(messageText);
+    if (match == null) return null;
+
+    final parsedRate = num.tryParse(match.group(1) ?? '');
+    final formId = match.group(2);
+    if (parsedRate == null || formId == null || formId.isEmpty) return null;
+
+    return (formId: formId, rate: parsedRate);
+  }
+
+  Future<void> _updateFormRateLocally({
+    required String formId,
+    required num rate,
+  }) async {
+    final normalizedRate = rate % 1 == 0 ? rate.toInt() : rate;
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    bool updated = false;
+
+    for (int i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      final entryIndex = msg.formEntries
+          .indexWhere((entry) => entry['_id']?.toString() == formId);
+      if (entryIndex == -1) continue;
+
+      final updatedEntry = Map<String, dynamic>.from(msg.formEntries[entryIndex]);
+      updatedEntry['rate'] = normalizedRate;
+      updatedEntry['_formOptionsUnlocked'] = true;
+      _updateMessageFormEntry(msg, updatedEntry);
+      await _chatStorageService.saveMessage(msg, boxName);
+      updated = true;
+    }
+
+    if (updated && mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _updateLocalFormByOrderId({
+    required String orderId,
+    String? status,
+    num? rate,
+    String? quality,
+    String? weave,
+    String? quantity,
+    String? composition,
+    String? buyerName,
+  }) async {
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    bool updated = false;
+
+    for (int i = 0; i < messages.length; i++) {
+      final msg = messages[i];
+      final entries = msg.formEntries;
+      for (final entry in entries) {
+        if (entry['orderId']?.toString() != orderId) continue;
+
+        final updatedEntry = Map<String, dynamic>.from(entry);
+        if (status != null && status.isNotEmpty) {
+          updatedEntry['status'] = status;
+        }
+        if (rate != null) {
+          updatedEntry['rate'] = rate;
+        }
+        if (quality != null) {
+          updatedEntry['quality'] = quality;
+        }
+        if (weave != null) {
+          updatedEntry['weave'] = weave;
+        }
+        if (quantity != null) {
+          updatedEntry['quantity'] = quantity;
+        }
+        if (composition != null) {
+          updatedEntry['composition'] = composition;
+        }
+        if (buyerName != null && buyerName.isNotEmpty) {
+          updatedEntry['buyerName'] = buyerName;
+        }
+        updatedEntry['_formOptionsUnlocked'] = true;
+        updatedEntry['_highlightUpdated'] = true;
+        _updateMessageFormEntry(msg, updatedEntry);
+        await _chatStorageService.saveMessage(msg, boxName);
+        updated = true;
+      }
+    }
+
+    if (updated && mounted) {
+      setState(() {});
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (!mounted) return;
+        bool changed = false;
+        for (int i = 0; i < messages.length; i++) {
+          final entries = messages[i].formEntries;
+          for (final entry in entries) {
+            if (entry['orderId']?.toString() != orderId) continue;
+            if (entry['_highlightUpdated'] == true) {
+              final updatedEntry = Map<String, dynamic>.from(entry);
+              updatedEntry['_highlightUpdated'] = false;
+              _updateMessageFormEntry(messages[i], updatedEntry);
+              changed = true;
+            }
+          }
+        }
+        if (changed) setState(() {});
+      });
+    }
+  }
+
+  Future<bool> _upsertIncomingFormMessage(ChatMessageModel incomingMessage) async {
+    if (incomingMessage.type != 'form') return false;
+
+    final formId = _extractFormId(incomingMessage);
+    if (formId == null) return false;
+
+    final primaryForm = incomingMessage.primaryForm;
+    if (primaryForm == null) return false;
+
+    final incomingForm = Map<String, dynamic>.from(primaryForm);
+    final boxName = '${widget.agentEmail}${widget.customerEmail}';
+    final existingIndex = messages.indexWhere(
+      (msg) => msg.type == 'form' && _extractFormId(msg) == formId,
+    );
+
+    if (existingIndex == -1) {
+      incomingForm['_formOptionsUnlocked'] = _parseRateValue(incomingForm['rate']) > 0;
+      _updateMessageFormEntry(incomingMessage, incomingForm);
+      return false;
+    }
+
+    final existingMessage = messages[existingIndex];
+    final mergedForm =
+        Map<String, dynamic>.from(existingMessage.primaryForm ?? incomingForm);
+    mergedForm.addAll(incomingForm);
+    mergedForm['_formOptionsUnlocked'] = true;
+    existingMessage.form = mergedForm;
+    _updateMessageFormEntry(existingMessage, mergedForm);
+    await _chatStorageService.saveMessage(existingMessage, boxName);
+
+    if (mounted) {
+      setState(() {});
+    }
+    return true;
+  }
+
   // In _handleIncomingMessage method
-  void _handleIncomingMessage(Map<String, dynamic> data) {
+  void _handleIncomingMessage(Map<String, dynamic> data) async {
     debugPrint("message received: ${data.toString()}");
     // saving last seen message
     if (data['type'] == "product") {
@@ -676,6 +932,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       _socketService.updateLastMessage(data['senderId'], data['message']);
     }
     //converting data in to message model
+    final incomingForms = _normalizeFormData(data["form"]);
+    final incomingPrimaryForm =
+        incomingForms?.isNotEmpty == true ? incomingForms!.first : null;
     final message = ChatMessageModel(
       message: data["message"],
       timestamp: data["timestamp"] != null
@@ -684,13 +943,41 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       sender: data["senderId"],
       type: data["type"] ?? "text",
       mediaUrl: data["mediaUrl"],
-      form: data["form"],
+      form: incomingPrimaryForm,
+      forms: incomingForms,
       messageId: data["messageId"], // Include the message ID
     );
+
+    if (message.type == 'form') {
+      final isMergedIntoExisting = await _upsertIncomingFormMessage(message);
+      if (isMergedIntoExisting) {
+        if (message.messageId != null) {
+          _loadedMessageIds.add(message.messageId!);
+        }
+        _saveLastMessageTime();
+        Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
+        return;
+      }
+    }
+
+    final rateUpdate = _extractRateUpdateInfo(data["message"]?.toString());
+    if (rateUpdate != null) {
+      _updateFormRateLocally(
+        formId: rateUpdate.formId,
+        rate: rateUpdate.rate,
+      );
+    }
+
+    // Extract product data from incoming messages
+    if (data["type"] == "text" && data["message"]?.toString().isNotEmpty == true) {
+      _extractAndSaveProductData(data["message"], data["messageId"] ?? "");
+    }
 
     if (!_loadedMessageIds.contains(message.messageId)) {
       setState(() {
         messages.add(message); // Append to the end
+        messages = _mergeFormMessagesById(messages);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _scrollToBottom();
       });
 
@@ -738,13 +1025,19 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     // Set the receiverIsOnChatPage to false when the app is paused or inactive
     final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
 
+    final messageType = form != null ? 'form' : type;
+
+    final normalizedForms = form != null
+        ? [Map<String, dynamic>.from(form)]
+        : null;
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
       sender: widget.agentEmail!,
-      type: type!,
+      type: messageType!,
       mediaUrl: mediaUrl,
-      form: form,
+      form: normalizedForms?.first,
+      forms: normalizedForms,
       messageId: messageId,
       isDeleted: false,
       read: isReceiverOnChatPage,
@@ -753,32 +1046,83 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (!_loadedMessageIds.contains(messageId)) {
       setState(() {
         messages.add(message);
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       });
 
-      _socketService.sendMessage(
-        targetEmail: widget.customerEmail,
-        message: messageText,
-        senderEmail: widget.agentEmail!,
-        senderName: widget.agentName ?? "agent",
-        type: type,
-        mediaUrl: mediaUrl,
-        form: form,
-        timestamp: currentTime.toIso8601String(),
-        messageId: messageId, // Include the message ID
-        read: isReceiverOnChatPage ?? false,
-      );
+      // Always send text message event for non-form content
+      if (form == null || type != 'form') {
+        _socketService.sendMessage(
+          targetEmail: widget.customerEmail,
+          message: messageText,
+          senderEmail: widget.agentEmail!,
+          senderName: widget.agentName ?? "agent",
+          type: type ?? 'text',
+          mediaUrl: mediaUrl,
+          form: null,
+          timestamp: currentTime.toIso8601String(),
+          messageId: messageId,
+          read: isReceiverOnChatPage ?? false,
+        );
+      }
+
+      // Send form payload separately when form data exists
+      if (form != null) {
+        _socketService.sendForm(
+          senderId: widget.agentEmail!,
+          targetId: widget.customerEmail,
+          senderName: widget.agentName ?? 'agent',
+          form: form,
+          timestamp: currentTime.toIso8601String(),
+          messageId: messageId,
+          orderId: form['orderId']?.toString(),
+        );
+      }
 
       // Save the message to Hive only if it's not already saved
-      _chatStorageService.saveMessage(
-          message, '${widget.agentEmail}${widget.customerEmail}');
-      // print("sent message saved as :${message.toString()}");
+      _chatStorageService.saveMessage(message, '${widget.agentEmail}${widget.customerEmail}');
       _loadedMessageIds.add(messageId);
     }
     _scrollToBottom();
 
+    // Extract product data from sent messages
+    if (type == 'text' && messageText.isNotEmpty) {
+      _extractAndSaveProductData(messageText, messageId);
+    }
+
     _chatController.clear();
     _saveLastMessageTime();
     Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
+  }
+
+  String _generateOrderId() {
+    return 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<void> _extractAndSaveProductData(String messageText, String messageId) async {
+    try {
+      final extractedData = await _extractionService.extractProductData(messageText);
+      if (extractedData != null) {
+        final productData = ExtractedProductData(
+          chatId: '${widget.agentEmail}${widget.customerEmail}',
+          agentEmail: widget.agentEmail!,
+          customerEmail: widget.customerEmail,
+          customerName: widget.customerName,
+          quality: extractedData['quality'],
+          weave: extractedData['weave'],
+          quantity: extractedData['quantity']?.toString(),
+          composition: extractedData['composition'],
+          rate: extractedData['rate'],
+          extractedAt: DateTime.now(),
+          confidence: extractedData['confidence'] ?? 0.0,
+          extractionTimeMs: extractedData['extractionTimeMs'],
+        );
+
+        await _extractedProductRepository.insert(productData);
+        _logger.logStorage('Product data extracted and saved: ${productData.toJson()}');
+      }
+    } catch (e) {
+      _logger.logStorage('Error extracting product data: $e', level: LogLevel.error);
+    }
   }
 
   void _addTemporaryMessage(String messageText) {
@@ -996,7 +1340,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void _handleRateUpdated(Map<String, dynamic> updatedFormData) {
     _sendMessage(
       messageText: "Form rate updated",
-      type: 'form',
+      type: 'text',
       form: updatedFormData,
     );
 
@@ -1015,6 +1359,601 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     // Trigger real-time update after status change
     Provider.of<InquiryProvider>(context, listen: false).refreshInquiries();
+  }
+
+  Future<void> _showUpdateOrderByIdSheet(FormDataModel order) async {
+    final rateController = TextEditingController(text: order.rate);
+    final qualityController = TextEditingController(text: order.quality);
+    final weaveController = TextEditingController(text: order.weave);
+    final quantityController = TextEditingController(text: order.quantity);
+    final compositionController = TextEditingController(text: order.composition);
+    final buyerController = TextEditingController(text: order.buyerName);
+
+    final customerDisplayName = order.customerName.isNotEmpty ? order.customerName : 'Not provided';
+    final buyerDisplayName = order.buyerName.isNotEmpty ? order.buyerName : 'Not provided';
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        /// ✅ Allowed statuses
+        final allowedStatuses = ['Processed', 'Confirmed', 'Declined'];
+
+        /// ✅ Default value from order (safe)
+        String? selectedStatus = allowedStatuses.contains(order.status) ? order.status : null;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return SafeArea(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 14,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                padding: EdgeInsets.only(
+                  left: 18,
+                  right: 18,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+                  top: 14,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// Drag Handle
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 5,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+
+                      const Text(
+                        'Update Order Details',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        'Order ID: ${order.orderId.isNotEmpty ? order.orderId : order.id}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// Customer / Buyer
+                      Row(
+                        children: [
+                          Expanded(
+                            child:
+                                _buildPersonInfoChip('Customer', customerDisplayName, Colors.blue),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildPersonInfoChip('Buyer', buyerDisplayName, Colors.teal),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+                      const Divider(height: 1, thickness: 1),
+                      const SizedBox(height: 12),
+
+                      Text(
+                        'Update any fields below (leave blank to keep current value)',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// Buyer
+                      TextField(
+                        controller: buyerController,
+                        decoration: InputDecoration(
+                          labelText: 'Buyer name',
+                          hintText: 'Add or update the buyer name',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// ✅ STATUS DROPDOWN (with default value)
+                      DropdownButtonFormField<String>(
+                        value: selectedStatus,
+                        hint: const Text('Select Status'),
+                        decoration: InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Processed', child: Text('Processed')),
+                          DropdownMenuItem(value: 'Confirmed', child: Text('Confirmed')),
+                          DropdownMenuItem(value: 'Declined', child: Text('Declined')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            selectedStatus = value;
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// Quality + Weave
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: qualityController,
+                              decoration: InputDecoration(
+                                labelText: 'Quality',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: weaveController,
+                              decoration: InputDecoration(
+                                labelText: 'Weave',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// Quantity + Composition
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: quantityController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Quantity',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TextField(
+                              controller: compositionController,
+                              decoration: InputDecoration(
+                                labelText: 'Composition',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// Rate
+                      TextField(
+                        controller: rateController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Rate',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// SAVE BUTTON
+                      CustomButton(
+                        text: "Save Order",
+                        width: double.maxFinite,
+                        onPressed: () async {
+                          final statusValue = selectedStatus;
+                          final rateText = rateController.text.trim();
+                          final qualityValue = qualityController.text.trim();
+                          final weaveValue = weaveController.text.trim();
+                          final quantityValue = quantityController.text.trim();
+                          final compositionValue = compositionController.text.trim();
+                          final buyerValue = buyerController.text.trim();
+
+                          final rateValue = rateText.isNotEmpty ? num.tryParse(rateText) : null;
+
+                          if (statusValue == null &&
+                              rateValue == null &&
+                              qualityValue.isEmpty &&
+                              weaveValue.isEmpty &&
+                              quantityValue.isEmpty &&
+                              compositionValue.isEmpty &&
+                              buyerValue.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Enter at least one field to update')),
+                            );
+                            return;
+                          }
+
+                          try {
+                            final updateOrderId =
+                                order.orderId.isNotEmpty ? order.orderId : order.id;
+
+                            await _chatRepository.updateFormByOrderId(
+                              orderId: updateOrderId,
+                              status: statusValue,
+                              rate: rateValue,
+                              quality: qualityValue.isNotEmpty ? qualityValue : null,
+                              weave: weaveValue.isNotEmpty ? weaveValue : null,
+                              quantity: quantityValue.isNotEmpty ? quantityValue : null,
+                              composition: compositionValue.isNotEmpty ? compositionValue : null,
+                              buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+                            );
+
+                            await _updateLocalFormByOrderId(
+                              orderId: updateOrderId,
+                              status: statusValue,
+                              rate: rateValue,
+                              quality: qualityValue.isNotEmpty ? qualityValue : null,
+                              weave: weaveValue.isNotEmpty ? weaveValue : null,
+                              quantity: quantityValue.isNotEmpty ? quantityValue : null,
+                              composition: compositionValue.isNotEmpty ? compositionValue : null,
+                              buyerName: buyerValue.isNotEmpty ? buyerValue : null,
+                            );
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Order updated successfully')),
+                              );
+                              Navigator.pop(context);
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Update failed: $e')),
+                              );
+                            }
+                          }
+                        },
+                      ),
+
+                      const SizedBox(height: 6),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showCheckOrdersBottomSheet() async {
+    if (!mounted) return;
+    bool isLoading = true;
+    List<FormDataModel> orders = [];
+    String? error;
+    final customerFilter = widget.customerName;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            if (isLoading) {
+              Future.microtask(() async {
+                try {
+                  final fetchedOrders =
+                      await _chatRepository.fetchFormDataForEnquiery(widget.agentEmail ?? '');
+                  final filteredOrders = fetchedOrders.where((order) {
+                    if (customerFilter == null || customerFilter.isEmpty) return true;
+                    return order.customerName.trim().toLowerCase() ==
+                        customerFilter.trim().toLowerCase();
+                  }).toList();
+
+                  if (mounted) {
+                    setState(() {
+                      orders = filteredOrders;
+                      isLoading = false;
+                    });
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() {
+                      error = e.toString();
+                      isLoading = false;
+                    });
+                  }
+                }
+              });
+            }
+
+            return SafeArea(
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.78,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, -8),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Sent Orders',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade900,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : error != null
+                              ? Center(child: Text('Failed to load orders: $error'))
+                              : orders.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        customerFilter != null && customerFilter.isNotEmpty
+                                            ? 'No orders found for ${widget.customerName}'
+                                            : 'No sent orders found.',
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      padding:
+                                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      itemCount: orders.length,
+                                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                      itemBuilder: (context, index) =>
+                                          _buildCheckOrderCard(context, orders[index], index),
+                                    ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCheckOrderCard(BuildContext sheetContext, FormDataModel order, int index) {
+    final orderIdLabel = order.orderId.isNotEmpty ? order.orderId : order.id;
+    final statusLabel = order.status.isNotEmpty ? order.status : 'Pending';
+    final customerLabel =
+        order.customerName.isNotEmpty ? order.customerName : 'Customer not provided';
+    final buyerLabel = order.buyerName.isNotEmpty ? order.buyerName : 'Buyer not provided';
+    final rateLabel = order.rate.isNotEmpty ? '₹${order.rate}' : '-';
+
+    void openEditor() {
+      Navigator.pop(sheetContext);
+      _showUpdateOrderByIdSheet(order);
+    }
+
+    return InkWell(
+      onTap: openEditor,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.blue.shade50, Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.blue.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.blue.shade100,
+                  child: Text('${index + 1}', style: TextStyle(color: Colors.blue.shade900)),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Order #${index + 1}',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                      const SizedBox(height: 2),
+                      Text(orderIdLabel,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _orderStatusColor(statusLabel),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: const TextStyle(fontSize: 11, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildPersonInfoChip('Customer', customerLabel, Colors.blue),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildPersonInfoChip('Buyer', buyerLabel, Colors.teal),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                if (order.quality.isNotEmpty) _buildOrderDetailPill('Quality', order.quality),
+                if (order.weave.isNotEmpty) _buildOrderDetailPill('Weave', order.weave),
+                if (order.quantity.isNotEmpty) _buildOrderDetailPill('Qty', order.quantity),
+                if (order.composition.isNotEmpty)
+                  _buildOrderDetailPill('Composition', order.composition),
+                _buildOrderDetailPill('Rate', rateLabel),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: openEditor,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Edit'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue.shade700,
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _orderStatusColor(String status) {
+    final normalized = status.toLowerCase();
+    if (normalized.contains('confirm')) return Colors.green;
+    if (normalized.contains('decline')) return Colors.red;
+    if (normalized.contains('pending')) return Colors.orange;
+    return Colors.blueGrey;
+  }
+
+  Widget _buildOrderDetailPill(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(fontSize: 12, color: Colors.grey.shade800),
+      ),
+    );
+  }
+
+  Widget _buildPersonInfoChip(String label, String value, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: accentColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: accentColor.withOpacity(0.9),
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade900,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showProductsBottomSheet(BuildContext context) {
@@ -1042,6 +1981,35 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       }
     }
     return formIndices;
+  }
+
+  Map<String, int> _buildFormSerialMap() {
+    final Map<String, int> serialByFormId = {};
+    int serial = 0;
+
+    for (final msg in messages) {
+      if (msg.type != 'form') continue;
+      final formId = _extractFormId(msg);
+      if (formId == null) continue;
+      serialByFormId.putIfAbsent(formId, () => ++serial);
+    }
+    return serialByFormId;
+  }
+
+  Map<String, int> _buildSentOrderSerialMap() {
+    final Map<String, int> serialByOrderKey = {};
+    int serial = 0;
+
+    final agentEmailLower = widget.agentEmail?.toLowerCase();
+    for (final msg in messages) {
+      if (msg.type != 'form') continue;
+      if (agentEmailLower == null || msg.sender?.toLowerCase() != agentEmailLower) continue;
+
+      final orderKey = _extractFormOrderKey(msg);
+      if (orderKey == null) continue;
+      serialByOrderKey.putIfAbsent(orderKey, () => ++serial);
+    }
+    return serialByOrderKey;
   }
 
   void _navigateToForm(int direction) {
@@ -1165,6 +2133,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
+    final formSerialMap = _buildFormSerialMap();
+    final sentOrderSerialMap = _buildSentOrderSerialMap();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -1195,8 +2165,41 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 ),
               );
             },
-            icon: const Icon(Icons.swap_horizontal_circle_outlined,
-                color: Colors.black),
+            icon: const Icon(Icons.swap_horizontal_circle_outlined, color: Colors.black),
+          ),
+          IconButton(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ExtractedDataViewerScreen(
+                    agentEmail: widget.agentEmail!,
+                  ),
+                ),
+              );
+
+              if (result is Map<String, dynamic> && result['success'] == true) {
+                final formData = result['formData'] as Map<String, dynamic>?;
+                final customerEmail = result['customerEmail'] as String?;
+                if (formData != null && customerEmail != null) {
+                  final orderId = formData['orderId'] ?? _generateOrderId();
+                  formData['orderId'] = orderId;
+                  _sendMessage(
+                    messageText: 'Product inquiry',
+                    type: 'text',
+                    form: formData,
+                  );
+                  // ScaffoldMessenger.of(context).showSnackBar(
+                  //   SnackBar(
+                  //     content: Text('Sent validated form to $customerEmail'),
+                  //     backgroundColor: Colors.green,
+                  //   ),
+                  // );
+                }
+              }
+            },
+            icon: const Icon(Icons.inventory, color: Colors.black),
+            tooltip: 'View Extracted Product Data',
           ),
           IconButton(
             onPressed: () async {
@@ -1291,6 +2294,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                             itemBuilder: (context, index) {
                               final msg = messages[index];
                               final isAgent = msg.sender == widget.agentEmail;
+                              final orderKey = _extractFormOrderKey(msg);
+                              final agentFormSerial =
+                                  orderKey != null ? sentOrderSerialMap[orderKey] : null;
                               final valueKey = ValueKey('chat-msg-$index');
                               final globalKey = GlobalKey();
                               _messageKeys[valueKey] = globalKey;
@@ -1327,27 +2333,48 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                             : null,
                                       )
                                     else if (msg.type == 'form')
-                                      FormMessageBubble(
-                                        formData: msg.form!,
-                                        isMe: msg.sender == widget.agentEmail,
-                                        timestamp: ChatUtils().formatTimestamp(
-                                            msg.timestamp.toIso8601String()),
-                                        userRole: userRole!,
-                                        onRateUpdated: _handleRateUpdated,
-                                        onStatusUpdated: _handleStatusUpdated,
-                                        onFormUpdateStart: () {
-                                          setState(() {
-                                            _isFormUpdating = true;
-                                          });
-                                        },
-                                        onFormUpdateEnd: () {
-                                          setState(() {
-                                            _isFormUpdating = false;
-                                          });
-                                        },
-                                        onAskForRateUpdate:
-                                            sendFormToUpdateRate,
-                                      )
+                                      (msg.sender?.toLowerCase() ==
+                                              widget.agentEmail?.toLowerCase())
+                                          ? SentProductFormBubble(
+                                              formData: msg.form ?? {},
+                                              isMe: true,
+                                              timestamp: ChatUtils()
+                                                  .formatTimestamp(msg.timestamp.toIso8601String()),
+                                              serialNumber: agentFormSerial,
+                                              onStatusUpdate: (status) {
+                                                setState(() {
+                                                  msg.form?['status'] = status;
+                                                });
+                                              },
+                                              onRateUpdate: (newRate) {
+                                                setState(() {
+                                                  msg.form?['rate'] = newRate;
+                                                });
+                                              },
+                                            )
+                                      : FormMessageBubble(
+                                          forms: msg.formEntries,
+                                          serialNumber: msg.form?['_id'] != null
+                                              ? formSerialMap[msg.form!['_id'].toString()]
+                                              : null,
+                                          isMe: false,
+                                          timestamp: ChatUtils()
+                                              .formatTimestamp(msg.timestamp.toIso8601String()),
+                                          userRole: userRole!,
+                                          onRateUpdated: _handleRateUpdated,
+                                          onStatusUpdated: _handleStatusUpdated,
+                                          onFormUpdateStart: () {
+                                            setState(() {
+                                              _isFormUpdating = true;
+                                            });
+                                          },
+                                          onFormUpdateEnd: () {
+                                            setState(() {
+                                              _isFormUpdating = false;
+                                            });
+                                          },
+                                          onAskForRateUpdate: sendFormToUpdateRate,
+                                        )
                                     else if (msg.type == 'document')
                                       DocumentMessageBubble(
                                         documentUrl: msg.mediaUrl!,
@@ -1474,8 +2501,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                       _pickAndSendImage(ImageSource.camera);
                     },
                     onShareProduct: () => _showProductsBottomSheet(context),
-                    onSendVoice:
-                        _isRecording ? _stopRecording : _startRecording,
+                    onCheckOrders:
+                        (userRole == '2' || userRole == '3') ? _showCheckOrdersBottomSheet : null,
+                    showCheckOrders: userRole == '2' || userRole == '3',
+                    onSendVoice: _isRecording ? _stopRecording : _startRecording,
                     isRecording: _isRecording,
                     recordedSeconds: _recordedSeconds,
                   ),

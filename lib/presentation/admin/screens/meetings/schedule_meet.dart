@@ -64,30 +64,42 @@ class _ScheduleMeetingScreenState extends State<ScheduleMeetingScreen> {
 
   bool _validateFields() {
     bool isValid = true;
-    if (_titleController.text.isEmpty) {
+
+    final RegExp httpsUrlRegex = RegExp(r'^https:\/\/[^\s/$.?#].[^\s]*$');
+
+    if (_titleController.text.trim().isEmpty) {
       setState(() => _titleError = "Please enter a title");
       isValid = false;
     } else {
       setState(() => _titleError = null);
     }
-    if (_locationController.text.isEmpty) {
-      setState(() => _locationError = "Please enter a location");
+
+    if (_locationController.text.trim().isEmpty) {
+      setState(() => _locationError = "Please enter a platform");
       isValid = false;
     } else {
       setState(() => _locationError = null);
     }
-    if (_linkController.text.isEmpty) {
-      setState(() => _linkError = "Please enter a link");
+
+    final link = _linkController.text.trim();
+
+    if (link.isEmpty) {
+      setState(() => _linkError = "Please enter a meeting link");
+      isValid = false;
+    } else if (!httpsUrlRegex.hasMatch(link)) {
+      setState(() => _linkError = "Meeting link must start with https://");
       isValid = false;
     } else {
       setState(() => _linkError = null);
     }
+
     if (_startTimeController.text.isEmpty) {
       setState(() => _startTimeError = "Please select a start time");
       isValid = false;
     } else {
       setState(() => _startTimeError = null);
     }
+
     return isValid;
   }
 

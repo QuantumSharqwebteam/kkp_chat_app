@@ -617,6 +617,44 @@ class AuthApi {
     }
   }
 
+  // change agent head role
+  Future<Map<String, dynamic>> changeAgentRole({required String email}) async {
+    const endPoint = "agent/change-role";
+    final url = Uri.parse("$baseUrl$endPoint");
+    final token = await LocalDbHelper.getToken();
+    final body = jsonEncode({"email": email});
+
+    debugPrint("[AuthApi.changeAgentRole] endpoint: $endPoint");
+    debugPrint("[AuthApi.changeAgentRole] method: PUT");
+    debugPrint("[AuthApi.changeAgentRole] url: $url");
+    debugPrint("[AuthApi.changeAgentRole] body: $body");
+    debugPrint("[AuthApi.changeAgentRole] token exists: ${token != null}");
+
+    try {
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: body,
+      );
+
+      debugPrint("[AuthApi.changeAgentRole] statusCode: ${response.statusCode}");
+      debugPrint("[AuthApi.changeAgentRole] response: ${response.body}");
+
+      final responseData = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return responseData;
+      }
+
+      throw Exception(responseData['message'] ?? 'Failed to change agent role');
+    } catch (e) {
+      debugPrint("[AuthApi.changeAgentRole] error: $e");
+      throw Exception('Change role request failed: $e');
+    }
+  }
+
   /// get user notifications
   Future<Map<String, dynamic>> getNotifications() async {
     final endPoint = "user/getNotification";

@@ -65,8 +65,81 @@ class SocketService {
 
   SocketService._internal();
 
-  void onMessageReceived(Function(Map<String, dynamic>) callback,
-      {Function? refreshCallback}) {
+  ({String formId, num rate})? _extractRateUpdateInfo(String? messageText) {
+    if (messageText == null || messageText.isEmpty) return null;
+
+    final regex = RegExp(
+      r'Rate\s+updated\s+as\s+([0-9]+(?:\.[0-9]+)?)\s+for\s+form\s+with\s+Id\s*:\s*([A-Za-z0-9]+)',
+      caseSensitive: false,
+    );
+    final match = regex.firstMatch(messageText);
+    if (match == null) return null;
+
+    final parsedRate = num.tryParse(match.group(1) ?? '');
+    final formId = match.group(2);
+    if (parsedRate == null || formId == null || formId.isEmpty) return null;
+
+    return (formId: formId, rate: parsedRate);
+  }
+
+  Future<void> _applyFormRateUpdateInBackground(Map<String, dynamic> data) async {
+    String? targetFormId;
+    final Map<String, dynamic> formPatch = {};
+
+    if (data['type'] == 'form' && data['form'] is Map) {
+      final incomingForm = Map<String, dynamic>.from(data['form'] as Map);
+      final formId = incomingForm['_id']?.toString();
+      if (formId != null && formId.isNotEmpty) {
+        targetFormId = formId;
+        formPatch.addAll(incomingForm);
+        formPatch['_formOptionsUnlocked'] = true;
+      }
+    }
+
+    final rateUpdate = _extractRateUpdateInfo(data['message']?.toString());
+    if (targetFormId == null && rateUpdate != null) {
+      final normalizedRate = rateUpdate.rate % 1 == 0 ? rateUpdate.rate.toInt() : rateUpdate.rate;
+      targetFormId = rateUpdate.formId;
+      formPatch['rate'] = normalizedRate;
+      formPatch['_formOptionsUnlocked'] = true;
+    }
+
+    if (targetFormId == null) return;
+
+    final senderId = data['senderId']?.toString();
+    final targetId = data['targetId']?.toString();
+    if (senderId == null || senderId.isEmpty || targetId == null || targetId.isEmpty) return;
+
+    final userType = await LocalDbHelper.getUserType();
+    final boxName = userType == "0" ? targetId : '$targetId$senderId';
+
+    final storage = ChatStorageService();
+    final cachedMessages = await storage.getMessages(boxName, page: 1, limit: 100000);
+    bool updated = false;
+
+    for (final msg in cachedMessages) {
+      final form = msg.form;
+      if (form == null) continue;
+      if (form['_id']?.toString() != targetFormId) continue;
+
+      final updatedForm = Map<String, dynamic>.from(form);
+      updatedForm.addAll(formPatch);
+      msg.form = updatedForm;
+      await storage.saveMessage(msg, boxName);
+      updated = true;
+    }
+
+    if (updated) {
+      debugPrint(
+        "✅ Updated cached form options for formId: $targetFormId in box: $boxName",
+      );
+      if (onMessageReceivedCallback != null) {
+        onMessageReceivedCallback!();
+      }
+    }
+  }
+
+  void onMessageReceived(Function(Map<String, dynamic>) callback, {Function? refreshCallback}) {
     _onMessageReceived = callback;
     onMessageReceivedCallback = refreshCallback;
   }
@@ -134,6 +207,9 @@ class SocketService {
         _onMessageReceived?.call(data);
       } else {
         debugPrint("recived message socket : ${data.toString()}");
+        if (data is Map) {
+          _applyFormRateUpdateInBackground(Map<String, dynamic>.from(data));
+        }
         _chatNotification(data);
       }
     });
@@ -804,6 +880,34 @@ class SocketService {
       }
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
+    }
+  }
+
+  void sendForm({
+    required String senderId,
+    required String targetId,
+    required String senderName,
+    required Map<String, dynamic> form,
+    required String timestamp,
+    required String messageId,
+    String? orderId,
+  }) {
+    if (_isConnected) {
+      final formData = {
+        'senderId': senderId,
+        'targetId': targetId,
+        'senderName': senderName,
+        'form': form,
+        'timestamp': timestamp,
+        'messageId': messageId,
+      };
+      if (orderId != null) {
+        formData['orderId'] = orderId;
+      }
+      _socket.emit('sendForm', formData);
+      debugPrint('📤 Sent form via socket: $formData');
+    } else {
+      debugPrint('Socket is not connected. Cannot send form.');
     }
   }
 

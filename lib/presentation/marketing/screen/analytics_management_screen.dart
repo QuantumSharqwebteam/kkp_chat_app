@@ -20,7 +20,8 @@ class AnalyticsManagementScreen extends StatelessWidget {
   String _formatDateTime(DateTime date) => DateFormat('dd MMM yyyy, hh:mm a').format(date);
 
   String _timeAgo(DateTime date) {
-    final difference = DateTime.now().difference(date);
+    final localDate = date.toLocal();
+    final difference = DateTime.now().difference(localDate);
     if (difference.inMinutes < 1) return 'Just now';
     if (difference.inHours < 1) return '${difference.inMinutes} min ago';
     if (difference.inDays < 1) return '${difference.inHours} hr ago';

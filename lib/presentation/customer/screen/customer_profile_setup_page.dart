@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:indian_pincode_validator/indian_pincode_validator.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
@@ -49,6 +50,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   DateTime? _lastPressed;
   String? _completePhoneNumber;
   String? _countryCode;
+  bool _isSavingProfile = false;
 
   // Error texts for each field
   String? _nameError;
@@ -59,6 +61,22 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   String? _pinCodeError;
   String? _gstNumberError;
   String? _panNumberError;
+
+  bool _isValidPinCode(String pinCode) {
+    // Fast format check; full validation is done via package on submit.
+    return IndianPinCodeValidator.isValidFormat(pinCode);
+  }
+
+  bool _isValidCityName(String city) {
+    // Allows alphabetic city names with spaces/dot/hyphen/apostrophe separators.
+    return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(city);
+  }
+
+  bool _isSameCity(String inputCity, String pinCity) {
+    String normalize(String value) =>
+        value.toLowerCase().replaceAll(RegExp(r"[^a-z]"), "");
+    return normalize(inputCity) == normalize(pinCity);
+  }
 
   @override
   void initState() {
@@ -111,8 +129,49 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     _customerType = _isExportSelected ? 'Export' : 'Domestic';
   }
 
-  Future<void> _saveUserProfile(context) async {
+  Future<void> _saveUserProfile() async {
     if (!mounted) return;
+
+    if (_pinCode.text.isNotEmpty && !_isValidPinCode(_pinCode.text.trim())) {
+      setState(() {
+        _pinCodeError = 'Please enter a valid Indian PIN code';
+        _isSavingProfile = false;
+      });
+      return;
+    }
+
+    if (_cityName.text.isNotEmpty && !_isValidCityName(_cityName.text.trim())) {
+      setState(() {
+        _cityNameError = 'Please enter a valid city name';
+        _isSavingProfile = false;
+      });
+      return;
+    }
+
+    if (_pinCode.text.isNotEmpty) {
+      final pinValidationResult = await IndianPinCodeValidator.validate(
+        _pinCode.text.trim(),
+      );
+
+      if (!pinValidationResult.isValid) {
+        setState(() {
+          _pinCodeError =
+              pinValidationResult.message ?? 'Please enter a valid Indian PIN code';
+          _isSavingProfile = false;
+        });
+        return;
+      }
+
+      final enteredCity = _cityName.text.trim();
+      final pinCity = (pinValidationResult.city ?? '').trim();
+      if (enteredCity.isNotEmpty && pinCity.isNotEmpty && !_isSameCity(enteredCity, pinCity)) {
+        setState(() {
+          _cityNameError = 'City does not match the selected PIN code';
+          _isSavingProfile = false;
+        });
+        return;
+      }
+    }
 
     // Construct the address object with only changed values
     Address? addressDetails;
@@ -145,6 +204,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         Profile updatedProfile = Profile.fromJson(response["data"]);
 
         await LocalDbHelper.saveProfile(updatedProfile);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(AppLocalizations.of(context)!
                 .profileDetailsUpdatedSuccessfully)));
@@ -169,6 +229,12 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       }
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingProfile = false;
+        });
+      }
     }
   }
 
@@ -217,21 +283,32 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   text: _currentStep == getSteps(context).length - 1
                       ? 'Finish'
                       : 'Next',
-                  onPressed: () {
-                    if (widget.forUpdate || validateStep()) {
-                      if (_currentStep < getSteps(context).length - 1) {
-                        setState(() {
-                          _currentStep++;
-                        });
-                      } else {
-                        if (!_isDataChanged()) {
-                          Navigator.pop(context);
-                        } else {
-                          _saveUserProfile(context);
-                        }
-                      }
-                    }
-                  },
+                  isLoading: _currentStep == getSteps(context).length - 1 &&
+                      _isSavingProfile,
+                  onPressed: _isSavingProfile
+                      ? null
+                      : () async {
+                          if (widget.forUpdate || validateStep()) {
+                            if (_currentStep < getSteps(context).length - 1) {
+                              setState(() {
+                                _currentStep++;
+                              });
+                            } else {
+                              if (!_isDataChanged()) {
+                                Navigator.pop(context);
+                              } else {
+                                setState(() {
+                                  _isSavingProfile = true;
+                                });
+                                // Give UI one frame so button loader is visible immediately.
+                                await Future<void>.delayed(Duration.zero);
+                                if (!mounted) return;
+                                await _saveUserProfile();
+                              }
+                            }
+                          }
+                        },
+                  // Keep button behavior unchanged apart from loading state.
                   backgroundColor: AppColors.blue,
                   width: Utils().width(context) * 0.4,
                   height: 50,
@@ -471,9 +548,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     onChanged: (phone) {
                       _completePhoneNumber = phone.completeNumber;
                       _countryCode = phone.countryCode;
-                      setState(() {
-                        _phoneNumberError = null; // Clear error on change
-                      });
+                      if (_currentStep < getSteps(context).length - 1) {
+                        setState(() {
+                          _phoneNumberError = null; // Clear error on change
+                        });
+                      }
                     },
                     onCountryChanged: (country) {
                       _countryCode = '+${country.dialCode}';
@@ -622,8 +701,16 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       controller: _cityName,
                       height: 50,
                       hintText: AppLocalizations.of(context)!.enterCityName,
-                      errorText: widget.forUpdate ? null : _cityNameError,
+                      errorText: _cityNameError,
                       keyboardType: TextInputType.text,
+                      onChanged: (value) {
+                        final city = value.trim();
+                        if (city.isEmpty || _isValidCityName(city)) {
+                          setState(() {
+                            _cityNameError = null;
+                          });
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -640,8 +727,18 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       height: 50,
                       maxLength: 6,
                       hintText: AppLocalizations.of(context)!.enterPincode,
-                      errorText: widget.forUpdate ? null : _pinCodeError,
+                      errorText: _pinCodeError,
                       keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        final pinCode = value.trim();
+                        if (pinCode.isEmpty ||
+                            (pinCode.length == 6 &&
+                                _isValidPinCode(pinCode))) {
+                          setState(() {
+                            _pinCodeError = null;
+                          });
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -751,6 +848,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
           _cityNameError = 'City name is required';
         });
         isValid = false;
+      } else if (!_isValidCityName(_cityName.text.trim())) {
+        setState(() {
+          _cityNameError = 'Please enter a valid city name';
+        });
+        isValid = false;
       } else {
         setState(() {
           _cityNameError = null;
@@ -760,6 +862,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       if (_pinCode.text.isEmpty) {
         setState(() {
           _pinCodeError = 'Pin code is required';
+        });
+        isValid = false;
+      } else if (!_isValidPinCode(_pinCode.text.trim())) {
+        setState(() {
+          _pinCodeError = 'Please enter a valid Indian PIN code';
         });
         isValid = false;
       } else {

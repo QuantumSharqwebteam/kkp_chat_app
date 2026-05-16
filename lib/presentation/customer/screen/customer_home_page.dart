@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -27,16 +28,36 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   bool _initialized = false;
   int _currentCarouselIndex = 0;
 
+  Future<void> _safeLoadHomeData() async {
+    try {
+      await _provider.loadUserInfo();
+      await _provider.fetchProducts();
+      await _provider.fetchPosters();
+      _provider.initSocketService();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('CustomerHomePage init load error: $e');
+      }
+    }
+  }
+
+  Future<void> _safeRefresh() async {
+    try {
+      await _provider.fetchNotificationCount();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('CustomerHomePage refresh error: $e');
+      }
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _provider = Provider.of<CustomerHomeProvider>(context);
     if (!_initialized) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _provider.loadUserInfo();
-        _provider.fetchProducts();
-        _provider.fetchPosters();
-        _provider.initSocketService();
+        _safeLoadHomeData();
       });
       _initialized = true;
     }
@@ -59,7 +80,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _provider.fetchNotificationCount,
+          onRefresh: _safeRefresh,
           child: SingleChildScrollView(
             child: Column(
               children: [

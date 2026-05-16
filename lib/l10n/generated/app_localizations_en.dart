@@ -418,10 +418,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get passwordChange => 'Password Change';
 
   @override
-  String get orderEnquires => 'Order Enquires';
+  String get orderEnquires => 'Order Enquiries';
 
   @override
-  String get trackAllOrderEnquires => 'Track All Order Enquires in One Place';
+  String get trackAllOrderEnquires => 'Track all order enquiries in one place';
 
   @override
   String get preferences => 'Preferences';

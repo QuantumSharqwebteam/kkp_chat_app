@@ -56,6 +56,19 @@ class AddProductScreen extends StatelessWidget {
                         const SizedBox(height: 10),
                         CustomButton(
                           onPressed: () async {
+                            /// Check if size is selected
+                            if (provider.selectedSizes.isEmpty) {
+                              Utils().showSuccessDialog(
+                                  context, "Please select at least one size", false);
+
+                              Future.delayed(const Duration(milliseconds: 800), () {
+                                if (context.mounted) {
+                                  Navigator.pop(context); // close dialog
+                                }
+                              });
+
+                              return;
+                            }
                             bool success = await provider.addProduct();
                             if (context.mounted) {
                               if (!success) {
@@ -206,6 +219,7 @@ class AddProductScreen extends StatelessWidget {
           ),
           const SizedBox(height: 5),
           Row(
+            spacing: 10,
             children: [
               Expanded(
                 child: CustomTextField(

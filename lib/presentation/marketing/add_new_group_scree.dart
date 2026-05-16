@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
+import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/data/models/agent.dart';
 
 import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +29,7 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
   File? _selectedImageFile;
   bool isLoading = false;
   bool isUploading = false;
-  List<dynamic> customers = [];
+  List<Agent> agents = [];
   String? loggedInUserEmail;
   String? loggedInUserName;
 
@@ -184,9 +185,9 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 8.0),
                 child: Text('Select Members'),
               ),
-              items: customers.map((customer) {
-                final name = customer['name'] ?? '';
-                final email = customer['email']?.toString() ?? '';
+              items: agents.map((agent) {
+                final name = agent.name;
+                final email = agent.email;
                 final isSelected = selectedMembers.contains(email);
                 return DropdownMenuItem<String>(
                   value: email,
@@ -235,11 +236,9 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
             spacing: 8,
             runSpacing: 8,
             children: selectedMembers.map((email) {
-              final customer = customers.firstWhere(
-                (c) => c['email'] == email,
-                orElse: () => {'name': email.split('@').first},
-              );
-              final name = customer['name'] ?? email.split('@').first;
+              final matchingAgent = agents.where((agent) => agent.email == email);
+              final name =
+                  matchingAgent.isNotEmpty ? matchingAgent.first.name : email.split('@').first;
               return Chip(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 label: Text(name),
@@ -280,11 +279,9 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
               ),
               items: [
                 // Add other users (excluding logged-in user)
-                ...customers
-                    .where((customer) => customer['email'] != loggedInUserEmail)
-                    .map((customer) {
-                  final name = customer['name'] ?? '';
-                  final email = customer['email']?.toString() ?? '';
+                ...agents.where((agent) => agent.email != loggedInUserEmail).map((agent) {
+                  final name = agent.name;
+                  final email = agent.email;
                   final isSelected = selectedAdmins.contains(email);
                   return DropdownMenuItem<String>(
                     value: email,
@@ -351,11 +348,9 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
               ),
             // Show other selected admins
             ...selectedAdmins.where((email) => email != loggedInUserEmail).map((email) {
-              final customer = customers.firstWhere(
-                (c) => c['email'] == email,
-                orElse: () => {'name': email.split('@').first},
-              );
-              final name = customer['name'] ?? email.split('@').first;
+              final matchingAgent = agents.where((agent) => agent.email == email);
+              final name =
+                  matchingAgent.isNotEmpty ? matchingAgent.first.name : email.split('@').first;
               return Chip(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 label: Text(name),
@@ -377,11 +372,31 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff007A75),
+          backgroundColor:
+              isLoading ? const Color(0xff007A75).withOpacity(0.5) : const Color(0xff007A75),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        onPressed: _createGroup,
-        child: const Text('Create Group', style: TextStyle(color: Colors.white)),
+        onPressed: isLoading ? null : _createGroup,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading) ...[
+              const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
+            Text(
+              isLoading ? 'Creating...' : 'Create Group',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -429,8 +444,8 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
     }
   }
 
-  Future<void> _fetchCustomers() async {
-    if (customers.isNotEmpty) return;
+  Future<void> _fetchAgents() async {
+    if (agents.isNotEmpty) return;
     setState(() => isLoading = true);
 
     // Get logged-in user info
@@ -442,9 +457,19 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
       selectedAdmins.add(loggedInUserEmail!);
     }
 
-    final agentEmail = LocalDbHelper.getEmail();
-    customers = await ChatRepository().fetchAssignedCustomerList(agentEmail ?? "");
-    setState(() => isLoading = false);
+    try {
+      agents = await AuthApi().getAgent();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch agents: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
   }
 
   Future<void> _createGroup() async {
@@ -454,19 +479,27 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
       );
       return;
     }
+
     if (selectedMembers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one member')),
       );
       return;
     }
+
     if (selectedAdmins.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one admin')),
       );
       return;
     }
+
+    setState(() {
+      isLoading = true;
+    });
+
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+
     final success = await groupProvider.createGroup(
       groupName: _groupNameController.text,
       groupDescription: _groupDescriptionController.text,
@@ -474,17 +507,28 @@ class _AddNewGroupScreenState extends State<AddNewGroupScreen> {
       members: selectedMembers,
       groupImage: _groupImageUrl ?? '',
     );
-    if (success && mounted) {
+
+    if (!mounted) return;
+
+    setState(() {
+      isLoading = false;
+    });
+
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Group created successfully!')),
       );
       Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to create group')),
+      );
     }
   }
 
   @override
   void initState() {
     super.initState();
-    _fetchCustomers();
+    _fetchAgents();
   }
 }

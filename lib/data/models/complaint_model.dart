@@ -20,7 +20,7 @@ class ComplaintModel {
   });
 
   static ComplaintModel fromJson(Map<String, dynamic> json) {
-    DateTime _parseDate(dynamic value) {
+    DateTime parseDate(dynamic value) {
       if (value == null) return DateTime.now();
       if (value is DateTime) return value;
       if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
@@ -36,13 +36,12 @@ class ComplaintModel {
 
     return ComplaintModel(
       id: (json['_id'] ?? '').toString(),
-      userModel: UserModel.fromJson(
-          json['user'] is Map<String, dynamic> ? json['user'] : {}),
+      userModel: UserModel.fromJson(json['user'] is Map<String, dynamic> ? json['user'] : {}),
       subject: (json['subject'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
-      createdAt: _parseDate(json['createdAt']),
-      updatedAt: _parseDate(json['updatedAt']),
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -27,20 +28,20 @@ class OnboardingPage extends StatelessWidget {
                       'assets/icons/logo.png',
                       height: 45,
                     ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
-                          return LoginPage();
-                        }));
-                      },
-                      child: Text(
-                        'Skip',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    // GestureDetector(
+                    //   onTap: () {
+                    //     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
+                    //       return LoginPage();
+                    //     }));
+                    //   },
+                    //   child: Text(
+                    //     'Skip',
+                    //     style: TextStyle(
+                    //       fontSize: 16,
+                    //       fontWeight: FontWeight.bold,
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
                 Image.asset(
@@ -64,10 +65,18 @@ class OnboardingPage extends StatelessWidget {
                 SizedBox(height: Utils().height(context) * 0.04),
                 CustomButton(
                   text: 'Get Started',
-                  onPressed: () {
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) {
-                      return LoginPage();
-                    }));
+                  onPressed: () async {
+                    await LocalDbHelper.setOnboardingSeen(true);
+                    if (!context.mounted) return;
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) {
+                          return LoginPage();
+                        },
+                      ),
+                    );
                   },
                   borderRadius: 10,
                   backgroundColor: AppColors.blue,

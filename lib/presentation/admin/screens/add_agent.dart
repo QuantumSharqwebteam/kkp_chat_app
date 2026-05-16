@@ -22,9 +22,7 @@ class _AddAgentState extends State<AddAgent> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
-  final List<String> roles = ['Agent'];
-  String selectedRole = 'Agent';
-
+  static const String agentRole = "Agent";
   String? nameError;
   String? emailError;
   String? phoneError;
@@ -103,7 +101,7 @@ class _AddAgentState extends State<AddAgent> {
       "name": fullNameController.text,
       "email": emailController.text,
       "mobile": int.parse(phoneController.text),
-      "role": selectedRole,
+      "role": agentRole,
       "password": passwordController.text
     };
 
@@ -211,31 +209,6 @@ class _AddAgentState extends State<AddAgent> {
                           isPassword: true,
                           prefixIcon: const Icon(Icons.lock),
                           errorText: passwordError,
-                        ),
-                        Text(l.role),
-                        DropdownButtonFormField<String>(
-                          value: selectedRole,
-                          items: roles
-                              .map((role) => DropdownMenuItem(
-                                    value: role,
-                                    child: Text(role),
-                                  ))
-                              .toList(),
-                          onChanged: (value) {},
-                          // (value) {
-                          //   setState(() {
-                          //     selectedRole = value!;
-                          //   });
-                          // },
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.grey.shade400),
-                            ),
-                            prefixIcon: const Icon(Icons.person_outline),
-                          ),
                         ),
                         const SizedBox(height: 10),
                         CustomButton(

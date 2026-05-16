@@ -519,8 +519,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
               }));
             }
           },
-          child: const Text(
-            "Internal Chat",
+          child: Text(
+            widget.group?.groupName ?? "Group",
             style: AppTextStyles.black16_600,
           ),
         ),
@@ -669,6 +669,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                     recordedSeconds: _recordedSeconds,
                     onSendForm: () {},
                     onShareProduct: () {},
+                    showFormAndProduct: false,
                   ),
                 ),
                 const SizedBox(height: 10),

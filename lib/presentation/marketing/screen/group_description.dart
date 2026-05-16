@@ -30,6 +30,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
   bool _isLoading = false;
   File? _selectedImageFile;
   String? _newImageUrl;
+  String? role;
   final TextEditingController _groupNameController = TextEditingController();
   final TextEditingController _groupDescriptionController = TextEditingController();
 
@@ -39,6 +40,14 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
     _group = widget.group;
     _groupNameController.text = _group.groupName;
     _groupDescriptionController.text = _group.groupDescription;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final userRole = await LocalDbHelper.getUserType();
+      if (!mounted) return;
+
+      setState(() {
+        role = userRole;
+      });
+    });
   }
 
   @override
@@ -288,7 +297,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
               'Admins',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            if (_isEditing)
+            if (_isEditing && role != "2")
               TextButton(
                 onPressed: _showAddAdminDialog,
                 child: const Text('Add Admin'),
@@ -323,8 +332,12 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
                         child: Icon(Icons.person, size: 16, color: Colors.white),
                       )
                     : null,
-                deleteIcon: _isEditing && !isCurrentUser ? const Icon(Icons.close, size: 18) : null,
-                onDeleted: _isEditing && !isCurrentUser ? () => _removeAdmin(adminEmail) : null,
+                deleteIcon: _isEditing && role != "2" && !isCurrentUser
+                    ? const Icon(Icons.close, size: 18)
+                    : null,
+                onDeleted: _isEditing && role != "2" && !isCurrentUser
+                    ? () => _removeAdmin(adminEmail)
+                    : null,
               );
             }).toList(),
           ),
@@ -344,7 +357,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
               'Members',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            if (_isEditing)
+            if (_isEditing && role != "2")
               TextButton(
                 onPressed: _showAddMemberDialog,
                 child: const Text('Add Member'),
@@ -381,8 +394,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
                             child: Icon(Icons.person, size: 16, color: Colors.white),
                           )
                         : null),
-                deleteIcon: _isEditing ? const Icon(Icons.close, size: 18) : null,
-                onDeleted: _isEditing ? () => _removeMember(memberEmail) : null,
+                deleteIcon: _isEditing && role != "2" ? const Icon(Icons.close, size: 18) : null,
+                onDeleted: _isEditing && role != "2" ? () => _removeMember(memberEmail) : null,
               );
             }).toList(),
           ),

@@ -20,6 +20,7 @@ class LocalDbHelper {
   static const String _lastMessageMapKey = 'lastMessageMap';
   static const String unreadCountsBoxKey = 'unreadCountsBox';
   static const String _receiverOnChatPageKey = 'receiverOnChatPage';
+  static const String _hasSeenOnboardingKey = 'hasSeenOnboarding';
 
   // Group chat box key
   static const String _groupChatBoxKey = 'groupChatBox';
@@ -91,6 +92,14 @@ class LocalDbHelper {
 
   static Future<void> removeName() async {
     await _box.delete(_name);
+  }
+
+  static Future<void> setOnboardingSeen(bool value) async {
+    await _box.put(_hasSeenOnboardingKey, value);
+  }
+
+  static Future<bool> hasSeenOnboarding() async {
+    return _box.get(_hasSeenOnboardingKey, defaultValue: false) as bool;
   }
 
   static Future<void> saveProfile(Profile profile) async {

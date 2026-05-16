@@ -152,10 +152,10 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            onPressed: () => Navigator.pushNamed(context, MarketingRoutes.marketingNotifications),
-            icon: const Icon(Icons.notifications_active_outlined, color: Colors.black),
-          ),
+          // IconButton(
+          //   onPressed: () => Navigator.pushNamed(context, MarketingRoutes.marketingNotifications),
+          //   icon: const Icon(Icons.notifications_active_outlined, color: Colors.black),
+          // ),
           IconButton(
             onPressed: () => Navigator.push(
               context,
@@ -360,7 +360,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -368,7 +368,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   child: const Text(
                     "Upcoming",
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       color: Colors.blue,
                       fontWeight: FontWeight.bold,
                     ),

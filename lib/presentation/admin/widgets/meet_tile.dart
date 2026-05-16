@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
@@ -16,233 +17,206 @@ class MeetingTile extends StatelessWidget {
   final MeetingModel meeting;
   final bool showButtons;
 
-  const MeetingTile(
-      {super.key, required this.meeting, required this.showButtons});
+  const MeetingTile({
+    super.key,
+    required this.meeting,
+    required this.showButtons,
+  });
 
   Future<void> _launchUrl(String url) async {
-    if (!await launchUrl(Uri.parse(url))) {
-      throw Exception('Could not launch $url');
+    if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
+      if (kDebugMode) {
+        print('Could not launch $url');
+      }
+    }
+    // if (!await launchUrl(Uri.parse(url))) {
+    //   debugPrint('Could not launch $url');
+    // }
+  }
+
+  Future<void> _confirmAndDelete(
+    BuildContext context,
+    MeetingManagement meetingManagement,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Meeting"),
+        content: const Text("Are you sure you want to delete this meeting?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await meetingManagement.deleteMeeting(meeting.id);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final meetingManagement =
-        Provider.of<MeetingManagement>(context, listen: false);
+    final meetingManagement = Provider.of<MeetingManagement>(context, listen: false);
 
     return Card(
       color: Colors.white,
       surfaceTintColor: Colors.white,
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title and Status
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  meeting.title,
-                  style: AppTextStyles.black16_700
-                      .copyWith(color: AppColors.grey5C5C5C),
-                ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  height: 42,
+                  width: 42,
                   decoration: BoxDecoration(
-                    color: meeting.status == "cancelled"
-                        ? AppColors.errorRed.withOpacity(0.8)
-                        : meeting.status == "completed"
-                            ? AppColors.activeGreen
-                            : meeting.status == "scheduled"
-                                ? Colors.amber
-                                : Colors.amber,
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.blue.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    meeting.status,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: meeting.status == meeting.status
-                          ? Colors.white
-                          : Colors.white70.withOpacity(1.0),
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: const Icon(
+                    Icons.event_available_rounded,
+                    color: AppColors.blue,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Location and Platform
-            Row(
-              children: [
-                const Icon(Icons.location_searching_rounded,
-                    size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  meeting.location,
-                  style: AppTextStyles.black14_600,
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Start Time
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  "Starts at: ${_formatDateTime(meeting.startTime)}",
-                  style: AppTextStyles.grey12_600.copyWith(fontSize: 14),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Scheduled By
-            Row(
-              children: [
-                const Icon(Icons.person, size: 16, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  "Scheduled by: ${meeting.scheduledPerson.name}",
-                  style: AppTextStyles.black12_700,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Meeting Link (Clickable)
-            GestureDetector(
-              onTap: () => _launchUrl(meeting.link),
-              child: Row(
-                children: [
-                  const Icon(Icons.link, size: 16, color: Colors.blue),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      meeting.link,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.blue00ABE9,
-                        decoration: TextDecoration.underline,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        meeting.title,
+                        style: AppTextStyles.black16_700.copyWith(color: AppColors.grey5C5C5C),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatDateTime(meeting.startTime),
+                        style: AppTextStyles.grey12_600.copyWith(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (showButtons) ...[
+                  PopupMenuButton<String>(
+                    surfaceTintColor: Colors.white,
+                    tooltip: "Meeting actions",
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        _showUpdateDialog(context, meetingManagement, meeting);
+                      } else if (value == 'delete') {
+                        await _confirmAndDelete(context, meetingManagement);
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Edit Meeting'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Delete Meeting'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildStatusChip(meeting.status),
+                // _buildMetaChip(
+                //   icon: Icons.groups_2_outlined,
+                //   label: "${meeting.participants.length} Participants",
+                // ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.greyE5E7EB.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                children: [
+                  _detailRow(
+                    icon: Icons.location_on_outlined,
+                    label: "Location",
+                    value: meeting.location,
+                  ),
+                  const SizedBox(height: 8),
+                  _detailRow(
+                    icon: Icons.person_outline,
+                    label: "Scheduled by",
+                    value: meeting.scheduledPerson.name,
+                  ),
+                  const SizedBox(height: 8),
+                  _detailRow(
+                    icon: Icons.link_rounded,
+                    label: "Meeting Link",
+                    value: meeting.link,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-
-            // Participants
-            // Row(
-            //   children: [
-            //     const Icon(Icons.people, size: 16, color: Colors.grey),
-            //     const SizedBox(width: 4),
-            //     Text(
-            //       "Participants: ${meeting.participants.length}",
-            //       style: AppTextStyles.black10_500,
-            //     ),
-            //   ],
-            // ),
-
-            // Actions (Update, Delete)
-            Visibility(
-              visible: showButtons,
-              child: Row(
-                spacing: 8,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      // Navigate to update screen or show update dialog
-                      _showUpdateDialog(context, meetingManagement, meeting);
-                    },
-                    child: Image.asset(
-                      'assets/icons/updated.png',
-                      height: 40,
-                      width: 40,
-                    ),
-                    // CustomButton(
-                    //   height: 40,
-                    //   image: Image.asset('assets/icons/updated.png'),
-                    //   text: "",
-                    //   backgroundColor: Colors.white,
-                    //   textColor: AppColors.activeGreen.withValues(alpha: 0.3),
-                    //   borderColor: AppColors.greyD9D9D9,
-                    //   onPressed: () {
-                    //     // Navigate to update screen or show update dialog
-                    //     _showUpdateDialog(context, meetingManagement, meeting);
-                    //   },
-                    // ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _launchUrl(meeting.link),
+                icon: const Icon(
+                  Icons.open_in_new_rounded,
+                  size: 18,
+                  color: AppColors.blue,
+                ),
+                label: Text(
+                  "Open Meeting Link",
+                  style: AppTextStyles.black12_700.copyWith(
+                    color: AppColors.blue,
                   ),
-                  GestureDetector(
-                    onTap: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Delete Meeting"),
-                          content: const Text(
-                              "Are you sure you want to delete this meeting?"),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text("Cancel"),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text("Delete"),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed == true) {
-                        await meetingManagement.deleteMeeting(meeting.id);
-                      }
-                    },
-                    child: Image.asset(
-                      'assets/icons/delete.png',
-                      height: 40,
-                      width: 40,
-                    ),
-                    // child: CustomButton(
-                    //   height: 40,
-                    //   text: "Delete",
-                    //   backgroundColor: Colors.white,
-                    //   borderColor: AppColors.redF11515,
-                    //   textColor: AppColors.redF11515,
-                    // onPressed: () async {
-                    //   final confirmed = await showDialog<bool>(
-                    //     context: context,
-                    //     builder: (context) => AlertDialog(
-                    //       title: const Text("Delete Meeting"),
-                    //       content: const Text(
-                    //           "Are you sure you want to delete this meeting?"),
-                    //       actions: [
-                    //         TextButton(
-                    //           onPressed: () => Navigator.pop(context, false),
-                    //           child: const Text("Cancel"),
-                    //         ),
-                    //         TextButton(
-                    //           onPressed: () => Navigator.pop(context, true),
-                    //           child: const Text("Delete"),
-                    //         ),
-                    //       ],
-                    //     ),
-                    //   );
-                    //   if (confirmed == true) {
-                    //     await meetingManagement.deleteMeeting(meeting.id);
-                    //   }
-                    // },
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: AppColors.blue.withOpacity(0.35),
                   ),
-                ],
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
             ),
           ],
@@ -251,10 +225,95 @@ class MeetingTile extends StatelessWidget {
     );
   }
 
+  Widget _buildStatusChip(String status) {
+    final normalizedStatus = status.trim().toLowerCase();
+    final displayStatus = normalizedStatus.isEmpty
+        ? "Unknown"
+        : "${normalizedStatus[0].toUpperCase()}${normalizedStatus.substring(1)}";
+    final Color color = normalizedStatus == "cancelled"
+        ? AppColors.errorRed
+        : normalizedStatus == "completed"
+            ? AppColors.activeGreen
+            : Colors.amber.shade700;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Text(
+        displayStatus,
+        style: AppTextStyles.black12_700.copyWith(color: color),
+      ),
+    );
+  }
+
+  Widget buildMetaChip({
+    required IconData icon,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.greyD9D9D9),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.grey5C5C5C),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AppTextStyles.black10_500.copyWith(
+              color: AppColors.grey5C5C5C,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: AppColors.grey707070),
+        const SizedBox(width: 8),
+        Expanded(
+          child: RichText(
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            text: TextSpan(
+              text: "$label: ",
+              style: AppTextStyles.black12_700.copyWith(
+                color: AppColors.grey474747,
+              ),
+              children: [
+                TextSpan(
+                  text: value,
+                  style: AppTextStyles.black12_400.copyWith(
+                    color: AppColors.grey5C5C5C,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   String _formatDateTime(String isoDateTime) {
-    final dateTime = DateTime.parse(isoDateTime);
+    final dateTime = DateTime.parse(isoDateTime).toLocal();
     return "${ChatUtils().formatDateHeader(dateTime)} at ${ChatUtils().formatTimestamp(isoDateTime)}";
-    //  return "${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
   }
 
   Future<void> _showUpdateDialog(
@@ -265,15 +324,14 @@ class MeetingTile extends StatelessWidget {
     final titleController = TextEditingController(text: meeting.title);
     final locationController = TextEditingController(text: meeting.location);
     final linkController = TextEditingController(text: meeting.link);
-    final startTimeController =
-        TextEditingController(text: _formatDateTime(meeting.startTime));
+    final startTimeController = TextEditingController(text: _formatDateTime(meeting.startTime));
     String status = meeting.status;
     DateTime? updatedTime;
 
     Future<void> selectDateTime(BuildContext context) async {
       final DateTime? pickedDate = await showDatePicker(
         context: context,
-        initialDate: DateTime.parse(meeting.startTime),
+        initialDate: DateTime.parse(meeting.startTime).toLocal(),
         firstDate: DateTime(2000),
         lastDate: DateTime(2100),
       );
@@ -281,8 +339,7 @@ class MeetingTile extends StatelessWidget {
       if (pickedDate != null) {
         final TimeOfDay? pickedTime = await showTimePicker(
           context: context,
-          initialTime:
-              TimeOfDay.fromDateTime(DateTime.parse(meeting.startTime)),
+          initialTime: TimeOfDay.fromDateTime(DateTime.parse(meeting.startTime).toLocal()),
         );
 
         if (pickedTime != null) {
@@ -294,8 +351,7 @@ class MeetingTile extends StatelessWidget {
             pickedTime.minute,
           );
           updatedTime = combined;
-          startTimeController.text =
-              _formatDateTime(combined.toIso8601String());
+          startTimeController.text = _formatDateTime(combined.toIso8601String());
         }
       }
     }
@@ -333,31 +389,35 @@ class MeetingTile extends StatelessWidget {
                 onTap: () => selectDateTime(context),
               ),
               DropdownButton<String>(
-                  isExpanded: true,
-                  value: status,
-                  items: [
-                    DropdownMenuItem<String>(
-                        value: 'cancelled',
-                        child: Text(
-                          "Cancelled",
-                          style: AppTextStyles.black10_500,
-                        )),
-                    DropdownMenuItem<String>(
-                        value: 'completed',
-                        child: Text(
-                          "Completed",
-                          style: AppTextStyles.black10_500,
-                        )),
-                    DropdownMenuItem<String>(
-                        value: 'scheduled',
-                        child: Text(
-                          "Scheduled",
-                          style: AppTextStyles.black10_500,
-                        )),
-                  ],
-                  onChanged: (value) {
-                    status = value!;
-                  }),
+                isExpanded: true,
+                value: status,
+                items: [
+                  DropdownMenuItem<String>(
+                    value: 'cancelled',
+                    child: Text(
+                      "Cancelled",
+                      style: AppTextStyles.black10_500,
+                    ),
+                  ),
+                  DropdownMenuItem<String>(
+                    value: 'completed',
+                    child: Text(
+                      "Completed",
+                      style: AppTextStyles.black10_500,
+                    ),
+                  ),
+                  DropdownMenuItem<String>(
+                    value: 'scheduled',
+                    child: Text(
+                      "Scheduled",
+                      style: AppTextStyles.black10_500,
+                    ),
+                  ),
+                ],
+                onChanged: (value) {
+                  status = value!;
+                },
+              ),
             ],
           ),
         ),
@@ -382,8 +442,7 @@ class MeetingTile extends StatelessWidget {
                           title: titleController.text,
                           location: locationController.text,
                           link: linkController.text,
-                          startTime: updatedTime?.toIso8601String() ??
-                              meeting.startTime,
+                          startTime: updatedTime?.toIso8601String() ?? meeting.startTime,
                           status: status,
                         );
                         if (context.mounted) Navigator.pop(context);

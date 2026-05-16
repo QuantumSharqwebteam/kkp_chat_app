@@ -220,17 +220,19 @@ class LoginProvider with ChangeNotifier {
               );
             }
             // Open verification bottom sheet
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => VerificationPage(
-                  email: email,
-                  name: "User",
-                  isNewAccount: true,
-                  token: value['token'].toString(),
+            if (context.mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VerificationPage(
+                    email: email,
+                    name: "User",
+                    isNewAccount: true,
+                    token: value['token'].toString(),
+                  ),
                 ),
-              ),
-            );
+              );
+            }
           }
         } else if (value['message'] == "Invalid password") {
           setPasswordError("Wrong password");
