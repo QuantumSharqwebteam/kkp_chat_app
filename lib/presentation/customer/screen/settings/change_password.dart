@@ -24,30 +24,46 @@ class _ChangePasswordState extends State<ChangePassword> {
   String? currentPassErrorText;
   String? newPassErrorText;
   String? newRePassErrorText;
+  static const String _passwordRequirement =
+      'Password must be 8+ characters and include uppercase, lowercase, a number, and a special character';
+
+  bool _isStrongPassword(String password) {
+    if (password.length < 8) return false;
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+    if (!RegExp(r'[a-z]').hasMatch(password)) return false;
+    if (!RegExp(r'\d').hasMatch(password)) return false;
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) return false;
+    return true;
+  }
 
   void _changePassword(context) async {
-    if (_newPass.text != _newRepass.text) {
+    final trimmedCurrent = _currentPass.text.trim();
+    final trimmedNew = _newPass.text.trim();
+    final trimmedConfirm = _newRepass.text.trim();
+
+    if (trimmedCurrent.isEmpty || trimmedNew.isEmpty || trimmedConfirm.isEmpty) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.fieldsCannotBeEmpty)));
+      return;
+    }
+
+    if (trimmedNew != trimmedConfirm) {
       setState(() {
         newPassErrorText = newRePassErrorText = "Passwords don't match!";
       });
       return;
     }
 
-    if (_newPass.text == _newRepass.text) {
+    if (!_isStrongPassword(trimmedNew)) {
       setState(() {
-        newPassErrorText = newRePassErrorText = null;
+        newPassErrorText = _passwordRequirement;
+        newRePassErrorText = null;
       });
-    }
-
-    if (_currentPass.text.trim().isEmpty ||
-        _newPass.text.trim().isEmpty ||
-        _newRepass.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.fieldsCannotBeEmpty)));
       return;
     }
 
     setState(() {
+      newPassErrorText = newRePassErrorText = null;
       _isLoading = true;
     });
 
@@ -55,7 +71,7 @@ class _ChangePasswordState extends State<ChangePassword> {
       final String? email = LocalDbHelper.getProfile()?.email;
 
       final response = await auth.updatePassword(
-          currentPassword: _currentPass.text, newPassword: _newPass.text, email: email!);
+          currentPassword: trimmedCurrent, newPassword: trimmedNew, email: email!);
 
       if (response['success'] == true) {
         Utils().showSuccessDialog(context, "Password changed successfully!", true);

@@ -39,20 +39,7 @@ class _MeetingsListScreenState extends State<MeetingsListScreen> {
   }
 
   String? validateMeetingLink(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return "Meeting link is required";
-    }
-
-    if (!value.startsWith("https://")) {
-      return "Meeting link must start with https://";
-    }
-
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasAbsolutePath) {
-      return "Enter a valid meeting URL";
-    }
-
-    return null;
+    return MeetingManagement.validateMeetingUrl(value);
   }
 
   @override
@@ -91,23 +78,53 @@ class _MeetingsListScreenState extends State<MeetingsListScreen> {
               ? Center(child: Text(meetingManagement.error!))
               : RefreshIndicator(
                   onRefresh: () => meetingManagement.fetchAllMeetings(),
-                  child: ListView.builder(
-                    itemCount: sortedMeetings.length,
-                    itemBuilder: (context, index) {
-                      final meeting = sortedMeetings[index];
-                      final canManageMeeting = meetingManagement.canEditMeeting(
-                        meeting: meeting,
-                        currentUserEmail: widget.email,
-                        userType: _userType,
-                        roleName: _roleName,
-                      );
+                  child: sortedMeetings.isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.event_busy_rounded,
+                                  size: 72,
+                                  color: AppColors.greyD9D9D9,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "No meetings scheduled",
+                                  style: AppTextStyles.black16_700.copyWith(
+                                    color: AppColors.grey5C5C5C,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  "Tap 'Schedule' to create a new meeting",
+                                  style: AppTextStyles.grey12_600.copyWith(
+                                    color: AppColors.grey707070,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          itemCount: sortedMeetings.length,
+                          itemBuilder: (context, index) {
+                            final meeting = sortedMeetings[index];
+                            final canManageMeeting = meetingManagement.canEditMeeting(
+                              meeting: meeting,
+                              currentUserEmail: widget.email,
+                              userType: _userType,
+                              roleName: _roleName,
+                            );
 
-                      return MeetingTile(
-                        meeting: meeting,
-                        showButtons: canManageMeeting,
-                      );
-                    },
-                  ),
+                            return MeetingTile(
+                              meeting: meeting,
+                              showButtons: canManageMeeting,
+                            );
+                          },
+                        ),
                 ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 80.0),

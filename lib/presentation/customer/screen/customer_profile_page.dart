@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -30,8 +31,130 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final _streetNameController = TextEditingController();
   final _cityController = TextEditingController();
   final _pincodeController = TextEditingController();
+  final TextInputFormatter _panUpperCaseFormatter =
+      TextInputFormatter.withFunction((oldValue, newValue) {
+    final upperCaseText = newValue.text.toUpperCase();
+    return newValue.copyWith(text: upperCaseText);
+  });
 
   String _customerType = 'Export';
+  String? _nameError;
+  String? _mobileError;
+  String? _gstError;
+  String? _panError;
+  String? _houseNoError;
+  String? _streetError;
+  String? _cityError;
+  String? _pincodeError;
+
+  bool _isValidFullName(String name) {
+    return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(name);
+  }
+
+  bool _isValidPhoneNumber(String phoneNumber) {
+    return RegExp(r'^[0-9]{10}$').hasMatch(phoneNumber);
+  }
+
+  bool _isValidPanNumber(String panNumber) {
+    return RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(panNumber);
+  }
+
+  bool _isValidCityName(String city) {
+    return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(city);
+  }
+
+  bool _isValidGstNumber(String gstNumber) {
+    return RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$')
+        .hasMatch(gstNumber.toUpperCase());
+  }
+
+  bool _validateInputs() {
+    bool isValid = true;
+    final name = _nameController.text.trim();
+    final mobile = _numberController.text.trim();
+    final gst = _gstNoController.text.trim().toUpperCase();
+    final pan = _panNoController.text.trim().toUpperCase();
+    final houseNo = _houseNoController.text.trim();
+    final street = _streetNameController.text.trim();
+    final city = _cityController.text.trim();
+    final pincode = _pincodeController.text.trim();
+    final isDomestic = _customerType == 'Domestic';
+
+    setState(() {
+      _nameError = null;
+      _mobileError = null;
+      _gstError = null;
+      _panError = null;
+      _houseNoError = null;
+      _streetError = null;
+      _cityError = null;
+      _pincodeError = null;
+    });
+
+    if (name.isEmpty) {
+      _nameError = 'Full name is required';
+      isValid = false;
+    } else if (!_isValidFullName(name)) {
+      _nameError = 'Name should contain only alphabets';
+      isValid = false;
+    }
+
+    if (mobile.isEmpty) {
+      _mobileError = 'Mobile number is required';
+      isValid = false;
+    } else if (!_isValidPhoneNumber(mobile)) {
+      _mobileError = 'Enter a valid 10-digit mobile number';
+      isValid = false;
+    }
+
+    if (isDomestic && gst.isEmpty) {
+      _gstError = 'GST number is required for domestic customers';
+      isValid = false;
+    } else if (gst.isNotEmpty && !_isValidGstNumber(gst)) {
+      _gstError = 'Enter a valid 15-character GSTIN';
+      isValid = false;
+    }
+
+    if (isDomestic && pan.isEmpty) {
+      _panError = 'PAN number is required for domestic customers';
+      isValid = false;
+    } else if (pan.isNotEmpty && !_isValidPanNumber(pan)) {
+      _panError = 'Enter valid PAN (ABCDE1234F)';
+      isValid = false;
+    }
+
+    if (houseNo.isEmpty) {
+      _houseNoError = 'House number is required';
+      isValid = false;
+    }
+
+    if (street.isEmpty) {
+      _streetError = 'Street name is required';
+      isValid = false;
+    }
+
+    if (city.isEmpty) {
+      _cityError = 'City is required';
+      isValid = false;
+    } else if (!_isValidCityName(city)) {
+      _cityError = 'Please enter a valid city name';
+      isValid = false;
+    }
+
+    if (pincode.isEmpty) {
+      _pincodeError = 'Pincode is required';
+      isValid = false;
+    } else if (pincode.length != 6) {
+      _pincodeError = 'Pincode must be exactly 6 digits';
+      isValid = false;
+    }
+
+    if (!isValid) {
+      setState(() {});
+    }
+
+    return isValid;
+  }
 
   @override
   void initState() {
@@ -75,19 +198,23 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   }
 
   Future<void> _saveChanges() async {
+    if (!_validateInputs()) {
+      return;
+    }
+
     final updatedProfile = Profile(
-      name: _nameController.text,
+      name: _nameController.text.trim(),
       email: _emailController.text,
-      mobile: int.tryParse(_numberController.text) ?? 0,
-      gstNo: _gstNoController.text,
-      panNo: _panNoController.text,
+      mobile: int.tryParse(_numberController.text.trim()) ?? 0,
+      gstNo: _gstNoController.text.trim().toUpperCase(),
+      panNo: _panNoController.text.trim().toUpperCase(),
       customerType: _customerType,
       address: [
         Address(
-          houseNo: _houseNoController.text,
-          streetName: _streetNameController.text,
-          city: _cityController.text,
-          pincode: _pincodeController.text,
+          houseNo: _houseNoController.text.trim(),
+          streetName: _streetNameController.text.trim(),
+          city: _cityController.text.trim(),
+          pincode: _pincodeController.text.trim(),
         ),
       ],
     );
@@ -95,7 +222,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     try {
       final response = await _authRepository.updateUserDetails(
         name: updatedProfile.name,
-        number: _numberController.text,
+        number: _numberController.text.trim(),
         customerType: updatedProfile.customerType,
         gstNo: updatedProfile.gstNo,
         panNo: updatedProfile.panNo,
@@ -171,24 +298,134 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               const SizedBox(height: 10),
               _buildSectionContainer([
                 _section("Personal Details"),
-                _input("Full Name", _nameController),
+                _input(
+                  "Full Name *",
+                  _nameController,
+                  errorText: _nameError,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                  ],
+                  onChanged: (value) {
+                    final trimmed = value.trim();
+                    if (trimmed.isEmpty || _isValidFullName(trimmed)) {
+                      setState(() => _nameError = null);
+                    }
+                  },
+                ),
                 _input("Email Address", _emailController, enabled: false),
-                _input("Mobile No.", _numberController),
+                _input(
+                  "Mobile No. *",
+                  _numberController,
+                  errorText: _mobileError,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  onChanged: (value) {
+                    final trimmed = value.trim();
+                    if (trimmed.isEmpty || _isValidPhoneNumber(trimmed)) {
+                      setState(() => _mobileError = null);
+                    }
+                  },
+                ),
               ]),
               const SizedBox(height: 10),
               _buildSectionContainer([
                 _section("Business Details"),
-                _input("Pan No.", _panNoController),
-                _input("GST No.", _gstNoController),
+                _input(
+                  _customerType == 'Domestic' ? "Pan No. *" : "Pan No.",
+                  _panNoController,
+                  errorText: _panError,
+                  maxLength: 10,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                    LengthLimitingTextInputFormatter(10),
+                    _panUpperCaseFormatter,
+                  ],
+                  onChanged: (value) {
+                    final trimmed = value.trim().toUpperCase();
+                    if (trimmed.isEmpty || _isValidPanNumber(trimmed)) {
+                      setState(() => _panError = null);
+                    }
+                  },
+                ),
+                _input(
+                  _customerType == 'Domestic' ? "GST No. *" : "GST No.",
+                  _gstNoController,
+                  errorText: _gstError,
+                  maxLength: 15,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                    LengthLimitingTextInputFormatter(15),
+                    TextInputFormatter.withFunction((oldValue, newValue) {
+                      return newValue.copyWith(text: newValue.text.toUpperCase());
+                    }),
+                  ],
+                  onChanged: (value) {
+                    final trimmed = value.trim().toUpperCase();
+                    if (trimmed.isEmpty || _isValidGstNumber(trimmed)) {
+                      setState(() => _gstError = null);
+                    }
+                  },
+                ),
                 _dropdown("Customer", ['Export', 'Domestic']),
               ]),
               const SizedBox(height: 16),
               _buildSectionContainer([
                 _section("Address Details"),
-                _input("House No.", _houseNoController),
-                _input("Street Name", _streetNameController),
-                _input("City", _cityController),
-                _input("Pincode", _pincodeController),
+                _input(
+                  "House No. *",
+                  _houseNoController,
+                  errorText: _houseNoError,
+                  onChanged: (value) {
+                    if (value.trim().isNotEmpty) {
+                      setState(() => _houseNoError = null);
+                    }
+                  },
+                ),
+                _input(
+                  "Street Name *",
+                  _streetNameController,
+                  errorText: _streetError,
+                  onChanged: (value) {
+                    if (value.trim().isNotEmpty) {
+                      setState(() => _streetError = null);
+                    }
+                  },
+                ),
+                _input(
+                  "City *",
+                  _cityController,
+                  errorText: _cityError,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                  ],
+                  onChanged: (value) {
+                    final trimmed = value.trim();
+                    if (trimmed.isEmpty || _isValidCityName(trimmed)) {
+                      setState(() => _cityError = null);
+                    }
+                  },
+                ),
+                _input(
+                  "Pincode *",
+                  _pincodeController,
+                  errorText: _pincodeError,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  onChanged: (value) {
+                    final trimmed = value.trim();
+                    if (trimmed.isEmpty ||
+                        trimmed.length == 6) {
+                      setState(() => _pincodeError = null);
+                    }
+                  },
+                ),
               ]),
               const SizedBox(height: 40),
               if (_isEditing) _buildSaveButton(),
@@ -253,7 +490,16 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     );
   }
 
-  Widget _input(String label, TextEditingController controller, {bool enabled = true}) {
+  Widget _input(
+    String label,
+    TextEditingController controller, {
+    bool enabled = true,
+    String? errorText,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    int? maxLength,
+    ValueChanged<String>? onChanged,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -265,7 +511,13 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             controller: controller,
             enabled: _isEditing && enabled,
             style: const TextStyle(fontSize: 14),
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            maxLength: maxLength,
+            onChanged: onChanged,
             decoration: InputDecoration(
+              errorText: errorText,
+              counterText: '',
               filled: true,
               fillColor: enabled ? Colors.white : const Color(0xFFF5F5F5),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -299,7 +551,15 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
           DropdownButtonFormField<String>(
             value: _customerType,
             items: options.map((val) => DropdownMenuItem(value: val, child: Text(val))).toList(),
-            onChanged: _isEditing ? (val) => setState(() => _customerType = val!) : null,
+            onChanged: _isEditing
+                ? (val) => setState(() {
+                      _customerType = val!;
+                      if (_customerType == 'Export') {
+                        _gstError = null;
+                        _panError = null;
+                      }
+                    })
+                : null,
             decoration: InputDecoration(
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               filled: true,

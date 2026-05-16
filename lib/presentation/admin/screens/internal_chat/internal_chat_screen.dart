@@ -23,8 +23,11 @@ import 'package:kkpchatapp/presentation/common_widgets/chat/image_message_bubble
 import 'package:kkpchatapp/presentation/common_widgets/chat/no_chat_conversation.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/shimmer_message_list.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/voice_message_bubble.dart';
+import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/group_description.dart';
+import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:logger/logger.dart';
 import 'package:uuid/uuid.dart';
 
 class InternalChatScreen extends StatefulWidget {
@@ -55,9 +58,10 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   final ChatService _chatService = ChatService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder(logLevel: Level.nothing);
   List<GroupMessageModel> messages = [];
   bool _isRecording = false;
+  GroupModel? _currentGroup;
   int _recordedSeconds = 0;
   Timer? _timer;
   bool _isAtBottom = true;
@@ -75,13 +79,28 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   @override
   void initState() {
     super.initState();
+    _currentGroup = widget.group;
     WidgetsBinding.instance.addObserver(this);
     _socketService.setGroupChatPageState(true);
     _socketService.onGroupMessageReceived(_handleIncomingGroupMessage);
     _socketService.onGroupMessageDeleted(_handleGroupMessageDeleted);
     _socketService.onGroupMessageEdited(_handleGroupMessageEdited);
     _initializeRecorder();
-    _loadInitialGroupMessages();
+    if (widget.groupId != null) {
+      // Clear storage count immediately; also update GroupProvider so the badge
+      // in the drawer drops to zero without waiting for the user to go back.
+      LocalDbHelper.clearGroupUnreadCount(widget.groupId!);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Provider.of<GroupProvider>(context, listen: false)
+              .clearUnreadCount(widget.groupId!);
+        }
+      });
+      _loadInitialGroupMessages();
+    } else {
+      debugPrint("⚠️ [InternalChat] groupId is null — skipping message load");
+      setState(() => _isLoading = false);
+    }
     _scrollController.addListener(_handleScroll);
     _scrollController.addListener(_checkIfAtBottom);
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
@@ -110,17 +129,31 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
 
   // --- Load Initial Messages ---
   Future<void> _loadInitialGroupMessages() async {
+    final groupId = widget.groupId!;
     setState(() => _isLoading = true);
     try {
-      // 1. Fetch from API
-      final result = await _chatService.fetchGroupMessages(limit: 20, groupId: widget.groupId!);
+      // 1. Load from local storage for an instant first paint.
+      //    Display directly WITHOUT calling _removeDuplicates so _loadedMessageIds
+      //    stays empty — poisoning it here is what caused the merge to return 0.
+      final localMessages = await LocalDbHelper.getGroupMessages(groupId);
+      debugPrint("📦 [InternalChat] Local messages for group $groupId: ${localMessages.length}");
+
+      if (localMessages.isNotEmpty) {
+        setState(() {
+          messages = List.from(localMessages)
+            ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        });
+      }
+
+      // 2. Fetch from API
+      final result = await _chatService.fetchGroupMessages(limit: 20, groupId: groupId);
       final List<GroupMessageModel> fetchedMessages = result['messages'];
       _nextCursor = result['nextCursor'];
+      debugPrint("🌐 [InternalChat] API messages for group $groupId: ${fetchedMessages.length}");
 
-      // 2. Load from local storage
-      final localMessages = await LocalDbHelper.getGroupMessages();
-
-      // 3. Merge API and local messages
+      // 3. Merge — reset the tracked-ID set first so _removeDuplicates inside
+      //    _mergeMessages works on a clean slate.
+      _loadedMessageIds.clear();
       final mergedMessages = _mergeMessages(localMessages, fetchedMessages);
 
       setState(() {
@@ -128,23 +161,24 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
+      debugPrint("✅ [InternalChat] Merged total: ${messages.length} for group $groupId");
 
-      // 4. Save merged messages to local storage
+      // 4. Persist merged messages to the group-specific box
       for (var msg in messages) {
-        await LocalDbHelper.saveGroupMessage(msg);
+        await LocalDbHelper.saveGroupMessage(msg, groupId);
       }
       _scrollToBottom();
     } catch (e) {
-      debugPrint("Error loading messages: $e");
-      // Fallback: Load from local storage if API fails
-      final localMessages = await LocalDbHelper.getGroupMessages();
-      if (localMessages.isNotEmpty) {
-        setState(() {
-          messages = _removeDuplicates(localMessages);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-          _isLoading = false;
-        });
-      }
+      debugPrint("❌ [InternalChat] Error loading messages for group $groupId: $e");
+      // Fallback: show whatever is in local storage
+      final localMessages = await LocalDbHelper.getGroupMessages(groupId);
+      debugPrint("📦 [InternalChat] Fallback local messages: ${localMessages.length}");
+      _loadedMessageIds.clear();
+      setState(() {
+        messages = _removeDuplicates(localMessages)
+          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isLoading = false;
+      });
     } finally {
       _scrollToBottom();
     }
@@ -171,6 +205,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
 
   // --- Load More Messages ---
   Future<void> _loadMoreGroupMessages() async {
+    final groupId = widget.groupId!;
     if (_isLoadingMore || _nextCursor == null || _fetchedPages.contains(_currentPage)) return;
     _fetchedPages.add(_currentPage);
     setState(() => _isLoadingMore = true);
@@ -178,11 +213,12 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     try {
       final result = await _chatService.fetchGroupMessages(
         limit: 20,
-        groupId: widget.groupId!,
+        groupId: groupId,
         before: _nextCursor,
       );
       final List<GroupMessageModel> olderMessages = result['messages'];
       _nextCursor = result['nextCursor'];
+      debugPrint("📜 [InternalChat] Loaded ${olderMessages.length} older messages for group $groupId");
 
       if (olderMessages.isNotEmpty) {
         final uniqueMessages = _removeDuplicates(olderMessages);
@@ -191,11 +227,11 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         });
         for (var msg in uniqueMessages) {
-          await LocalDbHelper.saveGroupMessage(msg);
+          await LocalDbHelper.saveGroupMessage(msg, groupId);
         }
       }
     } catch (e) {
-      debugPrint("Error loading more messages: $e");
+      debugPrint("❌ [InternalChat] Error loading more messages: $e");
     } finally {
       setState(() => _isLoadingMore = false);
     }
@@ -215,21 +251,22 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
 
   // --- Handle Incoming Messages ---
   void _handleIncomingGroupMessage(Map<String, dynamic> data) {
-    debugPrint("Group message received: ${data.toString()}");
+    debugPrint("📨 [InternalChat] Group message received for group ${widget.groupId}: ${data.toString()}");
     final message = GroupMessageModel.fromApiJson(data);
     if (!_loadedMessageIds.contains(message.messageId)) {
       _loadedMessageIds.add(message.messageId);
       setState(() {
         messages.add(message);
       });
-      LocalDbHelper.saveGroupMessage(message);
+      LocalDbHelper.saveGroupMessage(message, widget.groupId!);
+      _saveLastMessagePreview(message.message, message.type, message.timestamp);
       _scrollToBottom();
     }
   }
 
-// --- Handle Message Deletion ---
+  // --- Handle Message Deletion ---
   void _handleGroupMessageDeleted(Map<String, dynamic> data) {
-    debugPrint("🗑️ Group message deleted: ${data.toString()}");
+    debugPrint("🗑️ [InternalChat] Group message deleted: ${data.toString()}");
     final messageId = data['messageId'];
     setState(() {
       final index = messages.indexWhere((msg) => msg.messageId == messageId);
@@ -238,8 +275,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
           isDeleted: true,
           message: "This message was deleted",
         );
-        // Save the updated message to local storage
-        LocalDbHelper.updateGroupMessage(messages[index]);
+        LocalDbHelper.updateGroupMessage(messages[index], widget.groupId!);
       }
     });
   }
@@ -248,7 +284,6 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   void _deleteMessage(String messageId) {
     _socketService.deleteGroupMessage(
         messageId: messageId, senderId: widget.agentEmail, groupId: widget.groupId!);
-    // Update the local message state to reflect deletion
     setState(() {
       final index = messages.indexWhere((msg) => msg.messageId == messageId);
       if (index != -1) {
@@ -256,17 +291,14 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
           isDeleted: true,
           message: "This message was deleted",
         );
-        // Save the updated message to local storage
-        LocalDbHelper.updateGroupMessage(messages[index]);
+        LocalDbHelper.updateGroupMessage(messages[index], widget.groupId!);
       }
     });
-    // Notify other users about the deletion
-    _socketService.updateLastMessage(widget.agentEmail, "message deleted");
   }
 
-// --- Handle Message Edit ---
+  // --- Handle Message Edit ---
   void _handleGroupMessageEdited(Map<String, dynamic> data) {
-    debugPrint("✏️ Group message edited: ${data.toString()}");
+    debugPrint("✏️ [InternalChat] Group message edited: ${data.toString()}");
     final messageId = data['messageId'];
     final newMessage = data['newMessage'];
     setState(() {
@@ -276,10 +308,28 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
           message: newMessage,
           isEdited: true,
         );
-        // Save the updated message to local storage
-        LocalDbHelper.updateGroupMessage(messages[index]);
+        LocalDbHelper.updateGroupMessage(messages[index], widget.groupId!);
       }
     });
+  }
+
+  // --- Save last message preview for the group list tile ---
+  void _saveLastMessagePreview(String messageText, String type, DateTime timestamp) {
+    String preview;
+    switch (type) {
+      case 'media':
+        preview = '[Photo]';
+        break;
+      case 'voice':
+        preview = '[Voice]';
+        break;
+      case 'document':
+        preview = '[Document]';
+        break;
+      default:
+        preview = messageText.length > 60 ? '${messageText.substring(0, 60)}...' : messageText;
+    }
+    LocalDbHelper.saveGroupLastMessage(widget.groupId!, preview, timestamp);
   }
 
   // // --- Edit Message ---
@@ -335,7 +385,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     );
   }
 
-// --- Save Edited Message ---
+  // --- Save Edited Message ---
   void _saveEditedMessage(String messageId) {
     if (_editController.text.trim().isEmpty) return;
     final newMessage = _editController.text.trim();
@@ -344,7 +394,6 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         senderId: widget.agentEmail,
         newMessage: newMessage,
         groupId: widget.groupId!);
-    // Update the local message state to reflect the edit
     setState(() {
       final index = messages.indexWhere((msg) => msg.messageId == messageId);
       if (index != -1) {
@@ -352,8 +401,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
           message: newMessage,
           isEdited: true,
         );
-        // Save the updated message to local storage
-        LocalDbHelper.updateGroupMessage(messages[index]);
+        LocalDbHelper.updateGroupMessage(messages[index], widget.groupId!);
       }
     });
     _editController.clear();
@@ -413,6 +461,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null) return;
     final currentTime = DateTime.now();
+    final groupId = widget.groupId ?? '';
     final messageId = const Uuid().v4();
     final message = GroupMessageModel(
       message: messageText,
@@ -422,6 +471,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       type: type,
       mediaUrl: mediaUrl,
       messageId: messageId,
+      groupId: groupId,
     );
     setState(() {
       messages.add(message);
@@ -434,8 +484,9 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         mediaUrl: mediaUrl,
         timestamp: currentTime.toIso8601String(),
         messageId: messageId,
-        groupId: widget.groupId ?? "");
-    LocalDbHelper.saveGroupMessage(message);
+        groupId: groupId);
+    LocalDbHelper.saveGroupMessage(message, groupId);
+    _saveLastMessagePreview(messageText, type, currentTime);
     _chatController.clear();
     _scrollToBottom();
   }
@@ -511,16 +562,25 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         surfaceTintColor: Colors.white,
         shadowColor: AppColors.greyDBDDE1,
         title: GestureDetector(
-          onTap: () {
-            if (widget.group != null) {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-                return GroupDescriptionScreen(
-                    groupId: widget.groupId ?? "Na", group: widget.group!);
-              }));
+          onTap: () async {
+            if (_currentGroup != null) {
+              final navigator = Navigator.of(context);
+              final result = await navigator.push(
+                MaterialPageRoute(builder: (context) => GroupDescriptionScreen(
+                  groupId: widget.groupId ?? "Na",
+                  group: _currentGroup!,
+                )),
+              );
+              if (!mounted) return;
+              if (result == true) {
+                navigator.pop();
+              } else if (result is GroupModel) {
+                setState(() => _currentGroup = result);
+              }
             }
           },
           child: Text(
-            widget.group?.groupName ?? "Group",
+            _currentGroup?.groupName ?? "Group",
             style: AppTextStyles.black16_600,
           ),
         ),

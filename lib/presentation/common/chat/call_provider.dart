@@ -33,6 +33,7 @@ class CallProvider with ChangeNotifier {
   final AudioPlayer _ringingPlayer = AudioPlayer();
   final StreamController<int> _callDurationController = StreamController<int>.broadcast();
   String? _callId;
+  String? _targetUserId;
   final ChatRepository _chatRepository = ChatRepository();
 
   // UI + Metadata
@@ -67,12 +68,14 @@ class CallProvider with ChangeNotifier {
     required int uid,
     required String callId,
     required bool isCaller,
+    String? targetUserId,
   }) async {
     _channelName = channelName;
     _remoteUserName = remoteUserName;
     _uid = uid;
     _callId = callId;
     _isCaller = isCaller;
+    _targetUserId = targetUserId;
 
     await _initialize();
     await Future.delayed(const Duration(milliseconds: 500));
@@ -122,7 +125,7 @@ class CallProvider with ChangeNotifier {
     _callTimeoutTimer = Timer(const Duration(seconds: 40), () {
       if (_remoteUid == null) {
         _updateCallData("not answered");
-        endCall();
+        endCall(notifyRemote: false);
       }
     });
   }
@@ -259,10 +262,17 @@ class CallProvider with ChangeNotifier {
     _outgoingCallOverlay = null;
   }
 
-  void endCall() {
+  void endCall({bool notifyRemote = true}) {
     _durationTimer?.cancel();
     _callTimeoutTimer?.cancel();
     _stopRinging();
+    if (notifyRemote && _targetUserId != null && _callId != null) {
+      _socketService.terminateCall(
+        targetId: _targetUserId!,
+        callId: _callId!,
+        channelName: _channelName,
+      );
+    }
     _agoraEngine.leaveChannel();
     _agoraEngine.release();
     _isInitialized = false;
@@ -290,6 +300,7 @@ class CallProvider with ChangeNotifier {
     _ringingPlayer.stop();
 
     _callId = null;
+    _targetUserId = null;
     _channelName = null;
     _remoteUserName = null;
     _uid = null;

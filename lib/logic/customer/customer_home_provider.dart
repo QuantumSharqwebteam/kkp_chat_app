@@ -51,15 +51,29 @@ class CustomerHomeProvider with ChangeNotifier {
   List<String> get carouselImageUrls {
     if (_posters == null) {
       return []; // indicates loading
-    } else if (_posters!.isEmpty) {
-      return [
-        "assets/images/carousel_image1.png",
-        "assets/images/carousel_image1.png",
-        "assets/images/carousel_image1.png",
-      ];
-    } else {
-      return _posters!.map((poster) => poster.mediaUrl).toList();
     }
+
+    final fallback = "assets/images/carousel_image1.png";
+    final urls = _posters!
+        .map((poster) => _normalizePosterUrl(poster.mediaUrl))
+        .where((url) => url.isNotEmpty)
+        .map((url) => _isValidPosterUrl(url) ? url : fallback)
+        .toList();
+
+    if (urls.isEmpty) {
+      return List.filled(3, fallback);
+    }
+
+    return urls;
+  }
+
+  String _normalizePosterUrl(String? url) {
+    return url?.trim() ?? '';
+  }
+
+  bool _isValidPosterUrl(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null && (uri.isScheme('http') || uri.isScheme('https')) && uri.host.isNotEmpty;
   }
 
   // ✅ Optional: Flag to indicate poster loading

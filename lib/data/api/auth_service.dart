@@ -47,7 +47,7 @@ class AuthApi {
     final url = Uri.parse("$baseUrl$endPoint");
 
     LoggingService.instance.logNetwork(
-      "Refreshing token",
+      "Refreshing token | oldTokenLength: ${oldToken.length}",
       level: LogLevel.info,
     );
 
@@ -56,7 +56,6 @@ class AuthApi {
         url,
         headers: {
           'Content-Type': 'application/json',
-          "Authorization": "Bearer $oldToken",
         },
       );
 

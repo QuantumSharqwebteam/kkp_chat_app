@@ -1,8 +1,11 @@
-﻿import 'package:flutter/foundation.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 
 class FormMessageBubble extends StatefulWidget {
   final List<Map<String, dynamic>> forms;
@@ -14,7 +17,8 @@ class FormMessageBubble extends StatefulWidget {
   final Function(String, String)? onStatusUpdated;
   final VoidCallback? onFormUpdateStart;
   final VoidCallback? onFormUpdateEnd;
-  final Function(Map<String, dynamic>)? onAskForRateUpdate;
+  final Function(Map<String, dynamic>)? onFormUpdated;
+  final Function(Map<String, dynamic>)? onFormEditRequested;
 
   FormMessageBubble({
     super.key,
@@ -27,7 +31,8 @@ class FormMessageBubble extends StatefulWidget {
     this.onStatusUpdated,
     this.onFormUpdateStart,
     this.onFormUpdateEnd,
-    this.onAskForRateUpdate,
+    this.onFormUpdated,
+    this.onFormEditRequested,
   }) : assert(forms.isNotEmpty, 'At least one form entry is required');
 
   @override
@@ -73,7 +78,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     );
   }
 
-  Future<void> _updateFormStatus(BuildContext context, String status) async {
+  Future<void> _updateFormStatus(BuildContext context, String status, {String? reason}) async {
     if (widget.onFormUpdateStart != null) {
       widget.onFormUpdateStart!();
     }
@@ -83,7 +88,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
       debugPrint('Form id required : $id in the form data: ${_activeForm.toString()} ');
     }
     try {
-      await chatRepository.updateInquiryFormStatus(id!, status);
+      await chatRepository.updateInquiryFormStatus(id!, status, reason: reason);
       if (context.mounted) {
         Utils().showSuccessDialog(context, 'Status updated to $status', true);
         await Future.delayed(const Duration(seconds: 2), () {
@@ -108,12 +113,77 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
   }
 
   void _handleMenuSelection(BuildContext context, String value, Map<String, dynamic> formData) {
-    if (value == 'Ask for rate update') {
-      widget.onAskForRateUpdate?.call(formData);
-    } else if (value == 'confirm') {
+    if (value == 'confirm') {
       _updateFormStatus(context, 'Confirmed');
     } else if (value == 'decline') {
-      _updateFormStatus(context, 'Declined');
+      _promptDecline(context);
+    } else if (value == 'update_form') {
+      _showFormEditSheet(formData);
+    }
+  }
+
+  Future<void> _promptDecline(BuildContext context) async {
+    final controller = TextEditingController();
+    String? errorText;
+
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Reason for decline'),
+              content: CustomTextField(
+                controller: controller,
+                hintText: 'Reason for declining',
+                minLines: 3,
+                maxLines: 4,
+                errorText: errorText,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final value = controller.text.trim();
+                    if (value.isEmpty) {
+                      setDialogState(() {
+                        errorText = 'Reason is required';
+                      });
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop(value);
+                  },
+                  child: const Text('Decline'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+    if (!mounted || !context.mounted || reason == null || reason.isEmpty) return;
+    await _updateFormStatus(context, 'Declined', reason: reason);
+  }
+
+  void _showFormEditSheet(Map<String, dynamic> formData) {
+    widget.onFormEditRequested?.call(formData);
+  }
+
+  String _menuLabel(String choice) {
+    switch (choice) {
+      case 'confirm':
+        return 'Confirm';
+      case 'decline':
+        return 'Decline';
+      case 'update_form':
+        return 'Update form';
+      default:
+        return choice;
     }
   }
 
@@ -243,18 +313,16 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                 child: PopupMenuButton<String>(
                   onSelected: (value) => _handleMenuSelection(context, value, _activeForm),
                   itemBuilder: (BuildContext context) {
-                    final List<String> options = _showAllOptions
-                        ? ['Ask for rate update', 'confirm', 'decline']
-                        : ['Ask for rate update'];
+                    final List<String> options = [];
+                    if (_showAllOptions) {
+                      options.addAll(['confirm', 'decline']);
+                    }
+                    options.add('update_form');
                     return options.map((String choice) {
                       return PopupMenuItem<String>(
                         value: choice,
                         child: Text(
-                          choice == 'Ask for rate update'
-                              ? 'Ask for rate update'
-                              : choice == 'confirm'
-                                  ? 'Confirm'
-                                  : 'Decline',
+                          _menuLabel(choice),
                         ),
                       );
                     }).toList();
@@ -278,21 +346,31 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                 ),
               ),
             _buildPager(),
-            SizedBox(
-              height: 210,
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: widget.forms.length,
-                physics: const BouncingScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return _buildFormPage(widget.forms[index]);
-                },
-              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final double screenMaxHeight = MediaQuery.of(context).size.height * 0.35;
+                final double availableMax =
+                    constraints.maxHeight.isFinite ? constraints.maxHeight : screenMaxHeight;
+                final double height = math.min(screenMaxHeight, availableMax);
+                return SizedBox(
+                  height: height,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: widget.forms.length,
+                    physics: const BouncingScrollPhysics(),
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return SingleChildScrollView(
+                        child: _buildFormPage(widget.forms[index]),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 8),
             Padding(

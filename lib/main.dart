@@ -40,6 +40,7 @@ import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:kkpchatapp/core/utils/route_observer.dart';
 import 'firebase_options.dart';
 
 // Global flag to indicate if the app is initialized
@@ -210,6 +211,10 @@ void main() async {
     Hive.openBox("lastSeenTimeBox"),
     Hive.openBox('feedBox'),
     Hive.openBox("lastMessageMap"),
+    Hive.openBox("inquiryFormsBox"),
+    Hive.openBox(LocalDbHelper.groupLastMessageBoxKey),
+    Hive.openBox<int>(LocalDbHelper.groupChatUnreadCountKey),
+    Hive.openBox<int>(LocalDbHelper.groupUnreadCountsBoxKey),
     dotenv.load(fileName: "keys.env"),
   ]);
 
@@ -326,42 +331,43 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => MeetingManagement()),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
       ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, localeProvider, child) {
-          return MaterialApp(
-            navigatorKey: widget.navigatorKey,
-            title: 'KKP Chat App',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            initialRoute: "/splash",
-            routes: {
-              "/splash": (context) => const Splash(),
-              "/login": (context) => LoginPage(),
+          child: Consumer<LocaleProvider>(
+            builder: (context, localeProvider, child) {
+              return MaterialApp(
+                navigatorObservers: [routeObserver],
+                navigatorKey: widget.navigatorKey,
+                title: 'KKP Chat App',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                initialRoute: "/splash",
+                routes: {
+                  "/splash": (context) => const Splash(),
+                  "/login": (context) => LoginPage(),
+                },
+                onGenerateRoute: (settings) {
+                  if (CustomerRoutes.allRoutes.contains(settings.name)) {
+                    return generateCustomerRoute(settings);
+                  } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
+                    return generateMarketingRoute(settings);
+                  } else {
+                    return null;
+                  }
+                },
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [
+                  Locale('en'),
+                  Locale('hi'),
+                  Locale('ta'),
+                ],
+                locale: localeProvider.locale,
+              );
             },
-            onGenerateRoute: (settings) {
-              if (CustomerRoutes.allRoutes.contains(settings.name)) {
-                return generateCustomerRoute(settings);
-              } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
-                return generateMarketingRoute(settings);
-              } else {
-                return null;
-              }
-            },
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('en'),
-              Locale('hi'),
-              Locale('ta'),
-            ],
-            locale: localeProvider.locale,
-          );
-        },
-      ),
-    );
+          ),
+        );
   }
 }

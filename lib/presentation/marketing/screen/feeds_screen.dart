@@ -72,9 +72,12 @@ class _FeedsScreenState extends State<FeedsScreen> {
       body: Column(
         children: [
           _buildImageSection(),
+          const SizedBox(
+            height: 10,
+          ),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: const BoxDecoration(color: Colors.white),
               child: Column(
                 children: [
@@ -94,6 +97,9 @@ class _FeedsScreenState extends State<FeedsScreen> {
                       },
                     ),
                   ),
+                  const SizedBox(
+                    height: 10,
+                  )
                 ],
               ),
             ),
@@ -152,14 +158,10 @@ class _FeedsScreenState extends State<FeedsScreen> {
 
     if (showPinned) {
       // Filter to show only pinned agents
-      displayList = displayList
-          .where((agent) => pinnedAgentsSet.contains(agent.email))
-          .toList();
+      displayList = displayList.where((agent) => pinnedAgentsSet.contains(agent.email)).toList();
     } else {
       // Exclude the logged-in agent and sort the list to show pinned agents first
-      displayList = displayList
-          .where((agent) => agent.email != widget.loggedAgentEmail)
-          .toList();
+      displayList = displayList.where((agent) => agent.email != widget.loggedAgentEmail).toList();
 
       // Sort the list to show pinned agents first
       displayList.sort((a, b) {

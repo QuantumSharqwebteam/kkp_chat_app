@@ -276,6 +276,7 @@ class ProductService {
     String productId,
     Map<String, dynamic> updatedData,
   ) async {
+    final token = await LocalDbHelper.getToken();
     final url = Uri.parse("$_baseUrl/update/$productId");
 
     _logger.logNetwork(
@@ -292,6 +293,7 @@ class ProductService {
         url,
         headers: {
           "Content-Type": "application/json",
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode(updatedData),
       );

@@ -14,6 +14,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/common_widgets/required_field_label.dart';
 import 'package:provider/provider.dart';
 
 class AddProductScreen extends StatelessWidget {
@@ -37,75 +38,92 @@ class AddProductScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: Consumer<AddProductProvider>(
-          builder: (context, provider, _) {
-            return Stack(
-              children: [
-                SafeArea(
-                  top: false,
-                  bottom: Platform.isAndroid,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildImagePickerContainer(context, provider),
-                        const SizedBox(height: 10),
-                        _buildProductDetails(context, provider),
-                        const SizedBox(height: 10),
-                        CustomButton(
-                          onPressed: () async {
-                            /// Check if size is selected
-                            if (provider.selectedSizes.isEmpty) {
-                              Utils().showSuccessDialog(
-                                  context, "Please select at least one size", false);
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Consumer<AddProductProvider>(
+            builder: (context, provider, _) {
+              return Stack(
+                children: [
+                  SafeArea(
+                    top: false,
+                    bottom: Platform.isAndroid,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RequiredFieldLabel("Upload Image"),
+                          _buildImagePickerContainer(context, provider),
+                          const SizedBox(height: 10),
+                          _buildProductDetails(context, provider),
+                          const SizedBox(height: 10),
+                          CustomButton(
+                            onPressed: () async {
+                              if (provider.selectedImage == null) {
+                                Utils().showSuccessDialog(context, "Please upload image", false);
 
-                              Future.delayed(const Duration(milliseconds: 800), () {
-                                if (context.mounted) {
-                                  Navigator.pop(context); // close dialog
-                                }
-                              });
-
-                              return;
-                            }
-                            bool success = await provider.addProduct();
-                            if (context.mounted) {
-                              if (!success) {
-                                Utils()
-                                    .showSuccessDialog(context, locale.pleaseFillAllFields, false);
-                                Future.delayed(const Duration(microseconds: 300), () {
+                                Future.delayed(const Duration(milliseconds: 800), () {
                                   if (context.mounted) {
-                                    Navigator.pop(context); // Close dialog
+                                    Navigator.pop(context);
                                   }
                                 });
+
                                 return;
                               }
-                            }
-                            if (context.mounted) {
-                              Utils().showSuccessDialog(
-                                  context, locale.productAddedSuccessfully, true);
-                            }
-                            Future.delayed(const Duration(seconds: 2), () {
-                              if (context.mounted) {
-                                Navigator.pop(context); // Close dialog
-                                Navigator.pop(context, true); // Go back with success
+
+                              /// Check if size is selected
+                              if (provider.selectedSizes.isEmpty) {
+                                Utils().showSuccessDialog(
+                                    context, "Please select at least one size", false);
+
+                                Future.delayed(const Duration(milliseconds: 800), () {
+                                  if (context.mounted) {
+                                    Navigator.pop(context); // close dialog
+                                  }
+                                });
+
+                                return;
                               }
-                            });
-                          },
-                          text: locale.addProduct,
-                          fontSize: 18,
-                          borderColor: AppColors.blue00ABE9,
-                          backgroundColor: AppColors.blue00ABE9,
-                        ),
-                      ],
+                              bool success = await provider.addProduct();
+                              if (context.mounted) {
+                                if (!success) {
+                                  Utils().showSuccessDialog(
+                                      context, locale.pleaseFillAllFields, false);
+                                  Future.delayed(const Duration(microseconds: 300), () {
+                                    if (context.mounted) {
+                                      Navigator.pop(context); // Close dialog
+                                    }
+                                  });
+                                  return;
+                                }
+                              }
+                              if (context.mounted) {
+                                Utils().showSuccessDialog(
+                                    context, locale.productAddedSuccessfully, true);
+                              }
+                              Future.delayed(const Duration(seconds: 2), () {
+                                if (context.mounted) {
+                                  Navigator.pop(context); // Close dialog
+                                  Navigator.pop(context, true); // Go back with success
+                                }
+                              });
+                            },
+                            text: locale.addProduct,
+                            fontSize: 18,
+                            borderColor: AppColors.blue00ABE9,
+                            backgroundColor: AppColors.blue00ABE9,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                if (provider.isLoading) const FullScreenLoader(),
-              ],
-            );
-          },
+                  if (provider.isLoading) const FullScreenLoader(),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -205,16 +223,21 @@ class AddProductScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(locale.productName, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.productName, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.nameController,
             hintText: locale.name,
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9 ]'))],
+            condition: (value) {
+              final trimmed = value.trim();
+              return trimmed.isNotEmpty && RegExp(r'^[A-Za-z0-9 ]+$').hasMatch(trimmed);
+            },
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: Text(locale.price, style: AppTextStyles.black14_600)),
-              Expanded(child: Text(locale.size, style: AppTextStyles.black14_600)),
+              Expanded(child: RequiredFieldLabel(locale.price, style: AppTextStyles.black14_600)),
+              Expanded(child: RequiredFieldLabel(locale.size, style: AppTextStyles.black14_600)),
             ],
           ),
           const SizedBox(height: 5),
@@ -225,18 +248,25 @@ class AddProductScreen extends StatelessWidget {
                 child: CustomTextField(
                   controller: provider.priceController,
                   hintText: "₹0.00",
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^[0-9]*\.?[0-9]*$')),
+                  ],
+                  condition: (value) {
+                    final parsed = double.tryParse(value.trim());
+                    return parsed != null && parsed > 0;
+                  },
                 ),
               ),
               Expanded(child: _buildSizeSelection(provider)),
             ],
           ),
           const SizedBox(height: 10),
-          Text(locale.color, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.color, style: AppTextStyles.black14_600),
           const SizedBox(height: 5),
           _buildColorPickerWidget(context, provider),
           const SizedBox(height: 10),
-          Text(locale.stockAvailable, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.stockAvailable, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.stockController,
             hintText: "2000",
@@ -244,7 +274,7 @@ class AddProductScreen extends StatelessWidget {
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
           const SizedBox(height: 10),
-          Text(locale.description, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(locale.description, style: AppTextStyles.black14_600),
           CustomTextField(
             controller: provider.descriptionController,
             hintText: locale.describeProduct,

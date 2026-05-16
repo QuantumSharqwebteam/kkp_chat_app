@@ -12,6 +12,7 @@ import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
+import 'package:kkpchatapp/presentation/common_widgets/required_field_label.dart';
 
 import '../../../config/theme/app_text_styles.dart';
 
@@ -66,6 +67,14 @@ class _EditProductScreenState extends State<EditProductScreen> {
   }
 
   void updateProduct() async {
+    if (nameController.text.trim().isEmpty) {
+      Utils().showSuccessDialog(context, "Product name cannot be empty.", false);
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) Navigator.pop(context); // Close dialog
+      });
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -80,6 +89,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
         });
         if (mounted) {
           Utils().showSuccessDialog(context, "Image upload failed. Try again.", false);
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) Navigator.pop(context); // Close dialog
+          });
         }
         return;
       }
@@ -127,6 +139,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
     } else {
       if (mounted) {
         Utils().showSuccessDialog(context, "Failed to update product. Try again later!", false);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) Navigator.pop(context); // Close dialog
+        });
       }
     }
   }
@@ -195,10 +210,17 @@ class _EditProductScreenState extends State<EditProductScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           //product name
-          Text(locale.productName, style: AppTextStyles.black14_600),
+          RequiredFieldLabel(
+            locale.productName,
+          ),
           CustomTextField(
             controller: nameController,
             hintText: locale.name,
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9 ]'))],
+            condition: (value) {
+              final trimmed = value.trim();
+              return trimmed.isNotEmpty && RegExp(r'^[A-Za-z0-9 ]+$').hasMatch(trimmed);
+            },
           ),
           // price and review textfields
           Row(
@@ -220,6 +242,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   controller: priceController,
                   hintText: "₹0.00",
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                  condition: (value) => double.tryParse(value) != null && double.parse(value) >= 0,
                 ),
               ),
               Expanded(
