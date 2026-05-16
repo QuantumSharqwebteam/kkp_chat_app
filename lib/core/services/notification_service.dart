@@ -21,6 +21,7 @@ class NotificationService with WidgetsBindingObserver {
   static FlutterLocalNotificationsPlugin get plugin =>
       _localNotificationsPlugin;
   static bool _notificationClicked = false;
+  static NotificationService? _observer;
   static GlobalKey<NavigatorState>? navigatorKey;
   static Function(String?, String?, String?)? onNotificationTap;
   static AppLifecycleState? appLifecycleState;
@@ -39,14 +40,18 @@ class NotificationService with WidgetsBindingObserver {
     navigatorKey ??= navKey;
     onNotificationTap ??= onNotificationClick;
 
-    WidgetsBinding.instance.addObserver(NotificationService());
+    if (_observer == null) {
+      _observer = NotificationService();
+      WidgetsBinding.instance.addObserver(_observer!);
+    }
     await _initializeLocalNotifications();
     if (context.mounted) {
       bool isGranted = await requestPermission(context);
       if (isGranted) {
         await checkAndUpdateFCMToken();
         _setupBackgroundNotification();
-        _setupTerminatedNotification();
+        // Initial message from terminated state is handled by main.dart
+        // via handleInitialMessage() — no need to call getInitialMessage() here.
 
         _messaging.onTokenRefresh.listen((newToken) async {
           debugPrint("🔄 [FCM Token Refreshed]: $newToken");
@@ -110,28 +115,6 @@ class NotificationService with WidgetsBindingObserver {
         if (customerEmail != null) {}
       }
     });
-  }
-
-  static Future<void> _setupTerminatedNotification() async {
-    RemoteMessage? message =
-        await FirebaseMessaging.instance.getInitialMessage();
-    if (message != null) {
-      debugPrint(
-          "🚀@@ App Opened via Notification: ${message.toMap()['data']}");
-      final data = message.toMap()['data'];
-      final notificationType = data['notificationType'] ?? 'individual';
-
-      if (notificationType == 'group') {
-        await _enqueueOrHandlePushNotification(data, isGroup: true);
-      } else {
-        if (data != null && data['call'] == "true") {
-          // incoming call tap: just open the app — MarketingHost will show overlay
-          await _enqueueOrHandlePushNotification(data, isCall: true);
-        } else {
-          await _enqueueOrHandlePushNotification(data);
-        }
-      }
-    }
   }
 
   // Public helper to handle an initial RemoteMessage (from main).
@@ -278,7 +261,7 @@ class NotificationService with WidgetsBindingObserver {
 
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('app_logo');
 
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(

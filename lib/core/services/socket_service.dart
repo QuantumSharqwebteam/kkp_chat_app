@@ -1165,35 +1165,6 @@ class SocketService with WidgetsBindingObserver {
       if (onMessageReceivedCallback != null) {
         onMessageReceivedCallback!();
       }
-
-      // Send notification to the customer
-      final title = "New Message from Agent";
-      final id = 200;
-
-      // Plugin initialized by NotificationService.init at app startup
-
-      const androidDetails = AndroidNotificationDetails(
-        'your_channel_id',
-        'your_channel_name',
-        channelDescription: 'your_channel_description',
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-      final notificationDetails =
-          NotificationDetails(android: androidDetails, iOS: iosDetails);
-
-      await NotificationService.plugin.show(
-        id,
-        title,
-        notificationMessage,
-        notificationDetails,
-        payload: jsonEncode(data),
-      );
     } else {
       // for agent side
       final senderId = data['senderId']; // AgentEmail
@@ -1221,21 +1192,10 @@ class SocketService with WidgetsBindingObserver {
       }
     }
 
-    // Show local notification (rest of the method remains the same)
-    // Plugin initialized by NotificationService; request permissions via shared plugin
-    await NotificationService.plugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
     const androidDetails = AndroidNotificationDetails(
-      'your_channel_id',
-      'your_channel_name',
-      channelDescription: 'your_channel_description',
+      'high_importance_channel',
+      'High Importance Notifications',
+      channelDescription: 'This channel is for important notifications',
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -1246,17 +1206,7 @@ class SocketService with WidgetsBindingObserver {
     );
     final notificationDetails =
         NotificationDetails(android: androidDetails, iOS: iosDetails);
-    // final title = "New Message from ${data['senderName']}";
-    // final id = title.hashCode;
-    // await _notificationsPlugin!.show(
-    //   id,
-    //   title,
-    //   data['message'],
-    //   notificationDetails,
-    //   payload: jsonEncode(data),
-    // );
 
-    // Start of added code for consolidating notifications
     if (userType != "0") {
       // Agent-side notification logic
       const consolidatedNotificationId = 999;
@@ -1336,18 +1286,6 @@ class SocketService with WidgetsBindingObserver {
     }
 
     try {
-      // Initialize notifications plugin if not already done
-      // Plugin initialized by NotificationService.init at app startup
-      // Request permissions for iOS via the shared plugin
-      await NotificationService.plugin
-          .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
-
       // Create notification details
       const androidDetails = AndroidNotificationDetails(
         'group_chat_channel_id',

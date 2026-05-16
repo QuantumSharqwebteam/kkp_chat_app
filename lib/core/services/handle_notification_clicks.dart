@@ -96,29 +96,27 @@ Future<void> handlePushNotificationClickForCustomer(
     });
   }
 
-  // Listen for changes to isAppInitialized
   controller.stream.listen((isInitialized) {
     if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
+      timer?.cancel();
+      controller.close();
       triggerNavigation();
     }
   });
 
-  // Start a timer to observe the variable for 20 seconds
   timer = Timer(Duration(seconds: 20), () {
     if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
+      controller.close();
       debugPrint("Timeout reached. App is not initialized.");
     }
   });
 
-  // Simulate checking the variable (replace this with actual logic)
   Future.doWhile(() async {
     if (isAppInitialized) {
       controller.add(true);
-      return false; // Exit the loop if the variable is true
+      return false;
     }
-    await Future.delayed(Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(Duration(milliseconds: 100));
     return true;
   });
 }
@@ -240,34 +238,31 @@ Future<void> handlePushNotificationClickForAgent(
     );
   }
 
-  // Listen for changes to isAppInitialized
   controller.stream.listen((isInitialized) {
     if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
+      timer?.cancel();
+      controller.close();
       triggerNavigation();
     }
   });
 
-  // Start a timer to observe the variable for 20 seconds
   timer = Timer(Duration(seconds: 20), () {
     if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
+      controller.close();
       debugPrint("Timeout reached. App is not initialized.");
     }
   });
 
-  // Simulate checking the variable (replace this with actual logic)
   Future.doWhile(() async {
     if (isAppInitialized) {
       controller.add(true);
-      return false; // Exit the loop if the variable is true
+      return false;
     }
-    await Future.delayed(Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(Duration(milliseconds: 100));
     return true;
   });
 }
 
-/// Handles incoming call notification.
 /// Handles incoming call notification.
 Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> callData) async {
@@ -297,29 +292,27 @@ Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
     );
   }
 
-  // Listen for changes to isAppInitialized
   controller.stream.listen((isInitialized) {
     if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
+      timer?.cancel();
+      controller.close();
       triggerIncomingCall();
     }
   });
 
-  // Start a timer to observe the variable for 20 seconds
   timer = Timer(Duration(seconds: 20), () {
     if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
+      controller.close();
       debugPrint("Timeout reached. App is not initialized.");
     }
   });
 
-  // Simulate checking the variable (replace this with actual logic)
   Future.doWhile(() async {
     if (isAppInitialized) {
       controller.add(true);
-      return false; // Exit the loop if the variable is true
+      return false;
     }
-    await Future.delayed(Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(Duration(milliseconds: 100));
     return true;
   });
 }
@@ -358,30 +351,27 @@ Future<void> handleGroupPushNotification(GlobalKey<NavigatorState> navigatorKey,
     );
   }
 
-  // Listen for changes to isAppInitialized
   controller.stream.listen((isInitialized) {
     if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
+      timer?.cancel();
+      controller.close();
       triggerGroupNavigation();
     }
   });
 
-  // Start a timer to observe the variable for 20 seconds
   timer = Timer(const Duration(seconds: 20), () {
     if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
+      controller.close();
       debugPrint("Timeout reached. App is not initialized.");
     }
   });
 
-  // Simulate checking the variable (replace this with actual logic)
   Future.doWhile(() async {
     if (isAppInitialized) {
       controller.add(true);
-      return false; // Exit the loop if the variable is true
+      return false;
     }
-    await Future.delayed(
-        const Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(const Duration(milliseconds: 100));
     return true;
   });
 }
