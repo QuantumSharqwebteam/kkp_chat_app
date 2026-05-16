@@ -26,7 +26,7 @@ class NotificationService with WidgetsBindingObserver {
   static AppLifecycleState? appLifecycleState;
   // Queue for push notifications received while app is initializing/terminated
   static final List<Map<String, dynamic>> _pendingPushNotifications = [];
-  static Timer? _pendingProcessorTimer;
+  static Timer? pendingProcessorTimer;
   static bool _pendingProcessorRunning = false;
 
   // Initialize notification service
@@ -145,7 +145,7 @@ class NotificationService with WidgetsBindingObserver {
       if (notificationType == 'group') {
         await _enqueueOrHandlePushNotification(data, isGroup: true);
       } else {
-        if (data != null && data['call'] == "true") {
+        if (data['call'] == "true") {
           await _enqueueOrHandlePushNotification(data, isCall: true);
         } else {
           await _enqueueOrHandlePushNotification(data);
@@ -198,7 +198,7 @@ class NotificationService with WidgetsBindingObserver {
   static void _startPendingProcessor() {
     if (_pendingProcessorRunning) return;
     _pendingProcessorRunning = true;
-    _pendingProcessorTimer =
+    pendingProcessorTimer =
         Timer.periodic(const Duration(milliseconds: 500), (timer) async {
       if (navigatorKey != null &&
           isAppInitialized == true &&
@@ -233,7 +233,7 @@ class NotificationService with WidgetsBindingObserver {
         }
 
         timer.cancel();
-        _pendingProcessorTimer = null;
+        pendingProcessorTimer = null;
         _pendingProcessorRunning = false;
       }
     });

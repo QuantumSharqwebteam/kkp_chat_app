@@ -52,7 +52,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("🔥 Background handler triggered");
 
   // Local notifications plugin for the background isolate
-  final FlutterLocalNotificationsPlugin _bgLocalNotificationsPlugin =
+  final FlutterLocalNotificationsPlugin bgLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   try {
     const AndroidInitializationSettings androidInit =
@@ -62,7 +62,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       android: androidInit,
       iOS: iosInit,
     );
-    await _bgLocalNotificationsPlugin.initialize(initSettings);
+    await bgLocalNotificationsPlugin.initialize(initSettings);
   } catch (e) {
     debugPrint('❌ Error initializing local notifications in background: $e');
   }
@@ -85,7 +85,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
           presentAlert: true, presentBadge: true, presentSound: true);
       final notificationDetails =
           NotificationDetails(android: androidDetails, iOS: iosDetails);
-      await _bgLocalNotificationsPlugin.show(
+      await bgLocalNotificationsPlugin.show(
           DateTime.now().millisecondsSinceEpoch.remainder(100000),
           title,
           body.toString(),
@@ -124,7 +124,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
             presentAlert: true, presentBadge: true, presentSound: true);
         final notificationDetails =
             NotificationDetails(android: androidDetails, iOS: iosDetails);
-        await _bgLocalNotificationsPlugin.show(
+        await bgLocalNotificationsPlugin.show(
             1001, title, body.toString(), notificationDetails,
             payload: jsonEncode({
               'isGroupMessage': true,
@@ -183,7 +183,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
             NotificationDetails(android: androidDetails, iOS: iosDetails);
         final payload = jsonEncode(message.data);
         final id = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-        await _bgLocalNotificationsPlugin.show(
+        await bgLocalNotificationsPlugin.show(
             id, title, body.toString(), notificationDetails,
             payload: payload);
       } catch (e) {
@@ -276,6 +276,7 @@ class _MyAppState extends State<MyApp> {
           int attempts = 0;
           while (attempts < 50) {
             final appState =
+                // ignore: use_build_context_synchronously
                 Provider.of<AppStateProvider>(context, listen: false);
             if (appState.isAppReady == true) break;
             await Future.delayed(const Duration(milliseconds: 100));
@@ -331,43 +332,43 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => MeetingManagement()),
         ChangeNotifierProvider(create: (_) => GroupProvider()),
       ],
-          child: Consumer<LocaleProvider>(
-            builder: (context, localeProvider, child) {
-              return MaterialApp(
-                navigatorObservers: [routeObserver],
-                navigatorKey: widget.navigatorKey,
-                title: 'KKP Chat App',
-                debugShowCheckedModeBanner: false,
-                theme: AppTheme.lightTheme,
-                initialRoute: "/splash",
-                routes: {
-                  "/splash": (context) => const Splash(),
-                  "/login": (context) => LoginPage(),
-                },
-                onGenerateRoute: (settings) {
-                  if (CustomerRoutes.allRoutes.contains(settings.name)) {
-                    return generateCustomerRoute(settings);
-                  } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
-                    return generateMarketingRoute(settings);
-                  } else {
-                    return null;
-                  }
-                },
-                localizationsDelegates: const [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                supportedLocales: const [
-                  Locale('en'),
-                  Locale('hi'),
-                  Locale('ta'),
-                ],
-                locale: localeProvider.locale,
-              );
+      child: Consumer<LocaleProvider>(
+        builder: (context, localeProvider, child) {
+          return MaterialApp(
+            navigatorObservers: [routeObserver],
+            navigatorKey: widget.navigatorKey,
+            title: 'KKP Chat App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            initialRoute: "/splash",
+            routes: {
+              "/splash": (context) => const Splash(),
+              "/login": (context) => LoginPage(),
             },
-          ),
-        );
+            onGenerateRoute: (settings) {
+              if (CustomerRoutes.allRoutes.contains(settings.name)) {
+                return generateCustomerRoute(settings);
+              } else if (MarketingRoutes.allRoutes.contains(settings.name)) {
+                return generateMarketingRoute(settings);
+              } else {
+                return null;
+              }
+            },
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+              Locale('hi'),
+              Locale('ta'),
+            ],
+            locale: localeProvider.locale,
+          );
+        },
+      ),
+    );
   }
 }

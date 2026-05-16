@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
@@ -11,11 +13,19 @@ import 'package:kkpchatapp/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
-class SocketService {
+class SocketService with WidgetsBindingObserver {
   static final SocketService _instance = SocketService._internal();
   factory SocketService(GlobalKey<NavigatorState> navigatorKey) {
     return _instance;
   }
+
+  static const _backgroundChannel = MethodChannel('com.kkpchatapp/background_task');
+  String? _currentUserName;
+  String? _currentUserEmail;
+  String? _currentRole;
+  String? _currentToken;
+  bool _pendingRejoin = false;
+  bool _observerRegistered = false;
 
   final NotificationService notiService = NotificationService();
 
@@ -116,7 +126,9 @@ class SocketService {
     if (senderId == null ||
         senderId.isEmpty ||
         targetId == null ||
-        targetId.isEmpty) return;
+        targetId.isEmpty) {
+      return;
+    }
 
     final userType = await LocalDbHelper.getUserType();
     final boxName = userType == "0" ? targetId : '$targetId$senderId';
@@ -160,6 +172,14 @@ class SocketService {
     if (_isConnected) {
       debugPrint('⚠️ Socket already connected, skipping init');
       return;
+    }
+    _currentUserName = userName;
+    _currentUserEmail = userEmail;
+    _currentRole = role;
+    _currentToken = token;
+    if (!_observerRegistered) {
+      WidgetsBinding.instance.addObserver(this);
+      _observerRegistered = true;
     }
     _statusController.close();
     _statusController = StreamController<List<String>>.broadcast();
@@ -1021,7 +1041,91 @@ class SocketService {
     }
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('[SocketService] Lifecycle → $state');
+    switch (state) {
+      case AppLifecycleState.inactive:
+        if (Platform.isIOS) _beginBackgroundTask();
+        break;
+      case AppLifecycleState.paused:
+        _onAppPaused();
+        break;
+      case AppLifecycleState.resumed:
+        _onAppResumed();
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _onAppPaused() {
+    if (_isConnected && _currentUserEmail != null) {
+      try {
+        _socket.emit('leave', {'userId': _currentUserEmail});
+        _pendingRejoin = true;
+        debugPrint('[SocketService] leave emitted for $_currentUserEmail (app paused)');
+      } catch (e) {
+        debugPrint('[SocketService] Failed to emit leave on pause: $e');
+      }
+    }
+  }
+
+  void _onAppResumed() {
+    if (Platform.isIOS) _endBackgroundTask();
+
+    if (!_isConnected) {
+      _pendingRejoin = false;
+      debugPrint('[SocketService] Resumed — socket dead, reconnecting...');
+      try {
+        _socket.connect();
+      } catch (e) {
+        debugPrint('[SocketService] Reconnect on resume failed: $e');
+      }
+    } else if (_pendingRejoin) {
+      _pendingRejoin = false;
+      _emitJoinDirectly();
+    }
+  }
+
+  void _emitJoinDirectly() {
+    if (_currentUserName == null || _currentUserEmail == null || _currentRole == null) return;
+    try {
+      _socket.emit('join', {
+        'user': _currentUserName,
+        'userId': _currentUserEmail,
+        'role': _currentRole,
+        if (_currentToken != null) 'token': _currentToken,
+      });
+      debugPrint('[SocketService] Re-joined after resume: $_currentUserEmail');
+    } catch (e) {
+      debugPrint('[SocketService] Failed to re-join on resume: $e');
+    }
+  }
+
+  Future<void> _beginBackgroundTask() async {
+    try {
+      await _backgroundChannel.invokeMethod('beginBackgroundTask');
+      debugPrint('[SocketService] iOS background task started');
+    } catch (e) {
+      debugPrint('[SocketService] beginBackgroundTask failed: $e');
+    }
+  }
+
+  Future<void> _endBackgroundTask() async {
+    try {
+      await _backgroundChannel.invokeMethod('endBackgroundTask');
+      debugPrint('[SocketService] iOS background task ended');
+    } catch (e) {
+      debugPrint('[SocketService] endBackgroundTask failed: $e');
+    }
+  }
+
   void dispose() {
+    if (_observerRegistered) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observerRegistered = false;
+    }
     if (_isConnected) {
       _socket.clearListeners();
       _statusController.close();
@@ -1341,7 +1445,7 @@ class SocketService {
   }
 
   /// Handles notification taps
-  Future<void> _handleNotificationTap(NotificationResponse response) async {
+  Future<void> handleNotificationTap(NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
 
     if (response.payload == null) {

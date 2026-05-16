@@ -22,7 +22,7 @@ Future<void> handleNotificationClickForCustomer(
     GlobalKey<NavigatorState> navigatorKey,
     Map<String, dynamic> notificationData) async {
   debugPrint(
-      'handleNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorKey set: ${navigatorKey != null}, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+      'handleNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorKey set:, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final customerEmail =
       (notificationData['targetId'] as String?) ?? LocalDbHelper.getEmail();
   if (notificationData["type"] == "product") {

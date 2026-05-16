@@ -73,7 +73,9 @@ class CustomerHomeProvider with ChangeNotifier {
 
   bool _isValidPosterUrl(String url) {
     final uri = Uri.tryParse(url);
-    return uri != null && (uri.isScheme('http') || uri.isScheme('https')) && uri.host.isNotEmpty;
+    return uri != null &&
+        (uri.isScheme('http') || uri.isScheme('https')) &&
+        uri.host.isNotEmpty;
   }
 
   // ✅ Optional: Flag to indicate poster loading
@@ -118,7 +120,7 @@ class CustomerHomeProvider with ChangeNotifier {
       for (var product in _products!) {
         final image = CachedNetworkImageProvider(product.imageUrl);
         final ctx = navigatorKey.currentState?.context;
-        if (ctx != null) {
+        if (ctx != null && ctx.mounted) {
           precacheImage(image, ctx);
         }
       }
