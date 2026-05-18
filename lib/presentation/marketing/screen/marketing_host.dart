@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:kkpchatapp/core/services/call_kit_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -21,10 +21,7 @@ import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
-
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
@@ -54,13 +51,7 @@ class _MarketingHostState extends State<MarketingHost>
   AuthApi auth = AuthApi();
   // Using the host's navigatorKey (widget.navigatorKey) to avoid multiple navigators.
 
-  OverlayEntry? _activeCallOverlay;
-  Timer? _incomingCallTimeoutTimer;
   String? _activeIncomingCallId;
-
-  //OverlayEntry? _disconnectOverlay;
-
-  AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
@@ -199,10 +190,6 @@ class _MarketingHostState extends State<MarketingHost>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _socketService.offCallTerminated(_handleCallTermination);
-    _incomingCallTimeoutTimer?.cancel();
-    _removeIncomingCallOverlay();
-    _audioPlayer?.stop();
-    // _socketService.disconnect(); // Disconnect when leaving the host screen
     super.dispose();
   }
 
@@ -376,99 +363,31 @@ class _MarketingHostState extends State<MarketingHost>
         .deleteProductLocal(productId);
   }
 
-  Future<void> _removeIncomingCallOverlay() async {
-    _incomingCallTimeoutTimer?.cancel();
-    _incomingCallTimeoutTimer = null;
-
-    try {
-      await _audioPlayer?.stop();
-      await _audioPlayer?.dispose();
-    } catch (e) {
-      debugPrint("⚠️ Failed to stop incoming ringtone: $e");
-    }
-
-    _activeCallOverlay?.remove();
-    _activeCallOverlay = null;
-    _activeIncomingCallId = null;
-    _audioPlayer = null;
-  }
-
   void _handleCallTermination(Map<String, dynamic> data) {
     final terminatedCallId = data['callId']?.toString();
     if (terminatedCallId == null || terminatedCallId.isEmpty) return;
-
-    if (_activeIncomingCallId == terminatedCallId &&
-        _activeCallOverlay != null) {
-      debugPrint(
-          "🔚 MarketingHost closing incoming call overlay for callId: $terminatedCallId");
-      _removeIncomingCallOverlay();
+    if (_activeIncomingCallId == terminatedCallId) {
+      _activeIncomingCallId = null;
+      CallKitService.instance.endCall(terminatedCallId);
     }
   }
 
   Future<void> _handleIncomingCall(Map<String, dynamic> callData) async {
-    // debugPrint("Incoming call data2: ${callData.toString()}");
-    // Remove previous overlay if exists
-    await _removeIncomingCallOverlay();
     if (!mounted) return;
-
-    final channelName = callData['channelName'];
-    final callerName = callData['callerName'];
-    final callerId = callData['callerId'];
-    final incomingCallId = callData["callId"];
-    _activeIncomingCallId = incomingCallId?.toString();
+    final channelName = callData['channelName'] as String;
+    final callerName = callData['callerName'] as String;
+    final callerId = callData['callerId'] as String;
+    final incomingCallId = callData['callId'].toString();
+    _activeIncomingCallId = incomingCallId;
     final uid = Utils().generateIntUidFromEmail(agentEmail!);
-    final overlayState = Overlay.of(context);
 
-    late OverlayEntry overlayEntry;
-    _audioPlayer = AudioPlayer();
-
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).padding.top + 16,
-        left: 16,
-        right: 16,
-        child: IncomingCallWidget(
-          callerName: callerName,
-          onAnswer: () async {
-            await _removeIncomingCallOverlay();
-            if (context.mounted) {
-              context.read<CallProvider>().startNewCall(
-                  channelName: channelName,
-                  remoteUserName: callerName,
-                  uid: uid,
-                  callId: incomingCallId,
-                  isCaller: false);
-            }
-          },
-          onReject: () async {
-            await _removeIncomingCallOverlay();
-            await Future.delayed(const Duration(milliseconds: 100));
-            await chatRepository.updateCallData(incomingCallId, "not answered");
-            // Optionally emit reject event
-            _socketService.terminateCall(
-              targetId: callerId,
-              callId: incomingCallId,
-              channelName: channelName,
-            );
-          },
-          audioPlayer: _audioPlayer!,
-        ),
-      ),
+    await CallKitService.instance.showIncomingCall(
+      callId: incomingCallId,
+      channelName: channelName,
+      callerName: callerName,
+      callerId: callerId,
+      uid: uid,
     );
-
-    _activeCallOverlay = overlayEntry;
-    overlayState.insert(overlayEntry);
-    // If the app is not in the foreground, also show a notification
-    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
-      NotificationService.showIncomingCallNotification(callerName);
-    }
-
-    // Auto-dismiss after 30 seconds
-    _incomingCallTimeoutTimer = Timer(const Duration(seconds: 30), () async {
-      await _removeIncomingCallOverlay();
-      // Optionally emit missed call
-      await chatRepository.updateCallData(incomingCallId, "missed");
-    });
   }
 
   @override

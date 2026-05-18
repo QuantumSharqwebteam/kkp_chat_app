@@ -31,7 +31,9 @@ class FormDataModel {
 
   static String _asString(dynamic value) {
     if (value == null) return '';
-    return value.toString().trim();
+    final str = value.toString().trim();
+    if (str.toLowerCase() == 'unknown buyer') return '';
+    return str;
   }
 
   factory FormDataModel.fromJson(Map<String, dynamic> json) {

@@ -329,8 +329,9 @@ class NotificationService with WidgetsBindingObserver {
 
     // For simple control payloads (non-JSON) we handle them explicitly
     if (response.payload == 'incoming_call') {
-      debugPrint('Incoming call notification tapped — opening app only.');
-      // Do nothing else; the app's socket event / MarketingHost will show overlay
+      debugPrint('Incoming call notification tapped — app opened, CallKit handles the rest.');
+      // flutter_callkit_incoming manages the call UI; the onEvent stream in
+      // CallKitService will fire actionCallAccept/Decline as needed.
       return;
     }
 

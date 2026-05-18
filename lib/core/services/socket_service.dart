@@ -1060,14 +1060,13 @@ class SocketService with WidgetsBindingObserver {
   }
 
   void _onAppPaused() {
-    if (_isConnected && _currentUserEmail != null) {
-      try {
-        _socket.emit('leave', {'userId': _currentUserEmail});
-        _pendingRejoin = true;
-        debugPrint('[SocketService] leave emitted for $_currentUserEmail (app paused)');
-      } catch (e) {
-        debugPrint('[SocketService] Failed to emit leave on pause: $e');
-      }
+    // Do NOT emit 'leave' here. The server's socket disconnect event fires
+    // automatically when the socket drops (~30 s background task), so the server
+    // still marks the user offline at the right time. Emitting 'leave' early
+    // would cut the background window short — incoming call socket events would
+    // not be routed to this user even though the socket is still alive.
+    if (_isConnected) {
+      _pendingRejoin = true;
     }
   }
 

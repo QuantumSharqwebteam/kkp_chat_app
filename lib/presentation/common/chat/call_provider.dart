@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/call_kit_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
@@ -276,7 +277,7 @@ class CallProvider with ChangeNotifier {
     _agoraEngine.leaveChannel();
     _agoraEngine.release();
     _isInitialized = false;
-    // ✅ Pop the call screen if it's visible
+
     if (_isCallScreenVisible && navigatorKey.currentState?.canPop() == true) {
       navigatorKey.currentState?.pop();
     }
@@ -284,6 +285,12 @@ class CallProvider with ChangeNotifier {
     _isOutgoingCallVisible = false;
 
     removeOutgoingCallOverlay();
+
+    // Dismiss native CallKit / ConnectionService UI if still showing
+    if (_callId != null) {
+      CallKitService.instance.endCall(_callId!);
+    }
+
     _resetState();
     notifyListeners();
   }

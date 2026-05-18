@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import UserNotifications
+import CallKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -52,14 +53,30 @@ import UserNotifications
     backgroundTaskID = .invalid
   }
 
-  // ✅ Show notifications while app is in foreground
+  // Suppress banner/sound for FCM call notifications when CallKit is already
+  // showing the native incoming-call screen — avoids a double alert.
   override func userNotificationCenter(_ center: UNUserNotificationCenter,
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+
+    let userInfo = notification.request.content.userInfo
+    let isCallNotification = (userInfo["notificationType"] as? String) == "incoming_call"
+      || (userInfo["type"] as? String) == "incoming_call"
+      || (userInfo["type"] as? String) == "call"
+
+    // If CallKit is already presenting a call, don't show a duplicate banner
+    if isCallNotification {
+      let activeCalls = CXCallObserver().calls
+      if activeCalls.contains(where: { !$0.hasEnded }) {
+        completionHandler([])
+        return
+      }
+    }
+
     if #available(iOS 14.0, *) {
-        completionHandler([.banner, .sound, .badge])
+      completionHandler([.banner, .sound, .badge])
     } else {
-        completionHandler([.alert, .sound, .badge])
+      completionHandler([.alert, .sound, .badge])
     }
   }
 }

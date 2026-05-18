@@ -423,7 +423,7 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            form.buyerName.isNotEmpty ? form.buyerName : 'Buyer not provided',
+                            form.buyerName.isNotEmpty ? form.buyerName : 'Buyer not available',
                             style: AppTextStyles.black16_600,
                           ),
                           const SizedBox(height: 4),
@@ -849,36 +849,17 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
       _quantityError = null;
       _rateError = null;
     });
-    // Prevent negative values for quantity and rate
+    // Prevent negative values for quantity (supports "1000 metres", "100 m", etc.)
     final qtyText = quantityController.text.trim();
     if (qtyText.isNotEmpty) {
-      final q = int.tryParse(qtyText.replaceAll(',', ''));
-      if (q == null) {
-        setState(() => _quantityError = 'Enter a valid quantity');
-        return;
-      }
-      if (q < 0) {
-        setState(() => _quantityError = 'Quantity cannot be negative');
-        return;
-      }
-    }
-
-    // final rateText = rateController.text.trim();
-    if (qtyText.isNotEmpty) {
-      // If there are digits in the input, ensure the numeric value is not negative.
       final numericMatch = RegExp(r'\d+').firstMatch(qtyText.replaceAll(',', ''));
       if (numericMatch != null) {
         final q = int.tryParse(numericMatch.group(0)!);
-        if (q == null) {
-          setState(() => _quantityError = 'Please enter a valid quantity');
-          return;
-        }
-        if (q < 0) {
+        if (q != null && q < 0) {
           setState(() => _quantityError = 'Quantity cannot be negative');
           return;
         }
       }
-      // If no digits present (e.g. "two metres" or "metres"), accept as textual quantity.
     }
     setState(() => isSubmitting = true);
     final updates = <String, dynamic>{
@@ -952,6 +933,9 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
                 controller: qualityController,
                 hintText: 'Quality',
                 maxLines: 2,
+                inputFormatters: <TextInputFormatter>[
+                  FilteringTextInputFormatter.deny(RegExp(r'-')),
+                ],
               ),
               const SizedBox(height: 12),
               CustomTextField(

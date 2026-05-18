@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:flutter_callkit_incoming/entities/entities.dart';
+import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +11,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/theme.dart';
+import 'package:kkpchatapp/core/services/call_kit_service.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -67,34 +70,54 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     debugPrint('❌ Error initializing local notifications in background: $e');
   }
 
-  // Quick handling for incoming call payloads so user gets a visible notification
+  // Incoming call: show native CallKit / ConnectionService UI instead of a plain notification
   if (message.data['notificationType'] == 'incoming_call' ||
       message.data['type'] == 'incoming_call' ||
       message.data['type'] == 'call') {
     try {
-      final title = message.data['callerName'] ?? 'Incoming Call';
-      final body = message.data['callerId'] ?? 'Tap to open';
-      const androidDetails = AndroidNotificationDetails(
-        'call_channel_id',
-        'Call Notifications',
-        channelDescription: 'Incoming call notifications',
-        importance: Importance.max,
-        priority: Priority.high,
+      final callId = message.data['callId'] ??
+          DateTime.now().millisecondsSinceEpoch.toString();
+      final callerName = message.data['callerName'] ?? 'Incoming Call';
+      final callerId = message.data['callerId'] ?? '';
+      final channelName = message.data['channelName'] ?? '';
+      final uid = int.tryParse(message.data['uid'] ?? '') ?? 0;
+
+      final params = CallKitParams(
+        id: callId,
+        nameCaller: callerName,
+        handle: callerName,
+        type: 0,
+        appName: 'KKP Group',
+        ios: const IOSParams(
+          handleType: 'generic',
+          supportsHolding: false,
+          supportsGrouping: false,
+          supportsUngrouping: false,
+          supportsDTMF: false,
+          iconName: 'AppIcon',
+          ringtonePath: 'system_ringtone_default',
+        ),
+        android: const AndroidParams(
+          isCustomNotification: true,
+          isShowLogo: false,
+          ringtonePath: 'system_ringtone_default',
+          backgroundColor: '#0B3D91',
+          actionColor: '#4CAF50',
+          textColor: '#ffffff',
+          isCustomSmallExNotification: true,
+        ),
+        extra: {
+          'channelName': channelName,
+          'callerName': callerName,
+          'callerId': callerId,
+          'uid': uid.toString(),
+        },
       );
-      const iosDetails = DarwinNotificationDetails(
-          presentAlert: true, presentBadge: true, presentSound: true);
-      final notificationDetails =
-          NotificationDetails(android: androidDetails, iOS: iosDetails);
-      await bgLocalNotificationsPlugin.show(
-          DateTime.now().millisecondsSinceEpoch.remainder(100000),
-          title,
-          body.toString(),
-          notificationDetails,
-          payload: 'incoming_call');
+      await FlutterCallkitIncoming.showCallkitIncoming(params);
     } catch (e) {
-      debugPrint(
-          '❌ Error showing incoming call notification in background: $e');
+      debugPrint('❌ Error showing CallKit incoming call in background: $e');
     }
+    return;
   }
 
   final String role = message.data['role'] ?? 'agent';
@@ -226,6 +249,9 @@ void main() async {
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");
   }
+
+  // Init native call UI service (CallKit on iOS, ConnectionService on Android)
+  CallKitService.instance.init();
 
   // Set the global flag to true after initialization
   // isAppInitialized = true;
