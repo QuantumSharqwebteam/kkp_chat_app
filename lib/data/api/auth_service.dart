@@ -704,4 +704,32 @@ class AuthApi {
       throw Exception(e);
     }
   }
+
+  /// Fetches AWS keys from the backend and caches them via LocalDbHelper for one day.
+  /// Safe to call repeatedly — skips the network call if the cache is still valid.
+  static Future<void> prefetchAwsKeys() async {
+    try {
+      if (LocalDbHelper.isAwsKeysCacheValid()) {
+        debugPrint('[AuthApi] AWS keys cache is valid, skipping fetch.');
+        return;
+      }
+
+      final url = Uri.parse('${dotenv.env["BASE_URL"]}/chat/getKey');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'] as Map<String, dynamic>;
+        await LocalDbHelper.saveAwsKeys(
+          accessKey: data['accessKey'] as String,
+          secretKey: data['secretKey'] as String,
+          region: data['region'] as String,
+        );
+        debugPrint('[AuthApi] AWS keys fetched and cached.');
+      } else {
+        debugPrint('[AuthApi] Failed to fetch AWS keys: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('[AuthApi] Error prefetching AWS keys: $e');
+    }
+  }
 }

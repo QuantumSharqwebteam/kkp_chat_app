@@ -15,6 +15,10 @@
     <!-- Required for flutter_callkit_incoming -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <!-- Android 14+: declare the specific foreground service type for VoIP calls -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL"/>
+    <!-- Required for full-screen incoming call notification on lock screen -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
         android:label="KKP Group"

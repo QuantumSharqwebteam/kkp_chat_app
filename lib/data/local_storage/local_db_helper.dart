@@ -621,6 +621,40 @@ class LocalDbHelper {
     return _box.get('lastUserGroupsFetchTime');
   }
 
+  // --- AWS Keys cache (stored in the existing CREDENTIALS box) ---
+  static const String _awsAccessKey = 'aws_access_key';
+  static const String _awsSecretKey = 'aws_secret_key';
+  static const String _awsRegion = 'aws_region';
+  static const String _awsCacheTime = 'aws_key_cache_time';
+  static const Duration _awsCacheDuration = Duration(days: 1);
+
+  static bool isAwsKeysCacheValid() {
+    final cached = _box.get(_awsCacheTime);
+    if (cached == null) return false;
+    final fetchedAt = DateTime.tryParse(cached as String);
+    return fetchedAt != null &&
+        DateTime.now().difference(fetchedAt) < _awsCacheDuration;
+  }
+
+  static Future<void> saveAwsKeys({
+    required String accessKey,
+    required String secretKey,
+    required String region,
+  }) async {
+    await _box.put(_awsAccessKey, accessKey);
+    await _box.put(_awsSecretKey, secretKey);
+    await _box.put(_awsRegion, region);
+    await _box.put(_awsCacheTime, DateTime.now().toIso8601String());
+  }
+
+  static ({String? accessKey, String? secretKey, String? region}) getAwsKeys() {
+    return (
+      accessKey: _box.get(_awsAccessKey) as String?,
+      secretKey: _box.get(_awsSecretKey) as String?,
+      region: _box.get(_awsRegion) as String?,
+    );
+  }
+
   static Future<Box<dynamic>> _inquiryFormsBox() async {
     return await Hive.openBox<dynamic>(_inquiryFormsBoxKey);
   }

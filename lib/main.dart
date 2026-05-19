@@ -14,6 +14,7 @@ import 'package:kkpchatapp/config/theme/theme.dart';
 import 'package:kkpchatapp/core/services/call_kit_service.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
+import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/data/repositories/product_repository.dart';
@@ -240,6 +241,8 @@ void main() async {
     Hive.openBox<int>(LocalDbHelper.groupUnreadCountsBoxKey),
     dotenv.load(fileName: "keys.env"),
   ]);
+
+  await AuthApi.prefetchAwsKeys();
 
   try {
     await Firebase.initializeApp(
