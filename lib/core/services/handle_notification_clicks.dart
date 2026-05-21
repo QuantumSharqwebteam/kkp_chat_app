@@ -4,7 +4,6 @@ import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
-import 'package:kkpchatapp/presentation/common/chat/incoming_call_screen.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 
@@ -243,60 +242,6 @@ Future<void> handlePushNotificationClickForAgent(
       timer?.cancel();
       controller.close();
       triggerNavigation();
-    }
-  });
-
-  timer = Timer(Duration(seconds: 20), () {
-    if (!controller.isClosed) {
-      controller.close();
-      debugPrint("Timeout reached. App is not initialized.");
-    }
-  });
-
-  Future.doWhile(() async {
-    if (isAppInitialized) {
-      controller.add(true);
-      return false;
-    }
-    await Future.delayed(Duration(milliseconds: 100));
-    return true;
-  });
-}
-
-/// Handles incoming call notification.
-Future<void> handleIncomingCall(GlobalKey<NavigatorState> navigatorKey,
-    Map<String, dynamic> callData) async {
-  debugPrint(
-      'handleIncomingCall invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
-  final StreamController<bool> controller = StreamController<bool>();
-  Timer? timer;
-
-  // Function to trigger the incoming call screen
-  void triggerIncomingCall() {
-    final channelName = callData['channelName'];
-    final remoteUserName = callData['remoteUserName'];
-    final remoteUserId = callData['remoteUserId'];
-    final notificationId = callData['notificationId'];
-    final callId = callData["callId"];
-
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(
-        builder: (_) => IncomingCallScreen(
-          callerName: remoteUserName,
-          remoteUserId: remoteUserId,
-          channelName: channelName,
-          notificationId: notificationId,
-          callId: callId,
-        ),
-      ),
-    );
-  }
-
-  controller.stream.listen((isInitialized) {
-    if (isInitialized) {
-      timer?.cancel();
-      controller.close();
-      triggerIncomingCall();
     }
   });
 

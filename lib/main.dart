@@ -53,7 +53,17 @@ bool isAppInitialized = false;
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  debugPrint("🔥 Background handler triggered");
+
+  // ── Full payload log — use this to debug terminated/background state ────────
+  debugPrint('═══════════════════════════════════════════════════════════');
+  debugPrint('🔥 [FCM BACKGROUND HANDLER] triggered');
+  debugPrint('   messageId        : ${message.messageId}');
+  debugPrint('   from             : ${message.from}');
+  debugPrint('   sentTime         : ${message.sentTime}');
+  debugPrint('   notification.title: ${message.notification?.title}');
+  debugPrint('   notification.body : ${message.notification?.body}');
+  debugPrint('   data (full)      : ${message.data}');
+  debugPrint('═══════════════════════════════════════════════════════════');
 
   // Local notifications plugin for the background isolate
   final FlutterLocalNotificationsPlugin bgLocalNotificationsPlugin =
@@ -71,17 +81,30 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     debugPrint('❌ Error initializing local notifications in background: $e');
   }
 
-  // Incoming call: show native CallKit / ConnectionService UI instead of a plain notification
-  if (message.data['notificationType'] == 'incoming_call' ||
-      message.data['type'] == 'incoming_call' ||
-      message.data['type'] == 'call') {
+  // ── Call detection ──────────────────────────────────────────────────────────
+  // Backend sends call: "true" in the FCM data payload for incoming calls.
+  final bool isCallNotification = message.data['call'] == 'true';
+
+  if (isCallNotification) {
+    debugPrint(
+        '📞 [FCM BG] Detected incoming call — showing native CallKit UI');
     try {
       final callId = message.data['callId'] ??
           DateTime.now().millisecondsSinceEpoch.toString();
-      final callerName = message.data['callerName'] ?? 'Incoming Call';
-      final callerId = message.data['callerId'] ?? '';
+      // Backend uses remoteUserName / remoteUserId; fall back to older names
+      final callerName = message.data['remoteUserName'] ??
+          message.data['callerName'] ??
+          'Incoming Call';
+      final callerId =
+          message.data['remoteUserId'] ?? message.data['callerId'] ?? '';
       final channelName = message.data['channelName'] ?? '';
       final uid = int.tryParse(message.data['uid'] ?? '') ?? 0;
+
+      debugPrint('   callId     : $callId');
+      debugPrint('   callerName : $callerName');
+      debugPrint('   callerId   : $callerId');
+      debugPrint('   channelName: $channelName');
+      debugPrint('   uid        : $uid');
 
       final params = CallKitParams(
         id: callId,
@@ -115,8 +138,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         },
       );
       await FlutterCallkitIncoming.showCallkitIncoming(params);
+      debugPrint('✅ [FCM BG] CallKit showCallkitIncoming completed');
     } catch (e) {
-      debugPrint('❌ Error showing CallKit incoming call in background: $e');
+      debugPrint('❌ [FCM BG] Error showing CallKit: $e');
     }
     return;
   }
@@ -124,6 +148,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final String role = message.data['role'] ?? 'agent';
   final String notificationType =
       message.data['notificationType'] ?? 'individual';
+  debugPrint(
+      '📨 [FCM BG] Chat message — role: $role, notificationType: $notificationType');
 
   try {
     await Hive.initFlutter();
@@ -211,8 +237,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
             id, title, body.toString(), notificationDetails,
             payload: payload);
       } catch (e) {
-        debugPrint(
-            '❌ Error showing direct chat notification in background: $e');
+        debugPrint('❌ [FCM BG] Error showing chat notification: $e');
       }
     }
   } catch (e) {

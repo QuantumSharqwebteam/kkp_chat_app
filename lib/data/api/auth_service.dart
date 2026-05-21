@@ -52,31 +52,31 @@ class AuthApi {
     );
 
     try {
-      final response = await client.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
+      final response = await client
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $oldToken',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       LoggingService.instance.logNetwork(
         "Refresh token status: ${response.statusCode}",
         level: LogLevel.debug,
       );
 
-      // ✅ Log FULL RAW RESPONSE
       LoggingService.instance.logNetwork(
         "Refresh token raw response: ${response.body}",
         level: LogLevel.debug,
       );
 
-      // ✅ SAFETY CHECK: response must be JSON
       if (!response.body.trim().startsWith('{')) {
         LoggingService.instance.logNetwork(
           "Non-JSON response received during token refresh",
           level: LogLevel.error,
         );
-
         return {"success": false, "message": "Session expired. Please login again."};
       }
 
@@ -96,7 +96,6 @@ class AuthApi {
         stackTrace: stackTrace,
       );
 
-      // ✅ DO NOT CRASH APP
       return {"success": false, "message": "Unable to refresh token"};
     }
   }

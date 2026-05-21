@@ -121,6 +121,42 @@ class _MarketingHostState extends State<MarketingHost>
     ]);
   }
 
+  Future<void> _forceLogout(String serverMessage) async {
+    if (!mounted) return;
+    final isAnotherDevice = serverMessage.toLowerCase().contains('another device');
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(
+          isAnotherDevice ? Icons.devices_other_rounded : Icons.lock_clock_outlined,
+          color: Colors.orange.shade700,
+          size: 44,
+        ),
+        title: const Text('Session Ended'),
+        content: Text(
+          isAnotherDevice
+              ? 'Your account was signed in on another device. This session has been ended for your security.'
+              : 'You are no longer authorized. Please log in again.',
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Log In'),
+          ),
+        ],
+      ),
+    );
+    await Hive.deleteFromDisk();
+    await reinitializeHive();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
+  }
+
   Future<void> _loadUserData() async {
     try {
       role = await LocalDbHelper.getUserType();
@@ -141,25 +177,9 @@ class _MarketingHostState extends State<MarketingHost>
       if (userData is Map<String, dynamic>) {
         final message = userData['message'];
 
-        if (message == "Session expired due to login on another device") {
-          await Hive.deleteFromDisk();
-          await reinitializeHive();
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-            );
-          }
-          return;
-        }
-
-        if (message == "You are Not Authorized") {
-          await Hive.deleteFromDisk();
-          await reinitializeHive();
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-            );
-          }
+        if (message == "Session expired due to login on another device" ||
+            message == "You are Not Authorized") {
+          await _forceLogout(message);
           return;
         }
 

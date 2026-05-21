@@ -304,24 +304,25 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         if (data["status"] == 200 && data["token"] != null) {
-          if (kDebugMode) {
-            debugPrint("✅ Agora token generated:${data["token"]}");
-          }
+          LoggingService.instance.info('AgoraToken', 'token obtained for channel=$channelName uid=$uid');
           return data["token"];
         } else {
-          //   debugPrint("❌ Token not present in response: $data");
+          LoggingService.instance.warning('AgoraToken',
+              'backend rejected token request — status=${data["status"]}  '
+              'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
           return null;
         }
       } else {
-        //  debugPrint("❌ Failed to fetch token: ${response.statusCode}");
+        LoggingService.instance.warning('AgoraToken',
+            'HTTP ${response.statusCode} for channel=$channelName uid=$uid  '
+            'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
         return null;
       }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint("❌ Exception in getAgoraToken: $e");
-      }
+    } catch (e, st) {
+      LoggingService.instance.error('AgoraToken',
+          'exception fetching token for channel=$channelName uid=$uid',
+          error: e, stackTrace: st);
       return null;
     }
   }

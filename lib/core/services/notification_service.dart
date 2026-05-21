@@ -73,9 +73,28 @@ class NotificationService with WidgetsBindingObserver {
 
   // Setup for background notifications (when the app is in the background)
   static void _setupBackgroundNotification() {
+    // Foreground FCM messages — log full payload for debugging
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('═══════════════════════════════════════════════');
+      debugPrint('📲 [FCM FOREGROUND] message received');
+      debugPrint('   messageId   : ${message.messageId}');
+      debugPrint('   from        : ${message.from}');
+      debugPrint('   notification: title="${message.notification?.title}" body="${message.notification?.body}"');
+      debugPrint('   data        : ${message.data}');
+      debugPrint('═══════════════════════════════════════════════');
+      // Foreground chat/call notifications are handled by the socket service.
+      // No local notification shown here to avoid duplicates.
+    });
+
+    // Notification tapped while app was in background
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint(
-          "🔔 Notification Clicked (Background): ${message.notification?.title}");
+      debugPrint('═══════════════════════════════════════════════');
+      debugPrint('🔔 [FCM TAP / Background→Foreground]');
+      debugPrint('   messageId   : ${message.messageId}');
+      debugPrint('   from        : ${message.from}');
+      debugPrint('   notification: title="${message.notification?.title}" body="${message.notification?.body}"');
+      debugPrint('   data        : ${message.data}');
+      debugPrint('═══════════════════════════════════════════════');
       _handleBackgroundMessage(message);
       handleNotificationClick(message);
     });
@@ -83,9 +102,14 @@ class NotificationService with WidgetsBindingObserver {
 
   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
     final Map<String, dynamic> notificationData = message.data;
-    debugPrint('notification: $notificationData');
+    debugPrint('📦 [FCM handleBackgroundMessage] data: $notificationData');
 
-    // Extract necessary data from the message using the correct keys
+    // Call notifications must not increment chat unread counts
+    if (notificationData['call'] == 'true') {
+      debugPrint('📞 [FCM handleBackgroundMessage] call notification — skipping unread increment');
+      return;
+    }
+
     final String? customerEmail = notificationData['senderId'];
     final String? agentEmail = notificationData['targetId'];
 
@@ -222,43 +246,6 @@ class NotificationService with WidgetsBindingObserver {
     });
   }
 
-  // Method to show incoming call notification
-  static Future<void> showIncomingCallNotification(String callerName) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'call_channel_id',
-      'Call Notifications',
-      channelDescription:
-          'This channel is used for incoming call notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-      sound: RawResourceAndroidNotificationSound(
-          'incoming_call'), // Use your custom sound file for Android
-    );
-
-    const DarwinNotificationDetails iOSPlatformChannelSpecifics =
-        DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      sound: 'incoming_call.mp3', // Use your custom sound file for iOS
-    );
-
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-      iOS: iOSPlatformChannelSpecifics,
-    );
-
-    await _localNotificationsPlugin.show(
-      0,
-      'Incoming Call',
-      'Incoming call from $callerName',
-      platformChannelSpecifics,
-      payload: 'incoming_call',
-    );
-  }
-
   static Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('app_logo');
@@ -293,7 +280,6 @@ class NotificationService with WidgetsBindingObserver {
             AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidPlugin != null) {
-      // ✅ Default notification channel (optional)
       const AndroidNotificationChannel defaultChannel =
           AndroidNotificationChannel(
         'high_importance_channel',
@@ -303,15 +289,14 @@ class NotificationService with WidgetsBindingObserver {
       );
       await androidPlugin.createNotificationChannel(defaultChannel);
 
-      // ✅ Call notification channel with custom sound
+      // The backend tags call FCM messages with channel_id = call_channel_id.
+      // We use Importance.low so Android does NOT show a heads-up banner —
+      // the CallKit / full-screen notification already handles the call UI.
       const AndroidNotificationChannel callChannel = AndroidNotificationChannel(
         'call_channel_id',
         'Call Notifications',
-        description: 'This channel is used for incoming call notifications',
-        importance: Importance.high,
-        sound: RawResourceAndroidNotificationSound(
-            'incoming_call'), // 👈 without .mp3
-        playSound: true,
+        description: 'Suppressed — CallKit handles the incoming call UI',
+        importance: Importance.low,
       );
       await androidPlugin.createNotificationChannel(callChannel);
     }
