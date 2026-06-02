@@ -14,13 +14,37 @@ class GroupProvider extends ChangeNotifier {
   String? _errorMessage;
   List<GroupModel> _groups = [];
   List<GroupModel> _userGroups = [];
+  final Map<String, int> _groupUnreadCounts = {};
 
   GroupState get state => _state;
   String? get errorMessage => _errorMessage;
   List<GroupModel> get groups => _groups;
   List<GroupModel> get userGroups => _userGroups;
+  Map<String, int> get groupUnreadCounts => Map.unmodifiable(_groupUnreadCounts);
+  int get totalGroupUnreadCount =>
+      _groupUnreadCounts.values.fold(0, (sum, c) => sum + c);
 
   static const cacheValidity = Duration(minutes: 10);
+
+  // --- Unread count helpers (in-memory + storage) ---
+
+  Future<void> loadUnreadCountsFromStorage() async {
+    for (final group in _groups) {
+      _groupUnreadCounts[group.id] = await LocalDbHelper.getGroupUnreadCount(group.id);
+    }
+    notifyListeners();
+  }
+
+  void incrementUnreadCount(String groupId) {
+    _groupUnreadCounts[groupId] = (_groupUnreadCounts[groupId] ?? 0) + 1;
+    notifyListeners();
+  }
+
+  Future<void> clearUnreadCount(String groupId) async {
+    _groupUnreadCounts[groupId] = 0;
+    notifyListeners();
+    await LocalDbHelper.clearGroupUnreadCount(groupId);
+  }
 
   // GroupProvider() {
   //   _initialize();
@@ -57,6 +81,7 @@ class GroupProvider extends ChangeNotifier {
         _groups =
             groupsJson.map((json) => GroupModel.fromJson(Map<String, dynamic>.from(json))).toList();
         await LocalDbHelper.saveGroups(_groups);
+        await loadUnreadCountsFromStorage();
         _state = GroupState.success;
         _logger.logNetwork('✅ Groups refreshed (${_groups.length} items)');
       } else {
@@ -257,6 +282,43 @@ class GroupProvider extends ChangeNotifier {
     } catch (e, s) {
       _errorMessage = 'Failed to remove member: $e';
       _logger.error('GROUP_PROVIDER', 'removeMember failed', error: e, stackTrace: s);
+      _state = GroupState.error;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Add member to group
+  Future<bool> addMember({
+    required String groupId,
+    required String email,
+  }) async {
+    _state = GroupState.loading;
+    notifyListeners();
+    try {
+      final response = await _groupService.addMember(
+        groupId: groupId,
+        email: email,
+      );
+      if (response.success) {
+        _logger.logGeneral('âœ… Member added successfully');
+        await fetchAllGroups(forceRefresh: true);
+        _state = GroupState.success;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = response.message;
+        _logger.logGeneral(
+          'âŒ Failed to add member: ${response.message}',
+          level: LogLevel.error,
+        );
+        _state = GroupState.error;
+        notifyListeners();
+        return false;
+      }
+    } catch (e, s) {
+      _errorMessage = 'Failed to add member: $e';
+      _logger.error('GROUP_PROVIDER', 'addMember failed', error: e, stackTrace: s);
       _state = GroupState.error;
       notifyListeners();
       return false;

@@ -47,37 +47,36 @@ class AuthApi {
     final url = Uri.parse("$baseUrl$endPoint");
 
     LoggingService.instance.logNetwork(
-      "Refreshing token",
+      "Refreshing token | oldTokenLength: ${oldToken.length}",
       level: LogLevel.info,
     );
 
     try {
-      final response = await client.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          "Authorization": "Bearer $oldToken",
-        },
-      );
+      final response = await client
+          .get(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $oldToken',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       LoggingService.instance.logNetwork(
         "Refresh token status: ${response.statusCode}",
         level: LogLevel.debug,
       );
 
-      // ✅ Log FULL RAW RESPONSE
       LoggingService.instance.logNetwork(
         "Refresh token raw response: ${response.body}",
         level: LogLevel.debug,
       );
 
-      // ✅ SAFETY CHECK: response must be JSON
       if (!response.body.trim().startsWith('{')) {
         LoggingService.instance.logNetwork(
           "Non-JSON response received during token refresh",
           level: LogLevel.error,
         );
-
         return {"success": false, "message": "Session expired. Please login again."};
       }
 
@@ -97,7 +96,6 @@ class AuthApi {
         stackTrace: stackTrace,
       );
 
-      // ✅ DO NOT CRASH APP
       return {"success": false, "message": "Unable to refresh token"};
     }
   }
@@ -703,6 +701,34 @@ class AuthApi {
     } catch (e) {
       debugPrint("Error updating notification: $e");
       throw Exception(e);
+    }
+  }
+
+  /// Fetches AWS keys from the backend and caches them via LocalDbHelper for one day.
+  /// Safe to call repeatedly — skips the network call if the cache is still valid.
+  static Future<void> prefetchAwsKeys() async {
+    try {
+      if (LocalDbHelper.isAwsKeysCacheValid()) {
+        debugPrint('[AuthApi] AWS keys cache is valid, skipping fetch.');
+        return;
+      }
+
+      final url = Uri.parse('${dotenv.env["BASE_URL"]}/chat/getKey');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'] as Map<String, dynamic>;
+        await LocalDbHelper.saveAwsKeys(
+          accessKey: data['accessKey'] as String,
+          secretKey: data['secretKey'] as String,
+          region: data['region'] as String,
+        );
+        debugPrint('[AuthApi] AWS keys fetched and cached.');
+      } else {
+        debugPrint('[AuthApi] Failed to fetch AWS keys: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('[AuthApi] Error prefetching AWS keys: $e');
     }
   }
 }

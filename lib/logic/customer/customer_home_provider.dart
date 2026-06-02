@@ -51,15 +51,31 @@ class CustomerHomeProvider with ChangeNotifier {
   List<String> get carouselImageUrls {
     if (_posters == null) {
       return []; // indicates loading
-    } else if (_posters!.isEmpty) {
-      return [
-        "assets/images/carousel_image1.png",
-        "assets/images/carousel_image1.png",
-        "assets/images/carousel_image1.png",
-      ];
-    } else {
-      return _posters!.map((poster) => poster.mediaUrl).toList();
     }
+
+    final fallback = "assets/images/carousel_image1.png";
+    final urls = _posters!
+        .map((poster) => _normalizePosterUrl(poster.mediaUrl))
+        .where((url) => url.isNotEmpty)
+        .map((url) => _isValidPosterUrl(url) ? url : fallback)
+        .toList();
+
+    if (urls.isEmpty) {
+      return List.filled(3, fallback);
+    }
+
+    return urls;
+  }
+
+  String _normalizePosterUrl(String? url) {
+    return url?.trim() ?? '';
+  }
+
+  bool _isValidPosterUrl(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null &&
+        (uri.isScheme('http') || uri.isScheme('https')) &&
+        uri.host.isNotEmpty;
   }
 
   // ✅ Optional: Flag to indicate poster loading
@@ -103,7 +119,10 @@ class CustomerHomeProvider with ChangeNotifier {
       // ✅ Preload product images to improve perceived load time
       for (var product in _products!) {
         final image = CachedNetworkImageProvider(product.imageUrl);
-        precacheImage(image, navigatorKey.currentContext!);
+        final ctx = navigatorKey.currentState?.context;
+        if (ctx != null && ctx.mounted) {
+          precacheImage(image, ctx);
+        }
       }
       notifyListeners();
     } catch (e) {
@@ -135,7 +154,8 @@ class CustomerHomeProvider with ChangeNotifier {
   Future<void> addOrUpdateProductLocal(Product product) async {
     await LocalDbHelper.addOrUpdateProduct(product);
     _products ??= [];
-    final index = _products!.indexWhere((p) => p.productId == product.productId);
+    final index =
+        _products!.indexWhere((p) => p.productId == product.productId);
     if (index >= 0) {
       _products![index] = product;
     } else {
@@ -193,8 +213,7 @@ class CustomerHomeProvider with ChangeNotifier {
   }
 
   void navigateToChat() {
-    Navigator.push(
-      navigatorKey.currentContext!,
+    navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => CustomerChatScreen(
           agentName: "Agent",

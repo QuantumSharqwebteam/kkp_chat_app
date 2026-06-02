@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:kkpchatapp/core/services/call_kit_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -12,13 +12,13 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/app_state_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/logic/customer/customer_product_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_home_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_products_page.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_profile_page.dart';
@@ -35,17 +35,17 @@ class CustomerHost extends StatefulWidget {
   State<CustomerHost> createState() => _CustomerHostState();
 }
 
-class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver {
+class _CustomerHostState extends State<CustomerHost>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   late final SocketService _socketService;
   AuthApi auth = AuthApi();
   final chatRepository = ChatRepository();
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  // Use the host's navigatorKey (widget.navigatorKey) instead of creating a new one
   Profile? profile;
 
-  OverlayEntry? _activeCallOverlay;
-  AudioPlayer? _audioPlayer;
+  String? _activeIncomingCallId;
 
   @override
   void initState() {
@@ -64,6 +64,7 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
         );
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onCallTerminated(_handleCallTermination);
         _socketService.onProductAdd(_handleProductAdd);
         _socketService.onProductUpdate(_handleProductUpdate);
         _socketService.onProductDelete(_handleProductDelete);
@@ -83,15 +84,21 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
   void initCheck() async {
     // Set the global flag to true after initialization
     isAppInitialized = true;
+    try {
+      Provider.of<AppStateProvider>(context, listen: false).setAppReady(true);
+    } catch (_) {}
   }
 
   // Handle product add event
   Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
-    debugPrint("[CustomerHost] New product added: ${productData['productName']}");
+    debugPrint(
+        "[CustomerHost] New product added: ${productData['productName']}");
     final product = Product.fromJson(productData);
     if (mounted) {
-      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
-      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      final homeProvider =
+          Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<CustomerProductProvider>(context, listen: false);
       await homeProvider.addOrUpdateProductLocal(product);
       await productProvider.refreshProductsFromHive();
     }
@@ -102,8 +109,10 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     debugPrint("[CustomerHost] Product updated: ${productData['productName']}");
     final product = Product.fromJson(productData);
     if (mounted) {
-      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
-      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      final homeProvider =
+          Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<CustomerProductProvider>(context, listen: false);
       await homeProvider.addOrUpdateProductLocal(product);
       await productProvider.refreshProductsFromHive();
     }
@@ -113,8 +122,10 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
   Future<void> _handleProductDelete(String productId) async {
     debugPrint("[CustomerHost] Product deleted: $productId");
     if (mounted) {
-      final homeProvider = Provider.of<CustomerHomeProvider>(context, listen: false);
-      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      final homeProvider =
+          Provider.of<CustomerHomeProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<CustomerProductProvider>(context, listen: false);
       await homeProvider.deleteProductLocal(productId);
       await productProvider.refreshProductsFromHive();
     }
@@ -122,7 +133,8 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
 
   void _handleFirebaseNotificationTaps() {
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-      debugPrint('🔔 Notification opened (background/terminated): ${message.data}');
+      debugPrint(
+          '🔔 Notification opened (background/terminated): ${message.data}');
 
       if (isAppInitialized) {
         final agentName = message.data['senderName'];
@@ -148,21 +160,21 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     required String? email,
     required String? image,
   }) {
-    Navigator.push(
-        widget.navigatorKey.currentContext!,
-        MaterialPageRoute(
-          builder: (_) => CustomerChatScreen(
-            agentName: name,
-            customerEmail: email,
-            navigatorKey: widget.navigatorKey,
-          ),
-        ));
+    widget.navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => CustomerChatScreen(
+          agentName: name,
+          customerEmail: email,
+          navigatorKey: widget.navigatorKey,
+        ),
+      ),
+    );
   }
 
   Future<void> _initializeNotificationService() async {
     await NotificationService.init(
       context,
-      _navigatorKey,
+      widget.navigatorKey,
       onNotificationClick: (agentName, customerEmail, customerImage) async {
         String? userType = await LocalDbHelper.getUserType();
         if (userType == "0" && profile != null) {
@@ -190,11 +202,13 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
   Future<void> _loadCurrentUserData() async {
     try {
       final userData = await auth.getUserInfo();
-      if (userData['message'] == "Session expired due to login on another device") {
+      if (userData['message'] ==
+          "Session expired due to login on another device") {
         await Hive.deleteFromDisk();
         await reinitializeHive();
         if (mounted) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) {
+          Navigator.of(context)
+              .pushReplacement(MaterialPageRoute(builder: (context) {
             return LoginPage();
           }));
         }
@@ -242,96 +256,31 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     );
   }
 
-  void _handleIncomingCall(Map<String, dynamic> callData) {
-    // Remove previous overlay if exists
-    _activeCallOverlay?.remove();
-    _activeCallOverlay = null;
+  void _handleCallTermination(Map<String, dynamic> data) {
+    final terminatedCallId = data['callId']?.toString();
+    if (terminatedCallId == null) return;
+    if (_activeIncomingCallId == terminatedCallId) {
+      _activeIncomingCallId = null;
+    }
+    CallKitService.instance.endCall(terminatedCallId);
+  }
 
-    final channelName = callData['channelName'];
-    final callerName = callData['callerName'];
-    final callerId = callData['callerId'];
-    final incomingCallId = callData["callId"];
+  Future<void> _handleIncomingCall(Map<String, dynamic> callData) async {
+    if (!mounted) return;
+    final channelName = callData['channelName'] as String;
+    final callerName = callData['callerName'] as String;
+    final callerId = callData['callerId'] as String;
+    final incomingCallId = callData['callId'].toString();
+    _activeIncomingCallId = incomingCallId;
     final uid = Utils().generateIntUidFromEmail(profile!.email!);
-    final overlayState = Overlay.of(context);
 
-    late OverlayEntry overlayEntry;
-    Timer? timeoutTimer;
-    // ✅ Ensure previous player is stopped before creating new one
-    _audioPlayer?.stop();
-    _audioPlayer = AudioPlayer();
-
-    Future<void> stopAndRemoveOverlay() async {
-      try {
-        if (_audioPlayer != null) {
-          debugPrint("🛑 Attempting to stop ringtone...");
-
-          await _audioPlayer!.stop();
-          await _audioPlayer!.setSource(AssetSource('')); // 👈 Important for iOS
-          debugPrint("✅ Ringtone stopped");
-
-          await _audioPlayer!.release();
-          await _audioPlayer!.dispose();
-          debugPrint("✅ AudioPlayer released and disposed");
-        } else {
-          debugPrint("⚠️ AudioPlayer already null or disposed");
-        }
-      } catch (e) {
-        debugPrint("❌ Failed to stop/release ringtone: $e");
-      }
-
-      timeoutTimer?.cancel();
-      overlayEntry.remove();
-      _activeCallOverlay = null;
-      _audioPlayer = null;
-    }
-
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).padding.top + 16,
-        left: 16,
-        right: 16,
-        child: IncomingCallWidget(
-          audioPlayer: _audioPlayer!,
-          callerName: callerName,
-          onAnswer: () async {
-            await stopAndRemoveOverlay();
-            if (context.mounted) {
-              context.read<CallProvider>().startNewCall(
-                  channelName: channelName,
-                  remoteUserName: callerName,
-                  uid: uid,
-                  callId: incomingCallId,
-                  isCaller: false);
-            }
-          },
-          onReject: () async {
-            await stopAndRemoveOverlay();
-            await chatRepository.updateCallData(incomingCallId, "not answered");
-            // Optionally emit reject event
-            _socketService.terminateCall(
-              targetId: callerId,
-              callId: incomingCallId,
-              channelName: channelName,
-            );
-          },
-        ),
-      ),
+    await CallKitService.instance.showIncomingCall(
+      callId: incomingCallId,
+      channelName: channelName,
+      callerName: callerName,
+      callerId: callerId,
+      uid: uid,
     );
-
-    _activeCallOverlay = overlayEntry;
-    overlayState.insert(overlayEntry);
-
-    // If the app is not in the foreground, also show a notification
-    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
-      NotificationService.showIncomingCallNotification(callerName);
-    }
-
-    // Auto-dismiss after 30 seconds
-    timeoutTimer = Timer(const Duration(seconds: 30), () async {
-      await stopAndRemoveOverlay();
-      await chatRepository.updateCallData(incomingCallId, "missed");
-      // Optionally emit missed call
-    });
   }
 
   final List<Widget> _screens = [
@@ -371,4 +320,3 @@ class _CustomerHostState extends State<CustomerHost> with WidgetsBindingObserver
     );
   }
 }
-

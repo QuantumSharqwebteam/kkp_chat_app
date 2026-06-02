@@ -38,16 +38,13 @@
 
   static Map<String, dynamic>? _normalizeMap(dynamic raw) {
     if (raw is Map<String, dynamic>) return Map<String, dynamic>.from(raw);
-    if (raw is Map) return Map<String, dynamic>.from(raw as Map);
+    if (raw is Map) return Map<String, dynamic>.from(raw);
     return null;
   }
 
   static List<Map<String, dynamic>>? _normalizeList(dynamic raw) {
     if (raw is List) {
-      return raw
-          .where((entry) => entry is Map)
-          .map((entry) => Map<String, dynamic>.from(entry as Map))
-          .toList();
+      return raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
     }
     return null;
   }
@@ -58,7 +55,8 @@
     return [];
   }
 
-  Map<String, dynamic>? get primaryForm => form ?? (forms?.isNotEmpty == true ? forms!.first : null);
+  Map<String, dynamic>? get primaryForm =>
+      form ?? (forms?.isNotEmpty == true ? forms!.first : null);
 
   Map<String, dynamic> toMap() {
     return {

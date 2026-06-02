@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/call_kit_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/presentation/common/chat/agora_audio_call_screen.dart';
@@ -33,6 +34,7 @@ class CallProvider with ChangeNotifier {
   final AudioPlayer _ringingPlayer = AudioPlayer();
   final StreamController<int> _callDurationController = StreamController<int>.broadcast();
   String? _callId;
+  String? _targetUserId;
   final ChatRepository _chatRepository = ChatRepository();
 
   // UI + Metadata
@@ -67,12 +69,14 @@ class CallProvider with ChangeNotifier {
     required int uid,
     required String callId,
     required bool isCaller,
+    String? targetUserId,
   }) async {
     _channelName = channelName;
     _remoteUserName = remoteUserName;
     _uid = uid;
     _callId = callId;
     _isCaller = isCaller;
+    _targetUserId = targetUserId;
 
     await _initialize();
     await Future.delayed(const Duration(milliseconds: 500));
@@ -122,7 +126,7 @@ class CallProvider with ChangeNotifier {
     _callTimeoutTimer = Timer(const Duration(seconds: 40), () {
       if (_remoteUid == null) {
         _updateCallData("not answered");
-        endCall();
+        endCall(notifyRemote: false);
       }
     });
   }
@@ -259,14 +263,21 @@ class CallProvider with ChangeNotifier {
     _outgoingCallOverlay = null;
   }
 
-  void endCall() {
+  void endCall({bool notifyRemote = true}) {
     _durationTimer?.cancel();
     _callTimeoutTimer?.cancel();
     _stopRinging();
+    if (notifyRemote && _targetUserId != null && _callId != null) {
+      _socketService.terminateCall(
+        targetId: _targetUserId!,
+        callId: _callId!,
+        channelName: _channelName,
+      );
+    }
     _agoraEngine.leaveChannel();
     _agoraEngine.release();
     _isInitialized = false;
-    // ✅ Pop the call screen if it's visible
+
     if (_isCallScreenVisible && navigatorKey.currentState?.canPop() == true) {
       navigatorKey.currentState?.pop();
     }
@@ -274,6 +285,12 @@ class CallProvider with ChangeNotifier {
     _isOutgoingCallVisible = false;
 
     removeOutgoingCallOverlay();
+
+    // Dismiss native CallKit / ConnectionService UI if still showing
+    if (_callId != null) {
+      CallKitService.instance.endCall(_callId!);
+    }
+
     _resetState();
     notifyListeners();
   }
@@ -290,6 +307,7 @@ class CallProvider with ChangeNotifier {
     _ringingPlayer.stop();
 
     _callId = null;
+    _targetUserId = null;
     _channelName = null;
     _remoteUserName = null;
     _uid = null;

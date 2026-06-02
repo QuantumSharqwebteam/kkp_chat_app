@@ -53,7 +53,9 @@ class ChatService {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         final List<dynamic> messagesJson = json['messages'];
-        return messagesJson.map((msg) => MessageModel.fromJson(msg, agentEmail)).toList();
+        return messagesJson
+            .map((msg) => MessageModel.fromJson(msg, agentEmail))
+            .toList();
       } else {
         throw Exception("Failed to load chat: ${response.body}");
       }
@@ -63,7 +65,8 @@ class ChatService {
   }
 
   /// **Get Assigned Customers by Agent Email **
-  Future<List<Map<String, dynamic>>> getAssignedCustomers(String agentEmail) async {
+  Future<List<Map<String, dynamic>>> getAssignedCustomers(
+      String agentEmail) async {
     final Uri url = Uri.parse("$baseUrl/user/getUsersByAgentId/$agentEmail");
 
     final token = await LocalDbHelper.getToken();
@@ -79,6 +82,7 @@ class ChatService {
 
       if (response.statusCode == 200 && jsonResponse["message"] is List) {
         // Success: Return the list of assigned users
+        debugPrint("📌 ${response.body}");
         return List<Map<String, dynamic>>.from(jsonResponse["message"]);
       } else if (response.statusCode == 404 ||
           jsonResponse["message"] == "No users found for this agent") {
@@ -113,7 +117,8 @@ class ChatService {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
 
         // Case : If users are found, return the list
-        if (jsonResponse["message"] == "Chatted user profiles retrieved successfully") {
+        if (jsonResponse["message"] ==
+            "Chatted user profiles retrieved successfully") {
           return List<Map<String, dynamic>>.from(jsonResponse["data"]);
         }
         // Case 2: If no users are available, return an empty list
@@ -122,7 +127,8 @@ class ChatService {
         }
         //  Case 3: Handle any unexpected response message
         else {
-          throw Exception("Unexpected response message: ${jsonResponse["message"]}");
+          throw Exception(
+              "Unexpected response message: ${jsonResponse["message"]}");
         }
       }
       //  Case 4: Handle 404 when no users are found
@@ -159,7 +165,8 @@ class ChatService {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
 
         // Ensure the message matches and data exists
-        if (jsonResponse["message"] == "Chatted user profiles retrieved successfully" &&
+        if (jsonResponse["message"] ==
+                "Chatted user profiles retrieved successfully" &&
             jsonResponse.containsKey("data")) {
           return List<Map<String, dynamic>>.from(jsonResponse["data"]);
         }
@@ -199,6 +206,13 @@ class ChatService {
       "agentId": agentEmail,
     };
 
+    /// 🔍 DEBUG LOGS (REQUEST)
+    debugPrint("📤 API REQUEST");
+    debugPrint("➡️ URL: $url");
+    debugPrint("📧 Customer Email: $customerEmail");
+    debugPrint("🧑‍💼 Agent Email: $agentEmail");
+    debugPrint("📦 Body: ${jsonEncode(body)}");
+
     try {
       final response = await client.put(
         url,
@@ -234,8 +248,9 @@ class ChatService {
       final data = json.decode(response.body);
       LoggingService.instance.logNetwork("Form Data: ${data.toString()}");
 
-      List<FormDataModel> formList =
-          (data['formData'] as List).map((item) => FormDataModel.fromJson(item)).toList();
+      List<FormDataModel> formList = (data['formData'] as List)
+          .map((item) => FormDataModel.fromJson(item))
+          .toList();
 
       return formList;
     } else {
@@ -243,7 +258,8 @@ class ChatService {
     }
   }
 
-  Future<List<FormDataModel>> getFormDataForEnquiery({required String email}) async {
+  Future<List<FormDataModel>> getFormDataForEnquiery(
+      {required String email}) async {
     final url = Uri.parse('$baseUrl/chat/getFormData?email=$email');
     final token = await LocalDbHelper.getToken();
     final response = await client.get(
@@ -258,8 +274,9 @@ class ChatService {
       final data = json.decode(response.body);
       LoggingService.instance.logNetwork("Form Data: ${data.toString()}");
 
-      List<FormDataModel> formList =
-          (data['formData'] as List).map((item) => FormDataModel.fromJson(item)).toList();
+      List<FormDataModel> formList = (data['formData'] as List)
+          .map((item) => FormDataModel.fromJson(item))
+          .toList();
 
       return formList;
     } else {
@@ -287,24 +304,25 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         if (data["status"] == 200 && data["token"] != null) {
-          if (kDebugMode) {
-            debugPrint("✅ Agora token generated:${data["token"]}");
-          }
+          LoggingService.instance.info('AgoraToken', 'token obtained for channel=$channelName uid=$uid');
           return data["token"];
         } else {
-          //   debugPrint("❌ Token not present in response: $data");
+          LoggingService.instance.warning('AgoraToken',
+              'backend rejected token request — status=${data["status"]}  '
+              'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
           return null;
         }
       } else {
-        //  debugPrint("❌ Failed to fetch token: ${response.statusCode}");
+        LoggingService.instance.warning('AgoraToken',
+            'HTTP ${response.statusCode} for channel=$channelName uid=$uid  '
+            'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
         return null;
       }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint("❌ Exception in getAgoraToken: $e");
-      }
+    } catch (e, st) {
+      LoggingService.instance.error('AgoraToken',
+          'exception fetching token for channel=$channelName uid=$uid',
+          error: e, stackTrace: st);
       return null;
     }
   }
@@ -338,13 +356,34 @@ class ChatService {
     }
   }
 
-  Future<void> updateFormStatus({required String formId, required status}) async {
+  Future<void> updateFormStatus({
+    required String formId,
+    required String status,
+    String? reason,
+  }) async {
+    final token = await LocalDbHelper.getToken();
     try {
       final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
+      final normalizedReason = reason?.trim();
+      final body = <String, dynamic>{
+        "status": status,
+      };
+
+      if (status.toLowerCase() == 'declined') {
+        if (normalizedReason == null || normalizedReason.isEmpty) {
+          throw ArgumentError(
+              'Decline reason is required when status is Declined');
+        }
+        body["reason"] = normalizedReason;
+      }
+
       final response = await client.put(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({"status": status}),
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(body),
       );
 
       if (response.statusCode != 200) {
@@ -359,7 +398,8 @@ class ChatService {
   }
 
   /// Update form rate
-  Future<void> updateFormRate({required String formId, required String rate}) async {
+  Future<void> updateFormRate(
+      {required String formId, required String rate}) async {
     final token = await LocalDbHelper.getToken();
     try {
       final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
@@ -383,6 +423,35 @@ class ChatService {
       // No need to throw an exception if the status is 200
     } catch (e) {
       throw Exception('Error updating form rate: $e');
+    }
+  }
+
+  Future<void> updateFormDetails({
+    required String formId,
+    required Map<String, dynamic> updates,
+  }) async {
+    if (updates.isEmpty) return;
+    final token = await LocalDbHelper.getToken();
+    try {
+      final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
+      final response = await client.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(updates),
+      );
+      final responseBody = jsonDecode(response.body);
+
+      if (responseBody['status'] != 200) {
+        if (kDebugMode) {
+          debugPrint("Failed to update form: ${response.body}");
+        }
+        throw Exception('Failed to update form: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error updating form: $e');
     }
   }
 
@@ -435,7 +504,8 @@ class ChatService {
   }
 
   /// Update Call Data
-  Future<void> updateCallData(String messageId, String callStatus, {String? callDuration}) async {
+  Future<void> updateCallData(String messageId, String callStatus,
+      {String? callDuration}) async {
     final url = Uri.parse('$baseUrl/chat/updateCall/$messageId');
     final body = callDuration != null
         ? {'callStatus': callStatus, 'callDuration': callDuration}
@@ -516,7 +586,9 @@ class ChatService {
         final json = jsonDecode(response.body);
 
         final List<dynamic> messagesJson = json['messages'];
-        return messagesJson.map((msg) => MessageModel.fromJson(msg, agentEmail)).toList();
+        return messagesJson
+            .map((msg) => MessageModel.fromJson(msg, agentEmail))
+            .toList();
       } else if (response.statusCode == 404) {
         final json = jsonDecode(response.body);
         if (json['message'] == 'No conversations found for this user') {
@@ -554,7 +626,9 @@ class ChatService {
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         final List<dynamic> messagesJson = json['messages'];
-        return messagesJson.map((msg) => MessageModel.fromJson(msg, customerEmail)).toList();
+        return messagesJson
+            .map((msg) => MessageModel.fromJson(msg, customerEmail))
+            .toList();
       } else if (response.statusCode == 404) {
         final json = jsonDecode(response.body);
         if (json['message'] == 'No conversations found for this user') {
@@ -573,7 +647,8 @@ class ChatService {
   }
 
   // ignore: body_might_complete_normally_nullable
-  Future<DateTime?> getAgentLastTimestampForCustomer(String customerEmail) async {
+  Future<DateTime?> getAgentLastTimestampForCustomer(
+      String customerEmail) async {
     final url = Uri.parse("$baseUrl/chat/getUserLastTimestamp/$customerEmail");
 
     final token = await LocalDbHelper.getToken();
@@ -589,14 +664,18 @@ class ChatService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
 
-        if (jsonResponse["status"] == 200 && jsonResponse.containsKey("lastUserReadTimestamp")) {
-          final String lastMessageTimestampStr = jsonResponse["lastUserReadTimestamp"];
+        if (jsonResponse["status"] == 200 &&
+            jsonResponse.containsKey("lastUserReadTimestamp")) {
+          final String lastMessageTimestampStr =
+              jsonResponse["lastUserReadTimestamp"];
           return DateTime.parse(lastMessageTimestampStr);
         } else {
-          debugPrint("Failed to retrieve last message timestamp: ${response.body}");
+          debugPrint(
+              "Failed to retrieve last message timestamp: ${response.body}");
         }
       } else {
-        debugPrint("Failed to retrieve last message timestamp: ${response.body}");
+        debugPrint(
+            "Failed to retrieve last message timestamp: ${response.body}");
       }
     } catch (e) {
       debugPrint("Error retrieving last message timestamp: $e");
@@ -624,8 +703,10 @@ class ChatService {
         if (jsonResponse["status"] == 200 &&
             jsonResponse.containsKey("lastUserReadTimestamp") &&
             jsonResponse.containsKey("messageId")) {
-          final String lastUserReadTimestampStr = jsonResponse["lastUserReadTimestamp"];
-          final DateTime lastUserReadTimestamp = DateTime.parse(lastUserReadTimestampStr);
+          final String lastUserReadTimestampStr =
+              jsonResponse["lastUserReadTimestamp"];
+          final DateTime lastUserReadTimestamp =
+              DateTime.parse(lastUserReadTimestampStr);
           final String messageId = jsonResponse["messageId"];
 
           return {
@@ -633,14 +714,17 @@ class ChatService {
             'messageId': messageId,
           };
         } else if (jsonResponse["status"] == 404) {
-          debugPrint("No read messages from this user found in this conversation");
+          debugPrint(
+              "No read messages from this user found in this conversation");
           return null;
         } else {
-          debugPrint("Failed to retrieve last user read timestamp: ${response.body}");
+          debugPrint(
+              "Failed to retrieve last user read timestamp: ${response.body}");
           return null;
         }
       } else {
-        debugPrint("Failed to retrieve last user read timestamp: ${response.body}");
+        debugPrint(
+            "Failed to retrieve last user read timestamp: ${response.body}");
         return null;
       }
     } catch (e) {
@@ -660,6 +744,10 @@ class ChatService {
     );
     final token = await LocalDbHelper.getToken();
 
+    debugPrint("📡 [ChatService] fetchGroupMessages → GET $url");
+    debugPrint(
+        "📡 [ChatService] Params: groupId=$groupId, limit=$limit, before=$before");
+
     try {
       final response = await client.get(
         url,
@@ -669,26 +757,35 @@ class ChatService {
         },
       );
 
+      debugPrint(
+          "📡 [ChatService] fetchGroupMessages ← status ${response.statusCode}");
+
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
-
-        // Return both messages and nextCursor
-        return {
-          'messages':
-              (json['messages'] as List).map((msg) => GroupMessageModel.fromApiJson(msg)).toList(),
-          'nextCursor': json['nextCursor'],
-        };
+        final msgs = (json['messages'] as List)
+            .map((msg) => GroupMessageModel.fromApiJson(msg))
+            .toList();
+        final nextCursor = json['nextCursor'];
+        debugPrint(
+            "📡 [ChatService] Received ${msgs.length} messages, nextCursor: $nextCursor");
+        for (final m in msgs) {
+          debugPrint(
+              "   ↳ [${m.messageId}] type=${m.type} from=${m.senderId} at=${m.timestamp}");
+        }
+        return {'messages': msgs, 'nextCursor': nextCursor};
       } else if (response.statusCode == 404) {
         final json = jsonDecode(response.body);
         if (json['message'] == 'No group messages found') {
+          debugPrint("📡 [ChatService] No messages found for group $groupId");
           return {'messages': [], 'nextCursor': null};
         }
       }
 
-      debugPrint("Unexpected response (${response.statusCode}): ${response.body}");
+      debugPrint(
+          "📡 [ChatService] Unexpected response (${response.statusCode}): ${response.body}");
       return {'messages': [], 'nextCursor': null};
     } catch (e) {
-      debugPrint("Error fetching group messages: $e");
+      debugPrint("❌ [ChatService] fetchGroupMessages error: $e");
       throw Exception("Error fetching group messages: $e");
     }
   }

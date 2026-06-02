@@ -5,9 +5,11 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/group_list_screen.dart';
+import 'package:provider/provider.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String? agentName;
@@ -87,10 +89,27 @@ class CustomDrawer extends StatelessWidget {
                   //                 )));
                   //   },
                   // ),
-                  _buildDrawerItem(context, icon: Icons.group, title: "Groups", onTap: () {
-                    Navigator.push(
-                        context, MaterialPageRoute(builder: (context) => GroupListScreen()));
-                  })
+                  Consumer<GroupProvider>(
+                    builder: (context, groupProvider, _) {
+                      final total = groupProvider.totalGroupUnreadCount;
+                      return ListTile(
+                        leading: Badge(
+                          isLabelVisible: total > 0,
+                          label: Text(
+                            total > 99 ? '99+' : '$total',
+                            style: const TextStyle(color: Colors.white, fontSize: 10),
+                          ),
+                          backgroundColor: AppColors.redF11515,
+                          child: Icon(Icons.group, color: AppColors.bluePrimary),
+                        ),
+                        title: Text("Groups", style: AppTextStyles.black16_500),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const GroupListScreen()),
+                        ),
+                      );
+                    },
+                  )
                   // Add more items as needed
                 ],
               ),

@@ -20,15 +20,28 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    final colorsJson = json['colors'];
+    final sizesJson = json['sizes'];
+    final priceJson = json['price'];
+    final imageUrlValue = json['imageUrl'];
+    final productNameValue = json['productName'];
+
     return Product(
-      imageUrl: json['imageUrl'],
-      colors: (json['colors'] as List).map((color) => ProductColor.fromJson(color)).toList(),
-      stock: json['stock'],
-      sizes: List<String>.from(json['sizes']),
-      price: (json['price'] as num).toDouble(),
-      productId: json['productId'],
-      productName: json['productName'],
-      description: json['description'],
+      imageUrl: imageUrlValue?.toString() ?? '',
+      colors: (colorsJson is Iterable)
+          ? colorsJson
+              .whereType<Map>()
+              .map((colorMap) => ProductColor.fromJson(Map<String, dynamic>.from(colorMap)))
+              .toList()
+          : [],
+      stock: json['stock'] is num ? (json['stock'] as num).toInt() : int.tryParse('${json['stock']}') ?? 0,
+      sizes: (sizesJson is Iterable) ? sizesJson.map((e) => e.toString()).toList() : [],
+      price: priceJson is num
+          ? priceJson.toDouble()
+          : double.tryParse('$priceJson') ?? 0.0,
+      productId: json['productId'] ?? json['_id'],
+      productName: productNameValue?.toString() ?? '',
+      description: json['description']?.toString(),
     );
   }
 
@@ -84,8 +97,8 @@ class ProductColor {
 
   factory ProductColor.fromJson(Map<String, dynamic> json) {
     return ProductColor(
-      colorName: json['colorName'],
-      colorCode: json['colorCode'],
+      colorName: json['colorName']?.toString() ?? '',
+      colorCode: json['colorCode']?.toString() ?? '',
     );
   }
 

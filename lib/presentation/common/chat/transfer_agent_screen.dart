@@ -7,6 +7,7 @@ import 'package:kkpchatapp/data/api/chat_service.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 
 class TransferAgentScreen extends StatefulWidget {
   final String customerEmailId;
@@ -20,6 +21,8 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
   List<Agent> _agentsList = [];
   List<String> _assignedAgentEmails = [];
   bool _isLoading = true;
+  bool _isTransferring = false;
+  String? _transferringAgentEmail;
   final _repo = AuthRepository();
   final _chatService = ChatService();
 
@@ -70,6 +73,15 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
   }
 
   Future<void> _transferCustomerToAgent(String agentEmail) async {
+    if (_isTransferring) return;
+
+    if (mounted) {
+      setState(() {
+        _isTransferring = true;
+        _transferringAgentEmail = agentEmail;
+      });
+    }
+
     try {
       bool success = await _chatService.transferCustomerToAgent(
         customerEmail: widget.customerEmailId,
@@ -93,6 +105,13 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTransferring = false;
+          _transferringAgentEmail = null;
+        });
+      }
     }
   }
 
@@ -103,23 +122,33 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.greyE5E7EB,
       ),
-      body: SafeArea(
-        bottom: Platform.isAndroid,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _agentsList.isEmpty
-                ? Center(child: Text(AppLocalizations.of(context)!.noAgentsAvailable))
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    itemCount: _agentsList.length + 1, // +1 for the image section
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return _buildTransferImage();
-                      }
-                      final agent = _agentsList[index - 1];
-                      return _agentButton(agent);
-                    },
-                  ),
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: Platform.isAndroid,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _agentsList.isEmpty
+                    ? Center(child: Text(AppLocalizations.of(context)!.noAgentsAvailable))
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: _agentsList.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return _buildTransferImage();
+                          }
+                          final agent = _agentsList[index - 1];
+                          return _agentButton(agent);
+                        },
+                      ),
+          ),
+          if (_isTransferring)
+            const Positioned.fill(
+              child: FullScreenLoader(
+                color: Color(0xB3FFFFFF),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -157,8 +186,10 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
   }
 
   Widget _agentButton(Agent agent) {
+    final isSubmittingThisAgent = _transferringAgentEmail == agent.email;
+
     return GestureDetector(
-      onTap: () => _transferCustomerToAgent(agent.email),
+      onTap: _isTransferring ? null : () => _transferCustomerToAgent(agent.email),
       child: Container(
         width: double.maxFinite,
         margin: const EdgeInsets.only(bottom: 10, left: 16, right: 16),
@@ -202,6 +233,17 @@ class _TransferAgentScreenState extends State<TransferAgentScreen> {
                   color: AppColors.blue00ABE9,
                 ),
               ),
+              if (isSubmittingThisAgent) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: AppColors.blue00ABE9,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

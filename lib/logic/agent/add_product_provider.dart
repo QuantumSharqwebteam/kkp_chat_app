@@ -54,6 +54,15 @@ class AddProductProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _isValidProductName(String name) {
+    return RegExp(r'^[A-Za-z0-9 ]+$').hasMatch(name.trim());
+  }
+
+  bool _isValidPrice(String price) {
+    final parsedPrice = double.tryParse(price.trim());
+    return parsedPrice != null && parsedPrice > 0;
+  }
+
   Future<bool> addProduct() async {
     if (nameController.text.isEmpty ||
         priceController.text.isEmpty ||
@@ -61,7 +70,9 @@ class AddProductProvider extends ChangeNotifier {
         descriptionController.text.isEmpty ||
         selectedSizes.isEmpty ||
         selectedColors.isEmpty ||
-        selectedImage == null) {
+        selectedImage == null ||
+        !_isValidProductName(nameController.text) ||
+        !_isValidPrice(priceController.text)) {
       return false;
     }
 

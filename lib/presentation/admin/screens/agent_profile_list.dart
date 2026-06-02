@@ -9,9 +9,9 @@ import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:shimmer/shimmer.dart';
-// Import reusable shimmer list
 
 class AgentProfilesPage extends StatefulWidget {
   const AgentProfilesPage({super.key});
@@ -143,6 +143,15 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         Utils().showSuccessDialog(context, "Try again later!", false);
       }
     }
+  }
+
+  Agent? _getCurrentAgentHead() {
+    for (final agent in _agentsList) {
+      if (agent.role == 'AgentHead') {
+        return agent;
+      }
+    }
+    return null;
   }
 
   Future<void> _showChangeAgentHeadDialog({
@@ -364,7 +373,9 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Stack(
+      children: [
+        Scaffold(
       appBar: AppBar(
         title: const Text("Agent Profiles List"),
         // leading: IconButton(
@@ -372,7 +383,7 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
         //   onPressed: () => Navigator.pop(context),
         // ),
       ),
-      body: Padding(
+          body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,6 +401,14 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
           ],
         ),
       ),
+        ),
+        if (_isChangingAgentHead)
+          const Positioned.fill(
+            child: AbsorbPointer(
+              child: FullScreenLoader(),
+            ),
+          ),
+      ],
     );
   }
 
@@ -644,8 +663,15 @@ class _AgentProfilesPageState extends State<AgentProfilesPage> {
                   } else if (value == "Remove agent from assign list") {
                     removeAgentFromList(agent.email);
                   } else if (value == "Change Agent Head") {
+                    final actualCurrentHead = _getCurrentAgentHead();
+                    if (actualCurrentHead == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Current Agent Head not found.")),
+                      );
+                      return;
+                    }
                     _showChangeAgentHeadDialog(
-                      currentHead: agent,
+                      currentHead: actualCurrentHead,
                       actionType: "Change Agent Head",
                     );
                   }

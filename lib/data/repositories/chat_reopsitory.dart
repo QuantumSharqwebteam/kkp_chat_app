@@ -49,12 +49,20 @@ class ChatRepository {
     return await chatService.getAdminGraphData();
   }
 
-  Future<void> updateInquiryFormStatus(String formId, String status) async {
-    return chatService.updateFormStatus(formId: formId, status: status);
+  Future<void> updateInquiryFormStatus(String formId, String status, {String? reason}) async {
+    return chatService.updateFormStatus(
+      formId: formId,
+      status: status,
+      reason: reason,
+    );
   }
 
   Future<void> updateInquiryFormRate(String formId, String rate) async {
     return chatService.updateFormRate(formId: formId, rate: rate);
+  }
+
+  Future<void> updateInquiryForm(String formId, Map<String, dynamic> updates) async {
+    return chatService.updateFormDetails(formId: formId, updates: updates);
   }
 
   Future<void> updateFormByOrderId({

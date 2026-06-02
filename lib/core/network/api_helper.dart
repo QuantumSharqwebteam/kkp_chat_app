@@ -93,7 +93,11 @@ class ApiHelper {
           );
           break;
         case 'DELETE':
-          response = await http.delete(url, body: body, headers: _defaultHeaders(headers));
+          response = await http.delete(
+            url,
+            headers: _defaultHeaders(headers),
+            body: body != null ? jsonEncode(body) : null,
+          );
           break;
         default:
           throw BadRequestException('Invalid HTTP method');

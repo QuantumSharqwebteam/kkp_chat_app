@@ -7,7 +7,9 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:kkpchatapp/presentation/common_widgets/full_screen_loader.dart';
 import 'package:kkpchatapp/logic/agent/agent_provider.dart';
+import 'package:kkpchatapp/presentation/common_widgets/required_field_label.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
 class AddAgent extends StatefulWidget {
   const AddAgent({super.key});
@@ -27,14 +29,23 @@ class _AddAgentState extends State<AddAgent> {
   String? emailError;
   String? phoneError;
   String? passwordError;
+  final RegExp _namePattern = RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$");
+  final RegExp _emailPattern = RegExp(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$");
 
   bool validateName(String name) {
-    if (name.length < 3) {
+    final trimmedName = name.trim();
+    if (trimmedName.length < 3) {
       setState(() {
         nameError = AppLocalizations.of(context)!.nameMinLengthError;
       });
       return false;
     } else {
+      if (!_namePattern.hasMatch(trimmedName)) {
+        setState(() {
+          nameError = 'Name should contain only letters and allowed separators';
+        });
+        return false;
+      }
       setState(() {
         nameError = null;
       });
@@ -43,10 +54,10 @@ class _AddAgentState extends State<AddAgent> {
   }
 
   bool validateEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(email)) {
+    final trimmedEmail = email.trim().toLowerCase();
+    if (!_emailPattern.hasMatch(trimmedEmail)) {
       setState(() {
-        emailError = AppLocalizations.of(context)!.validEmailError;
+        emailError = 'Please enter a valid email address';
       });
       return false;
     } else {
@@ -58,7 +69,8 @@ class _AddAgentState extends State<AddAgent> {
   }
 
   bool validatePhone(String phone) {
-    if (phone.length != 10 || int.tryParse(phone) == null) {
+    final trimmedPhone = phone.trim();
+    if (trimmedPhone.length != 10 || int.tryParse(trimmedPhone) == null) {
       setState(() {
         phoneError = AppLocalizations.of(context)!.phoneNumberLengthError;
       });
@@ -71,18 +83,27 @@ class _AddAgentState extends State<AddAgent> {
     }
   }
 
+  bool _isStrongPassword(String password) {
+    if (password.length < 8) return false;
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+    if (!RegExp(r'[a-z]').hasMatch(password)) return false;
+    if (!RegExp(r'\d').hasMatch(password)) return false;
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) return false;
+    return true;
+  }
+
   bool validatePassword(String password) {
-    if (password.length < 6) {
+    if (!_isStrongPassword(password.trim())) {
       setState(() {
-        passwordError = AppLocalizations.of(context)!.passwordMinLengthError;
+        passwordError =
+            'Password must be 8+ characters and include uppercase, lowercase, a number, and a special character';
       });
       return false;
-    } else {
-      setState(() {
-        passwordError = null;
-      });
-      return true;
     }
+    setState(() {
+      passwordError = null;
+    });
+    return true;
   }
 
   Future<void> signUpNewAgent() async {
@@ -97,12 +118,17 @@ class _AddAgentState extends State<AddAgent> {
       return;
     }
 
+    final trimmedName = fullNameController.text.trim();
+    final trimmedEmail = emailController.text.trim().toLowerCase();
+    final trimmedPhone = phoneController.text.trim();
+    final trimmedPassword = passwordController.text.trim();
+
     final body = {
-      "name": fullNameController.text,
-      "email": emailController.text,
-      "mobile": int.parse(phoneController.text),
+      "name": trimmedName,
+      "email": trimmedEmail,
+      "mobile": int.parse(trimmedPhone),
       "role": agentRole,
-      "password": passwordController.text
+      "password": trimmedPassword
     };
 
     try {
@@ -178,14 +204,18 @@ class _AddAgentState extends State<AddAgent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-                        Text(l.fullName),
+                        RequiredFieldLabel(l.fullName),
                         CustomTextField(
                           controller: fullNameController,
                           hintText: l.enterFullName,
                           prefixIcon: const Icon(Icons.person),
                           errorText: nameError,
+                          keyboardType: TextInputType.name,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                          ],
                         ),
-                        Text(l.email),
+                        RequiredFieldLabel(l.email),
                         CustomTextField(
                           controller: emailController,
                           hintText: l.enterEmail,
@@ -193,16 +223,19 @@ class _AddAgentState extends State<AddAgent> {
                           prefixIcon: const Icon(Icons.email),
                           errorText: emailError,
                         ),
-                        Text(l.phoneNumber),
+                        RequiredFieldLabel(l.phoneNumber),
                         CustomTextField(
                           controller: phoneController,
                           hintText: l.enterPhoneNumber,
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.number,
                           prefixIcon: const Icon(Icons.phone),
                           maxLength: 10,
                           errorText: phoneError,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                         ),
-                        Text(l.password),
+                        RequiredFieldLabel(l.password),
                         CustomTextField(
                           controller: passwordController,
                           hintText: l.createPassword,

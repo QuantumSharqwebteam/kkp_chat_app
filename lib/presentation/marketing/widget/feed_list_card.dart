@@ -54,9 +54,13 @@ class FeedListCard extends StatelessWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            Text(
-              name,
-              style: AppTextStyles.black14_600.copyWith(fontSize: 13),
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.black14_600.copyWith(fontSize: 13),
+              ),
             ),
             const SizedBox(width: 6),
             if (isAccountDeleted)
@@ -67,7 +71,13 @@ class FeedListCard extends StatelessWidget {
               )
           ],
         ),
-        subtitle: Text(message ?? "Last Message", style: AppTextStyles.grey12_600),
+        subtitle: Text(
+          message ?? "Last Message",
+          style: AppTextStyles.grey12_600,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          softWrap: true,
+        ),
         trailing: isPinned
             ? const Icon(Icons.push_pin, color: AppColors.redF11515, size: 16)
             : Column(

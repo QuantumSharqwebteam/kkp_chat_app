@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:kkpchatapp/core/services/call_kit_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -11,18 +11,17 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/logic/agent/marketing_product_provider.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
+import 'package:kkpchatapp/logic/agent/inquiry_provider.dart';
+import 'package:kkpchatapp/logic/app_state_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_home.dart';
 import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
 import 'package:kkpchatapp/presentation/admin/screens/customer_inquries.dart';
-import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-import 'package:kkpchatapp/presentation/common/chat/call_provider.dart';
-
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
-import 'package:kkpchatapp/presentation/common_widgets/chat/incoming_call_widget.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
@@ -39,32 +38,29 @@ class MarketingHost extends StatefulWidget {
   State<MarketingHost> createState() => _MarketingHostState();
 }
 
-class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserver {
+class _MarketingHostState extends State<MarketingHost>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   String? role;
   String? rolename;
   String? agentEmail;
   String? agentName;
   List<Widget> _screens = [];
-  final SocketService _socketService = SocketService(navigatorKey);
+  late final SocketService _socketService;
   final chatRepository = ChatRepository();
   AuthApi auth = AuthApi();
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  // Using the host's navigatorKey (widget.navigatorKey) to avoid multiple navigators.
 
-  OverlayEntry? _activeCallOverlay;
-
-  //OverlayEntry? _disconnectOverlay;
-
-  AudioPlayer? _audioPlayer;
+  String? _activeIncomingCallId;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.removeObserver(this);
+    WidgetsBinding.instance.addObserver(this);
+    _socketService = SocketService(widget.navigatorKey);
     _loadUserDataAndInitializeSocket().then((_) {
       _initializeNotificationService().then((_) {});
     });
-    initCheck();
   }
 
   @override
@@ -75,20 +71,32 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   void initCheck() async {
     // Set the global flag to true after initialization
     isAppInitialized = true;
+    try {
+      // Also notify provider that app is ready (if provider exists)
+      final provider = Provider.of<AppStateProvider>(context, listen: false);
+      provider.setAppReady(true);
+    } catch (_) {
+      // Provider may not exist in some contexts; ignore
+    }
   }
 
   Future<void> _initializeNotificationService() async {
-    await NotificationService.init(context, _navigatorKey);
+    await NotificationService.init(context, widget.navigatorKey);
+    // Mark app initialized after notification service and navigator are ready
+    isAppInitialized = true;
   }
 
   Future<void> _loadUserDataAndInitializeSocket() async {
     final token = await LocalDbHelper.getToken();
     await _loadUserData().whenComplete(() {
       if (agentName != null && agentEmail != null && rolename != null) {
-        _socketService.initSocket(agentName!, agentEmail!, rolename!, token: token);
+        _socketService.initSocket(agentName!, agentEmail!, rolename!,
+            token: token);
         _socketService.onReceiveMessage(_handleIncomingMessage);
         _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
+        _socketService.onGroupListUpdate(_handleBackgroundGroupMessage);
         _socketService.onIncomingCall(_handleIncomingCall);
+        _socketService.onCallTerminated(_handleCallTermination);
         _socketService.onProductAdd(_handleProductAdd);
         _socketService.onProductUpdate(_handleProductUpdate);
         _socketService.onProductDelete(_handleProductDelete);
@@ -107,8 +115,46 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
       Hive.openBox("lastSeenTimeBox"),
       Hive.openBox('feedBox'),
       Hive.openBox("lastMessageMap"),
-      // dotenv.load(fileName: "keys.env"), // Only if required again
+      Hive.openBox(LocalDbHelper.groupLastMessageBoxKey),
+      Hive.openBox<int>(LocalDbHelper.groupChatUnreadCountKey),
+      Hive.openBox<int>(LocalDbHelper.groupUnreadCountsBoxKey),
     ]);
+  }
+
+  Future<void> _forceLogout(String serverMessage) async {
+    if (!mounted) return;
+    final isAnotherDevice = serverMessage.toLowerCase().contains('another device');
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(
+          isAnotherDevice ? Icons.devices_other_rounded : Icons.lock_clock_outlined,
+          color: Colors.orange.shade700,
+          size: 44,
+        ),
+        title: const Text('Session Ended'),
+        content: Text(
+          isAnotherDevice
+              ? 'Your account was signed in on another device. This session has been ended for your security.'
+              : 'You are no longer authorized. Please log in again.',
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Log In'),
+          ),
+        ],
+      ),
+    );
+    await Hive.deleteFromDisk();
+    await reinitializeHive();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -131,25 +177,9 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
       if (userData is Map<String, dynamic>) {
         final message = userData['message'];
 
-        if (message == "Session expired due to login on another device") {
-          await Hive.deleteFromDisk();
-          await reinitializeHive();
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-            );
-          }
-          return;
-        }
-
-        if (message == "You are Not Authorized") {
-          await Hive.deleteFromDisk();
-          await reinitializeHive();
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-            );
-          }
+        if (message == "Session expired due to login on another device" ||
+            message == "You are Not Authorized") {
+          await _forceLogout(message);
           return;
         }
 
@@ -179,8 +209,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _audioPlayer?.stop();
-    // _socketService.disconnect(); // Disconnect when leaving the host screen
+    _socketService.offCallTerminated(_handleCallTermination);
     super.dispose();
   }
 
@@ -217,6 +246,27 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _refreshCustomerInquiries();
+      });
+    }
+  }
+
+  Future<void> _refreshCustomerInquiries() async {
+    if (!mounted) return;
+    try {
+      final provider = Provider.of<InquiryProvider>(context, listen: false);
+      final role = await LocalDbHelper.getUserType();
+      final currentUserEmail = LocalDbHelper.getProfile()?.email;
+      await provider.fetchInquiries(
+        userEmail: currentUserEmail,
+        role: role,
+        forceRefresh: true,
+      );
+    } catch (error) {
+      debugPrint('Failed to refresh customer inquiries: $error');
+    }
   }
 
   void _navigateToChat({
@@ -224,8 +274,7 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
     required String customeremail,
     String? targetId,
   }) {
-    Navigator.push(
-      widget.navigatorKey.currentContext!,
+    widget.navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => AgentChatScreen(
           customerName: customername,
@@ -296,16 +345,22 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   }
 
   void _handleIcomingGroupMessage(Map<String, dynamic> data) {
-    Navigator.push(widget.navigatorKey.currentContext!, MaterialPageRoute(builder: (context) {
-      return InternalChatScreen(
-          agentName: data["senderName"],
-          agentEmail: data["senderId"],
-          navigatorKey: widget.navigatorKey);
-    }));
+    // Handled by InternalChatScreen when open; notifications handle the closed case.
+    debugPrint(
+        "[MarketingHost] Group message event — handled by InternalChatScreen or notification");
+  }
+
+  /// Called by SocketService whenever a group message arrives while the chat page is closed.
+  /// Updates GroupProvider so badges stay current on any page.
+  void _handleBackgroundGroupMessage() {
+    if (!mounted) return;
+    Provider.of<GroupProvider>(context, listen: false)
+        .loadUnreadCountsFromStorage();
   }
 
   Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
-    debugPrint("📦 [MarketingHost] Product added: ${productData['productName']}");
+    debugPrint(
+        "📦 [MarketingHost] Product added: ${productData['productName']}");
     if (!mounted) return;
     final product = Product.fromJson(productData);
     await Provider.of<MarketingProductProvider>(context, listen: false)
@@ -313,7 +368,8 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
   }
 
   Future<void> _handleProductUpdate(Map<String, dynamic> productData) async {
-    debugPrint("🔄 [MarketingHost] Product updated: ${productData['productName']}");
+    debugPrint(
+        "🔄 [MarketingHost] Product updated: ${productData['productName']}");
     if (!mounted) return;
     final product = Product.fromJson(productData);
     await Provider.of<MarketingProductProvider>(context, listen: false)
@@ -327,87 +383,31 @@ class _MarketingHostState extends State<MarketingHost> with WidgetsBindingObserv
         .deleteProductLocal(productId);
   }
 
-  void _handleIncomingCall(Map<String, dynamic> callData) {
-    // debugPrint("Incoming call data2: ${callData.toString()}");
-    // Remove previous overlay if exists
-    _activeCallOverlay?.remove();
-    _activeCallOverlay = null;
+  void _handleCallTermination(Map<String, dynamic> data) {
+    final terminatedCallId = data['callId']?.toString();
+    if (terminatedCallId == null || terminatedCallId.isEmpty) return;
+    if (_activeIncomingCallId == terminatedCallId) {
+      _activeIncomingCallId = null;
+      CallKitService.instance.endCall(terminatedCallId);
+    }
+  }
 
-    final channelName = callData['channelName'];
-    final callerName = callData['callerName'];
-    final callerId = callData['callerId'];
-    final incomingCallId = callData["callId"];
+  Future<void> _handleIncomingCall(Map<String, dynamic> callData) async {
+    if (!mounted) return;
+    final channelName = callData['channelName'] as String;
+    final callerName = callData['callerName'] as String;
+    final callerId = callData['callerId'] as String;
+    final incomingCallId = callData['callId'].toString();
+    _activeIncomingCallId = incomingCallId;
     final uid = Utils().generateIntUidFromEmail(agentEmail!);
-    final overlayState = Overlay.of(context);
 
-    late OverlayEntry overlayEntry;
-    Timer? timeoutTimer;
-    _audioPlayer?.stop();
-    _audioPlayer = AudioPlayer();
-    Future<void> stopAndRemoveOverlay() async {
-      try {
-        debugPrint("🛑 Stopping ringtone...");
-
-        await _audioPlayer?.stop();
-        debugPrint("✅ Ringtone stopped");
-      } catch (e) {
-        debugPrint("⚠️ Failed to stop ringtone: $e");
-      }
-
-      timeoutTimer?.cancel();
-      overlayEntry.remove();
-      _activeCallOverlay = null;
-      _audioPlayer = null;
-    }
-
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).padding.top + 16,
-        left: 16,
-        right: 16,
-        child: IncomingCallWidget(
-          callerName: callerName,
-          onAnswer: () async {
-            await stopAndRemoveOverlay();
-            if (context.mounted) {
-              context.read<CallProvider>().startNewCall(
-                  channelName: channelName,
-                  remoteUserName: callerName,
-                  uid: uid,
-                  callId: incomingCallId,
-                  isCaller: false);
-            }
-          },
-          onReject: () async {
-            await stopAndRemoveOverlay();
-            await _audioPlayer?.stop();
-            await Future.delayed(const Duration(milliseconds: 100));
-            await chatRepository.updateCallData(incomingCallId, "not answered");
-            // Optionally emit reject event
-            _socketService.terminateCall(
-              targetId: callerId,
-              callId: incomingCallId,
-              channelName: channelName,
-            );
-          },
-          audioPlayer: _audioPlayer!,
-        ),
-      ),
+    await CallKitService.instance.showIncomingCall(
+      callId: incomingCallId,
+      channelName: channelName,
+      callerName: callerName,
+      callerId: callerId,
+      uid: uid,
     );
-
-    _activeCallOverlay = overlayEntry;
-    overlayState.insert(overlayEntry);
-    // If the app is not in the foreground, also show a notification
-    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
-      NotificationService.showIncomingCallNotification(callerName);
-    }
-
-    // Auto-dismiss after 30 seconds
-    timeoutTimer = Timer(const Duration(seconds: 30), () async {
-      await stopAndRemoveOverlay();
-      // Optionally emit missed call
-      await chatRepository.updateCallData(incomingCallId, "missed");
-    });
   }
 
   @override

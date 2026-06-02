@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
@@ -11,11 +13,19 @@ import 'package:kkpchatapp/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:async';
 
-class SocketService {
+class SocketService with WidgetsBindingObserver {
   static final SocketService _instance = SocketService._internal();
   factory SocketService(GlobalKey<NavigatorState> navigatorKey) {
     return _instance;
   }
+
+  static const _backgroundChannel = MethodChannel('com.kkpchatapp/background_task');
+  String? _currentUserName;
+  String? _currentUserEmail;
+  String? _currentRole;
+  String? _currentToken;
+  bool _pendingRejoin = false;
+  bool _observerRegistered = false;
 
   final NotificationService notiService = NotificationService();
 
@@ -30,7 +40,7 @@ class SocketService {
   Function(String)? _onMessageDeleted;
   Function(Map<String, dynamic>)? _onIncomingCall;
   // Function(Map<String, dynamic>)? _onCallAnswered;
-  Function(Map<String, dynamic>)? _onCallTerminated;
+  final List<Function(Map<String, dynamic>)> _onCallTerminatedListeners = [];
   // Function? _onDisconnect;
   Function? _onConnect;
   Function(Map<String, dynamic>)? _onChatStatus;
@@ -44,6 +54,9 @@ class SocketService {
   Function(Map<String, dynamic>)? _onGroupMessageReceived;
   Function(Map<String, dynamic>)? _onGroupMessageDeleted;
   Function(Map<String, dynamic>)? _onGroupMessageEdited;
+  // Called when a group message arrives in the background (chat page not open)
+  // GroupListScreen registers this to refresh unread counts in real time
+  Function? _onGroupListUpdateCallback;
 
   bool isChatPageOpen = false;
   String? activeCustomerId;
@@ -53,13 +66,15 @@ class SocketService {
   Function? onMessageReceivedCallback;
 
   List<String> _roomMembers = [];
-  StreamController<List<String>> _statusController = StreamController<List<String>>.broadcast();
+  StreamController<List<String>> _statusController =
+      StreamController<List<String>>.broadcast();
 
   Stream<List<String>> get statusStream => _statusController.stream;
 
   List<String> get onlineUsers => List.from(_roomMembers);
 
-  FlutterLocalNotificationsPlugin? _notificationsPlugin;
+  // Use the shared plugin instance from NotificationService to ensure
+  // it's initialized once at app start and usable across services.
 
   SocketService._internal();
 
@@ -80,7 +95,8 @@ class SocketService {
     return (formId: formId, rate: parsedRate);
   }
 
-  Future<void> _applyFormRateUpdateInBackground(Map<String, dynamic> data) async {
+  Future<void> _applyFormRateUpdateInBackground(
+      Map<String, dynamic> data) async {
     String? targetFormId;
     final Map<String, dynamic> formPatch = {};
 
@@ -96,7 +112,8 @@ class SocketService {
 
     final rateUpdate = _extractRateUpdateInfo(data['message']?.toString());
     if (targetFormId == null && rateUpdate != null) {
-      final normalizedRate = rateUpdate.rate % 1 == 0 ? rateUpdate.rate.toInt() : rateUpdate.rate;
+      final normalizedRate =
+          rateUpdate.rate % 1 == 0 ? rateUpdate.rate.toInt() : rateUpdate.rate;
       targetFormId = rateUpdate.formId;
       formPatch['rate'] = normalizedRate;
       formPatch['_formOptionsUnlocked'] = true;
@@ -106,13 +123,19 @@ class SocketService {
 
     final senderId = data['senderId']?.toString();
     final targetId = data['targetId']?.toString();
-    if (senderId == null || senderId.isEmpty || targetId == null || targetId.isEmpty) return;
+    if (senderId == null ||
+        senderId.isEmpty ||
+        targetId == null ||
+        targetId.isEmpty) {
+      return;
+    }
 
     final userType = await LocalDbHelper.getUserType();
     final boxName = userType == "0" ? targetId : '$targetId$senderId';
 
     final storage = ChatStorageService();
-    final cachedMessages = await storage.getMessages(boxName, page: 1, limit: 100000);
+    final cachedMessages =
+        await storage.getMessages(boxName, page: 1, limit: 100000);
     bool updated = false;
 
     for (final msg in cachedMessages) {
@@ -137,16 +160,26 @@ class SocketService {
     }
   }
 
-  void onMessageReceived(Function(Map<String, dynamic>) callback, {Function? refreshCallback}) {
+  void onMessageReceived(Function(Map<String, dynamic>) callback,
+      {Function? refreshCallback}) {
     _onMessageReceived = callback;
     onMessageReceivedCallback = refreshCallback;
   }
 
-  void initSocket(String userName, String userEmail, String role, {String? token}) {
+  void initSocket(String userName, String userEmail, String role,
+      {String? token}) {
     // ✅ Prevent duplicate socket creation
     if (_isConnected) {
       debugPrint('⚠️ Socket already connected, skipping init');
       return;
+    }
+    _currentUserName = userName;
+    _currentUserEmail = userEmail;
+    _currentRole = role;
+    _currentToken = token;
+    if (!_observerRegistered) {
+      WidgetsBinding.instance.addObserver(this);
+      _observerRegistered = true;
     }
     _statusController.close();
     _statusController = StreamController<List<String>>.broadcast();
@@ -199,7 +232,8 @@ class SocketService {
       final String senderId = data['senderId'] ?? '';
       final String targetId = data['targetId'] ?? '';
 
-      if (isChatPageOpen && (activeCustomerId == senderId || activeCustomerId == targetId)) {
+      if (isChatPageOpen &&
+          (activeCustomerId == senderId || activeCustomerId == targetId)) {
         _onMessageReceived?.call(data);
       } else {
         debugPrint("recived message socket : ${data.toString()}");
@@ -227,7 +261,11 @@ class SocketService {
     _socket.on('callTerminated', (data) {
       debugPrint('📥 callTerminated from server: $data');
 
-      _onCallTerminated?.call(data);
+      final payload = Map<String, dynamic>.from((data as Map?) ?? const {});
+      for (final listener in List<Function(Map<String, dynamic>)>.from(
+          _onCallTerminatedListeners)) {
+        listener(payload);
+      }
     });
 
     _socket.on('messageDeleted', (data) {
@@ -281,7 +319,8 @@ class SocketService {
 
     _socket.on('productDelete', (data) {
       debugPrint("[Socket] Product deleted: $data");
-      final dynamic productId = data is Map ? (data['productId'] ?? data['_id']) : data;
+      final dynamic productId =
+          data is Map ? (data['productId'] ?? data['_id']) : data;
       if (_onProductDelete != null && productId != null) {
         _onProductDelete!(productId.toString());
       }
@@ -311,7 +350,8 @@ class SocketService {
       _isConnected = false;
       for (String email in _roomMembers) {
         LocalDbHelper.updateLastSeenTime(email);
-        debugPrint("⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
+        debugPrint(
+            "⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
       }
       debugPrint('⚠️ Disconnected from socket server');
       // _attemptReconnect(userName, userEmail, role);
@@ -356,12 +396,14 @@ class SocketService {
   }
 
   void toggleGroupChatPageOpen(bool toggle) {
-    debugPrint("🔄 [SocketService] Toggling group chat page: ${toggle ? "OPEN" : "CLOSED"}");
+    debugPrint(
+        "🔄 [SocketService] Toggling group chat page: ${toggle ? "OPEN" : "CLOSED"}");
     isGroupChatPageOpen = toggle;
   }
 
   void setGroupChatPageState(bool isOpen) {
-    debugPrint("🔄 [SocketService] Setting group chat page state: ${isOpen ? "OPEN" : "CLOSED"}");
+    debugPrint(
+        "🔄 [SocketService] Setting group chat page state: ${isOpen ? "OPEN" : "CLOSED"}");
     isGroupChatPageOpen = isOpen;
   }
 
@@ -379,6 +421,14 @@ class SocketService {
   void onGroupMessageEdited(Function(Map<String, dynamic>) callback) {
     debugPrint("🔧 [SocketService] Group message edited callback registered");
     _onGroupMessageEdited = callback;
+  }
+
+  void onGroupListUpdate(Function callback) {
+    _onGroupListUpdateCallback = callback;
+  }
+
+  void clearGroupListUpdate() {
+    _onGroupListUpdateCallback = null;
   }
 
   void sendGroupMessage({
@@ -417,55 +467,74 @@ class SocketService {
     debugPrint('📤 Sent group message: $payload');
   }
 
-  // Add these methods to handle background events
+  // Handle group message deletion in background (group-specific storage)
   void _handleBackgroundGroupMessageDeletion(Map<String, dynamic> data) async {
-    debugPrint("🗑️ Handling group message deletion in background: ${data.toString()}");
-    final messageId = data['messageId'];
+    debugPrint("🗑️ [Background] Group message deletion: ${data.toString()}");
+    final messageId = data['messageId']?.toString();
+    final groupId = data['groupId']?.toString();
+
+    if (messageId == null || groupId == null || groupId.isEmpty) {
+      debugPrint(
+          "⚠️ [Background] Missing messageId or groupId in deletion data");
+      return;
+    }
 
     try {
-      // Update the message in local storage
-      final localMessages = await LocalDbHelper.getGroupMessages();
-      final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
-
+      final localMessages = await LocalDbHelper.getGroupMessages(groupId);
+      final index =
+          localMessages.indexWhere((msg) => msg.messageId == messageId);
       if (index != -1) {
         final updatedMessage = localMessages[index].copyWith(
           isDeleted: true,
           message: "This message was deleted",
         );
-        await LocalDbHelper.updateGroupMessage(updatedMessage);
-        debugPrint("✅ Updated deleted message in local storage: $messageId");
+        await LocalDbHelper.updateGroupMessage(updatedMessage, groupId);
+        debugPrint(
+            "✅ [Background] Marked message $messageId as deleted in group $groupId");
       }
     } catch (e) {
-      debugPrint("❌ Error updating deleted message in background: $e");
+      debugPrint("❌ [Background] Error handling group message deletion: $e");
     }
   }
 
+  // Handle group message edit in background (group-specific storage)
   void _handleBackgroundGroupMessageEdit(Map<String, dynamic> data) async {
-    debugPrint("✏️ Handling group message edit in background: ${data.toString()}");
-    final messageId = data['messageId'];
-    final newMessage = data['newMessage'];
+    debugPrint("✏️ [Background] Group message edit: ${data.toString()}");
+    final messageId = data['messageId']?.toString();
+    final newMessage = data['newMessage']?.toString();
+    final groupId = data['groupId']?.toString();
+
+    if (messageId == null ||
+        newMessage == null ||
+        groupId == null ||
+        groupId.isEmpty) {
+      debugPrint("⚠️ [Background] Missing fields in group message edit data");
+      return;
+    }
 
     try {
-      // Update the message in local storage
-      final localMessages = await LocalDbHelper.getGroupMessages();
-      final index = localMessages.indexWhere((msg) => msg.messageId == messageId);
-
+      final localMessages = await LocalDbHelper.getGroupMessages(groupId);
+      final index =
+          localMessages.indexWhere((msg) => msg.messageId == messageId);
       if (index != -1) {
         final updatedMessage = localMessages[index].copyWith(
           message: newMessage,
           isEdited: true,
         );
-        await LocalDbHelper.updateGroupMessage(updatedMessage);
-        debugPrint("✅ Updated edited message in local storage: $messageId");
+        await LocalDbHelper.updateGroupMessage(updatedMessage, groupId);
+        debugPrint(
+            "✅ [Background] Updated edited message $messageId in group $groupId");
       }
     } catch (e) {
-      debugPrint("❌ Error updating edited message in background: $e");
+      debugPrint("❌ [Background] Error handling group message edit: $e");
     }
   }
 
 // Add this method to delete a group message
   void deleteGroupMessage(
-      {required String messageId, required String senderId, required String groupId}) {
+      {required String messageId,
+      required String senderId,
+      required String groupId}) {
     if (!_isConnected) {
       debugPrint('Socket is not connected. Cannot delete group message.');
       return;
@@ -576,7 +645,9 @@ class SocketService {
     final lastMessageTimestampStr = data['lastMessageTimestamp'];
     debugPrint("Background Chat Status Updated: $status");
 
-    if (status == 'opened' && lastMessageTimestampStr != null && customerEmail != null) {
+    if (status == 'opened' &&
+        lastMessageTimestampStr != null &&
+        customerEmail != null) {
       final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
       if (lastMessageTimestamp != null) {
         // Set the receiver as on the chat page using LocalDbHelper
@@ -585,7 +656,8 @@ class SocketService {
         final userType = await LocalDbHelper.getUserType();
         if (userType == "0") {
           // Customer
-          final messages = await ChatStorageService().getCustomerMessages(customerEmail);
+          final messages =
+              await ChatStorageService().getCustomerMessages(customerEmail);
           for (var message in messages) {
             if (message.timestamp.isBefore(lastMessageTimestamp) ||
                 message.timestamp == lastMessageTimestamp) {
@@ -593,7 +665,8 @@ class SocketService {
               await ChatStorageService().saveMessage(message, customerEmail);
             }
           }
-          debugPrint("✅ Updated customer messages as read up to $lastMessageTimestampStr");
+          debugPrint(
+              "✅ Updated customer messages as read up to $lastMessageTimestampStr");
         } else {
           // Agent
           // Required from backend
@@ -628,14 +701,16 @@ class SocketService {
 
     if (userType == "0") {
       // Customer
-      final messages = await ChatStorageService().getCustomerMessages(customerEmail);
+      final messages =
+          await ChatStorageService().getCustomerMessages(customerEmail);
       for (var message in messages) {
         if (message.timestamp.isBefore(lastMessageTimestamp)) {
           message.read = true;
           await ChatStorageService().saveMessage(message, customerEmail);
         }
       }
-      debugPrint("✅ Updated customer messages as read up to $lastMessageTimestampStr");
+      debugPrint(
+          "✅ Updated customer messages as read up to $lastMessageTimestampStr");
     } else {
       // Agent
       final agentEmail = data['agentEmail']; // Required from backend
@@ -669,19 +744,22 @@ class SocketService {
       final messages = await ChatStorageService().getCustomerMessages(targetId);
       debugPrint("Retrieved messages for customer: ${messages.length}");
 
-      final index = messages.indexWhere((message) => message.messageId == messageId);
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
       if (index != -1) {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
 
         // Save the updated message state to local storage
         await ChatStorageService().saveMessage(messages[index], targetId);
-        debugPrint("Message marked as deleted for customer with ID: $messageId");
+        debugPrint(
+            "Message marked as deleted for customer with ID: $messageId");
 
         // Verify the message is updated in the storage
-        final updatedMessages = await ChatStorageService().getCustomerMessages(targetId);
-        final updatedIndex =
-            updatedMessages.indexWhere((message) => message.messageId == messageId);
+        final updatedMessages =
+            await ChatStorageService().getCustomerMessages(targetId);
+        final updatedIndex = updatedMessages
+            .indexWhere((message) => message.messageId == messageId);
         if (updatedIndex != -1 && updatedMessages[updatedIndex].isDeleted) {
           debugPrint("Successfully updated message in storage for customer.");
         } else {
@@ -696,7 +774,8 @@ class SocketService {
 
       // Retrieve and update the message in local storage
       final messages = await ChatStorageService().getMessages(boxName);
-      final index = messages.indexWhere((message) => message.messageId == messageId);
+      final index =
+          messages.indexWhere((message) => message.messageId == messageId);
       if (index != -1) {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
@@ -717,7 +796,8 @@ class SocketService {
 
     for (String email in previousUsers.difference(currentUsers)) {
       LocalDbHelper.updateLastSeenTime(email);
-      debugPrint("⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
+      debugPrint(
+          "⏳ Updated last seen for $email: ${DateTime.now().toIso8601String()}");
     }
 
     _roomMembers = newRoomMembers;
@@ -770,7 +850,13 @@ class SocketService {
   // }
 
   void onCallTerminated(Function(Map<String, dynamic>) callback) {
-    _onCallTerminated = callback;
+    if (!_onCallTerminatedListeners.contains(callback)) {
+      _onCallTerminatedListeners.add(callback);
+    }
+  }
+
+  void offCallTerminated(Function(Map<String, dynamic>) callback) {
+    _onCallTerminatedListeners.remove(callback);
   }
 
   // void _attemptReconnect(String userName, String userEmail, String role) {
@@ -842,10 +928,12 @@ class SocketService {
       // Save the last message for the user last chatted
       if (type == "product") {
         updateLastMessage(targetEmail ?? "", "shared product");
-      } else if (message != null && message.contains("Your order is confirmed with form Id")) {
+      } else if (message != null &&
+          message.contains("Your order is confirmed with form Id")) {
         // Handle order confirmation
         updateLastMessage(targetEmail ?? "", "Order Confirmed");
-      } else if (message != null && message.contains("Your order is declined with form Id")) {
+      } else if (message != null &&
+          message.contains("Your order is declined with form Id")) {
         // Handle order decline
         updateLastMessage(targetEmail ?? "", "Order Declined");
       } else {
@@ -953,7 +1041,90 @@ class SocketService {
     }
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('[SocketService] Lifecycle → $state');
+    switch (state) {
+      case AppLifecycleState.inactive:
+        if (Platform.isIOS) _beginBackgroundTask();
+        break;
+      case AppLifecycleState.paused:
+        _onAppPaused();
+        break;
+      case AppLifecycleState.resumed:
+        _onAppResumed();
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _onAppPaused() {
+    // Do NOT emit 'leave' here. The server's socket disconnect event fires
+    // automatically when the socket drops (~30 s background task), so the server
+    // still marks the user offline at the right time. Emitting 'leave' early
+    // would cut the background window short — incoming call socket events would
+    // not be routed to this user even though the socket is still alive.
+    if (_isConnected) {
+      _pendingRejoin = true;
+    }
+  }
+
+  void _onAppResumed() {
+    if (Platform.isIOS) _endBackgroundTask();
+
+    if (!_isConnected) {
+      _pendingRejoin = false;
+      debugPrint('[SocketService] Resumed — socket dead, reconnecting...');
+      try {
+        _socket.connect();
+      } catch (e) {
+        debugPrint('[SocketService] Reconnect on resume failed: $e');
+      }
+    } else if (_pendingRejoin) {
+      _pendingRejoin = false;
+      _emitJoinDirectly();
+    }
+  }
+
+  void _emitJoinDirectly() {
+    if (_currentUserName == null || _currentUserEmail == null || _currentRole == null) return;
+    try {
+      _socket.emit('join', {
+        'user': _currentUserName,
+        'userId': _currentUserEmail,
+        'role': _currentRole,
+        if (_currentToken != null) 'token': _currentToken,
+      });
+      debugPrint('[SocketService] Re-joined after resume: $_currentUserEmail');
+    } catch (e) {
+      debugPrint('[SocketService] Failed to re-join on resume: $e');
+    }
+  }
+
+  Future<void> _beginBackgroundTask() async {
+    try {
+      await _backgroundChannel.invokeMethod('beginBackgroundTask');
+      debugPrint('[SocketService] iOS background task started');
+    } catch (e) {
+      debugPrint('[SocketService] beginBackgroundTask failed: $e');
+    }
+  }
+
+  Future<void> _endBackgroundTask() async {
+    try {
+      await _backgroundChannel.invokeMethod('endBackgroundTask');
+      debugPrint('[SocketService] iOS background task ended');
+    } catch (e) {
+      debugPrint('[SocketService] endBackgroundTask failed: $e');
+    }
+  }
+
   void dispose() {
+    if (_observerRegistered) {
+      WidgetsBinding.instance.removeObserver(this);
+      _observerRegistered = false;
+    }
     if (_isConnected) {
       _socket.clearListeners();
       _statusController.close();
@@ -979,7 +1150,9 @@ class SocketService {
     final userType = await LocalDbHelper.getUserType();
     final String notificationMessage = data['type'] == "product"
         ? "Shared product"
-        : (data['message'] is String ? data['message'] as String : data['message'].toString());
+        : (data['message'] is String
+            ? data['message'] as String
+            : data['message'].toString());
 
     if (userType == "0") {
       // Customer-side notification logic
@@ -991,51 +1164,6 @@ class SocketService {
       if (onMessageReceivedCallback != null) {
         onMessageReceivedCallback!();
       }
-
-      // Send notification to the customer
-      final title = "New Message from Agent";
-      final id = 200;
-
-      if (_notificationsPlugin == null) {
-        _notificationsPlugin = FlutterLocalNotificationsPlugin();
-        const androidSettings = AndroidInitializationSettings('app_logo');
-        const iosSettings = DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          defaultPresentAlert: true,
-          defaultPresentSound: true,
-          defaultPresentBadge: true,
-        );
-        const initSettings = InitializationSettings(
-          android: androidSettings,
-          iOS: iosSettings,
-        );
-        await _notificationsPlugin!
-            .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
-      }
-
-      const androidDetails = AndroidNotificationDetails(
-        'your_channel_id',
-        'your_channel_name',
-        channelDescription: 'your_channel_description',
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-      final notificationDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
-
-      await _notificationsPlugin!.show(
-        id,
-        title,
-        notificationMessage,
-        notificationDetails,
-        payload: jsonEncode(data),
-      );
     } else {
       // for agent side
       final senderId = data['senderId']; // AgentEmail
@@ -1063,39 +1191,10 @@ class SocketService {
       }
     }
 
-    // Show local notification (rest of the method remains the same)
-    if (_notificationsPlugin == null) {
-      _notificationsPlugin = FlutterLocalNotificationsPlugin();
-      const androidSettings = AndroidInitializationSettings('app_logo');
-      const iosSettings = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestSoundPermission: true,
-        requestBadgePermission: true,
-        defaultPresentAlert: true,
-        defaultPresentSound: true,
-        defaultPresentBadge: true,
-      );
-      const initSettings = InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-      );
-      await _notificationsPlugin!
-          .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
-    }
-
-    // Request permissions for iOS
-    await _notificationsPlugin!
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
     const androidDetails = AndroidNotificationDetails(
-      'your_channel_id',
-      'your_channel_name',
-      channelDescription: 'your_channel_description',
+      'high_importance_channel',
+      'High Importance Notifications',
+      channelDescription: 'This channel is for important notifications',
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -1104,24 +1203,16 @@ class SocketService {
       presentBadge: true,
       presentSound: true,
     );
-    final notificationDetails = NotificationDetails(android: androidDetails, iOS: iosDetails);
-    // final title = "New Message from ${data['senderName']}";
-    // final id = title.hashCode;
-    // await _notificationsPlugin!.show(
-    //   id,
-    //   title,
-    //   data['message'],
-    //   notificationDetails,
-    //   payload: jsonEncode(data),
-    // );
+    final notificationDetails =
+        NotificationDetails(android: androidDetails, iOS: iosDetails);
 
-    // Start of added code for consolidating notifications
     if (userType != "0") {
       // Agent-side notification logic
       const consolidatedNotificationId = 999;
-      final box =
-          await Hive.openBox<int>('${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
-      final totalUnreadMessages = box.values.fold<int>(0, (sum, value) => sum + value);
+      final box = await Hive.openBox<int>(
+          '${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
+      final totalUnreadMessages =
+          box.values.fold<int>(0, (sum, value) => sum + value);
       final usersWithUnread = box.values.where((count) => count > 0).length;
 
       String title;
@@ -1129,8 +1220,9 @@ class SocketService {
       String payload;
 
       if (usersWithUnread == 1) {
-        final unreadCount =
-            await LocalDbHelper.getUnreadCount(data['targetId'], data['senderId']) ?? 0;
+        final unreadCount = await LocalDbHelper.getUnreadCount(
+                data['targetId'], data['senderId']) ??
+            0;
 
         if (unreadCount > 1) {
           title = "$unreadCount messages from ${data['senderName']}";
@@ -1142,12 +1234,13 @@ class SocketService {
 
         payload = jsonEncode(data); // Normal payload to open chat
       } else {
-        title = "$totalUnreadMessages unread messages from $usersWithUnread users";
+        title =
+            "$totalUnreadMessages unread messages from $usersWithUnread users";
         message = "You have $totalUnreadMessages unread messages";
         payload = "general_chat_summary"; // Special payload
       }
 
-      await _notificationsPlugin!.show(
+      await NotificationService.plugin.show(
         consolidatedNotificationId,
         title,
         message,
@@ -1158,7 +1251,7 @@ class SocketService {
       final title = "New Message from Agent";
       final id = 200;
 
-      await _notificationsPlugin!.show(
+      await NotificationService.plugin.show(
         id,
         title,
         notificationMessage,
@@ -1192,35 +1285,6 @@ class SocketService {
     }
 
     try {
-      // Initialize notifications plugin if not already done
-      if (_notificationsPlugin == null) {
-        _notificationsPlugin = FlutterLocalNotificationsPlugin();
-        const androidSettings = AndroidInitializationSettings('app_logo');
-        const iosSettings = DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          defaultPresentAlert: true,
-          defaultPresentSound: true,
-          defaultPresentBadge: true,
-        );
-        const initSettings = InitializationSettings(
-          android: androidSettings,
-          iOS: iosSettings,
-        );
-        await _notificationsPlugin!
-            .initialize(initSettings, onDidReceiveNotificationResponse: _handleNotificationTap);
-      }
-
-      // Request permissions for iOS
-      await _notificationsPlugin!
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
-
       // Create notification details
       const androidDetails = AndroidNotificationDetails(
         'group_chat_channel_id',
@@ -1272,22 +1336,43 @@ class SocketService {
       const notificationId = 1001;
 
       // Show the notification
-      await _notificationsPlugin!.show(
+      await NotificationService.plugin.show(
         notificationId,
         title,
         messageContent,
         notificationDetails,
         payload: jsonEncode({
-          'isGroupMessage': true, // This flag identifies it as a group message
+          'isGroupMessage': true,
           'notificationType': 'groupChat',
-          ...data, // Include all original data
+          ...data,
         }),
       );
 
-      // Increment unread count for group chat using LocalDbHelper
+      // Save last message preview + increment per-group unread count
+      final groupId = data['groupId']?.toString() ?? '';
+      if (groupId.isNotEmpty) {
+        try {
+          await LocalDbHelper.saveGroupLastMessage(
+              groupId, messageContent, DateTime.now());
+          debugPrint(
+              "✅ Saved last message for group $groupId: $messageContent");
+        } catch (e) {
+          debugPrint("❌ Error saving group last message: $e");
+        }
+        try {
+          await LocalDbHelper.incrementGroupUnreadCount(groupId);
+        } catch (e) {
+          debugPrint("❌ Error incrementing group unread count: $e");
+        }
+      }
+
+      // Notify GroupListScreen to refresh unread badges in real time
+      _onGroupListUpdateCallback?.call();
+
+      // Increment global group chat unread count (used by nav badge)
       try {
         await LocalDbHelper.incrementGroupChatUnreadCount();
-        debugPrint("✅ Incremented group chat unread count");
+        debugPrint("✅ Incremented global group chat unread count");
       } catch (e) {
         debugPrint("❌ Error incrementing group chat unread count: $e");
       }
@@ -1297,7 +1382,7 @@ class SocketService {
   }
 
   /// Handles notification taps
-  Future<void> _handleNotificationTap(NotificationResponse response) async {
+  Future<void> handleNotificationTap(NotificationResponse response) async {
     debugPrint("Notification tapped: ${response.payload}");
 
     if (response.payload == null) {
@@ -1305,47 +1390,45 @@ class SocketService {
       return;
     }
 
-    try {
-      // Check if this is a group message notification
-      if (response.payload is String) {
-        try {
-          final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
+    // If payload is a simple control string, handle it before any JSON parsing.
+    if (response.payload == "incoming_call") {
+      debugPrint("Incoming call notification tapped — opening the app only.");
+      return; // Do nothing else; MarketingHost will show the overlay when socket event arrives
+    }
 
-          // Handle group message notification
-          if (notificationData['isGroupMessage'] == true) {
-            debugPrint("Group message notification tapped");
-            await handleGroupLocalNotificationTap(navigatorKey, notificationData);
-            return;
-          }
-        } catch (e) {
-          debugPrint("Not a JSON payload or not a group message: $e");
-        }
-      }
+    if (response.payload == "general_chat_summary") {
+      debugPrint("Summary notification tapped — opening the app only.");
+      return;
+    }
 
-      // Check if the payload is the string "incoming_call"
-      if (response.payload == "incoming_call") {
-        debugPrint("Incoming call notification tapped, opening the app.");
-        return;
-      }
-
-      if (response.payload == "general_chat_summary") {
-        debugPrint("Summary notification tapped, just opening the app.");
-        return;
-      }
-
-      // Handle regular message notifications
+    // Attempt JSON decode only for payloads that are actual JSON strings.
+    if (response.payload is String) {
       try {
-        final Map<String, dynamic> notificationData = jsonDecode(response.payload!);
+        final Map<String, dynamic> notificationData =
+            jsonDecode(response.payload!);
+
+        // Handle group message notification
+        if (notificationData['isGroupMessage'] == true) {
+          debugPrint("Group message notification tapped");
+          await handleGroupLocalNotificationTap(navigatorKey, notificationData);
+          return;
+        }
+
+        // Regular message notification
         if ("0" == await LocalDbHelper.getUserType()) {
           handleNotificationClickForCustomer(navigatorKey, notificationData);
         } else {
           handleNotificationClickForAgent(navigatorKey, notificationData);
         }
+
+        return;
       } catch (e) {
-        debugPrint("Failed to decode JSON: $e");
+        debugPrint("Not a JSON payload or failed to parse payload: $e");
+        return;
       }
-    } catch (e) {
-      debugPrint("Error handling notification tap: $e");
     }
+
+    debugPrint(
+        "Unhandled notification payload type: ${response.payload.runtimeType}");
   }
 }

@@ -9,6 +9,7 @@ class FormDataModel {
   final String customerName;
   final String buyerName;
   final String status;
+  final String reason;
   final String id;
   final String orderId;
 
@@ -23,24 +24,35 @@ class FormDataModel {
     required this.customerName,
     required this.buyerName,
     required this.status,
+    required this.reason,
     required this.id,
     required this.orderId,
   });
 
+  static String _asString(dynamic value) {
+    if (value == null) return '';
+    final str = value.toString().trim();
+    if (str.toLowerCase() == 'unknown buyer') return '';
+    return str;
+  }
+
   factory FormDataModel.fromJson(Map<String, dynamic> json) {
     return FormDataModel(
-      date: json['date'] ?? '',
-      quality: json['quality'] ?? '',
-      weave: json['weave'] ?? '',
-      quantity: json['quantity'] ?? '',
-      composition: json['composition'] ?? '',
-      rate: json['rate']?.toString() ?? '',
-      agentName: json['agentName'] ?? '',
-      customerName: json['customerName'] ?? '',
-      buyerName: json['buyerName'] ?? '',
-      status: json['status'] ?? '',
-      id: json['_id'] ?? '',
-      orderId: json['orderId'] ?? json['_id'] ?? '',
+      date: _asString(json['date']),
+      quality: _asString(json['quality']),
+      weave: _asString(json['weave']),
+      quantity: _asString(json['quantity']),
+      composition: _asString(json['composition']),
+      rate: _asString(json['rate']),
+      agentName: _asString(json['agentName']),
+      customerName: _asString(json['customerName']),
+      buyerName: _asString(json['buyerName']),
+      status: _asString(json['status']),
+      reason: _asString(json['reason']),
+      id: _asString(json['_id']),
+      orderId: _asString(json['orderId']).isNotEmpty
+          ? _asString(json['orderId'])
+          : _asString(json['_id']),
     );
   }
 
@@ -56,8 +68,41 @@ class FormDataModel {
       'customerName': customerName,
       'buyerName': buyerName,
       'status': status,
+      'reason': reason,
       '_id': id,
       'orderId': orderId,
     };
+  }
+
+  FormDataModel copyWith({
+    String? date,
+    String? quality,
+    String? weave,
+    String? quantity,
+    String? composition,
+    String? rate,
+    String? agentName,
+    String? customerName,
+    String? buyerName,
+    String? status,
+    String? reason,
+    String? id,
+    String? orderId,
+  }) {
+    return FormDataModel(
+      date: date ?? this.date,
+      quality: quality ?? this.quality,
+      weave: weave ?? this.weave,
+      quantity: quantity ?? this.quantity,
+      composition: composition ?? this.composition,
+      rate: rate ?? this.rate,
+      agentName: agentName ?? this.agentName,
+      customerName: customerName ?? this.customerName,
+      buyerName: buyerName ?? this.buyerName,
+      status: status ?? this.status,
+      reason: reason ?? this.reason,
+      id: id ?? this.id,
+      orderId: orderId ?? this.orderId,
+    );
   }
 }

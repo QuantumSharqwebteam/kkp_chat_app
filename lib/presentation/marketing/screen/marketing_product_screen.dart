@@ -197,17 +197,20 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
         elevation: 8,
         shape: const CircleBorder(),
         tooltip: locale.uploadNewProduct,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_upload, size: 36, color: AppColors.grey7B7B7B),
-            //SizedBox(height: 6),
-            Text(
-              locale.uploadHere,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.black10_600,
-            ),
-          ],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_upload, size: 36, color: AppColors.grey7B7B7B),
+              Text(
+                locale.uploadHere,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.black10_600,
+              ),
+            ],
+          ),
         ),
       ),
     );

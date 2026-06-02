@@ -8,7 +8,7 @@ class ChatUtils {
       return DateFormat('hh:mm a').format(currentTime);
     }
     try {
-      final dateTime = DateTime.parse(timestamp);
+      final dateTime = DateTime.parse(timestamp).toLocal();
       return DateFormat('hh:mm a').format(dateTime);
     } catch (e) {
       final currentTime = DateTime.now();

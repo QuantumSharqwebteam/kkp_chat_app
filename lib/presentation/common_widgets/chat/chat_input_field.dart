@@ -20,6 +20,7 @@ class ChatInputField extends StatefulWidget {
   final VoidCallback? onCheckOrders;
   final bool showFormAndProduct; // Add this parameter
   final bool showCheckOrders;
+  final bool showInquiryForm;
 
   const ChatInputField({
     super.key,
@@ -36,6 +37,7 @@ class ChatInputField extends StatefulWidget {
     this.onCheckOrders,
     this.showFormAndProduct = true, // Default to true for backward compatibility
     this.showCheckOrders = false,
+    this.showInquiryForm = true,
   });
 
   @override
@@ -94,9 +96,9 @@ class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProvid
           IconButton(
             icon: const Icon(Icons.attachment),
             onPressed: () {
-              showAttachmentMenu(
-                context,
-                (selectedItem) {
+                showAttachmentMenu(
+                  context,
+                  (selectedItem) {
                   if (selectedItem == "Photos") {
                     widget.onSendImage();
                   } else if (selectedItem == "Inquiry Form") {
@@ -113,6 +115,7 @@ class _ChatInputFieldState extends State<ChatInputField> with SingleTickerProvid
                 },
                 showFormAndProduct: widget.showFormAndProduct,
                 showCheckOrders: widget.showCheckOrders,
+                showInquiryForm: widget.showInquiryForm,
               );
             },
           ),
@@ -231,7 +234,9 @@ final List<Map<String, String>> attachmentItemsforInternalChat = [
 final String? currentUser = LocalDbHelper.getProfile()?.role;
 
 void showAttachmentMenu(BuildContext context, Function(String) onItemSelected,
-    {bool showFormAndProduct = true, bool showCheckOrders = false}) {
+    {bool showFormAndProduct = true,
+    bool showCheckOrders = false,
+    bool showInquiryForm = true}) {
   showModalBottomSheet(
       context: context,
       elevation: 10,
@@ -255,6 +260,11 @@ void showAttachmentMenu(BuildContext context, Function(String) onItemSelected,
           if (showCheckOrders) {
             itemsToShow.insert(0, {"image": ImageConstants.checkCircle, "label": "Check Orders"});
           }
+        }
+
+        if (!showInquiryForm) {
+          itemsToShow =
+              itemsToShow.where((item) => item['label'] != 'Inquiry Form').toList();
         }
 
         return Container(

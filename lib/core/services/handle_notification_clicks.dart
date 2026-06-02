@@ -4,7 +4,6 @@ import 'package:hive/hive.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
-import 'package:kkpchatapp/presentation/common/chat/incoming_call_screen.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
 
@@ -19,8 +18,12 @@ Future<void> _resetCustomerUnreadCount(
 
 /// Handles notification click for customers.
 Future<void> handleNotificationClickForCustomer(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
-  final customerEmail = (notificationData['targetId'] as String?) ?? LocalDbHelper.getEmail();
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint(
+      'handleNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorKey set:, navigatorStateAvailable: ${navigatorKey.currentState != null}');
+  final customerEmail =
+      (notificationData['targetId'] as String?) ?? LocalDbHelper.getEmail();
   if (notificationData["type"] == "product") {
     notificationData["message"] = "Shared product";
   }
@@ -39,7 +42,10 @@ Future<void> handleNotificationClickForCustomer(
 
 /// Handles push notification click for customers.
 Future<void> handlePushNotificationClickForCustomer(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint(
+      'handlePushNotificationClickForCustomer invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
   // I/flutter ( 1646): 🚀@@ App Opened via Notification: {targetName: waxoc , senderName: Agent mohd 3,
@@ -47,14 +53,16 @@ Future<void> handlePushNotificationClickForCustomer(
 
   // Function to trigger navigation
   void triggerNavigation() {
-    final customerEmail = (notificationData["targetId"] as String?) ?? LocalDbHelper.getEmail();
+    final customerEmail =
+        (notificationData["targetId"] as String?) ?? LocalDbHelper.getEmail();
     final agentEmail = notificationData["senderId"];
     final agentName = notificationData["senderName"];
     if (notificationData["type"] == "product") {
       notificationData["message"] = "Shared product";
     }
     if (customerEmail == null || customerEmail.isEmpty) {
-      debugPrint("Customer email missing in notification payload; skipping navigation.");
+      debugPrint(
+          "Customer email missing in notification payload; skipping navigation.");
       return;
     }
 
@@ -87,36 +95,37 @@ Future<void> handlePushNotificationClickForCustomer(
     });
   }
 
-  // Listen for changes to isAppInitialized
   controller.stream.listen((isInitialized) {
     if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
+      timer?.cancel();
+      controller.close();
       triggerNavigation();
     }
   });
 
-  // Start a timer to observe the variable for 20 seconds
   timer = Timer(Duration(seconds: 20), () {
     if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
+      controller.close();
       debugPrint("Timeout reached. App is not initialized.");
     }
   });
 
-  // Simulate checking the variable (replace this with actual logic)
   Future.doWhile(() async {
     if (isAppInitialized) {
       controller.add(true);
-      return false; // Exit the loop if the variable is true
+      return false;
     }
-    await Future.delayed(Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(Duration(milliseconds: 100));
     return true;
   });
 }
 
 /// Handles notification click for agents.
 Future<void> handleNotificationClickForAgent(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint(
+      'handleNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   if (notificationData["type"] == "product") {
     notificationData["message"] = "Shared product";
   }
@@ -137,21 +146,29 @@ Future<void> handleNotificationClickForAgent(
   );
 }
 
-/// Handles group chat notification tap
+/// Handles group chat notification tap (local notification, app in foreground/background)
 Future<void> handleGroupLocalNotificationTap(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
-  debugPrint("🔔 Group chat notification tapped: ${notificationData.toString()}");
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint(
+      "🔔 Group chat notification tapped: ${notificationData.toString()}");
 
   try {
-    // Clear the group chat unread count
+    final groupId = notificationData['groupId']?.toString() ?? '';
+    if (groupId.isEmpty) {
+      debugPrint(
+          "⚠️ handleGroupLocalNotificationTap: groupId missing in payload");
+      return;
+    }
+
+    // Clear the per-group unread count now that the user is opening the chat
+    await LocalDbHelper.clearGroupUnreadCount(groupId);
     await LocalDbHelper.clearGroupChatUnreadCount();
-    debugPrint("✅ Cleared group chat unread count");
 
-    // Get the current user's info
-    final agentName = notificationData["senderName"];
-    final agentEmail = notificationData["senderId"];
+    // Use the logged-in user's own credentials, not the sender's
+    final agentName = LocalDbHelper.getName() ?? '';
+    final agentEmail = LocalDbHelper.getEmail() ?? '';
 
-    // Navigate to the internal chat screen
     if (navigatorKey.currentContext != null) {
       Navigator.push(
         navigatorKey.currentContext!,
@@ -160,6 +177,7 @@ Future<void> handleGroupLocalNotificationTap(
             agentName: agentName,
             agentEmail: agentEmail,
             navigatorKey: navigatorKey,
+            groupId: groupId,
           ),
         ),
       );
@@ -171,7 +189,10 @@ Future<void> handleGroupLocalNotificationTap(
 
 /// Handles push notification click for agents.
 Future<void> handlePushNotificationClickForAgent(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+    GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
+  debugPrint(
+      'handlePushNotificationClickForAgent invoked. isAppInitialized: $isAppInitialized, navigatorStateAvailable: ${navigatorKey.currentState != null}');
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 
@@ -202,8 +223,7 @@ Future<void> handlePushNotificationClickForAgent(
       notificationData["message"] = "Shared product";
     }
     await LocalDbHelper.clearUnreadCount(agentEmail, customerEmail);
-    Navigator.push(
-      navigatorKey.currentContext!,
+    navigatorKey.currentState?.push(
       MaterialPageRoute(
         builder: (_) => AgentChatScreen(
           customerName: customerName,
@@ -217,99 +237,51 @@ Future<void> handlePushNotificationClickForAgent(
     );
   }
 
-  // Listen for changes to isAppInitialized
   controller.stream.listen((isInitialized) {
     if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
+      timer?.cancel();
+      controller.close();
       triggerNavigation();
     }
   });
 
-  // Start a timer to observe the variable for 20 seconds
   timer = Timer(Duration(seconds: 20), () {
     if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
+      controller.close();
       debugPrint("Timeout reached. App is not initialized.");
     }
   });
 
-  // Simulate checking the variable (replace this with actual logic)
   Future.doWhile(() async {
     if (isAppInitialized) {
       controller.add(true);
-      return false; // Exit the loop if the variable is true
+      return false;
     }
-    await Future.delayed(Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(Duration(milliseconds: 100));
     return true;
   });
 }
 
-/// Handles incoming call notification.
-/// Handles incoming call notification.
-Future<void> handleIncomingCall(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> callData) async {
-  final StreamController<bool> controller = StreamController<bool>();
-  Timer? timer;
-
-  // Function to trigger the incoming call screen
-  void triggerIncomingCall() {
-    final channelName = callData['channelName'];
-    final remoteUserName = callData['remoteUserName'];
-    final remoteUserId = callData['remoteUserId'];
-    final notificationId = callData['notificationId'];
-    final callId = callData["callId"];
-
-    Navigator.push(
-      navigatorKey.currentContext!,
-      MaterialPageRoute(
-        builder: (_) => IncomingCallScreen(
-          callerName: remoteUserName,
-          remoteUserId: remoteUserId,
-          channelName: channelName,
-          notificationId: notificationId,
-          callId: callId,
-        ),
-      ),
-    );
-  }
-
-  // Listen for changes to isAppInitialized
-  controller.stream.listen((isInitialized) {
-    if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
-      triggerIncomingCall();
-    }
-  });
-
-  // Start a timer to observe the variable for 20 seconds
-  timer = Timer(Duration(seconds: 20), () {
-    if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
-      debugPrint("Timeout reached. App is not initialized.");
-    }
-  });
-
-  // Simulate checking the variable (replace this with actual logic)
-  Future.doWhile(() async {
-    if (isAppInitialized) {
-      controller.add(true);
-      return false; // Exit the loop if the variable is true
-    }
-    await Future.delayed(Duration(milliseconds: 100)); // Check every 100ms
-    return true;
-  });
-}
-
-/// Handles group push notification for agents
-Future<void> handleGroupPushNotification(
-    GlobalKey<NavigatorState> navigatorKey, Map<String, dynamic> notificationData) async {
+/// Handles group push notification for agents (app was killed/backgrounded)
+Future<void> handleGroupPushNotification(GlobalKey<NavigatorState> navigatorKey,
+    Map<String, dynamic> notificationData) async {
   final StreamController<bool> controller = StreamController<bool>();
   Timer? timer;
 
   // Function to trigger navigation to InternalChatScreen
   void triggerGroupNavigation() {
-    final agentName = notificationData["senderName"];
-    final agentEmail = notificationData["senderId"];
+    final groupId = notificationData['groupId']?.toString() ?? '';
+    if (groupId.isEmpty) {
+      debugPrint("⚠️ handleGroupPushNotification: groupId missing in payload");
+      return;
+    }
+
+    // Use the logged-in user's own credentials, not the sender's
+    final agentName = LocalDbHelper.getName() ?? '';
+    final agentEmail = LocalDbHelper.getEmail() ?? '';
+
+    LocalDbHelper.clearGroupUnreadCount(groupId);
+    LocalDbHelper.clearGroupChatUnreadCount();
 
     Navigator.push(
       navigatorKey.currentContext!,
@@ -318,34 +290,33 @@ Future<void> handleGroupPushNotification(
           agentName: agentName,
           agentEmail: agentEmail,
           navigatorKey: navigatorKey,
+          groupId: groupId,
         ),
       ),
     );
   }
 
-  // Listen for changes to isAppInitialized
   controller.stream.listen((isInitialized) {
     if (isInitialized) {
-      timer?.cancel(); // Cancel the timer if the variable becomes true
+      timer?.cancel();
+      controller.close();
       triggerGroupNavigation();
     }
   });
 
-  // Start a timer to observe the variable for 20 seconds
   timer = Timer(const Duration(seconds: 20), () {
     if (!controller.isClosed) {
-      controller.close(); // Close the stream if the timer completes
+      controller.close();
       debugPrint("Timeout reached. App is not initialized.");
     }
   });
 
-  // Simulate checking the variable (replace this with actual logic)
   Future.doWhile(() async {
     if (isAppInitialized) {
       controller.add(true);
-      return false; // Exit the loop if the variable is true
+      return false;
     }
-    await Future.delayed(const Duration(milliseconds: 100)); // Check every 100ms
+    await Future.delayed(const Duration(milliseconds: 100));
     return true;
   });
 }
