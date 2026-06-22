@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
+import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/core/services/handle_notification_clicks.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -31,8 +32,9 @@ class SocketService with WidgetsBindingObserver {
 
   late io.Socket _socket;
   bool _isConnected = false;
+  bool get isConnected => _isConnected;
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
-  //ChatStorageService chatStorageService = ChatStorageService();
+  final ChatStorageService _chatStorageService = ChatStorageService();
   // int _reconnectAttempts = 0;
   // final int _maxReconnectAttempts = 5;
   // final Duration _reconnectInterval = const Duration(seconds: 3);
@@ -195,6 +197,7 @@ class SocketService with WidgetsBindingObserver {
 
     _socket.onConnect((_) {
       _isConnected = true;
+      NotificationService.socketIsConnected = true;
       // _reconnectAttempts = 0;
       debugPrint('✅ Connected to socket server');
       _socket.emit('join', {
@@ -228,7 +231,7 @@ class SocketService with WidgetsBindingObserver {
     });
 
     _socket.on('receiveMessage', (data) {
-      debugPrint("recived message socket : ${data.toString()}");
+      debugPrint('📥 [Socket] receiveMessage: $data');
       final String senderId = data['senderId'] ?? '';
       final String targetId = data['targetId'] ?? '';
 
@@ -236,7 +239,6 @@ class SocketService with WidgetsBindingObserver {
           (activeCustomerId == senderId || activeCustomerId == targetId)) {
         _onMessageReceived?.call(data);
       } else {
-        debugPrint("recived message socket : ${data.toString()}");
         if (data is Map) {
           _applyFormRateUpdateInBackground(Map<String, dynamic>.from(data));
         }
@@ -348,6 +350,7 @@ class SocketService with WidgetsBindingObserver {
 
     _socket.onDisconnect((_) {
       _isConnected = false;
+      NotificationService.socketIsConnected = false;
       for (String email in _roomMembers) {
         LocalDbHelper.updateLastSeenTime(email);
         debugPrint(
@@ -1037,6 +1040,7 @@ class SocketService with WidgetsBindingObserver {
     if (_isConnected) {
       _socket.disconnect();
       _isConnected = false;
+      NotificationService.socketIsConnected = false;
       debugPrint('🛑 Socket disconnected');
     }
   }
@@ -1139,7 +1143,7 @@ class SocketService with WidgetsBindingObserver {
   }
 
   Future<void> _chatNotification(Map<String, dynamic> data) async {
-    debugPrint('🔔 Foreground Push Notification: $data');
+    debugPrint('🔔 [Socket] Chat notification (user not on chat screen): $data');
     if (!data.containsKey('type') ||
         !data.containsKey('senderId') ||
         !data.containsKey('message')) {
@@ -1189,6 +1193,38 @@ class SocketService with WidgetsBindingObserver {
       if (onMessageReceivedCallback != null) {
         onMessageReceivedCallback!();
       }
+    }
+
+    // ── Persist to chat Hive box ─────────────────────────────────────────
+    // When the user opens this chat, Step 1 of _loadPreviousMessages reads
+    // from cache. Without this write, the message is only in the unread-count
+    // box and last-message Hive key — NOT in the chat box — so the user sees
+    // an empty/stale chat until the background API sync completes.
+    try {
+      final timestamp = data['timestamp'] != null
+          ? DateTime.parse(data['timestamp'] as String)
+          : DateTime.now();
+      final incoming = ChatMessageModel(
+        message: data['message']?.toString() ?? '',
+        sender: data['senderId']?.toString(),
+        type: data['type']?.toString() ?? 'text',
+        timestamp: timestamp,
+        mediaUrl: data['mediaUrl']?.toString(),
+        messageId: data['messageId']?.toString() ??
+            data['_id']?.toString(),
+        isDeleted: false,
+        read: false,
+      );
+      // Agent box  = agentEmail + customerEmail = targetId + senderId
+      // Customer box = customerEmail             = targetId
+      final chatBoxName = userType == "0"
+          ? data['targetId']?.toString() ?? ''
+          : '${data['targetId']}${data['senderId']}';
+      if (chatBoxName.isNotEmpty) {
+        await _chatStorageService.saveMessage(incoming, chatBoxName);
+      }
+    } catch (e) {
+      debugPrint('⚠️ [Socket] Failed to cache incoming message to chat box: $e');
     }
 
     const androidDetails = AndroidNotificationDetails(

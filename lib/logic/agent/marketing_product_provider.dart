@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
@@ -25,78 +26,57 @@ class MarketingProductProvider extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
 
   Future<void> fetchProducts({bool isRefresh = false}) async {
-    // ✅ Differentiate initial load vs pull refresh
     if (isRefresh) {
-      _isRefreshing = true; // AppBar loader ON
-      _logger.logUi(
-        'Refreshing products from AppBar',
-        level: LogLevel.info,
-      ); // ✅ ADDED
+      _isRefreshing = true;
+      notifyListeners();
     } else {
-      _isLoading = true; // Full shimmer loader
-      _logger.logUi(
-        'Initial product load started',
-        level: LogLevel.info,
-      ); // ✅ ADDED
+      // Cache-first: serve Hive data immediately so no shimmer is shown
+      try {
+        final cached = await LocalDbHelper.getProducts();
+        if (cached.isNotEmpty) {
+          debugPrint('📦 [ProductProvider] Cache HIT — ${cached.length} products (no shimmer)');
+          _allProducts = cached;
+          _isLoading = false;
+          applyFilter(_searchQuery);
+          // Fall through to background API refresh below
+        } else {
+          debugPrint('📭 [ProductProvider] Cache MISS — showing shimmer');
+          _isLoading = true;
+          notifyListeners();
+        }
+      } catch (_) {
+        _isLoading = true;
+        notifyListeners();
+      }
     }
-    notifyListeners();
+
+    // Skip network call when offline — cached data is already shown
+    if (!ConnectivityService.instance.isOnline) {
+      _isLoading = false;
+      _isRefreshing = false;
+      notifyListeners();
+      return;
+    }
 
     try {
-      // ✅ ADDED: Before API call log
-      _logger.logUi(
-        'Calling ProductRepository.getProducts()',
-        level: LogLevel.debug,
-      );
-
+      _logger.logUi('Calling ProductRepository.getProducts()', level: LogLevel.debug);
       _allProducts = await _productRepository.getProducts();
       await LocalDbHelper.saveProducts(_allProducts);
-
-      // ✅ ADDED: Log response data count
-      _logger.logUi(
-        'Products fetched successfully | Count: ${_allProducts.length}',
-        level: LogLevel.info,
-      );
-
-      // ✅ ADDED: Optional detailed log (first few items only)
-      if (_allProducts.isNotEmpty) {
-        _logger.logUi(
-          'Sample product response: ${_allProducts.take(3).map((e) => e.productName).toList()}',
-          level: LogLevel.debug,
-        );
-      }
-
+      _logger.logUi('Products fetched | Count: ${_allProducts.length}', level: LogLevel.info);
       applyFilter(_searchQuery);
     } catch (e, stackTrace) {
-      // ✅ ADDED: Error logging
       _logger.logUi(
-        'Error while fetching products in MarketingProductProvider',
+        'Error fetching products in MarketingProductProvider',
         level: LogLevel.error,
         error: e,
         stackTrace: stackTrace,
       );
-
-      _allProducts = [];
-      try {
-        _allProducts = await LocalDbHelper.getProducts();
-        _logger.logUi(
-          'Loaded products from local cache | Count: ${_allProducts.length}',
-          level: LogLevel.warning,
-        );
-      } catch (_) {
-        _allProducts = [];
-      }
-      _filteredProducts = [];
+      // Cache already loaded above; only clear filteredProducts if nothing at all
+      if (_allProducts.isEmpty) _filteredProducts = [];
     }
 
     _isLoading = false;
-    _isRefreshing = false; // AppBar loader OFF
-
-    // // ✅ ADDED: End state log
-    // _logger.logUi(
-    //   'Product fetch completed | Loading: $_isLoading | Refreshing: $_isRefreshing',
-    //   level: LogLevel.debug,
-    // );
-
+    _isRefreshing = false;
     notifyListeners();
   }
 

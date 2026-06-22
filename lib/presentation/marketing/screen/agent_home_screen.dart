@@ -43,7 +43,10 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       final chatRefreshProvider = Provider.of<ChatRefreshProvider>(context, listen: false);
       chatRefreshProvider.addListener(() {
         if (chatRefreshProvider.shouldRefresh) {
-          context.read<AssignedCustomersProvider>().fetchAssignedCustomers();
+          // Refresh only from local Hive state — no API call.
+          // The socket service already wrote the latest last-message to Hive;
+          // _applyLocalState picks it up and updates unread counts, timestamps.
+          context.read<AssignedCustomersProvider>().refreshFromSocket();
           chatRefreshProvider.reset();
         }
       });

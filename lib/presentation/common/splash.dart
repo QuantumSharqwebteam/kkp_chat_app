@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
+import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/common/onboarding_page.dart';
 import 'package:provider/provider.dart';
@@ -27,41 +29,34 @@ class _SplashState extends State<Splash> {
     final String? email = LocalDbHelper.getEmail();
     final bool hasSeenOnboarding = await LocalDbHelper.hasSeenOnboarding();
 
-    // final int? lastRefreshTime = await LocalDbHelper.getLastRefreshTime();
-    // final int currentTime = DateTime.now().millisecondsSinceEpoch;
-
-    // // Check if 24 hours have passed since the last refresh
-    // if (lastRefreshTime != null &&
-    //     (currentTime - lastRefreshTime) < 24 * 60 * 60 * 1000) {
-    //   // Schedule the next refresh
-    //   _scheduleNextRefresh(
-    //       24 * 60 * 60 * 1000 - (currentTime - lastRefreshTime), context);
-    // } else {
-    //   // Refresh the token immediately
-    //   await _refreshToken(token, context);
-    //   // Schedule the next refresh for 24 hours later
-    //   _scheduleNextRefresh(24 * 60 * 60 * 1000, context);
-    // }
-
-    await _refreshToken(token, context);
+    if (ConnectivityService.instance.isOnline) {
+      // Refresh token only when online — avoids 10 s timeout blocking splash offline
+      await _refreshToken(token, context);
+      // Re-read token in case refresh updated it
+      token = await LocalDbHelper.getToken();
+      // Fire background pre-fetches; don't block navigation.
+      // Pre-warming the cache here means AssignedCustomersProvider finds data
+      // instantly on first read and never flashes the empty-state widget.
+      if (token != null) {
+        _fetchUserGroups(email ?? "");
+        if (email != null &&
+            (userType == '1' || userType == '2' || userType == '3')) {
+          _prefetchAssignedCustomers(email);
+        }
+      }
+    }
 
     if (token != null && userType != null) {
-      // Fetch user groups in the background
-      await _fetchUserGroups(email ?? "");
-
       if (userType == '0') {
         if (mounted) {
-          Navigator.pushReplacementNamed(
-            context,
-            CustomerRoutes.customerHost,
-          );
+          Navigator.pushReplacementNamed(context, CustomerRoutes.customerHost);
         }
       } else if (userType == '1' || userType == '2' || userType == '3') {
         if (mounted) {
           Navigator.pushReplacementNamed(context, MarketingRoutes.marketingHostScreen);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid Credentials')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid Credentials')));
       }
     } else {
       if (!mounted) return;
@@ -70,11 +65,7 @@ class _SplashState extends State<Splash> {
         await LocalDbHelper.setOnboardingSeen(true);
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) {
-              return const OnboardingPage();
-            },
-          ),
+          MaterialPageRoute(builder: (context) => const OnboardingPage()),
         );
       } else {
         Navigator.pushReplacementNamed(context, '/login');
@@ -83,21 +74,34 @@ class _SplashState extends State<Splash> {
   }
 
   Future<void> _refreshToken(String? token, context) async {
-    if (token != null && token.isNotEmpty) {
-      await auth.refreshToken(token).then((response) async {
-        if (response['message'] == "Refresh token generated successfully") {
-          token = response['token'];
-          await LocalDbHelper.saveToken(response['token']);
-          await LocalDbHelper.saveLastRefreshTime(DateTime.now().millisecondsSinceEpoch);
-        } else {
-          final message = response['message']?.toString() ?? '';
-          final lowerMessage = message.toLowerCase();
+    if (token == null || token.isEmpty) return;
+    final response = await auth.refreshToken(token);
+    if (response['message'] == "Refresh token generated successfully") {
+      await LocalDbHelper.saveToken(response['token']);
+      await LocalDbHelper.saveLastRefreshTime(DateTime.now().millisecondsSinceEpoch);
+    } else {
+      final message = response['message']?.toString() ?? '';
+      final lower = message.toLowerCase();
+      // Only show snackbar for meaningful server errors, not offline failures
+      if (message.isNotEmpty &&
+          !lower.contains('invalid token') &&
+          !lower.contains('expired') &&
+          !lower.contains('unable to refresh') &&
+          mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    }
+  }
 
-          if (!lowerMessage.contains('invalid token') && !lowerMessage.contains('expired')) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-          }
-        }
-      });
+  /// Pre-warm the assigned customers cache so AssignedCustomersProvider
+  /// finds data instantly on first read — eliminates the empty-state flash.
+  Future<void> _prefetchAssignedCustomers(String email) async {
+    try {
+      final customers = await ChatRepository().fetchAssignedCustomerList(email);
+      await LocalDbHelper.saveAssignedCustomers(email, customers);
+      debugPrint('✅ [Splash] Pre-fetched ${customers.length} assigned customers for $email');
+    } catch (e) {
+      debugPrint('[Splash] Pre-fetch assigned customers failed (non-critical): $e');
     }
   }
 

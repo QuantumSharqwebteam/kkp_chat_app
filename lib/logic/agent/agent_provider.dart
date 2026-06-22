@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
 
@@ -11,8 +12,13 @@ class AgentProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> fetchAgents() async {
-    // Don't update state immediately to avoid triggering a rebuild during build
-    //bool localLoading = true;
+    if (!ConnectivityService.instance.isOnline) {
+      debugPrint('📴 [AgentProvider] Offline — skipping fetch'
+          '${_agents.isNotEmpty ? " (${_agents.length} agents in memory)" : ""}');
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
     try {
       final agents = await _authApi.getAgent();
       _agents = agents;

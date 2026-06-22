@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/data/models/notification_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 
@@ -11,11 +12,15 @@ class NotificationProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   Future<void> fetchNotifications() async {
+    if (!ConnectivityService.instance.isOnline) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
     _isLoading = true;
     notifyListeners();
     try {
       final notifications = await _authRepo.getParsedNotifications();
-      // Sort notifications by timestamp (newest first)
       notifications.sort((a, b) {
         final dateA = a.timestamp ?? DateTime.now();
         final dateB = b.timestamp ?? DateTime.now();

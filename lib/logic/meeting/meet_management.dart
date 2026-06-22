@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/api/meeting_service.dart';
 import 'package:kkpchatapp/data/models/meet_model.dart';
@@ -89,6 +90,14 @@ class MeetingManagement with ChangeNotifier {
 
   // Fetch all meetings
   Future<void> fetchAllMeetings() async {
+    if (!ConnectivityService.instance.isOnline) {
+      debugPrint('📴 [MeetingManagement] Offline — skipping fetch'
+          '${_meetings.isNotEmpty ? " (${_meetings.length} in-memory meetings kept)" : ""}');
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -100,12 +109,6 @@ class MeetingManagement with ChangeNotifier {
         'MeetingManagement.fetchAllMeetings success | Count: ${_meetings.length}',
         level: LogLevel.info,
       );
-      // debugPrint("Total meetings fetched: ${_meetings.length}"); // Debug print
-
-      // Print details of all meetings
-      // for (var meeting in _meetings) {
-      //   debugPrint("Meeting: ${meeting.title}, Time: ${meeting.startTime}");
-      // }
     } catch (e, stackTrace) {
       _error = "Failed to fetch meetings: $e";
       _logger.logUi(

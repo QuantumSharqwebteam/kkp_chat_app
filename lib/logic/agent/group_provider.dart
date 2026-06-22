@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/api/group_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -56,41 +57,73 @@ class GroupProvider extends ChangeNotifier {
 
   /// Fetch all groups
   Future<void> fetchAllGroups({bool forceRefresh = false}) async {
-    _state = GroupState.loading;
-    notifyListeners();
     try {
-      final cachedGroups = await LocalDbHelper.getGroups();
-      final lastCacheTime = await LocalDbHelper.getGroupsTimestamp();
-      final now = DateTime.now();
-      if (!forceRefresh && cachedGroups != null && cachedGroups.isNotEmpty) {
-        _groups = cachedGroups;
-        _state = GroupState.success;
+      // ── 1. Serve cache immediately — no shimmer if we have data ────────────
+      if (!forceRefresh) {
+        final cachedGroups = await LocalDbHelper.getGroups();
+        if (cachedGroups != null && cachedGroups.isNotEmpty) {
+          debugPrint('📦 [GroupProvider] Cache HIT — ${cachedGroups.length} groups (no shimmer)');
+          _groups = cachedGroups;
+          _state = GroupState.success;
+          notifyListeners();
+          await loadUnreadCountsFromStorage();
+          // Don't hit the API again unless forced
+          if (!ConnectivityService.instance.isOnline) {
+            debugPrint('📴 [GroupProvider] Offline — using cached groups');
+            return;
+          }
+          // Background-refresh without showing loading state
+          _fetchAllGroupsInBackground();
+          return;
+        } else {
+          debugPrint('📭 [GroupProvider] Cache MISS — showing shimmer');
+          _state = GroupState.loading;
+          notifyListeners();
+        }
+      } else {
+        _state = GroupState.loading;
+        notifyListeners();
+      }
+
+      if (!ConnectivityService.instance.isOnline) {
+        debugPrint('📴 [GroupProvider] Offline, no cache — staying in error state');
+        if (_groups.isEmpty) _state = GroupState.error;
         notifyListeners();
         return;
       }
-      final shouldRefresh = forceRefresh ||
-          lastCacheTime == null ||
-          now.difference(DateTime.fromMillisecondsSinceEpoch(lastCacheTime)) > cacheValidity;
-      if (!shouldRefresh && cachedGroups != null && cachedGroups.isNotEmpty) {
-        _logger.logStorage('🟢 Groups cache still valid, skipping API call');
-        return;
-      }
-      final response = await _groupService.getAllGroups();
-      if (response.success && response.data != null) {
-        final List<dynamic> groupsJson = response.data!['message'] as List<dynamic>;
-        _groups =
-            groupsJson.map((json) => GroupModel.fromJson(Map<String, dynamic>.from(json))).toList();
-        await LocalDbHelper.saveGroups(_groups);
-        await loadUnreadCountsFromStorage();
-        _state = GroupState.success;
-        _logger.logNetwork('✅ Groups refreshed (${_groups.length} items)');
-      } else {
-        throw Exception(response.message);
-      }
+
+      await _doFetchAllGroups();
     } catch (e, s) {
       _errorMessage = 'Failed to fetch groups: $e';
       _logger.error('GROUP_PROVIDER', 'fetchAllGroups failed', error: e, stackTrace: s);
       if (_groups.isEmpty) _state = GroupState.error;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _fetchAllGroupsInBackground() async {
+    try {
+      debugPrint('🌐 [GroupProvider] Background-refreshing all groups from API');
+      await _doFetchAllGroups();
+    } catch (e) {
+      debugPrint('❌ [GroupProvider] Background group refresh failed: $e');
+    }
+  }
+
+  Future<void> _doFetchAllGroups() async {
+    final response = await _groupService.getAllGroups();
+    if (response.success && response.data != null) {
+      final List<dynamic> groupsJson = response.data!['message'] as List<dynamic>;
+      _groups = groupsJson
+          .map((json) => GroupModel.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+      await LocalDbHelper.saveGroups(_groups);
+      await loadUnreadCountsFromStorage();
+      _state = GroupState.success;
+      debugPrint('✅ [GroupProvider] API fetch complete — ${_groups.length} groups');
+      _logger.logNetwork('✅ Groups refreshed (${_groups.length} items)');
+    } else {
+      throw Exception(response.message);
     }
     notifyListeners();
   }
@@ -212,41 +245,69 @@ class GroupProvider extends ChangeNotifier {
 
   /// Fetch user's groups
   Future<void> fetchUsersGroups(String email, {bool forceRefresh = false}) async {
-    _state = GroupState.loading;
-    notifyListeners();
     try {
-      final cachedUserGroups = await LocalDbHelper.getUserGroups();
-      final lastCacheTime = await LocalDbHelper.getUserGroupsTimestamp();
-      final now = DateTime.now();
-      if (!forceRefresh && cachedUserGroups != null && cachedUserGroups.isNotEmpty) {
-        _userGroups = cachedUserGroups;
-        _state = GroupState.success;
+      // ── 1. Serve cache immediately — no shimmer if we have data ────────────
+      if (!forceRefresh) {
+        final cachedUserGroups = await LocalDbHelper.getUserGroups();
+        if (cachedUserGroups != null && cachedUserGroups.isNotEmpty) {
+          debugPrint('📦 [GroupProvider] User groups cache HIT — ${cachedUserGroups.length} items (no shimmer)');
+          _userGroups = cachedUserGroups;
+          _state = GroupState.success;
+          notifyListeners();
+          if (!ConnectivityService.instance.isOnline) {
+            debugPrint('📴 [GroupProvider] Offline — using cached user groups');
+            return;
+          }
+          _fetchUsersGroupsInBackground(email);
+          return;
+        } else {
+          debugPrint('📭 [GroupProvider] User groups cache MISS for $email — showing shimmer');
+          _state = GroupState.loading;
+          notifyListeners();
+        }
+      } else {
+        _state = GroupState.loading;
+        notifyListeners();
+      }
+
+      if (!ConnectivityService.instance.isOnline) {
+        debugPrint('📴 [GroupProvider] Offline, no user groups cache');
+        if (_userGroups.isEmpty) _state = GroupState.error;
         notifyListeners();
         return;
       }
-      final shouldRefresh = forceRefresh ||
-          lastCacheTime == null ||
-          now.difference(DateTime.fromMillisecondsSinceEpoch(lastCacheTime)) > cacheValidity;
-      if (!shouldRefresh && cachedUserGroups != null && cachedUserGroups.isNotEmpty) {
-        _logger.logStorage('🟢 User groups cache still valid, skipping API call');
-        return;
-      }
-      final response = await _groupService.getUsersGroups(email);
-      if (response.success && response.data != null) {
-        final List<dynamic> userGroupsJson = response.data!['message'] as List<dynamic>;
-        _userGroups = userGroupsJson
-            .map((json) => GroupModel.fromJson(Map<String, dynamic>.from(json)))
-            .toList();
-        await LocalDbHelper.saveUserGroups(_userGroups);
-        _state = GroupState.success;
-        _logger.logNetwork('✅ User groups refreshed (${_userGroups.length} items)');
-      } else {
-        throw Exception(response.message);
-      }
+
+      await _doFetchUsersGroups(email);
     } catch (e, s) {
       _errorMessage = 'Failed to fetch user groups: $e';
       _logger.error('GROUP_PROVIDER', 'fetchUsersGroups failed', error: e, stackTrace: s);
       if (_userGroups.isEmpty) _state = GroupState.error;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _fetchUsersGroupsInBackground(String email) async {
+    try {
+      debugPrint('🌐 [GroupProvider] Background-refreshing user groups for $email');
+      await _doFetchUsersGroups(email);
+    } catch (e) {
+      debugPrint('❌ [GroupProvider] Background user groups refresh failed: $e');
+    }
+  }
+
+  Future<void> _doFetchUsersGroups(String email) async {
+    final response = await _groupService.getUsersGroups(email);
+    if (response.success && response.data != null) {
+      final List<dynamic> userGroupsJson = response.data!['message'] as List<dynamic>;
+      _userGroups = userGroupsJson
+          .map((json) => GroupModel.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+      await LocalDbHelper.saveUserGroups(_userGroups);
+      _state = GroupState.success;
+      debugPrint('✅ [GroupProvider] User groups API complete — ${_userGroups.length} items');
+      _logger.logNetwork('✅ User groups refreshed (${_userGroups.length} items)');
+    } else {
+      throw Exception(response.message);
     }
     notifyListeners();
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
@@ -11,7 +12,11 @@ class AssignedCustomersProvider extends ChangeNotifier {
   final SocketService socketService;
   List<dynamic> _assignedCustomers = [];
   List<dynamic> _filteredCustomers = [];
-  bool _isLoading = true;
+  bool _isLoading = false;
+  // Tracks whether the first load (cache or API) has completed.
+  // isLoading returns true until initialized, preventing the empty-state widget
+  // from flashing before cached data arrives.
+  bool _isInitialized = false;
   late StreamSubscription _unreadCountsSubscription;
   late StreamSubscription _statusSubscription;
   late Box<int> _unreadCountsBox;
@@ -191,43 +196,46 @@ class AssignedCustomersProvider extends ChangeNotifier {
   }
 
   Future<void> fetchAssignedCustomers() async {
-    _isLoading = true;
-    notifyListeners();
+    // ── 1. Synchronous cache read — no yield before first notifyListeners ─────
+    // getAssignedCustomers() is synchronous (_box.get on an already-open box).
+    // We set _isInitialized = true and notify BEFORE any await so the widget
+    // builds with real data on the very first frame — zero shimmer for
+    // returning users.
+    final cached = LocalDbHelper.getAssignedCustomers(agentEmail);
+    if (cached.isNotEmpty) {
+      debugPrint('📦 [AssignedCustomers] Cache HIT — ${cached.length} customers (instant, no shimmer)');
+      _assignedCustomers = List.from(cached);
+      _filteredCustomers = List.from(cached);
+      _sortCustomers();
+      _isInitialized = true;
+      notifyListeners(); // ← data on frame 1, before any await
+      // Enrich silently: unread counts, online status, last-message time
+      await _applyLocalState(cached);
+      _assignedCustomers = List.from(cached);
+      _filteredCustomers = List.from(cached);
+      _sortCustomers();
+      notifyListeners();
+    } else {
+      debugPrint('📭 [AssignedCustomers] Cache MISS — showing shimmer until API returns');
+      _isLoading = true;
+      _isInitialized = true;
+      notifyListeners();
+    }
+
+    // ── 2. Background-fetch from API only when online ────────────────────────
+    if (!ConnectivityService.instance.isOnline) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
 
     try {
       final chatRepo = ChatRepository();
       final customers = await chatRepo.fetchAssignedCustomerList(agentEmail);
-      final onlineUsers =
-          socketService.onlineUsers; // Get current online status
-
-      for (var customer in customers) {
-        final email = customer['email']?.toString();
-        if (email == null) continue;
-
-        // Initialize isOnline flag
-        customer['isOnline'] = onlineUsers.contains(email);
-
-        // Get count from the central unread box
-        final count = await LocalDbHelper.getUnreadCount(agentEmail, email);
-        customer['notificationCount'] = count;
-
-        // Open the time box for this customer
-        try {
-          final timeBox =
-              await Hive.openBox<String>('$agentEmail${email}lastMessageTime');
-          final timeStr = timeBox.get('lastMessageTime');
-          final lastTime = timeStr != null ? DateTime.tryParse(timeStr) : null;
-          customer['lastMessageTime'] = lastTime;
-        } catch (e) {
-          debugPrint("Error opening time box for $email: $e");
-          customer['lastMessageTime'] = null;
-        }
-
-        // Get the last message
-        final lastMessage = LocalDbHelper.getLastMessage(email);
-        customer['lastMessage'] = lastMessage ?? "last message";
-      }
-
+      // Save raw API data BEFORE _applyLocalState enriches it with
+      // DateTime/bool/int fields that jsonEncode cannot serialize.
+      await LocalDbHelper.saveAssignedCustomers(agentEmail, customers);
+      await _applyLocalState(customers);
       _assignedCustomers = List.from(customers);
       _filteredCustomers = List.from(customers);
       _sortCustomers();
@@ -236,6 +244,44 @@ class AssignedCustomersProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Called by AgentHomeScreen when a chat message arrives while the agent is
+  /// inside a chat screen. Re-applies local Hive state (last message, unread
+  /// counts, timestamps) from the cache that the socket service already wrote —
+  /// no API call, no shimmer, no full reload.
+  Future<void> refreshFromSocket() async {
+    if (_assignedCustomers.isEmpty) return;
+    final snapshot = List<dynamic>.from(_assignedCustomers);
+    await _applyLocalState(snapshot);
+    _assignedCustomers = snapshot;
+    _filteredCustomers = List.from(snapshot);
+    _sortCustomers();
+    notifyListeners();
+  }
+
+  /// Enriches each customer map with online status, unread count, last message
+  /// and last-message time — all sourced from local storage / socket state.
+  Future<void> _applyLocalState(List<dynamic> customers) async {
+    final onlineUsers = socketService.onlineUsers;
+    for (var customer in customers) {
+      final email = customer['email']?.toString();
+      if (email == null) continue;
+      customer['isOnline'] = onlineUsers.contains(email);
+      customer['notificationCount'] =
+          await LocalDbHelper.getUnreadCount(agentEmail, email) ?? 0;
+      customer['lastMessage'] =
+          LocalDbHelper.getLastMessage(email) ?? 'last message';
+      try {
+        final timeBox =
+            await Hive.openBox<String>('$agentEmail${email}lastMessageTime');
+        final timeStr = timeBox.get('lastMessageTime');
+        customer['lastMessageTime'] =
+            timeStr != null ? DateTime.tryParse(timeStr) : null;
+      } catch (_) {
+        customer['lastMessageTime'] = null;
+      }
     }
   }
 
@@ -271,7 +317,9 @@ class AssignedCustomersProvider extends ChangeNotifier {
   // Public methods
   List<dynamic> get assignedCustomers => _assignedCustomers;
   List<dynamic> get filteredCustomers => _filteredCustomers;
-  bool get isLoading => _isLoading;
+  // Returns true until the first load (cache or API) completes, preventing the
+  // empty-state widget from flashing before cached data has been applied.
+  bool get isLoading => !_isInitialized || _isLoading;
 
   void updateSearchQuery(String query) {
     final lowerQuery = query.toLowerCase();

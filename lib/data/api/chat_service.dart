@@ -590,11 +590,9 @@ class ChatService {
             .map((msg) => MessageModel.fromJson(msg, agentEmail))
             .toList();
       } else if (response.statusCode == 404) {
-        final json = jsonDecode(response.body);
-        if (json['message'] == 'No conversations found for this user') {
-          return [];
-        }
-      } // Log for other status codes
+        // 404 = no conversation yet — normal for new agent↔customer pairs.
+        return [];
+      }
       if (kDebugMode) {
         print("Unexpected response (${response.statusCode}): ${response.body}");
       }
@@ -630,13 +628,10 @@ class ChatService {
             .map((msg) => MessageModel.fromJson(msg, customerEmail))
             .toList();
       } else if (response.statusCode == 404) {
-        final json = jsonDecode(response.body);
-        if (json['message'] == 'No conversations found for this user') {
-          return [];
-        }
+        // 404 = no conversation yet — normal for new customer↔agent pairs.
+        return [];
       }
 
-      // Log for other status codes
       if (kDebugMode) {
         print("Unexpected response (${response.statusCode}): ${response.body}");
       }
@@ -722,6 +717,9 @@ class ChatService {
               "Failed to retrieve last user read timestamp: ${response.body}");
           return null;
         }
+      } else if (response.statusCode == 404) {
+        // 404 = no read history yet — normal for new conversations.
+        return null;
       } else {
         debugPrint(
             "Failed to retrieve last user read timestamp: ${response.body}");

@@ -72,7 +72,7 @@ class AgentChatScreen extends StatefulWidget {
 
 class _AgentChatScreenState extends State<AgentChatScreen>
     with WidgetsBindingObserver {
-  bool _isLoading = true;
+  bool _isInitialized = false; // true once first data (cache or API) is ready
   final _chatController = TextEditingController();
   final ChatRepository _chatRepository = ChatRepository();
   final SocketService _socketService = SocketService(navigatorKey);
@@ -117,11 +117,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
     _initializeRecorder();
     _loadPreviousMessages(context);
-
-    // Scroll to bottom when the chat page opens
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
-    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _emitChatOpened();
@@ -217,8 +212,8 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _updateMessagesReadStatus(DateTime lastMessageTimestamp) {
+    if (!mounted) return;
     setState(() {
-      // Update the read status of messages up to the lastMessageTimestamp
       for (var message in messages) {
         if (message.timestamp.isBefore(lastMessageTimestamp) ||
             message.timestamp == lastMessageTimestamp) {
@@ -322,93 +317,93 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     await Permission.microphone.request();
   }
 
-  Future<void> _loadPreviousMessages(context) async {
+  Future<void> _loadPreviousMessages(BuildContext context) async {
     final boxName = '${widget.agentEmail}${widget.customerEmail}';
-    bool boxExists = await Hive.boxExists(boxName);
 
-    // Fetch the latest 20 messages from the API
-    final List<MessageModel> fetchedMessages =
-        await _chatRepository.fetchAgentMessages(
-      agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
-      customerEmail: widget.customerEmail,
-      limit: 20,
-    );
-
-    // Convert MessageModel to ChatMessageModel
-    final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
-
+    // ── Step 1: Cache-first — show instantly, no shimmer ──────────────────
+    final bool boxExists = await Hive.boxExists(boxName);
     if (boxExists) {
-      // Load messages from Hive
-      final loadedMessages =
+      final cachedMessages =
           await _chatStorageService.getMessages(boxName, page: _currentPage);
-      final newLoadedMessages = _removeDuplicates(loadedMessages);
-
-      // Replace local messages with fetched messages where the fetched message has an empty string
-      final messagesToReplace = chatMessages
-          .where((fetchedMessage) => fetchedMessage.message!.isEmpty)
-          .toList();
-
-      for (var fetchedMessage in messagesToReplace) {
-        final index = newLoadedMessages.indexWhere((localMessage) =>
-            localMessage.messageId == fetchedMessage.messageId);
-        if (index != -1) {
-          newLoadedMessages[index] = fetchedMessage;
+      if (cachedMessages.isNotEmpty) {
+        final deduped = _removeDuplicates(cachedMessages);
+        if (mounted) {
+          setState(() {
+            messages = deduped;
+            messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+            _isInitialized = true;
+          });
+          // Jump instantly — user sees bottom of chat with no scroll animation
+          WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToBottom());
         }
       }
-
-      // Add any new messages that are not already in the local storage
-      final uniqueFetchedMessages = _removeDuplicates(chatMessages);
-      final messagesToAdd = uniqueFetchedMessages.where((fetchedMessage) {
-        return !newLoadedMessages.any((loadedMessage) {
-          if (fetchedMessage.type == 'call' && loadedMessage.type == 'call') {
-            return loadedMessage.callId == fetchedMessage.callId;
-          }
-          return loadedMessage.messageId == fetchedMessage.messageId;
-        });
-      }).toList();
-
-      // Add the messages that are not in the Hive database to the list of messages
-      newLoadedMessages.addAll(messagesToAdd);
-
-      setState(() {
-        messages = newLoadedMessages;
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _isLoading = false;
-      });
-    } else {
-      // Save the fetched messages to the Hive database
-      await _chatStorageService.saveMessages(chatMessages, boxName);
-
-      setState(() {
-        messages = chatMessages;
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _isLoading = false;
-      });
     }
 
-    // Fetch the last message timestamp and message ID for the agent and customer
-    final result =
-        await _chatRepository.fetchCustomerLastMessageTimestampForAgent(
-      customerEmail: widget.customerEmail,
-      agentEmail: widget.agentEmail!,
-    );
+    // No cache found — show empty state right away so no shimmer is visible
+    // while the API is in flight. The API may later populate messages below.
+    if (!_isInitialized && mounted) {
+      setState(() => _isInitialized = true);
+    }
 
-    if (result != null) {
-      final DateTime? lastMessageTimestamp = result['lastUserReadTimestamp'];
-      // final String? lastMessageId = result['messageId'];
+    // ── Step 2: Silent background API sync ────────────────────────────────
+    try {
+      final List<MessageModel> fetchedMessages =
+          await _chatRepository.fetchAgentMessages(
+        agentEmail: widget.agentEmail ?? LocalDbHelper.getProfile()!.email!,
+        customerEmail: widget.customerEmail,
+        limit: 20,
+      );
+      final chatMessages = fetchedMessages.map(_chatMessageFromModel).toList();
 
-      debugPrint(
-          "✅ Fetched last message seen timestamp of agent for customer: $lastMessageTimestamp");
+      // Only keep messages not already shown from cache
+      final newMessages = _removeDuplicates(chatMessages);
 
-      // Update the read status of messages up to the lastMessageTimestamp
-      if (lastMessageTimestamp != null) {
-        _updateMessagesReadStatus(lastMessageTimestamp);
+      if (!boxExists && chatMessages.isNotEmpty) {
+        await _chatStorageService.saveMessages(chatMessages, boxName);
+      } else if (newMessages.isNotEmpty) {
+        await _chatStorageService.saveMessages(newMessages, boxName);
       }
-    } else {
-      debugPrint(
-          "No read messages found or an error occurred while fetching the last message timestamp.");
+
+      if (mounted) {
+        final wasAtBottom = _isAtBottom;
+        setState(() {
+          if (!_isInitialized) {
+            // First open — no cache existed
+            messages = chatMessages;
+          } else {
+            messages.addAll(newMessages);
+          }
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _isInitialized = true;
+        });
+        // Scroll to bottom only when first open or user was already there
+        if (!boxExists || wasAtBottom) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToBottom());
+        }
+      }
+    } catch (e) {
+      debugPrint('[AgentChat] Background API sync failed: $e');
+    } finally {
+      if (mounted && !_isInitialized) {
+        setState(() => _isInitialized = true);
+      }
     }
-    _scrollToBottom();
+
+    // ── Step 3: Read-status sync — skip when no messages exist ───────────
+    if (messages.isEmpty || !mounted) return;
+    try {
+      final result =
+          await _chatRepository.fetchCustomerLastMessageTimestampForAgent(
+        customerEmail: widget.customerEmail,
+        agentEmail: widget.agentEmail!,
+      );
+      if (result != null && mounted) {
+        final DateTime? ts = result['lastUserReadTimestamp'];
+        if (ts != null) _updateMessagesReadStatus(ts);
+      }
+    } catch (e) {
+      debugPrint('[AgentChat] Read-status sync failed: $e');
+    }
   }
 
   Future<void> _fetchMessagesFromAPI(String boxName, context) async {
@@ -441,7 +436,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
         setState(() {
           messages.insertAll(0, newChatMessages);
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-          _isLoading = false;
         });
       }
     } catch (e) {
@@ -668,11 +662,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
 
     if (!_loadedMessageIds.contains(messageId)) {
+      final wasAtBottom = _isAtBottom;
       setState(() {
         messages.add(message);
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _scrollToBottom();
       });
+      if (wasAtBottom) _scrollToBottom();
 
       _chatStorageService.saveMessage(
           message, '${widget.agentEmail}${widget.customerEmail}');
@@ -681,8 +676,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       }
 
       _saveLastMessageTime();
-      Provider.of<ChatRefreshProvider>(context, listen: false)
-          .markNeedsRefresh();
     }
   }
 
@@ -866,12 +859,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.updateLastMessage(widget.customerEmail, "message deleted");
   }
 
+  // Instant jump — used when opening the chat so there is no visible scroll
+  // animation. The user simply sees the bottom of the conversation.
+  void _jumpToBottom() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.hasContentDimensions) {
+      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+    }
+  }
+
+  // Smooth animated scroll — used only for new incoming/sent messages so the
+  // user sees where the new message appeared.
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (_scrollController.hasClients &&
+          _scrollController.position.hasContentDimensions) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 10),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
         );
       }
@@ -1114,7 +1119,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                   ),
                 ),
               Expanded(
-                child: _isLoading
+                child: !_isInitialized
                     ? ShimmerMessageList()
                     : messages.isEmpty
                         ? NoChatConversation()

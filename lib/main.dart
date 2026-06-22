@@ -44,7 +44,9 @@ import 'package:kkpchatapp/presentation/common/splash.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/utils/route_observer.dart';
+import 'package:kkpchatapp/core/utils/utils.dart';
 import 'firebase_options.dart';
 
 // Global flag to indicate if the app is initialized
@@ -98,7 +100,24 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       final callerId =
           message.data['remoteUserId'] ?? message.data['callerId'] ?? '';
       final channelName = message.data['channelName'] ?? '';
-      final uid = int.tryParse(message.data['uid'] ?? '') ?? 0;
+
+      // The backend does not embed the agent uid in FCM payloads — it's derived
+      // client-side from the agent's email hash.  We must open Hive here
+      // (background isolate has no shared state) and compute it ourselves;
+      // falling back to 0 causes HTTP 400 on Agora token requests and then
+      // the stale CallKit notification triggers a memory leak on next start.
+      int uid = 0;
+      try {
+        await Hive.initFlutter();
+        await Hive.openBox('CREDENTIALS');
+        final email = LocalDbHelper.getEmail();
+        if (email != null && email.isNotEmpty) {
+          uid = Utils().generateIntUidFromEmail(email);
+        }
+      } catch (_) {
+        // Hive unavailable in this isolate — fall back to FCM payload value
+        uid = int.tryParse(message.data['uid'] ?? '') ?? 0;
+      }
 
       debugPrint('   callId     : $callId');
       debugPrint('   callerName : $callerName');
@@ -267,7 +286,10 @@ void main() async {
     dotenv.load(fileName: "keys.env"),
   ]);
 
-  await AuthApi.prefetchAwsKeys();
+  await ConnectivityService.instance.initialize();
+  if (ConnectivityService.instance.isOnline) {
+    await AuthApi.prefetchAwsKeys();
+  }
 
   try {
     await Firebase.initializeApp(

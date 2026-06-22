@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/form_data_model.dart';
@@ -44,27 +45,37 @@ class InquiryProvider with ChangeNotifier {
     String? role,
     bool forceRefresh = false,
   }) async {
-    _isLoading = true;
-    notifyListeners();
-
     _userEmail = userEmail;
     _userRole = role;
     final cacheKey = userEmail ?? 'all_forms';
     _cacheKey = cacheKey;
 
+    // ── 1. Serve cache immediately — no shimmer if we have data ──────────────
     if (!forceRefresh) {
       final cached = await LocalDbHelper.getInquiryForms(cacheKey);
       if (cached.isNotEmpty) {
+        debugPrint('📦 [InquiryProvider] Cache HIT — ${cached.length} forms for $cacheKey (no shimmer)');
         _allInquiries = _sortByStatus(cached);
         _filteredInquiries = List.from(_allInquiries);
-        LoggingService.instance
-            .logNetwork('Loaded ${cached.length} cached inquiry forms for $cacheKey');
+        _isLoading = false;
+        notifyListeners();
+      } else {
+        debugPrint('📭 [InquiryProvider] Cache MISS for $cacheKey — showing shimmer');
+        _isLoading = true;
         notifyListeners();
       }
     }
 
+    // ── 2. Background-fetch from API only when online ─────────────────────────
+    if (!ConnectivityService.instance.isOnline) {
+      debugPrint('📴 [InquiryProvider] Offline — skipping API fetch for $cacheKey');
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
-      LoggingService.instance.logNetwork('Fetching inquiry forms for $cacheKey');
+      debugPrint('🌐 [InquiryProvider] Fetching from API for $cacheKey (background)');
       final fetched = (role == "2" || role == "3" || role == "0") && userEmail != null
           ? await _chatRepository.fetchFormDataForEnquiery(userEmail)
           : await _chatRepository.fetchFormData();
@@ -72,8 +83,10 @@ class InquiryProvider with ChangeNotifier {
       _allInquiries = _sortByStatus(fetched);
       _filteredInquiries = List.from(_allInquiries);
       await LocalDbHelper.saveInquiryForms(cacheKey, _allInquiries);
+      debugPrint('✅ [InquiryProvider] API fetch complete — ${fetched.length} forms for $cacheKey');
       LoggingService.instance.logNetwork('Fetched ${fetched.length} inquiry forms for $cacheKey');
     } catch (e, stack) {
+      debugPrint('❌ [InquiryProvider] API fetch failed for $cacheKey: $e');
       LoggingService.instance.logNetwork(
         'Failed to fetch inquiry forms for $cacheKey: $e',
         level: LogLevel.error,

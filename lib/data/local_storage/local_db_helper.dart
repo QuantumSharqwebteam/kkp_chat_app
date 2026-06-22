@@ -113,9 +113,16 @@ class LocalDbHelper {
   }
 
   static Profile? getProfile() {
-    final profileMap = _box.get(_profile);
-    if (profileMap is Map) {
-      return Profile.fromMap(Map<String, dynamic>.from(profileMap));
+    try {
+      final profileMap = _box.get(_profile);
+      if (profileMap is Map) {
+        // Round-trip through JSON so all nested Hive maps (_Map<dynamic,dynamic>)
+        // become properly typed Map<String,dynamic> before Profile.fromMap() runs.
+        final jsonStr = jsonEncode(Map<String, dynamic>.from(profileMap));
+        return Profile.fromMap(jsonDecode(jsonStr) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] getProfile error: $e");
     }
     return null;
   }
@@ -664,7 +671,7 @@ class LocalDbHelper {
       final box = await _inquiryFormsBox();
       final serialized = forms.map((form) => form.toMap()).toList();
       await box.put(email, serialized);
-      debugPrint("✅ [LocalDbHelper] Cached \${forms.length} inquiry forms for $email");
+      debugPrint("✅ [LocalDbHelper] Cached ${forms.length} inquiry forms for $email");
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Failed to cache inquiry forms: $e");
     }
@@ -701,5 +708,39 @@ class LocalDbHelper {
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Failed to clear cached inquiry forms: $e");
     }
+  }
+
+  // --- Assigned customers cache (stored in the existing CREDENTIALS box) ---
+
+  static Future<void> saveAssignedCustomers(
+      String agentEmail, List<dynamic> customers) async {
+    try {
+      final serialized = customers
+          .map((c) => c is Map ? Map<String, dynamic>.from(c) : <String, dynamic>{})
+          .toList();
+      // Use jsonEncode/Decode so nested maps stay properly typed on read-back
+      await _box.put('assignedCustomers_$agentEmail', jsonEncode(serialized));
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to save assigned customers: $e");
+    }
+  }
+
+  // Synchronous — _box is already open (CREDENTIALS), so no async needed.
+  // Returning synchronously lets AssignedCustomersProvider set state before
+  // the first widget build, eliminating the shimmer entirely.
+  static List<dynamic> getAssignedCustomers(String agentEmail) {
+    try {
+      final raw = _box.get('assignedCustomers_$agentEmail');
+      if (raw is String && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          return List<dynamic>.from(
+              decoded.map((c) => c is Map ? Map<String, dynamic>.from(c) : <String, dynamic>{}));
+        }
+      }
+    } catch (e) {
+      debugPrint("❌ [LocalDbHelper] Failed to get assigned customers: $e");
+    }
+    return [];
   }
 }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:kkpchatapp/core/services/call_kit_service.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/services/notification_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -49,7 +50,7 @@ class _MarketingHostState extends State<MarketingHost>
   late final SocketService _socketService;
   final chatRepository = ChatRepository();
   AuthApi auth = AuthApi();
-  // Using the host's navigatorKey (widget.navigatorKey) to avoid multiple navigators.
+  StreamSubscription<bool>? _connectivitySub;
 
   String? _activeIncomingCallId;
 
@@ -60,6 +61,9 @@ class _MarketingHostState extends State<MarketingHost>
     _socketService = SocketService(widget.navigatorKey);
     _loadUserDataAndInitializeSocket().then((_) {
       _initializeNotificationService().then((_) {});
+    });
+    _connectivitySub = ConnectivityService.instance.onConnectivityChanged.listen((isOnline) {
+      if (isOnline) _onInternetRestored();
     });
   }
 
@@ -162,8 +166,6 @@ class _MarketingHostState extends State<MarketingHost>
       role = await LocalDbHelper.getUserType();
       agentEmail = LocalDbHelper.getEmail();
 
-      debugPrint('Loaded role: $role, Loaded email: $agentEmail');
-
       if (role == "1") {
         rolename = "admin";
       } else if (role == "2") {
@@ -172,34 +174,35 @@ class _MarketingHostState extends State<MarketingHost>
         rolename = "agent Head";
       }
 
-      final userData = await auth.getUserInfo();
-
-      if (userData is Map<String, dynamic>) {
-        final message = userData['message'];
-
-        if (message == "Session expired due to login on another device" ||
-            message == "You are Not Authorized") {
-          await _forceLogout(message);
-          return;
-        }
-
-        if (message is Map<String, dynamic>) {
-          final profile = Profile.fromJson(message);
-          await LocalDbHelper.saveProfile(profile).whenComplete(() {
-            debugPrint('Loaded profile: $profile');
-          });
-
+      // Use cached profile for instant initialisation — socket can connect
+      // immediately without waiting for a network round-trip.
+      // Wrapped in its own try-catch; a Hive type-cast error must not prevent
+      // the fallback API refresh from running.
+      try {
+        final cachedProfile = LocalDbHelper.getProfile();
+        if (cachedProfile != null) {
           setState(() {
-            agentName = profile.name ?? "";
-            agentEmail = profile.email ?? "";
+            agentName = cachedProfile.name ?? "";
+            agentEmail = cachedProfile.email ?? agentEmail ?? "";
           });
-
           await _updateScreens();
-        } else {
-          debugPrint("Unexpected message type: $message");
         }
-      } else {
-        debugPrint("Unexpected userData format: $userData");
+      } catch (e) {
+        debugPrint('[MarketingHost] Cached profile load failed, falling back to API: $e');
+      }
+
+      // Trigger group data for the Feeds tab at startup — always, so cached
+      // groups are served immediately even when offline (splash skips group
+      // fetch when offline, leaving GroupProvider empty).
+      if (mounted && agentEmail != null) {
+        final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+        groupProvider.fetchAllGroups();
+        groupProvider.fetchUsersGroups(agentEmail!);
+      }
+
+      // Background-refresh profile from API when online; handles force-logout.
+      if (ConnectivityService.instance.isOnline) {
+        await _refreshProfileInBackground();
       }
     } catch (error) {
       debugPrint('Error in _loadUserData: $error');
@@ -208,9 +211,88 @@ class _MarketingHostState extends State<MarketingHost>
 
   @override
   void dispose() {
+    _connectivitySub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _socketService.offCallTerminated(_handleCallTermination);
     super.dispose();
+  }
+
+  /// Called when connectivity is restored while the host is open.
+  /// Re-initialises socket, refreshes the token, and silently re-fetches
+  /// stale provider data — no shimmer, no UI disruption.
+  Future<void> _onInternetRestored() async {
+    if (!mounted) return;
+
+    // 1. Refresh token silently
+    final oldToken = await LocalDbHelper.getToken();
+    if (oldToken != null) {
+      final response = await auth.refreshToken(oldToken);
+      if (response['message'] == "Refresh token generated successfully") {
+        await LocalDbHelper.saveToken(response['token']);
+        await LocalDbHelper.saveLastRefreshTime(DateTime.now().millisecondsSinceEpoch);
+      }
+    }
+
+    final token = await LocalDbHelper.getToken();
+
+    // 2. Re-initialise socket if it is not yet connected
+    if (!_socketService.isConnected &&
+        agentName != null &&
+        agentEmail != null &&
+        rolename != null) {
+      _socketService.initSocket(agentName!, agentEmail!, rolename!, token: token);
+      _socketService.onReceiveMessage(_handleIncomingMessage);
+      _socketService.onGroupMessageReceived(_handleIcomingGroupMessage);
+      _socketService.onGroupListUpdate(_handleBackgroundGroupMessage);
+      _socketService.onIncomingCall(_handleIncomingCall);
+      _socketService.onCallTerminated(_handleCallTermination);
+      _socketService.onProductAdd(_handleProductAdd);
+      _socketService.onProductUpdate(_handleProductUpdate);
+      _socketService.onProductDelete(_handleProductDelete);
+    }
+
+    if (!mounted) return;
+
+    // 3. Re-fetch providers silently (cache already shown; this updates in background)
+    Provider.of<MarketingProductProvider>(context, listen: false)
+        .fetchProducts(isRefresh: true);
+    Provider.of<GroupProvider>(context, listen: false)
+        .fetchAllGroups(forceRefresh: true);
+
+    // 4. Background-refresh profile in case it was loaded from cache offline
+    _refreshProfileInBackground();
+  }
+
+  Future<void> _refreshProfileInBackground() async {
+    try {
+      final userData = await auth.getUserInfo();
+      if (userData is Map<String, dynamic>) {
+        final message = userData['message'];
+        if (message == "Session expired due to login on another device" ||
+            message == "You are Not Authorized") {
+          await _forceLogout(message);
+          return;
+        }
+        if (message is Map<String, dynamic>) {
+          final profile = Profile.fromJson(message);
+          await LocalDbHelper.saveProfile(profile);
+          if (mounted) {
+            setState(() {
+              agentName = profile.name ?? agentName;
+              agentEmail = profile.email ?? agentEmail;
+            });
+            // Fresh-install path: no cached profile existed, so _updateScreens()
+            // was never called from _loadUserData(). Build screens now that we
+            // have the profile from the API — prevents the blank IndexedStack.
+            if (_screens.isEmpty) {
+              await _updateScreens();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[MarketingHost] Background profile refresh failed: $e');
+    }
   }
 
   Future<void> _updateScreens() async {
@@ -417,10 +499,12 @@ class _MarketingHostState extends State<MarketingHost>
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
+        body: _screens.isEmpty
+            ? const SizedBox.shrink()
+            : IndexedStack(
+                index: _selectedIndex,
+                children: _screens,
+              ),
         bottomNavigationBar: MarketingNavBar(
           selectedIndex: _selectedIndex,
           onTabSelected: _onTabSelected,

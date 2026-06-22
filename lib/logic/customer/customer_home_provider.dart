@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/poster_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
@@ -82,13 +83,18 @@ class CustomerHomeProvider with ChangeNotifier {
   bool get isPostersLoading => _posters == null;
 
   Future<void> fetchPosters() async {
+    if (!ConnectivityService.instance.isOnline) {
+      // Prevent the poster carousel from staying in a permanent loading state
+      _posters ??= [];
+      notifyListeners();
+      return;
+    }
     try {
       _posters = await _posterRepository.getPosters();
       notifyListeners();
     } catch (e) {
-      if (kDebugMode) {
-        print(e.toString());
-      }
+      _posters ??= [];
+      if (kDebugMode) print(e.toString());
     }
   }
 
@@ -109,30 +115,42 @@ class CustomerHomeProvider with ChangeNotifier {
   }
 
   Future<void> fetchProducts() async {
-    _isLoading = true;
-    notifyListeners();
+    // Cache-first: serve Hive data immediately so no shimmer on launch
+    try {
+      final cached = await LocalDbHelper.getProducts();
+      if (cached.isNotEmpty) {
+        _products = cached;
+        _isLoading = false;
+        _rebuildProductSections();
+        notifyListeners();
+        // Fall through to background refresh below
+      } else {
+        _isLoading = true;
+        notifyListeners();
+      }
+    } catch (_) {
+      _isLoading = true;
+      notifyListeners();
+    }
+
+    if (!ConnectivityService.instance.isOnline) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     try {
       final productsData = await _productRepository.getProducts();
       await LocalDbHelper.saveProducts(productsData);
       _products = productsData;
       _rebuildProductSections();
-      // ✅ Preload product images to improve perceived load time
       for (var product in _products!) {
         final image = CachedNetworkImageProvider(product.imageUrl);
         final ctx = navigatorKey.currentState?.context;
-        if (ctx != null && ctx.mounted) {
-          precacheImage(image, ctx);
-        }
+        if (ctx != null && ctx.mounted) precacheImage(image, ctx);
       }
-      notifyListeners();
     } catch (e) {
-      try {
-        _products = await LocalDbHelper.getProducts();
-        _rebuildProductSections();
-      } catch (_) {}
-      if (kDebugMode) {
-        print(e.toString());
-      }
+      if (kDebugMode) print(e.toString());
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/data/models/complaint_model.dart';
 import 'package:provider/provider.dart';
 
@@ -14,14 +15,24 @@ class ComplaintsProvider extends ChangeNotifier {
 
   Future<void> loaddata() async {
     if (status == DataStatus.loading || status == DataStatus.reloading) {
+      if (!ConnectivityService.instance.isOnline) {
+        debugPrint('📴 [ComplaintsProvider] Offline — skipping fetch'
+            '${complaints != null ? " (${complaints!.length} cached items available)" : ", no cache"}');
+        status = complaints != null ? DataStatus.successful : DataStatus.failed;
+        notifyListeners();
+        return;
+      }
+      debugPrint('🌐 [ComplaintsProvider] Fetching complaints from API');
       try {
         if (status == DataStatus.reloading) {
           notifyListeners();
         }
         complaints = await _complaintRepository.getAllComplaints();
+        debugPrint('✅ [ComplaintsProvider] Loaded ${complaints?.length ?? 0} complaints');
         status = DataStatus.successful;
         notifyListeners();
       } catch (e) {
+        debugPrint('❌ [ComplaintsProvider] Fetch failed: $e');
         status = DataStatus.failed;
         notifyListeners();
       }

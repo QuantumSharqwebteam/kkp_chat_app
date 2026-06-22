@@ -14,7 +14,6 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
-import 'package:kkpchatapp/core/utils/route_observer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:open_file/open_file.dart';
@@ -28,7 +27,7 @@ class CustomerInquiriesPage extends StatefulWidget {
 }
 
 class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
-    with SingleTickerProviderStateMixin, RouteAware {
+    with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   final chatRepository = ChatRepository();
   late InquiryProvider _inquiryProvider;
@@ -61,38 +60,21 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     );
   }
 
-  bool _isRouteObserverSubscribed = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isRouteObserverSubscribed) {
-      final modalRoute = ModalRoute.of(context);
-      if (modalRoute is PageRoute) {
-        routeObserver.subscribe(this, modalRoute);
-        _isRouteObserverSubscribed = true;
-      }
-    }
-  }
-
   @override
   void dispose() {
-    if (_isRouteObserverSubscribed) {
-      routeObserver.unsubscribe(this);
-    }
     _searchController.dispose();
     super.dispose();
   }
 
-  @override
-  void didPush() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
-  }
-
-  @override
-  void didPopNext() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
-  }
+  // didPush() and didPopNext() intentionally removed.
+  //
+  // didPush() duplicated the initState fetch (both fire when MarketingHost is
+  // first pushed as a PageRoute).
+  //
+  // didPopNext() fired every time any route on top of the MarketingHost was
+  // popped — including the chat screen — causing a full API re-fetch on every
+  // navigation back. The inquiry screen has no child routes of its own that
+  // could mutate inquiry data, so there is nothing to refresh on return.
 
   String _getFormattedDate(String rawDate) {
     final parsed = DateTime.tryParse(rawDate);
