@@ -269,6 +269,14 @@ class _InternalChatScreenState extends State<InternalChatScreen>
   void _handleIncomingGroupMessage(Map<String, dynamic> data) {
     debugPrint(
         "📨 [InternalChat] Group message received for group ${widget.groupId}: ${data.toString()}");
+
+    // Server broadcasts targetId instead of groupId — persist the mapping so
+    // background notifications can resolve the correct group badge.
+    final targetId = data['targetId']?.toString();
+    if (targetId != null && targetId.isNotEmpty && widget.groupId != null) {
+      LocalDbHelper.saveGroupTargetMapping(targetId, widget.groupId!);
+    }
+
     final message = GroupMessageModel.fromApiJson(data);
     if (!_loadedMessageIds.contains(message.messageId)) {
       _loadedMessageIds.add(message.messageId);

@@ -57,9 +57,11 @@ class SocketService with WidgetsBindingObserver {
   Function(Map<String, dynamic>)? _onGroupMessageReceived;
   Function(Map<String, dynamic>)? _onGroupMessageDeleted;
   Function(Map<String, dynamic>)? _onGroupMessageEdited;
-  // Called when a group message arrives in the background (chat page not open)
-  // GroupListScreen registers this to refresh unread counts in real time
-  Function? _onGroupListUpdateCallback;
+  // Called when a group message arrives in the background (chat page not open).
+  // Passes groupId, preview message, and timestamp so the provider can update
+  // in-memory counts directly without a Hive round-trip.
+  Function(String groupId, String message, DateTime timestamp)?
+      _onGroupListUpdateCallback;
 
   bool isChatPageOpen = false;
   String? activeCustomerId;
@@ -427,7 +429,8 @@ class SocketService with WidgetsBindingObserver {
     _onGroupMessageEdited = callback;
   }
 
-  void onGroupListUpdate(Function callback) {
+  void onGroupListUpdate(
+      Function(String groupId, String message, DateTime timestamp) callback) {
     _onGroupListUpdateCallback = callback;
   }
 
@@ -1338,17 +1341,69 @@ class SocketService with WidgetsBindingObserver {
   Future<void> _groupChatNotification(Map<String, dynamic> data) async {
     debugPrint('🔔 Group Chat Notification: $data');
 
-    // Check if this is a valid group message notification
-    if (!data.containsKey('type') ||
-        !data.containsKey('senderId') ||
-        !data.containsKey('message') ||
-        !data.containsKey('senderName')) {
-      debugPrint('ℹ️ Ignoring invalid group chat notification: $data');
+    // Backend now includes groupId in the broadcast. targetId is kept as fallback
+    // for any in-flight messages sent before the backend fix.
+    final groupId = data['groupId']?.toString().isNotEmpty == true
+        ? data['groupId']!.toString()
+        : (await LocalDbHelper.getGroupIdByTargetId(
+                data['targetId']?.toString() ?? '') ??
+            '');
+    if (groupId.isEmpty) {
+      debugPrint('ℹ️ Ignoring group chat notification without groupId');
       return;
     }
 
+    // Null-safe extraction so a partially-formed payload never crashes below.
+    final senderName = data['senderName']?.toString() ?? 'Team';
+    final type = data['type']?.toString() ?? 'text';
+    final rawMessage = data['message']?.toString() ?? '';
+
+    String messageContent;
+    switch (type) {
+      case 'media':
+        messageContent = '[Image]';
+        break;
+      case 'document':
+        messageContent = '[Document]';
+        break;
+      case 'voice':
+        messageContent = '[Voice message]';
+        break;
+      case 'text':
+      default:
+        messageContent = rawMessage.length > 30
+            ? '${rawMessage.substring(0, 30)}...'
+            : rawMessage;
+        break;
+    }
+
+    final now = DateTime.now();
+
+    // ── Unread count & last-message persistence ─────────────────────────────
+    // Done BEFORE the notification so a notification failure never blocks badges.
     try {
-      // Create notification details
+      await LocalDbHelper.saveGroupLastMessage(groupId, messageContent, now);
+      debugPrint('✅ Saved last message for group $groupId: $messageContent');
+    } catch (e) {
+      debugPrint('❌ Error saving group last message: $e');
+    }
+    try {
+      await LocalDbHelper.incrementGroupUnreadCount(groupId);
+    } catch (e) {
+      debugPrint('❌ Error incrementing group unread count: $e');
+    }
+    try {
+      await LocalDbHelper.incrementGroupChatUnreadCount();
+    } catch (e) {
+      debugPrint('❌ Error incrementing global group chat unread count: $e');
+    }
+
+    // Direct in-memory update — no Hive round-trip needed in the provider.
+    debugPrint('🔁 [Socket] groupListCallback registered: ${_onGroupListUpdateCallback != null}');
+    _onGroupListUpdateCallback?.call(groupId, messageContent, now);
+
+    // ── Push notification ────────────────────────────────────────────────────
+    try {
       const androidDetails = AndroidNotificationDetails(
         'group_chat_channel_id',
         'Internal Chat Notifications',
@@ -1360,85 +1415,23 @@ class SocketService with WidgetsBindingObserver {
         icon: 'app_logo',
         largeIcon: DrawableResourceAndroidBitmap('app_logo'),
       );
-
       const iosDetails = DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
       );
 
-      final notificationDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      // Create more descriptive notification title and content
-      final title = "New update from Internal Chat (${data['senderName']})";
-      String messageContent;
-
-      switch (data['type']) {
-        case 'media':
-          messageContent = "[Image]";
-          break;
-        case 'document':
-          messageContent = "[Document]";
-          break;
-        case 'voice':
-          messageContent = "[Voice message]";
-          break;
-        case 'text':
-        default:
-          // For text messages, show a preview if it's not too long
-          messageContent = data['message'].length > 30
-              ? "${data['message'].substring(0, 30)}..."
-              : data['message'];
-          break;
-      }
-
-      // Use a fixed ID for group notifications to replace previous ones
-      const notificationId = 1001;
-
-      // Show the notification
       await NotificationService.plugin.show(
-        notificationId,
-        title,
+        1001,
+        'New update from Internal Chat ($senderName)',
         messageContent,
-        notificationDetails,
+        const NotificationDetails(android: androidDetails, iOS: iosDetails),
         payload: jsonEncode({
           'isGroupMessage': true,
           'notificationType': 'groupChat',
           ...data,
         }),
       );
-
-      // Save last message preview + increment per-group unread count
-      final groupId = data['groupId']?.toString() ?? '';
-      if (groupId.isNotEmpty) {
-        try {
-          await LocalDbHelper.saveGroupLastMessage(
-              groupId, messageContent, DateTime.now());
-          debugPrint(
-              "✅ Saved last message for group $groupId: $messageContent");
-        } catch (e) {
-          debugPrint("❌ Error saving group last message: $e");
-        }
-        try {
-          await LocalDbHelper.incrementGroupUnreadCount(groupId);
-        } catch (e) {
-          debugPrint("❌ Error incrementing group unread count: $e");
-        }
-      }
-
-      // Notify GroupListScreen to refresh unread badges in real time
-      _onGroupListUpdateCallback?.call();
-
-      // Increment global group chat unread count (used by nav badge)
-      try {
-        await LocalDbHelper.incrementGroupChatUnreadCount();
-        debugPrint("✅ Incremented global group chat unread count");
-      } catch (e) {
-        debugPrint("❌ Error incrementing group chat unread count: $e");
-      }
     } catch (e) {
       debugPrint('❌ Error showing group chat notification: $e');
     }

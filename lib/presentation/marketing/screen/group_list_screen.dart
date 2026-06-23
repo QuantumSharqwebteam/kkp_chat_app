@@ -9,7 +9,7 @@ import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/add_new_group_scree.dart';
-import 'package:kkpchatapp/presentation/marketing/widget/group_chat_file.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/group_chat_tile.dart';
 import 'package:provider/provider.dart';
 
 class GroupListScreen extends StatefulWidget {
@@ -79,7 +79,8 @@ class _GroupListScreenState extends State<GroupListScreen> {
       ),
       body: Consumer<GroupProvider>(
         builder: (context, groupProvider, child) {
-          if (groupProvider.state == GroupState.loading && groupProvider.groups.isEmpty) {
+          if (groupProvider.state == GroupState.loading &&
+              groupProvider.groups.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           } else if (groupProvider.groups.isEmpty) {
             return const Center(

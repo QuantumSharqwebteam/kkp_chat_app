@@ -433,12 +433,14 @@ class _MarketingHostState extends State<MarketingHost>
   }
 
   /// Called by SocketService whenever a group message arrives while the chat page is closed.
-  /// Updates GroupProvider so badges stay current on any page.
-  void _handleBackgroundGroupMessage() {
+  /// Updates GroupProvider in-memory directly so badges stay current on any page.
+  void _handleBackgroundGroupMessage(
+      String groupId, String message, DateTime timestamp) {
+    debugPrint('🏠 [MarketingHost] Background group msg — groupId: $groupId, msg: $message');
     if (!mounted) return;
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
-    groupProvider.loadUnreadCountsFromStorage();
-    groupProvider.loadLastMessagesFromStorage();
+    groupProvider.incrementUnreadCount(groupId);
+    groupProvider.updateGroupLastMessage(groupId, message, timestamp);
   }
 
   Future<void> _handleProductAdd(Map<String, dynamic> productData) async {

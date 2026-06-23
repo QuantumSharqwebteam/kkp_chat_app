@@ -31,6 +31,8 @@ class LocalDbHelper {
   static const String groupChatUnreadCountKey = 'groupChatUnreadCount';
   // Per-group unread counts (keyed by groupId inside the box)
   static const String groupUnreadCountsBoxKey = 'groupUnreadCountsBox';
+  // Maps socket targetId → group _id (server omits groupId from broadcasts)
+  static const String groupTargetMappingBoxKey = 'groupTargetMappingBox';
 
   // launguage selected
   static const String _localeKey = 'locale';
@@ -551,6 +553,20 @@ class LocalDbHelper {
     final box = await Hive.openBox<int>(groupUnreadCountsBoxKey);
     await box.put(groupId, 0);
     debugPrint("🧹 [LocalDbHelper] Cleared unread count for group $groupId");
+  }
+
+  // The server omits groupId from receiveGroupMessage broadcasts, sending targetId instead.
+  // Save targetId → groupId so background notifications can resolve the correct group.
+  static Future<void> saveGroupTargetMapping(
+      String targetId, String groupId) async {
+    final box = await Hive.openBox<String>(groupTargetMappingBoxKey);
+    await box.put(targetId, groupId);
+    debugPrint('🗺️ [LocalDbHelper] Mapped targetId $targetId → groupId $groupId');
+  }
+
+  static Future<String?> getGroupIdByTargetId(String targetId) async {
+    final box = await Hive.openBox<String>(groupTargetMappingBoxKey);
+    return box.get(targetId);
   }
 
   // Helper method to ensure we have a valid count

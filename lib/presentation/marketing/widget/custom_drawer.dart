@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-import 'package:kkpchatapp/core/utils/utils.dart';
+//import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+//import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
-import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
+//import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/group_list_screen.dart';
 import 'package:provider/provider.dart';
 
@@ -25,7 +25,7 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = AppLocalizations.of(context)!;
+    //final locale = AppLocalizations.of(context)!;
     return Drawer(
       child: Container(
         color: Colors.white,
@@ -49,12 +49,14 @@ class CustomDrawer extends StatelessWidget {
                     children: [
                       Text(
                         agentName ?? "",
-                        style: AppTextStyles.black16_600.copyWith(color: Colors.white),
+                        style: AppTextStyles.black16_600
+                            .copyWith(color: Colors.white),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "Agent",
-                        style: AppTextStyles.black12_400.copyWith(color: Colors.white70),
+                        style: AppTextStyles.black12_400
+                            .copyWith(color: Colors.white70),
                       ),
                     ],
                   ),
@@ -66,7 +68,8 @@ class CustomDrawer extends StatelessWidget {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  _buildDrawerItem(context, icon: Icons.meeting_room, title: "Meetings", onTap: () {
+                  _buildDrawerItem(context,
+                      icon: Icons.meeting_room, title: "Meetings", onTap: () {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -97,15 +100,18 @@ class CustomDrawer extends StatelessWidget {
                           isLabelVisible: total > 0,
                           label: Text(
                             total > 99 ? '99+' : '$total',
-                            style: const TextStyle(color: Colors.white, fontSize: 10),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 10),
                           ),
                           backgroundColor: AppColors.redF11515,
-                          child: Icon(Icons.group, color: AppColors.bluePrimary),
+                          child:
+                              Icon(Icons.group, color: AppColors.bluePrimary),
                         ),
                         title: Text("Groups", style: AppTextStyles.black16_500),
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const GroupListScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const GroupListScreen()),
                         ),
                       );
                     },
@@ -115,26 +121,26 @@ class CustomDrawer extends StatelessWidget {
               ),
             ),
             // Logout Button
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: CustomButton(
-                onPressed: () {
-                  Utils().showDialogWithActions(
-                    context,
-                    locale.logout,
-                    icon: Icons.logout_outlined,
-                    locale.confirmLogout,
-                    locale.logout,
-                    onLogout,
-                  );
-                },
-                borderWidth: 0,
-                fontSize: 16,
-                backgroundColor: AppColors.redF11515,
-                text: locale.logout,
-                icon: Icons.logout_outlined,
-              ),
-            ),
+            // Padding(
+            //   padding: const EdgeInsets.all(16),
+            //   child: CustomButton(
+            //     onPressed: () {
+            //       Utils().showDialogWithActions(
+            //         context,
+            //         locale.logout,
+            //         icon: Icons.logout_outlined,
+            //         locale.confirmLogout,
+            //         locale.logout,
+            //         onLogout,
+            //       );
+            //     },
+            //     borderWidth: 0,
+            //     fontSize: 16,
+            //     backgroundColor: AppColors.redF11515,
+            //     text: locale.logout,
+            //     icon: Icons.logout_outlined,
+            //   ),
+            // ),
           ],
         ),
       ),

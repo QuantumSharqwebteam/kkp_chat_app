@@ -61,6 +61,7 @@ class GroupProvider extends ChangeNotifier {
 
   void incrementUnreadCount(String groupId) {
     _groupUnreadCounts[groupId] = (_groupUnreadCounts[groupId] ?? 0) + 1;
+    debugPrint('🔴 [GroupProvider] incrementUnreadCount $groupId → ${_groupUnreadCounts[groupId]}');
     notifyListeners();
   }
 
