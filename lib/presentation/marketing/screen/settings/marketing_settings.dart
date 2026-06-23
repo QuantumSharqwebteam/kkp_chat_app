@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // import 'package:flutter_svg/svg.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
+import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -31,6 +32,34 @@ class MarketingSettingsPage extends StatefulWidget {
 
 class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
   final SocketService _socketService = SocketService(navigatorKey);
+  String? _userType;
+
+  bool get _isAgentHead => _userType == "3";
+  TextStyle get _optionTitleStyle => const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: Colors.black,
+      );
+  TextStyle get _optionSubtitleStyle => const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w400,
+        color: Colors.black,
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserType();
+  }
+
+  Future<void> _loadUserType() async {
+    final userType = await LocalDbHelper.getUserType();
+    if (!mounted) return;
+    setState(() {
+      _userType = userType;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = AppLocalizations.of(context)!;
@@ -64,10 +93,10 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+        padding: EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 20,
+          spacing: 10,
           children: [
             Container(
               decoration: BoxDecoration(
@@ -88,6 +117,8 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 children: [
                   CustomSettingsTile(
                     numberOfTiles: 1,
+                    tileTitleStyle: _optionTitleStyle,
+                    tileSubtitleStyle: _optionSubtitleStyle,
                     leadingWidgets: [
                       CircleAvatar(
                         backgroundColor: Colors.blue.shade50,
@@ -101,13 +132,16 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     ],
                     onTaps: [
                       () {
-                        Navigator.pushNamed(context, CustomerRoutes.passwordAndSecurity);
+                        Navigator.pushNamed(
+                            context, CustomerRoutes.passwordAndSecurity);
                       }
                     ],
                     title: Text(
                       AppLocalizations.of(context)!.account,
                       style: TextStyle(
-                          color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                          color: AppColors.grey7B7B7B,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14),
                     ),
                     showDividerAfterTitle: true,
                     titles: [locale.accountAndSecurity],
@@ -165,10 +199,14 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 children: [
                   CustomSettingsTile(
                     numberOfTiles: 1,
+                    tileTitleStyle: _optionTitleStyle,
+                    tileSubtitleStyle: _optionSubtitleStyle,
                     title: Text(
                       locale.management,
                       style: TextStyle(
-                          color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                          color: AppColors.grey7B7B7B,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14),
                     ),
                     showDividerAfterTitle: true,
                     titles: [locale.userManagement],
@@ -195,8 +233,37 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     ],
                   ),
 
+                  if (_isAgentHead)
+                    CustomSettingsTile(
+                      numberOfTiles: 1,
+                      tileTitleStyle: _optionTitleStyle,
+                      tileSubtitleStyle: _optionSubtitleStyle,
+                      titles: const ["Agent List"],
+                      leadingWidgets: [
+                        CircleAvatar(
+                          backgroundColor: Colors.blue.shade50,
+                          radius: 20,
+                          child: const Icon(
+                            Icons.groups_2_outlined,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                      subtitles: const ["View and manage agents"],
+                      onTaps: [
+                        () {
+                          Navigator.pushNamed(
+                            context,
+                            MarketingRoutes.agentProfileList,
+                          );
+                        }
+                      ],
+                    ),
+
                   CustomSettingsTile(
                     numberOfTiles: 1,
+                    tileTitleStyle: _optionTitleStyle,
+                    tileSubtitleStyle: _optionSubtitleStyle,
                     // title: Text(
                     //   "",
                     //   style: TextStyle(
@@ -268,6 +335,8 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               ),
               child: CustomSettingsTile(
                 numberOfTiles: 1,
+                tileTitleStyle: _optionTitleStyle,
+                tileSubtitleStyle: _optionSubtitleStyle,
                 leadingWidgets: [
                   CircleAvatar(
                     backgroundColor: Colors.blue.shade50,
@@ -282,7 +351,9 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 title: Text(
                   AppLocalizations.of(context)!.complaints,
                   style: TextStyle(
-                      color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                      color: AppColors.grey7B7B7B,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14),
                 ),
                 showDividerAfterTitle: true,
                 titles: [AppLocalizations.of(context)!.allComplaint],
@@ -291,7 +362,8 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                   () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const MarketingComplaintPage()),
+                      MaterialPageRoute(
+                          builder: (context) => const MarketingComplaintPage()),
                     );
                   },
                 ],
@@ -314,6 +386,8 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               ),
               child: CustomSettingsTile(
                 numberOfTiles: 1,
+                tileTitleStyle: _optionTitleStyle,
+                tileSubtitleStyle: _optionSubtitleStyle,
                 leadingWidgets: [
                   CircleAvatar(
                     backgroundColor: Colors.blue.shade50,
@@ -328,14 +402,17 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 title: Text(
                   locale.termsPolicy,
                   style: TextStyle(
-                      color: AppColors.grey7B7B7B, fontWeight: FontWeight.w500, fontSize: 14),
+                      color: AppColors.grey7B7B7B,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14),
                 ),
                 showDividerAfterTitle: true,
                 titles: [locale.about],
                 subtitles: [locale.manageTermsPolicy],
                 onTaps: [
                   () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
                       return AboutUsPage();
                     }));
                   },
@@ -376,6 +453,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               borderWidth: 0,
               height: 50,
             ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

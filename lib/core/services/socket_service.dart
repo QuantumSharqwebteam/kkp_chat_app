@@ -20,7 +20,8 @@ class SocketService with WidgetsBindingObserver {
     return _instance;
   }
 
-  static const _backgroundChannel = MethodChannel('com.kkpchatapp/background_task');
+  static const _backgroundChannel =
+      MethodChannel('com.kkpchatapp/background_task');
   String? _currentUserName;
   String? _currentUserEmail;
   String? _currentRole;
@@ -909,6 +910,7 @@ class SocketService with WidgetsBindingObserver {
     String? timestamp,
     String? messageId,
     bool read = false,
+    String? referenceId,
   }) {
     if (_isConnected) {
       Map<String, dynamic> messageData = {
@@ -924,6 +926,7 @@ class SocketService with WidgetsBindingObserver {
       if (mediaUrl != null) messageData['mediaUrl'] = mediaUrl;
       if (timestamp != null) messageData['timestamp'] = timestamp;
       if (messageId != null) messageData["messageId"] = messageId;
+      if (referenceId != null) messageData['referenceId'] = referenceId;
 
       _socket.emit('sendMessage', messageData);
       // debugPrint("message sent :${messageData.toString()}");
@@ -1092,7 +1095,11 @@ class SocketService with WidgetsBindingObserver {
   }
 
   void _emitJoinDirectly() {
-    if (_currentUserName == null || _currentUserEmail == null || _currentRole == null) return;
+    if (_currentUserName == null ||
+        _currentUserEmail == null ||
+        _currentRole == null) {
+      return;
+    }
     try {
       _socket.emit('join', {
         'user': _currentUserName,
@@ -1143,7 +1150,13 @@ class SocketService with WidgetsBindingObserver {
   }
 
   Future<void> _chatNotification(Map<String, dynamic> data) async {
-    debugPrint('🔔 [Socket] Chat notification (user not on chat screen): $data');
+    debugPrint(
+        '🔔 [Socket] Chat notification (user not on chat screen): $data');
+    debugPrint(
+      '🧭 [CustomerChatTrace][Socket] notification:start '
+      'sender=${data['senderId']} target=${data['targetId']} '
+      'messageId=${data['messageId']}',
+    );
     if (!data.containsKey('type') ||
         !data.containsKey('senderId') ||
         !data.containsKey('message')) {
@@ -1158,6 +1171,42 @@ class SocketService with WidgetsBindingObserver {
             ? data['message'] as String
             : data['message'].toString());
 
+    // Persist first so opening the chat immediately after a notification reads
+    // the new message from Hive instead of briefly showing stale/empty state.
+    String chatBoxName = '';
+    try {
+      final timestamp = data['timestamp'] != null
+          ? DateTime.parse(data['timestamp'] as String)
+          : DateTime.now();
+      final incoming = ChatMessageModel(
+        message: data['message']?.toString() ?? '',
+        sender: data['senderId']?.toString(),
+        type: data['type']?.toString() ?? 'text',
+        timestamp: timestamp,
+        mediaUrl: data['mediaUrl']?.toString(),
+        messageId: data['messageId']?.toString() ?? data['_id']?.toString(),
+        isDeleted: false,
+        read: false,
+      );
+      chatBoxName = userType == "0"
+          ? data['targetId']?.toString() ?? ''
+          : '${data['targetId']}${data['senderId']}';
+      debugPrint(
+        '🧭 [CustomerChatTrace][Socket] cache:start '
+        'userType=$userType box=$chatBoxName messageId=${incoming.messageId}',
+      );
+      if (chatBoxName.isNotEmpty) {
+        await _chatStorageService.saveMessage(incoming, chatBoxName);
+      }
+      debugPrint(
+        '🧭 [CustomerChatTrace][Socket] cache:done '
+        'box=$chatBoxName messageId=${incoming.messageId}',
+      );
+    } catch (e) {
+      debugPrint(
+          '⚠️ [Socket] Failed to cache incoming message to chat box: $e');
+    }
+
     if (userType == "0") {
       // Customer-side notification logic
       final currentUserEmail = data["targetId"];
@@ -1165,8 +1214,18 @@ class SocketService with WidgetsBindingObserver {
       final box = await Hive.openBox<int>(boxNameWithCount);
       int count = box.get('count', defaultValue: 0)! + 1;
       await box.put('count', count);
+      debugPrint(
+        '🧭 [CustomerChatTrace][Socket] unreadCount:updated '
+        'box=$boxNameWithCount count=$count',
+      );
       if (onMessageReceivedCallback != null) {
+        debugPrint(
+          '🧭 [CustomerChatTrace][Socket] callback:onMessageReceived:start',
+        );
         onMessageReceivedCallback!();
+        debugPrint(
+          '🧭 [CustomerChatTrace][Socket] callback:onMessageReceived:done',
+        );
       }
     } else {
       // for agent side
@@ -1193,38 +1252,6 @@ class SocketService with WidgetsBindingObserver {
       if (onMessageReceivedCallback != null) {
         onMessageReceivedCallback!();
       }
-    }
-
-    // ── Persist to chat Hive box ─────────────────────────────────────────
-    // When the user opens this chat, Step 1 of _loadPreviousMessages reads
-    // from cache. Without this write, the message is only in the unread-count
-    // box and last-message Hive key — NOT in the chat box — so the user sees
-    // an empty/stale chat until the background API sync completes.
-    try {
-      final timestamp = data['timestamp'] != null
-          ? DateTime.parse(data['timestamp'] as String)
-          : DateTime.now();
-      final incoming = ChatMessageModel(
-        message: data['message']?.toString() ?? '',
-        sender: data['senderId']?.toString(),
-        type: data['type']?.toString() ?? 'text',
-        timestamp: timestamp,
-        mediaUrl: data['mediaUrl']?.toString(),
-        messageId: data['messageId']?.toString() ??
-            data['_id']?.toString(),
-        isDeleted: false,
-        read: false,
-      );
-      // Agent box  = agentEmail + customerEmail = targetId + senderId
-      // Customer box = customerEmail             = targetId
-      final chatBoxName = userType == "0"
-          ? data['targetId']?.toString() ?? ''
-          : '${data['targetId']}${data['senderId']}';
-      if (chatBoxName.isNotEmpty) {
-        await _chatStorageService.saveMessage(incoming, chatBoxName);
-      }
-    } catch (e) {
-      debugPrint('⚠️ [Socket] Failed to cache incoming message to chat box: $e');
     }
 
     const androidDetails = AndroidNotificationDetails(

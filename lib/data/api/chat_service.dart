@@ -305,18 +305,21 @@ class ChatService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data["status"] == 200 && data["token"] != null) {
-          LoggingService.instance.info('AgoraToken', 'token obtained for channel=$channelName uid=$uid');
+          LoggingService.instance.info(
+              'AgoraToken', 'token obtained for channel=$channelName uid=$uid');
           return data["token"];
         } else {
-          LoggingService.instance.warning('AgoraToken',
+          LoggingService.instance.warning(
+              'AgoraToken',
               'backend rejected token request — status=${data["status"]}  '
-              'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
+                  'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
           return null;
         }
       } else {
-        LoggingService.instance.warning('AgoraToken',
+        LoggingService.instance.warning(
+            'AgoraToken',
             'HTTP ${response.statusCode} for channel=$channelName uid=$uid  '
-            'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
+                'body=${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
         return null;
       }
     } catch (e, st) {
@@ -610,7 +613,7 @@ class ChatService {
     final url = Uri.parse(
       "$baseUrl/chat/getUserMessages/$customerEmail?limit=$limit${before != null ? '&before=$before' : ''}",
     );
-
+    debugPrint("📡 [ChatService] fetchCustomerMessages → GET $url");
     final token = await LocalDbHelper.getToken();
     try {
       final response = await client.get(

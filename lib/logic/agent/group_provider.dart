@@ -16,23 +16,46 @@ class GroupProvider extends ChangeNotifier {
   List<GroupModel> _groups = [];
   List<GroupModel> _userGroups = [];
   final Map<String, int> _groupUnreadCounts = {};
+  final Map<String, String> _groupLastMessages = {};
+  final Map<String, DateTime?> _groupLastMessageTimes = {};
 
   GroupState get state => _state;
   String? get errorMessage => _errorMessage;
   List<GroupModel> get groups => _groups;
   List<GroupModel> get userGroups => _userGroups;
   Map<String, int> get groupUnreadCounts => Map.unmodifiable(_groupUnreadCounts);
+  Map<String, String> get groupLastMessages => Map.unmodifiable(_groupLastMessages);
+  Map<String, DateTime?> get groupLastMessageTimes => Map.unmodifiable(_groupLastMessageTimes);
   int get totalGroupUnreadCount =>
       _groupUnreadCounts.values.fold(0, (sum, c) => sum + c);
 
   static const cacheValidity = Duration(minutes: 10);
 
-  // --- Unread count helpers (in-memory + storage) ---
+  // --- Unread count + last message helpers (in-memory + storage) ---
 
   Future<void> loadUnreadCountsFromStorage() async {
     for (final group in _groups) {
       _groupUnreadCounts[group.id] = await LocalDbHelper.getGroupUnreadCount(group.id);
     }
+    notifyListeners();
+  }
+
+  Future<void> loadLastMessagesFromStorage() async {
+    for (final group in _groups) {
+      final info = await LocalDbHelper.getGroupLastMessage(group.id);
+      if (info.message.isNotEmpty || info.timestamp != null) {
+        _groupLastMessages[group.id] = info.message;
+        _groupLastMessageTimes[group.id] = info.timestamp;
+      }
+    }
+    notifyListeners();
+  }
+
+  /// Called from socket notification path for an instant in-memory update
+  /// without waiting for a full Hive read on the next `loadLastMessagesFromStorage`.
+  void updateGroupLastMessage(String groupId, String message, DateTime timestamp) {
+    _groupLastMessages[groupId] = message;
+    _groupLastMessageTimes[groupId] = timestamp;
     notifyListeners();
   }
 
@@ -119,6 +142,7 @@ class GroupProvider extends ChangeNotifier {
           .toList();
       await LocalDbHelper.saveGroups(_groups);
       await loadUnreadCountsFromStorage();
+      await loadLastMessagesFromStorage();
       _state = GroupState.success;
       debugPrint('✅ [GroupProvider] API fetch complete — ${_groups.length} groups');
       _logger.logNetwork('✅ Groups refreshed (${_groups.length} items)');

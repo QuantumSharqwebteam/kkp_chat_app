@@ -21,8 +21,6 @@ class GroupListScreen extends StatefulWidget {
 
 class _GroupListScreenState extends State<GroupListScreen> {
   String? role;
-  final Map<String, String> _groupLastMessages = {};
-  final Map<String, DateTime?> _groupLastMessageTimes = {};
 
   @override
   void initState() {
@@ -42,21 +40,8 @@ class _GroupListScreenState extends State<GroupListScreen> {
   Future<void> _loadGroups() async {
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
     await groupProvider.fetchAllGroups();
-    // fetchAllGroups already calls loadUnreadCountsFromStorage internally
-    await _loadGroupPreviews(groupProvider.groups);
-  }
-
-  Future<void> _loadGroupPreviews(List<GroupModel> groups) async {
-    for (final group in groups) {
-      final info = await LocalDbHelper.getGroupLastMessage(group.id);
-      if (!mounted) return;
-      if (info.message.isNotEmpty || info.timestamp != null) {
-        setState(() {
-          _groupLastMessages[group.id] = info.message;
-          _groupLastMessageTimes[group.id] = info.timestamp;
-        });
-      }
-    }
+    // fetchAllGroups already loads unread counts; also load last messages.
+    await groupProvider.loadLastMessagesFromStorage();
   }
 
   Future<void> _openGroupChat(BuildContext context, GroupModel group) async {
@@ -80,9 +65,9 @@ class _GroupListScreenState extends State<GroupListScreen> {
       ),
     );
 
-    // Reload previews when returning from chat
+    // Refresh last message previews when returning from chat.
     if (mounted) {
-      await _loadGroupPreviews(groupProvider.groups);
+      await groupProvider.loadLastMessagesFromStorage();
     }
   }
 
@@ -116,8 +101,8 @@ class _GroupListScreenState extends State<GroupListScreen> {
                 return GroupChatTile(
                   groupName: group.groupName,
                   memberCount: group.members.length,
-                  lastMessage: _groupLastMessages[group.id] ?? '',
-                  time: _groupLastMessageTimes[group.id],
+                  lastMessage: groupProvider.groupLastMessages[group.id] ?? '',
+                  time: groupProvider.groupLastMessageTimes[group.id],
                   unreadCount: unread,
                   onTap: () => _openGroupChat(context, group),
                 );

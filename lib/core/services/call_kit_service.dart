@@ -122,6 +122,10 @@ class CallKitService {
     final callId = body['id']?.toString() ?? body['uuid']?.toString();
 
     switch (event.event) {
+      case Event.actionCallIncoming:
+        // Native call UI just appeared — pre-warm Agora so the Answer tap is instant.
+        if (callId != null) unawaited(_handleIncoming(callId, body));
+        break;
       case Event.actionCallAccept:
         if (callId != null) await _handleAccept(callId, body);
         break;
@@ -144,6 +148,37 @@ class CallKitService {
       default:
         break;
     }
+  }
+
+  Future<void> _handleIncoming(String callId, Map<String, dynamic> body) async {
+    // Resolve call data (in-memory first, then CallKit extra field).
+    Map<String, dynamic>? data = _pendingCalls[callId];
+    if (data == null) {
+      final extra = (body['extra'] as Map?)?.cast<String, dynamic>() ?? {};
+      final uid = int.tryParse(extra['uid']?.toString() ?? '');
+      if (uid == null || extra['channelName'] == null) return;
+      data = {
+        'channelName': extra['channelName'].toString(),
+        'uid': uid,
+      };
+    }
+    final channelName = data['channelName'] as String?;
+    final uid = data['uid'] as int?;
+    if (channelName == null || uid == null) return;
+
+    // Wait briefly for the Flutter engine to be ready (backgrounded-app case).
+    int attempts = 0;
+    while (!isAppInitialized && attempts < 20) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    debugPrint('🔥 [CallKit] Incoming — pre-warming Agora for channel $channelName');
+    // ignore: use_build_context_synchronously
+    final callProvider = Provider.of<CallProvider>(context, listen: false);
+    await callProvider.preWarm(channelName: channelName, uid: uid);
   }
 
   Future<void> _handleAccept(String callId, Map<String, dynamic> body) async {

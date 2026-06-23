@@ -12,6 +12,7 @@
   String? messageId;
   bool isDeleted;
   bool? read;
+  String? referenceId;
 
   ChatMessageModel({
     this.message,
@@ -27,6 +28,7 @@
     this.messageId,
     this.isDeleted = false,
     this.read = false,
+    this.referenceId,
   });
 
   @override
@@ -73,6 +75,7 @@
       'messageId': messageId,
       'isDeleted': isDeleted,
       'read': read,
+      'referenceId': referenceId,
     };
   }
 
@@ -95,6 +98,7 @@
       messageId: map['messageId'],
       isDeleted: map['isDeleted'] ?? false,
       read: map['read'],
+      referenceId: map['referenceId'],
     );
   }
 }

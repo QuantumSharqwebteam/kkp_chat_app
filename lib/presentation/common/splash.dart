@@ -7,7 +7,7 @@ import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/api/auth_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/common/onboarding_page.dart';
 import 'package:provider/provider.dart';
@@ -97,11 +97,22 @@ class _SplashState extends State<Splash> {
   /// finds data instantly on first read — eliminates the empty-state flash.
   Future<void> _prefetchAssignedCustomers(String email) async {
     try {
-      final customers = await ChatRepository().fetchAssignedCustomerList(email);
+      final raw = await AuthRepository().fetchUsersByRole('User');
+      final customers = raw
+          .where((u) => u['isDeleted'] != true)
+          .map((u) {
+            final m = Map<String, dynamic>.from(u as Map);
+            m.remove('password');
+            m.remove('activeToken');
+            m.remove('token');
+            m['canMessage'] = (m['agentId']?.toString() ?? '') == email;
+            return m;
+          })
+          .toList();
       await LocalDbHelper.saveAssignedCustomers(email, customers);
-      debugPrint('✅ [Splash] Pre-fetched ${customers.length} assigned customers for $email');
+      debugPrint('✅ [Splash] Pre-fetched ${customers.length} users for $email');
     } catch (e) {
-      debugPrint('[Splash] Pre-fetch assigned customers failed (non-critical): $e');
+      debugPrint('[Splash] Pre-fetch users failed (non-critical): $e');
     }
   }
 

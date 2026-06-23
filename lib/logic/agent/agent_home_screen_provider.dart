@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 
 class AssignedCustomersProvider extends ChangeNotifier {
   final String agentEmail;
@@ -158,41 +158,32 @@ class AssignedCustomersProvider extends ChangeNotifier {
   }
 
   void _sortCustomers() {
-    _assignedCustomers.sort((a, b) {
+    int compare(dynamic a, dynamic b) {
+      // 1. Assigned users (canMessage == true) always appear first.
+      final isAAssigned = a['canMessage'] == true;
+      final isBAssigned = b['canMessage'] == true;
+      if (isAAssigned && !isBAssigned) return -1;
+      if (!isAAssigned && isBAssigned) return 1;
+
+      // 2. Within the same assignment group, online users next.
       final isAOnline = a['isOnline'] ?? false;
       final isBOnline = b['isOnline'] ?? false;
       if (isAOnline && !isBOnline) return -1;
       if (!isAOnline && isBOnline) return 1;
 
-      // Also consider unread counts in sorting
+      // 3. Then by unread count descending.
       final countA = a['notificationCount'] ?? 0;
       final countB = b['notificationCount'] ?? 0;
       if (countA != countB) return countB.compareTo(countA);
 
-      final timeA =
-          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB =
-          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      // 4. Finally by last message time descending.
+      final timeA = a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final timeB = b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
       return timeB.compareTo(timeA);
-    });
+    }
 
-    _filteredCustomers.sort((a, b) {
-      final isAOnline = a['isOnline'] ?? false;
-      final isBOnline = b['isOnline'] ?? false;
-      if (isAOnline && !isBOnline) return -1;
-      if (!isAOnline && isBOnline) return 1;
-
-      // Also consider unread counts in sorting
-      final countA = a['notificationCount'] ?? 0;
-      final countB = b['notificationCount'] ?? 0;
-      if (countA != countB) return countB.compareTo(countA);
-
-      final timeA =
-          a['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final timeB =
-          b['lastMessageTime'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return timeB.compareTo(timeA);
-    });
+    _assignedCustomers.sort(compare);
+    _filteredCustomers.sort(compare);
   }
 
   Future<void> fetchAssignedCustomers() async {
@@ -230,9 +221,22 @@ class AssignedCustomersProvider extends ChangeNotifier {
     }
 
     try {
-      final chatRepo = ChatRepository();
-      final customers = await chatRepo.fetchAssignedCustomerList(agentEmail);
-      // Save raw API data BEFORE _applyLocalState enriches it with
+      final raw = await AuthRepository().fetchUsersByRole('User');
+      // Keep only active users; strip large/sensitive server fields before
+      // caching so jsonEncode stays small and never leaks credentials.
+      final customers = raw
+          .where((u) => u['isDeleted'] != true)
+          .map((u) {
+            final m = Map<String, dynamic>.from(u as Map);
+            m.remove('password');
+            m.remove('activeToken');
+            m.remove('token'); // FCM token — sensitive, large
+            // Whether this agent is the assigned agent for this user.
+            m['canMessage'] = (m['agentId']?.toString() ?? '') == agentEmail;
+            return m;
+          })
+          .toList();
+      // Save raw (stripped) data BEFORE _applyLocalState enriches it with
       // DateTime/bool/int fields that jsonEncode cannot serialize.
       await LocalDbHelper.saveAssignedCustomers(agentEmail, customers);
       await _applyLocalState(customers);

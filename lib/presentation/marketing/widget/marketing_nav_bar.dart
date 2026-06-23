@@ -18,7 +18,7 @@ class MarketingNavBar extends StatelessWidget {
       initialSelectedTab: _getTabName(selectedIndex),
       labels: [
         "Home",
-        "Feed",
+        "Chats",
         "Inquiry", // 🔹 NEW
         "Product",
         "Profile",
@@ -58,7 +58,7 @@ class MarketingNavBar extends StatelessWidget {
       case 2:
         return "Profile";
       case 3:
-        return "Feed";
+        return "Chats";
       case 4:
         return "Inquiry";
       default:

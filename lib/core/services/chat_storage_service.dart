@@ -29,7 +29,7 @@ class ChatStorageService {
   Future<void> saveMessage(ChatMessageModel message, String boxName) async {
     final box = await _openBox(boxName);
     final messageMap = message.toMap();
-    await box.put(message.timestamp.toString(), messageMap);
+    await box.put(message.timestamp.toIso8601String(), messageMap);
   }
 
   Future<void> saveMessages(
@@ -38,6 +38,39 @@ class ChatStorageService {
     final messagesMap = messages.map((message) => message.toMap()).toList();
     await box.putAll(Map.fromEntries(
         messagesMap.map((message) => MapEntry(message['timestamp'], message))));
+  }
+
+  Future<int> compactMessages(String boxName) async {
+    final box = await _openBox(boxName);
+    final allMessages = box.values
+        .map((map) => ChatMessageModel.fromMap(Map<String, dynamic>.from(map)))
+        .toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    final uniqueMessages = <ChatMessageModel>[];
+    final seenKeys = <String>{};
+    for (final message in allMessages) {
+      final key = _messageIdentity(message);
+      if (seenKeys.add(key)) uniqueMessages.add(message);
+    }
+
+    if (uniqueMessages.length == allMessages.length) return 0;
+
+    await box.clear();
+    await box.putAll(Map.fromEntries(uniqueMessages.map(
+      (message) => MapEntry(message.timestamp.toIso8601String(), message.toMap()),
+    )));
+    return allMessages.length - uniqueMessages.length;
+  }
+
+  String _messageIdentity(ChatMessageModel message) {
+    if (message.type == 'call' && message.callId?.isNotEmpty == true) {
+      return 'call:${message.callId}';
+    }
+    if (message.messageId?.isNotEmpty == true) {
+      return 'msg:${message.messageId}';
+    }
+    return 'ts:${message.timestamp.millisecondsSinceEpoch}';
   }
 
   Future<List<ChatMessageModel>> getMessages(String boxName,

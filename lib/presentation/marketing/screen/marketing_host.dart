@@ -436,8 +436,9 @@ class _MarketingHostState extends State<MarketingHost>
   /// Updates GroupProvider so badges stay current on any page.
   void _handleBackgroundGroupMessage() {
     if (!mounted) return;
-    Provider.of<GroupProvider>(context, listen: false)
-        .loadUnreadCountsFromStorage();
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    groupProvider.loadUnreadCountsFromStorage();
+    groupProvider.loadLastMessagesFromStorage();
   }
 
   Future<void> _handleProductAdd(Map<String, dynamic> productData) async {
