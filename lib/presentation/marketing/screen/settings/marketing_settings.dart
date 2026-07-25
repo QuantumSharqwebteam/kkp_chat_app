@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 // import 'package:flutter_svg/svg.dart';
 import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/presentation/admin/screens/admin_profile_page.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -16,7 +18,7 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 // import 'package:kkpchatapp/presentation/common_widgets/settings_tile.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_settings_tile.dart';
 import 'package:kkpchatapp/presentation/common_widgets/locale/locale_switcher.dart';
-import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
+//import 'package:kkpchatapp/presentation/customer/screen/settings/about_us_page.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/analytics_management_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/settings/manage_customers.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/settings/marketing_complaint_page.dart';
@@ -116,10 +118,24 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CustomSettingsTile(
-                    numberOfTiles: 1,
+                    numberOfTiles: 2,
                     tileTitleStyle: _optionTitleStyle,
                     tileSubtitleStyle: _optionSubtitleStyle,
+                    title: Text(
+                      AppLocalizations.of(context)!.account,
+                      style: TextStyle(
+                          color: AppColors.grey7B7B7B,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14),
+                    ),
+                    showDividerAfterTitle: true,
                     leadingWidgets: [
+                      CircleAvatar(
+                        backgroundColor: Colors.blue.shade50,
+                        radius: 20,
+                        child: const Icon(Icons.person_outlined,
+                            color: Colors.blue),
+                      ),
                       CircleAvatar(
                         backgroundColor: Colors.blue.shade50,
                         radius: 20,
@@ -132,20 +148,25 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
                     ],
                     onTaps: [
                       () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => _isAgentHead
+                                ? const AdminProfilePage()
+                                : const ProfileScreen(),
+                          ),
+                        );
+                      },
+                      () {
                         Navigator.pushNamed(
                             context, CustomerRoutes.passwordAndSecurity);
                       }
                     ],
-                    title: Text(
-                      AppLocalizations.of(context)!.account,
-                      style: TextStyle(
-                          color: AppColors.grey7B7B7B,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14),
-                    ),
-                    showDividerAfterTitle: true,
-                    titles: [locale.accountAndSecurity],
-                    subtitles: [locale.accountManagementPasswordChange],
+                    titles: [locale.myAccount, locale.accountAndSecurity],
+                    subtitles: [
+                      "View your profile details",
+                      locale.accountManagementPasswordChange
+                    ],
                   ),
                   // Divider(
                   //   color: AppColors.grey7B7B7B,
@@ -370,55 +391,7 @@ class _MarketingSettingsPageState extends State<MarketingSettingsPage> {
               ),
             ),
 
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    spreadRadius: 1,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: CustomSettingsTile(
-                numberOfTiles: 1,
-                tileTitleStyle: _optionTitleStyle,
-                tileSubtitleStyle: _optionSubtitleStyle,
-                leadingWidgets: [
-                  CircleAvatar(
-                    backgroundColor: Colors.blue.shade50,
-                    radius: 20,
-                    child: Image.asset(
-                      'assets/icons/Vector(3).png',
-                      height: 24,
-                      width: 24,
-                    ),
-                  ),
-                ],
-                title: Text(
-                  locale.termsPolicy,
-                  style: TextStyle(
-                      color: AppColors.grey7B7B7B,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14),
-                ),
-                showDividerAfterTitle: true,
-                titles: [locale.about],
-                subtitles: [locale.manageTermsPolicy],
-                onTaps: [
-                  () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) {
-                      return AboutUsPage();
-                    }));
-                  },
-                ],
-              ),
-            ),
+            //
 
             CustomButton(
               onPressed: () {

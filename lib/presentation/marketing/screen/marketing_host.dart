@@ -26,7 +26,7 @@ import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart'
 import 'package:kkpchatapp/presentation/marketing/screen/agent_home_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/feeds_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/marketing_product_screen.dart';
-import 'package:kkpchatapp/presentation/marketing/screen/profile_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/screen/settings/marketing_settings.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/marketing_nav_bar.dart';
 import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:provider/provider.dart';
@@ -319,7 +319,7 @@ class _MarketingHostState extends State<MarketingHost>
         FeedsScreen(loggedAgentEmail: agentEmail!),
         CustomerInquiriesPage(),
         MarketingProductScreen(),
-        if (role == "1" || role == "3") AdminProfilePage() else ProfileScreen(),
+        if (role == "1") AdminProfilePage() else MarketingSettingsPage(),
       ];
     });
   }
