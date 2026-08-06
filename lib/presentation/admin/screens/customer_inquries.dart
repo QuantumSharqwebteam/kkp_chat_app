@@ -39,7 +39,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   bool isDownloading = false;
 
-  List<String> dateRanges = ['Today', 'Last Week', 'Last Month', 'Last 30 days'];
+  List<String> dateRanges = [
+    'Today',
+    'Last Week',
+    'Last Month',
+    'Last 30 days'
+  ];
   List<String> status = ["All", "Confirmed", "Processed", "Declined"];
 
   // Map to track the expanded state of each inquiry card
@@ -160,7 +165,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       }
 
       final bytes = excel.save();
-      final formattedDate = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final formattedDate =
+          DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
       await file.writeAsBytes(bytes!);
@@ -217,7 +223,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         ? const SizedBox(
                             width: 35,
                             height: 35,
-                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            child: Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
                           )
                         : Container(
                             width: 35,
@@ -225,7 +233,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(width: 1, color: AppColors.greyB2BACD),
+                              border: Border.all(
+                                  width: 1, color: AppColors.greyB2BACD),
                             ),
                             child: const Icon(Icons.download),
                           ),
@@ -256,7 +265,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                                     child: CustomSearchBar(
                                       enable: true,
                                       controller: _searchController,
-                                      hintText: AppLocalizations.of(context)!.searchByAnything,
+                                      hintText: AppLocalizations.of(context)!
+                                          .searchByAnything,
                                       onChanged: (value) {
                                         _inquiryProvider.updateSearch(value);
                                       },
@@ -422,7 +432,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                           ],
                         ),
                       ),
-                      child: const Icon(Icons.groups_rounded, color: Color(0xFF166534)),
+                      child: const Icon(Icons.groups_rounded,
+                          color: Color(0xFF166534)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -430,7 +441,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            inquiry.agentName.isEmpty ? 'Agent not assigned' : inquiry.agentName,
+                            inquiry.agentName.isEmpty
+                                ? 'Agent not assigned'
+                                : inquiry.agentName,
                             style: AppTextStyles.black16_600,
                           ),
                           const SizedBox(height: 4),
@@ -447,14 +460,16 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                       children: [
                         Text(
                           _getFormattedDate(inquiry.date),
-                          style: AppTextStyles.black12_400.copyWith(color: Colors.black45),
+                          style: AppTextStyles.black12_400
+                              .copyWith(color: Colors.black45),
                         ),
                         const SizedBox(
                           height: 8,
                         ),
                         Container(
                           margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: _statusBackground(inquiry.status),
                             borderRadius: BorderRadius.circular(20),
@@ -478,7 +493,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                     spacing: 8,
                     runSpacing: 8,
                     children: summaryChips
-                        .map((entry) => _buildSummaryChip(entry.key, entry.value))
+                        .map((entry) =>
+                            _buildSummaryChip(entry.key, entry.value))
                         .toList(),
                   ),
                 ],
@@ -516,7 +532,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         _buildDetailRow('Quantity', inquiry.quantity),
         _buildDetailRow('Composition', inquiry.composition),
         _buildDetailRow('Rate', inquiry.rate),
-        if (inquiry.reason.trim().isNotEmpty) _buildDetailRow('Reason', inquiry.reason),
+        if (inquiry.reason.trim().isNotEmpty)
+          _buildDetailRow('Reason', inquiry.reason),
       ],
     );
   }
@@ -534,11 +551,13 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           children: [
             TextSpan(
               text: '$label\n',
-              style: AppTextStyles.black12_400.copyWith(color: Colors.grey.shade600),
+              style: AppTextStyles.black12_400
+                  .copyWith(color: Colors.grey.shade600),
             ),
             TextSpan(
               text: value,
-              style: AppTextStyles.black14_600.copyWith(color: const Color(0xFF0F172A)),
+              style: AppTextStyles.black14_600
+                  .copyWith(color: const Color(0xFF0F172A)),
             ),
           ],
         ),
@@ -560,7 +579,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 1),
-            child: Icon(Icons.report_gmailerrorred_rounded, color: Color(0xFFEA580C), size: 18),
+            child: Icon(Icons.report_gmailerrorred_rounded,
+                color: Color(0xFFEA580C), size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -569,12 +589,14 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
               children: [
                 Text(
                   'Reason',
-                  style: AppTextStyles.black12_500.copyWith(color: const Color(0xFF9A3412)),
+                  style: AppTextStyles.black12_500
+                      .copyWith(color: const Color(0xFF9A3412)),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   reason,
-                  style: AppTextStyles.black14_400.copyWith(color: const Color(0xFF7C2D12)),
+                  style: AppTextStyles.black14_400
+                      .copyWith(color: const Color(0xFF7C2D12)),
                 ),
               ],
             ),
@@ -606,7 +628,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         children: [
           Text(
             label,
-            style: AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
+            style:
+                AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
           ),
           const SizedBox(height: 4),
           Text(
