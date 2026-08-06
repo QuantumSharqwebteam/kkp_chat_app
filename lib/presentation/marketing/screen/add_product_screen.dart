@@ -62,7 +62,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         key: _formKey,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             RequiredFieldLabel("Upload Image"),
                             _buildImagePickerContainer(context, provider),
@@ -246,7 +245,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RequiredFieldLabel(locale.productName,
               style: AppTextStyles.black14_600),
@@ -315,6 +313,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
             hintText: "2000",
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return "Stock availability is required";
+              }
+              final parsed = int.tryParse(value.trim());
+              if (parsed == null) {
+                return "Enter valid stock quantity";
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 10),
           RequiredFieldLabel(locale.description,
