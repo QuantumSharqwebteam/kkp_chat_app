@@ -43,6 +43,8 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
       _barHeights[i] = 12 + 8 * sin(i * pi / _barHeights.length);
     }
 
+    _audioPlayer.setSource(UrlSource(widget.voiceUrl));
+
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         final playing = state == PlayerState.playing;
@@ -111,8 +113,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
   }
 
   String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.toString();
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '0:$seconds';
+    return '$minutes:$seconds';
   }
 
   @override
@@ -193,9 +196,10 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
 
                         const SizedBox(height: 4),
                         Text(
-                          _formatDuration(_position),
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.black87),
+                          _isPlaying || _position > Duration.zero
+                              ? '${_formatDuration(_position)} / ${_formatDuration(duration)}'
+                              : _formatDuration(duration),
+                          style: const TextStyle(fontSize: 12, color: Colors.black87),
                         ),
                       ],
                     ),
