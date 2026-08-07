@@ -936,30 +936,40 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                   targetUserId: widget.agentEmail,
                 );
 
-                // 3. ⏳ Wait for call message to be available
+                // 3. Handle adding the call message to chat
                 void handleCallMessage(ChatMessageModel message) async {
+                  // Skip if already added
+                  if (message.callId != null && _loadedCallIds.contains(message.callId)) return;
+
                   await _chatStorageService.saveMessage(message, widget.customerEmail!);
 
                   if (!mounted) return;
                   setState(() {
                     messages.add(message);
+                    if (message.callId != null) _loadedCallIds.add(message.callId!);
+                    if (message.messageId != null) _loadedMessageIds.add(message.messageId!);
                     messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
                   });
 
                   _scrollToBottom();
                 }
 
-                // 4. ✅ Listen once to callDetailsMessage
-                late final VoidCallback subscription;
-                subscription = () {
-                  final message = callProvider.callDetailsMessage;
-                  if (message != null) {
-                    handleCallMessage(message);
-                    callProvider.removeListener(subscription); // Only once
-                  }
-                };
-
-                callProvider.addListener(subscription);
+                // 4. Check if call details are already available (fast call end)
+                final existingMessage = callProvider.callDetailsMessage;
+                if (existingMessage != null) {
+                  handleCallMessage(existingMessage);
+                } else {
+                  // Listen for it
+                  late final VoidCallback subscription;
+                  subscription = () {
+                    final message = callProvider.callDetailsMessage;
+                    if (message != null) {
+                      handleCallMessage(message);
+                      callProvider.removeListener(subscription);
+                    }
+                  };
+                  callProvider.addListener(subscription);
+                }
               },
               icon: const Icon(Icons.call_outlined, color: Colors.black),
             ),

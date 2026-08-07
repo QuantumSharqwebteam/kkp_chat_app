@@ -70,26 +70,38 @@ class _ChangePasswordState extends State<ChangePassword> {
     try {
       final String? email = LocalDbHelper.getProfile()?.email;
 
+      _currentPass.clear();
+      _newPass.clear();
+      _newRepass.clear();
+
       final response = await auth.updatePassword(
           currentPassword: trimmedCurrent, newPassword: trimmedNew, email: email!);
 
       if (response['success'] == true) {
         Utils().showSuccessDialog(context, "Password changed successfully!", true);
-
-        Future.delayed(Duration(seconds: 2), () {
+        await Future.delayed(Duration(seconds: 3));
+        if (context.mounted) {
           Navigator.pop(context);
-        });
+        }
       } else {
-        Utils()
-            .showSuccessDialog(context, response['message'] ?? "Failed to update password", false);
+        Utils().showSuccessDialog(context, response['message'] ?? "Failed to update password", false);
+        await Future.delayed(Duration(seconds: 3));
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
-      Utils()
-          .showSuccessDialog(context, "Wrong current password :Failed to update password", false);
+      Utils().showSuccessDialog(context, "Wrong current password: Failed to update password", false);
+      await Future.delayed(Duration(seconds: 3));
+      if (context.mounted) {
+        Navigator.pop(context);
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

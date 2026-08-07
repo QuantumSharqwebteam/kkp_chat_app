@@ -1046,34 +1046,39 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 targetUserId: widget.customerEmail,
               );
 
-              // 3. ⏳ Wait for call to complete and message to be returned
-              // This is done via callProvider.callDetailsMessage after call ends
+              // 3. Handle adding the call message to chat
               void handleCallMessage(ChatMessageModel message) async {
-                // Save to storage
+                if (message.callId != null && _loadedCallIds.contains(message.callId)) return;
+
                 await _chatStorageService.saveMessage(
                     message, '${widget.agentEmail}${widget.customerEmail}');
 
                 if (!mounted) return;
                 setState(() {
                   messages.add(message);
+                  if (message.callId != null) _loadedCallIds.add(message.callId!);
+                  if (message.messageId != null) _loadedMessageIds.add(message.messageId!);
                   messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
                 });
 
                 _scrollToBottom();
               }
 
-              // 4. ✅ Listen once for callDetailsMessage change
-              late final VoidCallback subscription;
-              subscription = () {
-                final message = callProvider.callDetailsMessage;
-                if (message != null) {
-                  handleCallMessage(message);
-                  callProvider
-                      .removeListener(subscription); // Remove after first call
-                }
-              };
-
-              callProvider.addListener(subscription);
+              // 4. Check if already available, otherwise listen
+              final existingMessage = callProvider.callDetailsMessage;
+              if (existingMessage != null) {
+                handleCallMessage(existingMessage);
+              } else {
+                late final VoidCallback subscription;
+                subscription = () {
+                  final message = callProvider.callDetailsMessage;
+                  if (message != null) {
+                    handleCallMessage(message);
+                    callProvider.removeListener(subscription);
+                  }
+                };
+                callProvider.addListener(subscription);
+              }
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),

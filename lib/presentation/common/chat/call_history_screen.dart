@@ -40,10 +40,17 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
 
     try {
       final fetchedLogs = await _chatRepo.fetchCallLogs(email!);
-      debugPrint('DEBUG CALL LOGS PAYLOAD: $fetchedLogs');
       if (!mounted) return;
+
+      // Deduplicate by id
+      final seen = <String>{};
+      final uniqueLogs = fetchedLogs.where((log) => seen.add(log.id)).toList();
+
+      // Sort newest first
+      uniqueLogs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
       setState(() {
-        callLogs = fetchedLogs;
+        callLogs = uniqueLogs;
         isLoading = false;
       });
     } catch (e) {

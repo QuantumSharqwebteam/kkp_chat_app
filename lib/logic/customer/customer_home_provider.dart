@@ -181,6 +181,8 @@ class CustomerHomeProvider with ChangeNotifier {
       return;
     }
 
+    all.sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
+
     final recentCount = all.length >= 2 ? 2 : all.length;
     _newProducts = all.sublist(0, recentCount);
     _previousProducts = all.length >= 3 ? all.sublist(recentCount) : [];

@@ -53,19 +53,19 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
         title: Text(AppLocalizations.of(context)!.product, style: AppTextStyles.black18_600),
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, CustomerRoutes.customerNotification);
-            },
-            icon: const Icon(
-              Icons.notifications_active_outlined,
-              color: Colors.black,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 12),
-        ],
+        // actions: [
+        //   IconButton(
+        //     onPressed: () {
+        //       Navigator.pushNamed(context, CustomerRoutes.customerNotification);
+        //     },
+        //     icon: const Icon(
+        //       Icons.notifications_active_outlined,
+        //       color: Colors.black,
+        //       size: 28,
+        //     ),
+        //   ),
+        //   const SizedBox(width: 12),
+        // ],
       ),
       body: Column(
         children: [
