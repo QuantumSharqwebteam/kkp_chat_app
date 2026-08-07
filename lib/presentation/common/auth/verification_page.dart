@@ -153,6 +153,12 @@ class _VerificationPageState extends State<VerificationPage> {
                           text: 'Verify',
                           isLoading: verificationProvider.isVerifyLoading,
                           onPressed: () async {
+                            if (_otp.text.trim().isEmpty || _otp.text.trim().length < 6) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Please enter the OTP')),
+                              );
+                              return;
+                            }
                             if (await verificationProvider.verifyOtp(
                                   context,
                                   widget.email,

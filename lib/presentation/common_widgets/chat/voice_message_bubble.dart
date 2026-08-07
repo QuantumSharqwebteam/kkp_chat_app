@@ -29,21 +29,28 @@ class VoiceMessageBubble extends StatefulWidget {
 class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
-  Duration duration = Duration.zero;
+  Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
   Timer? _waveformTimer;
   final List<double> _barHeights = List.generate(20, (index) => 10.0);
 
+  static final Map<String, Duration> _durationCache = {};
+
   @override
   void initState() {
     super.initState();
-    // Initialize with smooth wave shape (like a sine pattern)
+
     for (int i = 0; i < _barHeights.length; i++) {
       _barHeights[i] = 12 + 8 * sin(i * pi / _barHeights.length);
     }
 
-    _audioPlayer.setSource(UrlSource(widget.voiceUrl));
+    if (_durationCache.containsKey(widget.voiceUrl)) {
+      _duration = _durationCache[widget.voiceUrl]!;
+    } else {
+      // Load source only if not cached
+      _loadDuration();
+    }
 
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
@@ -54,7 +61,10 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
     });
 
     _audioPlayer.onDurationChanged.listen((d) {
-      if (mounted) setState(() => duration = d);
+      if (mounted) {
+        setState(() => _duration = d);
+        _durationCache[widget.voiceUrl] = d; // Cache it
+      }
     });
 
     _audioPlayer.onPositionChanged.listen((p) {
@@ -70,6 +80,19 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
         _toggleWaveformAnimation(false);
       }
     });
+  }
+
+  Future<void> _loadDuration() async {
+    try {
+      await _audioPlayer.setSource(UrlSource(widget.voiceUrl));
+      final d = await _audioPlayer.getDuration();
+      if (d != null && mounted) {
+        setState(() => _duration = d);
+        _durationCache[widget.voiceUrl] = d;
+      }
+    } catch (_) {
+      
+    }
   }
 
   @override
@@ -197,8 +220,8 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                         const SizedBox(height: 4),
                         Text(
                           _isPlaying || _position > Duration.zero
-                              ? '${_formatDuration(_position)} / ${_formatDuration(duration)}'
-                              : _formatDuration(duration),
+                              ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
+                              : _formatDuration(_duration),
                           style: const TextStyle(fontSize: 12, color: Colors.black87),
                         ),
                       ],
