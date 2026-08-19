@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
@@ -27,7 +26,8 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      final productProvider = Provider.of<CustomerProductProvider>(context, listen: false);
+      final productProvider =
+          Provider.of<CustomerProductProvider>(context, listen: false);
       productProvider.filterProducts(_searchController.text);
     });
   }
@@ -40,7 +40,8 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
 
   // Handle manual refresh
   Future<void> _refreshProducts() async {
-    await Provider.of<CustomerProductProvider>(context, listen: false).refreshProducts();
+    await Provider.of<CustomerProductProvider>(context, listen: false)
+        .refreshProducts();
   }
 
   @override
@@ -52,7 +53,8 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         surfaceTintColor: AppColors.background,
-        title: Text(AppLocalizations.of(context)!.product, style: AppTextStyles.black18_600),
+        title: Text(AppLocalizations.of(context)!.product,
+            style: AppTextStyles.black18_600),
         // actions: [
         //   IconButton(
         //     onPressed: () {
@@ -86,20 +88,26 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
                 : productProvider.error != null
                     ? Center(child: Text(productProvider.error!))
                     : productProvider.filteredProducts.isEmpty
-                        ? Center(child: Text(AppLocalizations.of(context)!.noProductsAvailable))
+                        ? Center(
+                            child: Text(AppLocalizations.of(context)!
+                                .noProductsAvailable))
                         : RefreshIndicator(
                             onRefresh: _refreshProducts,
                             child: ResponsiveGridList(
                               minItemWidth: utils.width(context) * 0.4,
                               maxItemsPerRow: 4,
-                              horizontalGridSpacing: utils.width(context) * 0.025,
-                              verticalGridSpacing: utils.height(context) * 0.0125,
-                              horizontalGridMargin: utils.width(context) * 0.025,
+                              horizontalGridSpacing:
+                                  utils.width(context) * 0.025,
+                              verticalGridSpacing:
+                                  utils.height(context) * 0.0125,
+                              horizontalGridMargin:
+                                  utils.width(context) * 0.025,
                               verticalGridMargin: utils.height(context) * 0.025,
                               listViewBuilderOptions: ListViewBuilderOptions(
                                 physics: const BouncingScrollPhysics(),
                               ),
-                              children: productProvider.filteredProducts.map((product) {
+                              children: productProvider.filteredProducts
+                                  .map((product) {
                                 return ProductItem(
                                   product: product,
                                   onTap: () {
@@ -107,7 +115,8 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) =>
-                                            CustomerProductDescriptionPage(product: product),
+                                            CustomerProductDescriptionPage(
+                                                product: product),
                                       ),
                                     );
                                   },

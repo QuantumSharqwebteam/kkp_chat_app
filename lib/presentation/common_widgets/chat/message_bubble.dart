@@ -9,17 +9,19 @@ class MessageBubble extends StatelessWidget {
   final ChatMessageModel message;
   final bool isMe;
   final VoidCallback? onLongPress;
+  final bool? read;
 
   const MessageBubble({
     super.key,
     required this.message,
     required this.isMe,
     this.onLongPress,
+    this.read = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isRead = message.read ?? false;
+    final isRead = read ?? false;
     return message.isDeleted
         ? DeletedMessageBubble(
             isMe: isMe,
@@ -81,7 +83,7 @@ class MessageBubble extends StatelessWidget {
                           // you can implemnet blue tick here
                           if (isMe)
                             Icon(
-                              Icons.check,
+                              isRead ? Icons.done_all : Icons.done,
                               color: isRead ? Colors.blue : Colors.grey,
                               size: 16,
                             ),

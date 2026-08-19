@@ -45,7 +45,9 @@ class ImageMessageBubble extends StatelessWidget {
             alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: isTablet? MediaQuery.of(context).size.width * 0.35:MediaQuery.of(context).size.width * 0.7,
+                maxWidth: isTablet
+                    ? MediaQuery.of(context).size.width * 0.35
+                    : MediaQuery.of(context).size.width * 0.7,
               ),
               child: Column(
                 crossAxisAlignment:
@@ -102,7 +104,7 @@ class ImageMessageBubble extends StatelessWidget {
                       const SizedBox(width: 4),
                       if (isMe)
                         Icon(
-                          Icons.check,
+                          isRead ? Icons.done_all : Icons.done,
                           color: isRead ? Colors.blue : Colors.grey,
                           size: 16,
                         ),

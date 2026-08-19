@@ -23,7 +23,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch notifications when screen is first loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _notificationProvider =
           Provider.of<NotificationProvider>(context, listen: false);
@@ -38,14 +37,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       'Yesterday': [],
       'Earlier': [],
     };
-    final now = DateTime.now();
+
+    final today = DateUtils.dateOnly(DateTime.now());
+    final yesterday = today.subtract(const Duration(days: 1));
+
     for (final notif in notifications) {
-      final date = notif.timestamp ?? DateTime.now();
-      final diff = now.difference(date);
-      if (diff.inDays == 0 && now.day == date.day) {
+      final date = DateUtils.dateOnly(notif.timestamp ?? DateTime.now());
+      if (date == today) {
         grouped['Today']!.add(notif);
-      } else if (diff.inDays == 1 ||
-          (diff.inHours < 48 && now.day - date.day == 1)) {
+      } else if (date == yesterday) {
         grouped['Yesterday']!.add(notif);
       } else {
         grouped['Earlier']!.add(notif);
@@ -56,15 +56,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   String getFormattedTime(DateTime date) {
     final now = DateTime.now();
-    final difference = now.difference(date);
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} mins';
-    } else if (difference.inHours < 24 && now.day == date.day) {
-      return DateFormat('hh:mm a').format(date);
+    final today = DateUtils.dateOnly(now);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateOnly = DateUtils.dateOnly(date);
+
+    if (dateOnly == today) {
+      final difference = now.difference(date);
+      if (difference.inMinutes < 1) {
+        return 'Just now';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes} mins ago';
+      } else {
+        return DateFormat('hh:mm a').format(date);
+      }
+    } else if (dateOnly == yesterday) {
+      return 'Yesterday, ${DateFormat('hh:mm a').format(date)}';
     } else {
-      return 'Yesterday at ${DateFormat('HH:mm').format(date)}';
+      return DateFormat('dd MMM, hh:mm a').format(date);
     }
   }
 
@@ -84,6 +92,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           if (provider.notifications.isNotEmpty)
             TextButton(
+              // ← FIX: mark all read then refresh to keep notifications visible
               onPressed: () async {
                 await provider.markAllRead();
               },
@@ -95,11 +104,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
             ),
-          // Add a refresh button
-          // IconButton(
-          //   icon: const Icon(Icons.refresh),
-          //   onPressed: () => provider.refreshNotifications(),
-          // ),
         ],
       ),
       body: Stack(
@@ -109,11 +113,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           else if (provider.notifications.isEmpty)
             const EmptyNotificationsWidget()
           else
-            ListView(
-              children: grouped.entries
-                  .where((e) => e.value.isNotEmpty)
-                  .map((entry) => _buildGroup(context, entry.key, entry.value))
-                  .toList(),
+            RefreshIndicator(
+              // ← FIX: pull to refresh support
+              onRefresh: () => provider.fetchNotifications(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: grouped.entries
+                    .where((e) => e.value.isNotEmpty)
+                    .map(
+                        (entry) => _buildGroup(context, entry.key, entry.value))
+                    .toList(),
+              ),
             ),
         ],
       ),
@@ -149,7 +159,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final displayTime = getFormattedTime(date);
     final provider = Provider.of<NotificationProvider>(context, listen: false);
 
-    // Format message body
     String bodyText;
     if (notification.type == 'product') {
       try {
@@ -169,10 +178,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ✅ Clickable tick icon
         Padding(
           padding: const EdgeInsets.only(left: 16, top: 8),
           child: GestureDetector(
+            // ← FIX: mark as read then refresh so notification stays visible with green tick
             onTap: () async {
               if (!(notification.viewed ?? false)) {
                 await provider.markAsRead(notification.id ?? '');
@@ -213,7 +222,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
         ),
-        // ⏱ Time on the right
         Padding(
           padding: const EdgeInsets.only(right: 16, top: 8),
           child: Text(

@@ -1032,6 +1032,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                       else if (msg.type == 'document')
                                         DocumentMessageBubble(
                                           documentUrl: msg.mediaUrl!,
+                                             read: msg.read,
                                           isMe: msg.sender == widget.customerEmail,
                                           timestamp: formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
@@ -1045,6 +1046,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                       else if (msg.type == 'voice')
                                         VoiceMessageBubble(
                                           voiceUrl: msg.mediaUrl!,
+                                             read: msg.read,
                                           isMe: msg.sender == widget.customerEmail,
                                           timestamp: formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
@@ -1067,6 +1069,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                         (msg.message != null && msg.message!.isNotEmpty)
                                             ? ProductMessageBubble(
                                                 productJson: msg.message!,
+                                                   read: msg.read,
                                                 isMe: msg.sender == widget.customerEmail,
                                                 timestamp: ChatUtils().formatTimestamp(
                                                   msg.timestamp.toIso8601String(),
@@ -1102,6 +1105,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen> with WidgetsBin
                                       else
                                         MessageBubble(
                                           message: msg,
+                                             read: msg.read,
                                           isMe: msg.sender == widget.customerEmail,
                                           onLongPress: isCustomer
                                               ? () => _showMessageOptionBottomSheet(

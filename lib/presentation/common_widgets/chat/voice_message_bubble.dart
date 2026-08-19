@@ -12,6 +12,7 @@ class VoiceMessageBubble extends StatefulWidget {
   final String timestamp;
   final VoidCallback? onLongPress;
   final bool isDeleted;
+  final bool? read;
 
   const VoiceMessageBubble({
     super.key,
@@ -20,6 +21,7 @@ class VoiceMessageBubble extends StatefulWidget {
     required this.timestamp,
     this.onLongPress,
     this.isDeleted = false,
+    this.read = false,
   });
 
   @override
@@ -90,9 +92,7 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
         setState(() => _duration = d);
         _durationCache[widget.voiceUrl] = d;
       }
-    } catch (_) {
-      
-    }
+    } catch (_) {}
   }
 
   @override
@@ -222,7 +222,8 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                           _isPlaying || _position > Duration.zero
                               ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
                               : _formatDuration(_duration),
-                          style: const TextStyle(fontSize: 12, color: Colors.black87),
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black87),
                         ),
                       ],
                     ),
@@ -232,9 +233,26 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                     // Timestamp
                     Align(
                       alignment: Alignment.bottomRight,
-                      child: Text(
-                        widget.timestamp,
-                        style: AppTextStyles.greyAAAAAA_10_400,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.timestamp,
+                            style: AppTextStyles.greyAAAAAA_10_400,
+                          ),
+                          if (widget.isMe) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              (widget.read ?? false)
+                                  ? Icons.done_all
+                                  : Icons.done,
+                              color: (widget.read ?? false)
+                                  ? Colors.blue
+                                  : Colors.grey,
+                              size: 14,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],

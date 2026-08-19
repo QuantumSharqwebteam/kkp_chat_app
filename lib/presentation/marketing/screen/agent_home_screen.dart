@@ -8,6 +8,7 @@ import 'package:kkpchatapp/data/models/meet_model.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
+import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
@@ -35,7 +36,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
-  @override
   void initState() {
     super.initState();
 
@@ -48,6 +48,10 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           chatRefreshProvider.reset();
         }
       });
+
+      // ← FIX: fetch notifications for badge count
+      Provider.of<NotificationProvider>(context, listen: false)
+          .fetchNotifications();
     });
   }
 
@@ -81,7 +85,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final provider = Provider.of<AssignedCustomersProvider>(context);
     final meetingManagement = Provider.of<MeetingManagement>(context);
 
-    // final nextMeeting = meetingManagement.getNextUpcomingMeeting();
     return Scaffold(
       key: _scaffoldKey,
       drawer: CustomDrawer(
@@ -113,7 +116,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                                 // Today's Meetings Section
                                 _buildUpcomingMeetingsSection(
                                     meetingManagement, context),
-                                //_buildSearchBar(provider),
                                 const SizedBox(height: 15),
                                 Text(locale.customerInquiries,
                                     style: AppTextStyles.black16_500),
@@ -152,7 +154,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
       leading: IconButton(
         onPressed: () {
-//open drawer
           _scaffoldKey.currentState?.openDrawer();
         },
         icon: Icon(Icons.menu),
@@ -163,10 +164,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // IconButton(
-          //   onPressed: () => Navigator.pushNamed(context, MarketingRoutes.marketingNotifications),
-          //   icon: const Icon(Icons.notifications_active_outlined, color: Colors.black),
-          // ),
           IconButton(
             onPressed: () => Navigator.push(
               context,
@@ -175,13 +172,38 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             ),
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                  context, MarketingRoutes.marketingNotifications);
+          // ← FIX: notification icon with unread badge using Consumer
+          Consumer<NotificationProvider>(
+            builder: (context, notifProvider, _) {
+              final unreadCount = notifProvider.notifications
+                  .where((n) => !(n.viewed ?? false))
+                  .length;
+              return IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    MarketingRoutes.marketingNotifications,
+                  ).then((_) {
+                    notifProvider.fetchNotifications();
+                  });
+                },
+                icon: unreadCount > 0
+                    ? Badge(
+                        label: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: Colors.red,
+                        child: const Icon(Icons.notifications_active_outlined),
+                      )
+                    : const Icon(Icons.notifications_active_outlined),
+                iconSize: 25,
+              );
             },
-            icon: const Icon(Icons.notifications_active_outlined),
-            iconSize: 25,
           ),
           IconButton(
             onPressed: () =>
@@ -207,14 +229,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final locale = AppLocalizations.of(context)!;
     final socket = provider.socketService;
 
-    // Get the list of valid customers from the provider (already sorted by the provider)
     final validCustomers = provider.filteredCustomers.where((customer) {
       final email = customer['email']?.toString();
       final isDeleted = customer['isDeleted'] ?? false;
       return email != null && email.isNotEmpty && !isDeleted;
     }).toList();
 
-    // We don't need to sort here anymore since the provider handles it
     return RefreshIndicator(
       onRefresh: () async => provider.fetchAssignedCustomers(),
       child: ListView.builder(
@@ -225,7 +245,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           final name = customer['name'] ?? locale.unnamed;
           final email = customer['email']?.toString() ?? "";
           final isAccountDeleted = customer['isDeleted'] ?? false;
-          final isOnline = customer['isOnline'] ?? false; // Use the flag we set
+          final isOnline = customer['isOnline'] ?? false;
           final lastSeen = isOnline ? "Online" : socket.getLastSeenTime(email);
           final notificationCount = customer['notificationCount'] ?? 0;
           final lastMessage = socket.getLastMessage(email);
@@ -238,7 +258,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   name: name,
                   message: lastMessage,
                   isAccountDeleted: isAccountDeleted,
-                  isActive: isOnline, // Use our local flag
+                  isActive: isOnline,
                   time: isOnline ? locale.online : lastSeen,
                   enableLongPress: false,
                   onTap: () async {
@@ -297,7 +317,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  // New method to build the upcoming meetings section
   Widget _buildUpcomingMeetingsSection(
       MeetingManagement meetingManagement, BuildContext context) {
     final nextMeetings = meetingManagement.getNextUpcomingMeeting();
@@ -346,7 +365,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final now = DateTime.now();
     final timeDifference = startTime.difference(now);
 
-    // Format the time remaining
     String timeRemaining;
     if (timeDifference.inDays > 0) {
       timeRemaining =
@@ -378,7 +396,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       ),
       child: Row(
         children: [
-          // Time and status indicator
           Container(
             width: 60,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -413,8 +430,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Meeting details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,8 +469,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               ],
             ),
           ),
-
-          // Time remaining and join button
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -471,7 +484,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
-                  // Open the meeting link
                   launchUrl(Uri.parse(meeting.link));
                 },
                 child: Container(
@@ -503,14 +515,14 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.grey[100], // Light grey background
+          color: Colors.grey[100],
         ),
         child: Text(
           "No upcoming meetings for today",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[600], // Darker grey text
+            color: Colors.grey[600],
           ),
         ),
       ),
