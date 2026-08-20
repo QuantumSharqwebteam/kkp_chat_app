@@ -5,7 +5,6 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 //import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
-import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
 //import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -37,8 +36,6 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final locale = AppLocalizations.of(context)!;
-
     // Fetch the stored profile dynamically from local storage
     final Profile? profile = LocalDbHelper.getProfile();
     final String displayName = profile?.name ?? agentName ?? "";

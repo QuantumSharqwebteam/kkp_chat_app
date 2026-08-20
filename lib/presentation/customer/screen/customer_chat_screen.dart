@@ -572,6 +572,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     return message?.mediaUrl;
   }
 
+  /// Label shown on top of a reply preview strip.
+  String? _senderLabel(ChatMessageModel? message) {
+    if (message == null) return null;
+    return message.sender == widget.customerEmail
+        ? 'You'
+        : (widget.agentName ?? message.sender ?? '');
+  }
+
   void _handleImageLoaded() {
     if (_provider.shouldAutoScrollForNewMessage) {
       _provider.scrollToBottom();
@@ -639,17 +647,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 );
 
                 // 3. ⏳ Wait for call message to be available
-                void handleCallMessage(ChatMessageModel message) async {
-                  await _chatStorageService.saveMessage(
-                      message, widget.customerEmail!);
-
+                void handleCallMessage(ChatMessageModel message) {
                   if (!mounted) return;
-                  setState(() {
-                    messages.add(message);
-                    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-                  });
-
-                  _scrollToBottom();
+                  _provider.addSent(message);
+                  _provider.persistMessage(message);
                 }
 
                 // 4. Check if call details are already available (fast call end)
@@ -730,7 +731,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       .formatDateHeader(msg.timestamp);
                                 }
 
-                                return Container(
+                                final Widget content = Container(
                                   key: globalKey,
                                   child: Column(
                                     crossAxisAlignment:
@@ -747,6 +748,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                           timestamp:
                                               formatTimestamp(msg.timestamp),
                                           isDeleted: msg.isDeleted,
+                                          onImageLoaded: _handleImageLoaded,
+                                          referencedMessage: referencedMessage,
+                                          referencedSenderLabel:
+                                              _senderLabel(referencedMessage),
                                           onLongPress: isCustomer
                                               ? () =>
                                                   _showMessageOptionBottomSheet(
@@ -845,8 +850,12 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       else
                                         MessageBubble(
                                           message: msg,
+                                          read: msg.read,
                                           isMe: msg.sender ==
                                               widget.customerEmail,
+                                          referencedMessage: referencedMessage,
+                                          referencedSenderLabel:
+                                              _senderLabel(referencedMessage),
                                           onLongPress: isCustomer
                                               ? () =>
                                                   _showMessageOptionBottomSheet(
@@ -858,6 +867,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                         ),
                                     ],
                                   ),
+                                );
+
+                                return SwipeToReply(
+                                  onReply: () => _setReplyToMessage(msg),
+                                  child: content,
                                 );
                               },
                             ),

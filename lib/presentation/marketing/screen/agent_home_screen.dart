@@ -15,7 +15,9 @@ import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
-import 'package:kkpchatapp/presentation/marketing/screen/group_list_screen.dart';
+import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/custom_drawer.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +31,7 @@ class AgentHomeScreen extends StatefulWidget {
 }
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   StreamSubscription<List<String>>? _statusSubscription;
   ChatRefreshProvider? _chatRefreshProvider;
@@ -88,6 +91,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final meetingManagement = Provider.of<MeetingManagement>(context);
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: CustomDrawer(
+        agentName: provider.agentName,
+        agentEmail: provider.agentEmail,
+        onLogout: logout,
+      ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -244,6 +253,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           final isOnline = customer['isOnline'] ?? false;
           final lastSeen = isOnline ? "Online" : socket.getLastSeenTime(email);
           final notificationCount = customer['notificationCount'] ?? 0;
+          // false when this customer was transferred to another agent —
+          // the chat then opens read-only.
+          final bool canMessage = customer['canMessage'] as bool? ?? true;
           final lastMessage = socket.getLastMessage(email);
 
           return Padding(

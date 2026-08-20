@@ -12,6 +12,8 @@ class MessageBubble extends StatelessWidget {
   final bool isMe;
   final VoidCallback? onLongPress;
   final bool? read;
+  final ChatMessageModel? referencedMessage;
+  final String? referencedSenderLabel;
 
   const MessageBubble({
     super.key,
@@ -19,6 +21,8 @@ class MessageBubble extends StatelessWidget {
     required this.isMe,
     this.onLongPress,
     this.read = false,
+    this.referencedMessage,
+    this.referencedSenderLabel,
   });
 
   @override

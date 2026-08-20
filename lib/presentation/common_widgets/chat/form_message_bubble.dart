@@ -173,8 +173,9 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     );
 
     controller.dispose();
-    if (!mounted || !context.mounted || reason == null || reason.isEmpty)
+    if (!mounted || !context.mounted || reason == null || reason.isEmpty) {
       return;
+    }
     await _updateFormStatus(context, 'Declined', reason: reason);
   }
 
