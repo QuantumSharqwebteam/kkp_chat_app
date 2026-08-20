@@ -12,6 +12,7 @@ class VoiceMessageBubble extends StatefulWidget {
   final String timestamp;
   final VoidCallback? onLongPress;
   final bool isDeleted;
+  final bool? read;
 
   const VoiceMessageBubble({
     super.key,
@@ -20,6 +21,7 @@ class VoiceMessageBubble extends StatefulWidget {
     required this.timestamp,
     this.onLongPress,
     this.isDeleted = false,
+    this.read = false,
   });
 
   @override
@@ -29,18 +31,27 @@ class VoiceMessageBubble extends StatefulWidget {
 class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
-  Duration duration = Duration.zero;
+  Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
   Timer? _waveformTimer;
   final List<double> _barHeights = List.generate(20, (index) => 10.0);
 
+  static final Map<String, Duration> _durationCache = {};
+
   @override
   void initState() {
     super.initState();
-    // Initialize with smooth wave shape (like a sine pattern)
+
     for (int i = 0; i < _barHeights.length; i++) {
       _barHeights[i] = 12 + 8 * sin(i * pi / _barHeights.length);
+    }
+
+    if (_durationCache.containsKey(widget.voiceUrl)) {
+      _duration = _durationCache[widget.voiceUrl]!;
+    } else {
+      // Load source only if not cached
+      _loadDuration();
     }
 
     _audioPlayer.onPlayerStateChanged.listen((state) {
@@ -52,7 +63,10 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
     });
 
     _audioPlayer.onDurationChanged.listen((d) {
-      if (mounted) setState(() => duration = d);
+      if (mounted) {
+        setState(() => _duration = d);
+        _durationCache[widget.voiceUrl] = d; // Cache it
+      }
     });
 
     _audioPlayer.onPositionChanged.listen((p) {
@@ -68,6 +82,17 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
         _toggleWaveformAnimation(false);
       }
     });
+  }
+
+  Future<void> _loadDuration() async {
+    try {
+      await _audioPlayer.setSource(UrlSource(widget.voiceUrl));
+      final d = await _audioPlayer.getDuration();
+      if (d != null && mounted) {
+        setState(() => _duration = d);
+        _durationCache[widget.voiceUrl] = d;
+      }
+    } catch (_) {}
   }
 
   @override
@@ -111,8 +136,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
   }
 
   String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.toString();
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '0:$seconds';
+    return '$minutes:$seconds';
   }
 
   @override
@@ -193,7 +219,9 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
 
                         const SizedBox(height: 4),
                         Text(
-                          _formatDuration(_position),
+                          _isPlaying || _position > Duration.zero
+                              ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
+                              : _formatDuration(_duration),
                           style: const TextStyle(
                               fontSize: 12, color: Colors.black87),
                         ),
@@ -205,9 +233,26 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                     // Timestamp
                     Align(
                       alignment: Alignment.bottomRight,
-                      child: Text(
-                        widget.timestamp,
-                        style: AppTextStyles.greyAAAAAA_10_400,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.timestamp,
+                            style: AppTextStyles.greyAAAAAA_10_400,
+                          ),
+                          if (widget.isMe) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              (widget.read ?? false)
+                                  ? Icons.done_all
+                                  : Icons.done,
+                              color: (widget.read ?? false)
+                                  ? Colors.blue
+                                  : Colors.grey,
+                              size: 14,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ],

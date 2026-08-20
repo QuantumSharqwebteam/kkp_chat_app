@@ -14,6 +14,7 @@ class ProductMessageBubble extends StatelessWidget {
   final VoidCallback onTap;
   final bool isDeleted;
   final VoidCallback? onLongPress;
+  final bool? read;
 
   const ProductMessageBubble({
     super.key,
@@ -23,6 +24,7 @@ class ProductMessageBubble extends StatelessWidget {
     required this.onTap,
     this.isDeleted = false,
     this.onLongPress,
+    this.read = false,
   });
 
   @override
@@ -34,14 +36,15 @@ class ProductMessageBubble extends StatelessWidget {
     final productMap = jsonDecode(productJson);
     final productName = productMap['productName'];
     final productImageUrl = productMap['imageUrl'];
-        final isTablet = Utils().width(context) >= 600;
-
+    final isTablet = Utils().width(context) >= 600;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-                maxWidth: isTablet? MediaQuery.of(context).size.width * 0.35:MediaQuery.of(context).size.width * 0.7,
+          maxWidth: isTablet
+              ? MediaQuery.of(context).size.width * 0.35
+              : MediaQuery.of(context).size.width * 0.7,
         ),
         child: Column(
           crossAxisAlignment:
@@ -89,6 +92,14 @@ class ProductMessageBubble extends StatelessWidget {
                   timestamp,
                   style: AppTextStyles.greyAAAAAA_10_400,
                 ),
+                if (isMe) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    (read ?? false) ? Icons.done_all : Icons.done,
+                    color: (read ?? false) ? Colors.blue : Colors.grey,
+                    size: 14,
+                  ),
+                ],
               ],
             ),
           ],

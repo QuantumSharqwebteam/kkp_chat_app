@@ -546,6 +546,7 @@ class ChatService {
   Future<List<CallLogModel>> getCallLogs(String email) async {
     final url = Uri.parse("$baseUrl/chat/getCallLog/$email");
     final token = await LocalDbHelper.getToken();
+
     try {
       final response = await client.get(
         url,
@@ -554,6 +555,9 @@ class ChatService {
           "Authorization": "Bearer $token",
         },
       );
+
+      // 🔴 ACTUAL BACKEND PAYLOAD PRINTING:
+      debugPrint('ACTUAL_CALL_LOGS_PAYLOAD: ${response.body}');
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);

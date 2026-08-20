@@ -639,22 +639,35 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                 );
 
                 // 3. ⏳ Wait for call message to be available
-                void handleCallMessage(ChatMessageModel message) {
+                void handleCallMessage(ChatMessageModel message) async {
+                  await _chatStorageService.saveMessage(
+                      message, widget.customerEmail!);
+
                   if (!mounted) return;
-                  _provider.addSent(message);
+                  setState(() {
+                    messages.add(message);
+                    messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+                  });
+
+                  _scrollToBottom();
                 }
 
-                // 4. ✅ Listen once to callDetailsMessage
-                late final VoidCallback subscription;
-                subscription = () {
-                  final message = callProvider.callDetailsMessage;
-                  if (message != null) {
-                    handleCallMessage(message);
-                    callProvider.removeListener(subscription); // Only once
-                  }
-                };
-
-                callProvider.addListener(subscription);
+                // 4. Check if call details are already available (fast call end)
+                final existingMessage = callProvider.callDetailsMessage;
+                if (existingMessage != null) {
+                  handleCallMessage(existingMessage);
+                } else {
+                  // Listen for it
+                  late final VoidCallback subscription;
+                  subscription = () {
+                    final message = callProvider.callDetailsMessage;
+                    if (message != null) {
+                      handleCallMessage(message);
+                      callProvider.removeListener(subscription);
+                    }
+                  };
+                  callProvider.addListener(subscription);
+                }
               },
               icon: const Icon(Icons.call_outlined, color: Colors.black),
             ),
@@ -717,147 +730,133 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       .formatDateHeader(msg.timestamp);
                                 }
 
-                                return SwipeToReply(
-                                  onReply: () => _setReplyToMessage(msg),
-                                  child: Container(
-                                    key: globalKey,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (dateHeader != null)
-                                          DateHeader(date: dateHeader),
-                                        if (msg.type == 'media')
-                                          ImageMessageBubble(
-                                            read: msg.read,
-                                            imageUrl: msg.mediaUrl!,
-                                            isMe: msg.sender ==
-                                                widget.customerEmail,
-                                            timestamp:
-                                                formatTimestamp(msg.timestamp),
-                                            isDeleted: msg.isDeleted,
-                                            referencedMessage:
-                                                referencedMessage,
-                                            referencedSenderLabel:
-                                                referencedMessage?.sender,
-                                            onImageLoaded: _handleImageLoaded,
-                                            onLongPress: isCustomer
-                                                ? () =>
-                                                    _showMessageOptionBottomSheet(
-                                                      context,
-                                                      msg.messageId!,
-                                                    )
-                                                : null,
-                                          )
-                                        else if (msg.type == 'document')
-                                          DocumentMessageBubble(
-                                            documentUrl: msg.mediaUrl!,
-                                            isMe: msg.sender ==
-                                                widget.customerEmail,
-                                            timestamp:
-                                                formatTimestamp(msg.timestamp),
-                                            isDeleted: msg.isDeleted,
-                                            onLongPress: isCustomer
-                                                ? () =>
-                                                    _showMessageOptionBottomSheet(
-                                                      context,
-                                                      msg.messageId!,
-                                                    )
-                                                : null,
-                                          )
-                                        else if (msg.type == 'voice')
-                                          VoiceMessageBubble(
-                                            voiceUrl: msg.mediaUrl!,
-                                            isMe: msg.sender ==
-                                                widget.customerEmail,
-                                            timestamp:
-                                                formatTimestamp(msg.timestamp),
-                                            isDeleted: msg.isDeleted,
-                                            onLongPress: isCustomer
-                                                ? () =>
-                                                    _showMessageOptionBottomSheet(
-                                                      context,
-                                                      msg.messageId!,
-                                                    )
-                                                : null,
-                                          )
-                                        else if (msg.type == 'call')
-                                          CallMessageBubble(
-                                            isMe:
-                                                msg.sender == widget.agentEmail,
-                                            timestamp: formatTimestamp(msg
-                                                .timestamp
-                                                .toIso8601String()),
-                                            callStatus: msg.callStatus ?? "",
-                                            callDuration:
-                                                msg.callDuration ?? '',
-                                          )
-                                        else if (msg.type == 'product')
-                                          (msg.message != null &&
-                                                  msg.message!.isNotEmpty)
-                                              ? ProductMessageBubble(
-                                                  productJson: msg.message!,
-                                                  isMe: msg.sender ==
-                                                      widget.customerEmail,
-                                                  timestamp: ChatUtils()
-                                                      .formatTimestamp(msg
-                                                          .timestamp
-                                                          .toIso8601String()),
-                                                  onTap: () {
-                                                    final productMap =
-                                                        jsonDecode(
-                                                            msg.message!);
-                                                    final product =
-                                                        Product.fromJson(
-                                                            productMap);
+                                return Container(
+                                  key: globalKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (dateHeader != null)
+                                        DateHeader(date: dateHeader),
+                                      if (msg.type == 'media')
+                                        ImageMessageBubble(
+                                          read: msg.read,
+                                          imageUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
+                                        )
+                                      else if (msg.type == 'document')
+                                        DocumentMessageBubble(
+                                          documentUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
+                                        )
+                                      else if (msg.type == 'voice')
+                                        VoiceMessageBubble(
+                                          voiceUrl: msg.mediaUrl!,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
+                                          isDeleted: msg.isDeleted,
+                                          onLongPress: isCustomer
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
+                                                    context,
+                                                    msg.messageId!,
+                                                  )
+                                              : null,
+                                        )
+                                      else if (msg.type == 'call')
+                                        CallMessageBubble(
+                                          isMe: msg.sender == widget.agentEmail,
+                                          timestamp: formatTimestamp(
+                                              msg.timestamp.toIso8601String()),
+                                          callStatus: msg.callStatus ?? "",
+                                          callDuration: msg.callDuration ?? '',
+                                        )
+                                      else if (msg.type == 'product')
+                                        (msg.message != null &&
+                                                msg.message!.isNotEmpty)
+                                            ? ProductMessageBubble(
+                                                productJson: msg.message!,
+                                                isMe: msg.sender ==
+                                                    widget.customerEmail,
+                                                timestamp:
+                                                    ChatUtils().formatTimestamp(
+                                                  msg.timestamp
+                                                      .toIso8601String(),
+                                                ),
+                                                onTap: () {
+                                                  final productMap =
+                                                      jsonDecode(msg.message!);
+                                                  final product =
+                                                      Product.fromJson(
+                                                          productMap);
 
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            CustomerProductDescriptionPage(
-                                                          product: product,
-                                                        ),
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          CustomerProductDescriptionPage(
+                                                        product: product,
                                                       ),
-                                                    );
-                                                  },
-                                                  isDeleted: msg.isDeleted,
-                                                  onLongPress: isCustomer
-                                                      ? () =>
-                                                          _showMessageOptionBottomSheet(
-                                                            context,
-                                                            msg.messageId!,
-                                                          )
-                                                      : null,
-                                                )
-                                              : DeletedMessageBubble(
-                                                  isMe: msg.sender ==
-                                                      widget.customerEmail,
-                                                  timestamp: ChatUtils()
-                                                      .formatTimestamp(msg
-                                                          .timestamp
-                                                          .toIso8601String()),
-                                                )
-                                        else
-                                          MessageBubble(
-                                            message: msg,
-                                            isMe: msg.sender ==
-                                                widget.customerEmail,
-                                            referencedMessage:
-                                                referencedMessage,
-                                            referencedSenderLabel:
-                                                referencedMessage?.sender,
-                                            onLongPress: isCustomer
-                                                ? () =>
-                                                    _showMessageOptionBottomSheet(
-                                                      context,
-                                                      msg.messageId!,
-                                                      textToCopy: msg.message,
-                                                    )
-                                                : null,
-                                          ),
-                                      ],
-                                    ),
+                                                    ),
+                                                  );
+                                                },
+                                                isDeleted: msg.isDeleted,
+                                                onLongPress: isCustomer
+                                                    ? () =>
+                                                        _showMessageOptionBottomSheet(
+                                                          context,
+                                                          msg.messageId!,
+                                                        )
+                                                    : null,
+                                              )
+                                            : DeletedMessageBubble(
+                                                isMe: msg.sender ==
+                                                    widget.customerEmail,
+                                                timestamp:
+                                                    ChatUtils().formatTimestamp(
+                                                  msg.timestamp
+                                                      .toIso8601String(),
+                                                ),
+                                              )
+                                      else
+                                        MessageBubble(
+                                          message: msg,
+                                          isMe: msg.sender ==
+                                              widget.customerEmail,
+                                          onLongPress: isCustomer
+                                              ? () =>
+                                                  _showMessageOptionBottomSheet(
+                                                    context,
+                                                    msg.messageId!,
+                                                    textToCopy: msg.message,
+                                                  )
+                                              : null,
+                                        ),
+                                    ],
                                   ),
                                 );
                               },

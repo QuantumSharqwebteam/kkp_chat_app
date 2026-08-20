@@ -37,11 +37,20 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
 
   Future<void> fetchCallLogs() async {
     final email = LocalDbHelper.getEmail();
+
     try {
       final fetchedLogs = await _chatRepo.fetchCallLogs(email!);
       if (!mounted) return;
+
+      // Deduplicate by id
+      final seen = <String>{};
+      final uniqueLogs = fetchedLogs.where((log) => seen.add(log.id)).toList();
+
+      // Sort newest first
+      uniqueLogs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
       setState(() {
-        callLogs = fetchedLogs;
+        callLogs = uniqueLogs;
         isLoading = false;
       });
     } catch (e) {
@@ -57,7 +66,8 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.callHistory, style: AppTextStyles.black16_500),
+        title: Text(AppLocalizations.of(context)!.callHistory,
+            style: AppTextStyles.black16_500),
         backgroundColor: Colors.white,
       ),
       body: buildCallLogList(),
@@ -82,7 +92,8 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
 
       if (DateUtils.isSameDay(date, now)) {
         key = "Today";
-      } else if (DateUtils.isSameDay(date, now.subtract(const Duration(days: 1)))) {
+      } else if (DateUtils.isSameDay(
+          date, now.subtract(const Duration(days: 1)))) {
         key = "Yesterday";
       } else {
         key = "${date.day}/${date.month}/${date.year}";

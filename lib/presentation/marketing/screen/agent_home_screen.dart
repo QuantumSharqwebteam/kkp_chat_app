@@ -7,6 +7,7 @@ import 'package:kkpchatapp/data/models/meet_model.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
+import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
@@ -38,20 +39,17 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-
-      _chatRefreshProvider =
+      final chatRefreshProvider =
           Provider.of<ChatRefreshProvider>(context, listen: false);
-      _chatRefreshListener = () {
-        if (!mounted || _chatRefreshProvider?.shouldRefresh != true) return;
+      chatRefreshProvider.addListener(() {
+        if (chatRefreshProvider.shouldRefresh) {
+          context.read<AssignedCustomersProvider>().fetchAssignedCustomers();
+          chatRefreshProvider.reset();
+        }
+      });
 
-        // Refresh only from local Hive state — no API call.
-        // The socket service already wrote the latest last-message to Hive;
-        // _applyLocalState picks it up and updates unread counts, timestamps.
-        context.read<AssignedCustomersProvider>().refreshFromSocket();
-        _chatRefreshProvider?.reset();
-      };
-      _chatRefreshProvider?.addListener(_chatRefreshListener!);
+      // ← FIX: fetch notifications for badge count
+      Provider.of<MeetingManagement>(context, listen: false).fetchAllMeetings();
     });
   }
 
@@ -89,7 +87,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final provider = Provider.of<AssignedCustomersProvider>(context);
     final meetingManagement = Provider.of<MeetingManagement>(context);
 
-    // final nextMeeting = meetingManagement.getNextUpcomingMeeting();
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -115,7 +112,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                                 // Today's Meetings Section
                                 _buildUpcomingMeetingsSection(
                                     meetingManagement, context),
-                                //_buildSearchBar(provider),
                                 const SizedBox(height: 15),
                                 Text(locale.customerInquiries,
                                     style: AppTextStyles.black16_500),
@@ -152,6 +148,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final locale = AppLocalizations.of(context)!;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      leading: IconButton(
+        onPressed: () {
+          _scaffoldKey.currentState?.openDrawer();
+        },
+        icon: Icon(Icons.menu),
+      ),
       title: Text(name ?? "", style: AppTextStyles.black16_500),
       subtitle:
           Text(locale.findLatestMessages, style: AppTextStyles.black10_500),
@@ -162,19 +164,47 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MeetingsListScreen(
-                  email: LocalDbHelper.getEmail()!,
-                ),
-              ),
+                  builder: (context) => const CallHistoryScreen()),
             ),
-            icon: const Icon(Icons.video_call_outlined, color: Colors.black),
+            icon: const Icon(Icons.call_outlined, color: Colors.black),
+          ),
+          // ← FIX: notification icon with unread badge using Consumer
+          Consumer<NotificationProvider>(
+            builder: (context, notifProvider, _) {
+              final unreadCount = notifProvider.notifications
+                  .where((n) => !(n.viewed ?? false))
+                  .length;
+              return IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    MarketingRoutes.marketingNotifications,
+                  ).then((_) {
+                    notifProvider.fetchNotifications();
+                  });
+                },
+                icon: unreadCount > 0
+                    ? Badge(
+                        label: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: Colors.red,
+                        child: const Icon(Icons.notifications_active_outlined),
+                      )
+                    : const Icon(Icons.notifications_active_outlined),
+                iconSize: 25,
+              );
+            },
           ),
           IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const GroupListScreen()),
-            ),
-            icon: const Icon(Icons.group_outlined, color: Colors.black),
+            onPressed: () =>
+                Navigator.pushNamed(context, MarketingRoutes.marketingSettings),
+            icon: const Icon(Icons.settings_outlined, color: Colors.black),
           ),
         ],
       ),
@@ -195,14 +225,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final locale = AppLocalizations.of(context)!;
     final socket = provider.socketService;
 
-    // Get the list of valid customers from the provider (already sorted by the provider)
     final validCustomers = provider.filteredCustomers.where((customer) {
       final email = customer['email']?.toString();
       final isDeleted = customer['isDeleted'] ?? false;
       return email != null && email.isNotEmpty && !isDeleted;
     }).toList();
 
-    // We don't need to sort here anymore since the provider handles it
     return RefreshIndicator(
       onRefresh: () async => provider.fetchAssignedCustomers(),
       child: ListView.builder(
@@ -214,7 +242,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           final email = customer['email']?.toString() ?? "";
           final isAccountDeleted = customer['isDeleted'] ?? false;
           final isOnline = customer['isOnline'] ?? false;
-          final canMessage = customer['canMessage'] == true;
           final lastSeen = isOnline ? "Online" : socket.getLastSeenTime(email);
           final notificationCount = customer['notificationCount'] ?? 0;
           final lastMessage = socket.getLastMessage(email);
@@ -227,7 +254,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   name: name,
                   message: lastMessage,
                   isAccountDeleted: isAccountDeleted,
-                  isActive: isOnline, // Use our local flag
+                  isActive: isOnline,
                   time: isOnline ? locale.online : lastSeen,
                   enableLongPress: false,
                   onTap: () async {
@@ -287,7 +314,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  // New method to build the upcoming meetings section
   Widget _buildUpcomingMeetingsSection(
       MeetingManagement meetingManagement, BuildContext context) {
     final nextMeetings = meetingManagement.getNextUpcomingMeeting();
@@ -311,6 +337,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     ),
                   ),
                 );
+                Provider.of<MeetingManagement>(context, listen: false)
+                    .fetchAllMeetings();
               },
               child: const Text(
                 "See all",
@@ -336,7 +364,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final now = DateTime.now();
     final timeDifference = startTime.difference(now);
 
-    // Format the time remaining
     String timeRemaining;
     if (timeDifference.inDays > 0) {
       timeRemaining =
@@ -368,13 +395,19 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       ),
       child: Row(
         children: [
-          // Time and status indicator
           Container(
             width: 60,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Text(
+                  "${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}",
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey,
+                  ),
+                ),
                 Text(
                   "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}",
                   style: const TextStyle(
@@ -403,8 +436,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Meeting details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,8 +475,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               ],
             ),
           ),
-
-          // Time remaining and join button
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -461,7 +490,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
-                  // Open the meeting link
                   launchUrl(Uri.parse(meeting.link));
                 },
                 child: Container(
@@ -493,14 +521,14 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.grey[100], // Light grey background
+          color: Colors.grey[100],
         ),
         child: Text(
           "No upcoming meetings for today",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[600], // Darker grey text
+            color: Colors.grey[600],
           ),
         ),
       ),

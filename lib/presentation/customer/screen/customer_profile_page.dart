@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
@@ -8,7 +11,10 @@ import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class CustomerProfilePage extends StatefulWidget {
   const CustomerProfilePage({super.key});
@@ -21,6 +27,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final AuthRepository _authRepository = AuthRepository();
   Profile? _profile;
   bool _isEditing = false;
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -46,6 +54,61 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   String? _streetError;
   String? _cityError;
   String? _pincodeError;
+
+  bool get _isExport => _customerType == 'Export';
+  bool get _isDomestic => _customerType == 'Domestic';
+
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt),
+              title: Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library),
+              title: Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            if (_selectedImage != null ||
+                (_profile?.profileUrl != null &&
+                    _profile!.profileUrl!.isNotEmpty))
+              ListTile(
+                leading: Icon(Icons.delete, color: Colors.red),
+                title:
+                    Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() => _selectedImage = null);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (pickedFile != null) {
+      setState(() => _selectedImage = File(pickedFile.path));
+    }
+  }
 
   bool _isValidFullName(String name) {
     return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(name);
@@ -78,7 +141,6 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     final street = _streetNameController.text.trim();
     final city = _cityController.text.trim();
     final pincode = _pincodeController.text.trim();
-    final isDomestic = _customerType == 'Domestic';
 
     setState(() {
       _nameError = null;
@@ -107,18 +169,34 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       isValid = false;
     }
 
-    if (isDomestic && gst.isEmpty) {
+    // ← FIX: GST — required only for Domestic; format check only for Domestic
+    //         or when Export user types exactly 15 chars (full length)
+    if (_isDomestic && gst.isEmpty) {
       _gstError = 'GST number is required for domestic customers';
       isValid = false;
-    } else if (gst.isNotEmpty && !_isValidGstNumber(gst)) {
+    } else if (_isDomestic && gst.isNotEmpty && !_isValidGstNumber(gst)) {
+      _gstError = 'Enter a valid 15-character GSTIN';
+      isValid = false;
+    } else if (_isExport &&
+        gst.isNotEmpty &&
+        gst.length == 15 &&
+        !_isValidGstNumber(gst)) {
       _gstError = 'Enter a valid 15-character GSTIN';
       isValid = false;
     }
 
-    if (isDomestic && pan.isEmpty) {
+    // ← FIX: PAN — required only for Domestic; format check only for Domestic
+    //         or when Export user types exactly 10 chars (full length)
+    if (_isDomestic && pan.isEmpty) {
       _panError = 'PAN number is required for domestic customers';
       isValid = false;
-    } else if (pan.isNotEmpty && !_isValidPanNumber(pan)) {
+    } else if (_isDomestic && pan.isNotEmpty && !_isValidPanNumber(pan)) {
+      _panError = 'Enter valid PAN (ABCDE1234F)';
+      isValid = false;
+    } else if (_isExport &&
+        pan.isNotEmpty &&
+        pan.length == 10 &&
+        !_isValidPanNumber(pan)) {
       _panError = 'Enter valid PAN (ABCDE1234F)';
       isValid = false;
     }
@@ -164,7 +242,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   Future<void> _loadUserProfile() async {
     final userData = await _authRepository.getUserInfo();
-    if (userData['message'] == "Session expired due to login on another device") {
+    if (userData['message'] ==
+        "Session expired due to login on another device") {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -235,7 +314,15 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         setState(() {
           _profile = newProfile;
           _isEditing = false;
+          _selectedImage = null;
         });
+
+        if (mounted) {
+          final homeProvider =
+              Provider.of<CustomerHomeProvider>(context, listen: false);
+          await homeProvider.loadUserInfo();
+        }
+
         if (!mounted) return;
         Utils().showSuccessDialog(context, "Profile Updated!", true);
         await Future.delayed(const Duration(seconds: 1), () {
@@ -251,7 +338,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -334,7 +422,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               _buildSectionContainer([
                 _section("Business Details"),
                 _input(
-                  _customerType == 'Domestic' ? "Pan No. *" : "Pan No.",
+                  _isDomestic ? "Pan No. *" : "Pan No.",
                   _panNoController,
                   errorText: _panError,
                   maxLength: 10,
@@ -343,15 +431,18 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     LengthLimitingTextInputFormatter(10),
                     _panUpperCaseFormatter,
                   ],
+                  // ← FIX: for Export, never show error while typing
                   onChanged: (value) {
                     final trimmed = value.trim().toUpperCase();
-                    if (trimmed.isEmpty || _isValidPanNumber(trimmed)) {
+                    if (_isExport ||
+                        trimmed.isEmpty ||
+                        _isValidPanNumber(trimmed)) {
                       setState(() => _panError = null);
                     }
                   },
                 ),
                 _input(
-                  _customerType == 'Domestic' ? "GST No. *" : "GST No.",
+                  _isDomestic ? "GST No. *" : "GST No.",
                   _gstNoController,
                   errorText: _gstError,
                   maxLength: 15,
@@ -359,12 +450,16 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
                     LengthLimitingTextInputFormatter(15),
                     TextInputFormatter.withFunction((oldValue, newValue) {
-                      return newValue.copyWith(text: newValue.text.toUpperCase());
+                      return newValue.copyWith(
+                          text: newValue.text.toUpperCase());
                     }),
                   ],
+                  // ← FIX: for Export, never show error while typing
                   onChanged: (value) {
                     final trimmed = value.trim().toUpperCase();
-                    if (trimmed.isEmpty || _isValidGstNumber(trimmed)) {
+                    if (_isExport ||
+                        trimmed.isEmpty ||
+                        _isValidGstNumber(trimmed)) {
                       setState(() => _gstError = null);
                     }
                   },
@@ -420,8 +515,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   ],
                   onChanged: (value) {
                     final trimmed = value.trim();
-                    if (trimmed.isEmpty ||
-                        trimmed.length == 6) {
+                    if (trimmed.isEmpty || trimmed.length == 6) {
                       setState(() => _pincodeError = null);
                     }
                   },
@@ -438,24 +532,76 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   }
 
   Widget _buildHeader() {
+    final profileUrl = _profile?.profileUrl;
+    final hasNetworkImage = profileUrl != null &&
+        profileUrl.isNotEmpty &&
+        profileUrl.startsWith('http');
+
     return Container(
       width: double.infinity,
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: const Color(0xFFE0E0E0),
-            child: Initicon(
-              text: _profile?.name ?? '',
-              size: 90,
+          GestureDetector(
+            onTap: _isEditing ? _showImagePickerOptions : null,
+            child: Stack(
+              children: [
+                if (_selectedImage != null)
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: const Color(0xFFE0E0E0),
+                    backgroundImage: FileImage(_selectedImage!),
+                  )
+                else if (hasNetworkImage)
+                  CachedNetworkImage(
+                    imageUrl: profileUrl,
+                    imageBuilder: (context, imageProvider) => CircleAvatar(
+                      radius: 50,
+                      backgroundColor: const Color(0xFFE0E0E0),
+                      backgroundImage: imageProvider,
+                    ),
+                    placeholder: (context, url) => CircleAvatar(
+                      radius: 50,
+                      backgroundColor: const Color(0xFFE0E0E0),
+                      child: Initicon(text: _profile?.name ?? '', size: 90),
+                    ),
+                    errorWidget: (context, url, error) => CircleAvatar(
+                      radius: 50,
+                      backgroundColor: const Color(0xFFE0E0E0),
+                      child: Initicon(text: _profile?.name ?? '', size: 90),
+                    ),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: const Color(0xFFE0E0E0),
+                    child: Initicon(text: _profile?.name ?? '', size: 90),
+                  ),
+                if (_isEditing)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child:
+                          Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 10),
           Text(_profile?.name ?? '',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text(_profile?.email ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(_profile?.email ?? '',
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );
@@ -484,7 +630,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             color: Colors.black54,
           ),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          Text(title,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
         ],
       ),
     );
@@ -505,7 +653,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
@@ -520,7 +670,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               counterText: '',
               filled: true,
               fillColor: enabled ? Colors.white : const Color(0xFFF5F5F5),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               enabledBorder: OutlineInputBorder(
                 borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                 borderRadius: BorderRadius.circular(10),
@@ -546,22 +697,28 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             value: _customerType,
-            items: options.map((val) => DropdownMenuItem(value: val, child: Text(val))).toList(),
+            items: options
+                .map((val) => DropdownMenuItem(value: val, child: Text(val)))
+                .toList(),
             onChanged: _isEditing
                 ? (val) => setState(() {
                       _customerType = val!;
-                      if (_customerType == 'Export') {
+                      // ← FIX: clear GST/PAN errors when switching to Export
+                      if (_isExport) {
                         _gstError = null;
                         _panError = null;
                       }
                     })
                 : null,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -596,371 +753,11 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
           onPressed: _saveChanges,
           child: Text(
             AppLocalizations.of(context)!.saveChanges,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
       ),
     );
   }
 }
-
-
-
- // bool _isExportSelected = false;
-// if (_isEditing)
-//                 SizedBox(
-//                   width: double.infinity,
-//                   child: ElevatedButton(
-//                     style: ElevatedButton.styleFrom(
-//                       backgroundColor: AppColors.bluePrimary,
-//                       padding: const EdgeInsets.symmetric(vertical: 14),
-//                       shape: RoundedRectangleBorder(
-//                         borderRadius: BorderRadius.circular(8),
-//                       ),
-//                       elevation: 2,
-//                     ),
-//                     onPressed: () {
-//                       final updatedProfile = Profile(
-//                         profileUrl: profileImageUrl,
-//                         name: _name.text,
-//                         email: _email.text,
-//                         mobile: int.tryParse(_number.text) ?? 0,
-//                         gstNo: _gstNo.text,
-//                         panNo: _panNo.text,
-//                         customerType: _isExportSelected ? 'Export' : 'Domestic',
-//                         address: [
-//                           Address(
-//                             houseNo: _houseNo.text,
-//                             streetName: _streetName.text,
-//                             city: _city.text,
-//                             pincode: _pincode.text,
-//                           ),
-//                         ],
-//                       );
-//                       setState(() {
-//                         profile = updatedProfile;
-//                         _isEditing = false;
-//                       });
-//                     },
-//                     child: const Text(
-//                       'Save Changes',
-//                       style: TextStyle(fontSize: 16, color: Colors.white),
-//                     ),
-//                   ),
-//                 ),
-
-
-
-
-
-  // Widget _buildCustomerTypeSelection() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Padding(
-  //         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-  //         child: Text('Customer Type', style: AppTextStyles.black16_600),
-  //       ),
-  //       Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //         children: [
-  //           _buildCheckbox('Export', _isExportSelected),
-  //           _buildCheckbox('Domestic', _isDomesticSelected),
-  //         ],
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  // Widget _buildCheckbox(String label, bool value) {
-  //   return Row(
-  //     children: [
-  //       Checkbox(
-  //         visualDensity: VisualDensity.compact,
-  //         value: value,
-  //         activeColor: AppColors.blue,
-  //         onChanged: null,
-  //       ),
-  //       Text(label, style: AppTextStyles.black14_600),
-  //     ],
-  //   );
-  // }
-
-
-
-
-// import 'package:flutter/material.dart';
-// import 'package:flutter_initicon/flutter_initicon.dart';
-// import 'package:kkpchatapp/config/routes/customer_routes.dart';
-// import 'package:kkpchatapp/config/theme/app_colors.dart';
-// import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-// import 'package:kkpchatapp/core/utils/utils.dart';
-// import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-// import 'package:kkpchatapp/data/models/address_model.dart';
-// import 'package:kkpchatapp/data/models/profile_model.dart';
-// import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-// import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-// import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
-// import 'package:kkpchatapp/presentation/common_widgets/profile_details_field.dart';
-
-// class CustomerProfilePage extends StatefulWidget {
-//   const CustomerProfilePage({super.key});
-
-//   @override
-//   State<CustomerProfilePage> createState() => _CustomerProfilePageState();
-// }
-
-// class _CustomerProfilePageState extends State<CustomerProfilePage> {
-//   final AuthRepository auth = AuthRepository();
-//   Profile? profile;
-//   bool _isExportSelected = false;
-//   bool _isDomesticSelected = false;
-//   String? profileImageUrl = "";
-//   final TextEditingController _name = TextEditingController();
-//   final TextEditingController _email = TextEditingController();
-//   final TextEditingController _number = TextEditingController();
-//   final TextEditingController _gstNo = TextEditingController();
-//   final TextEditingController _panNo = TextEditingController();
-//   final TextEditingController _houseNo = TextEditingController();
-//   final TextEditingController _streetName = TextEditingController();
-//   final TextEditingController _city = TextEditingController();
-//   final TextEditingController _pincode = TextEditingController();
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _loadUserInfo();
-//   }
-
-//   Future<void> _loadUserInfo() async {
-//     final Map<String, dynamic> userData = await auth.getUserInfo();
-//     if (userData['message'] ==
-//         "Session expired due to login on another device") {
-//       if (mounted) {
-//         Navigator.of(context)
-//             .pushReplacement(MaterialPageRoute(builder: (context) {
-//           return LoginPage();
-//         }));
-//       }
-//     } else {
-//       profile = Profile.fromJson(userData['message']);
-//       if (profile != null) {
-//         LocalDbHelper.saveProfile(profile!);
-//         profileImageUrl = profile?.profileUrl;
-//         _updateProfileFields(profile!);
-//       }
-//     }
-//   }
-
-//   void _updateProfileFields(Profile profile) {
-//     setState(() {
-//       _name.text = profile.name ?? '';
-//       _email.text = profile.email ?? '';
-//       _number.text = profile.mobile.toString();
-//       _gstNo.text = profile.gstNo ?? '';
-//       _panNo.text = profile.panNo ?? '';
-//       if (profileImageUrl != profile.profileUrl) {
-//         profileImageUrl = profile.profileUrl;
-//       }
-//       if (profile.address?.isNotEmpty == true) {
-//         final address = profile.address![0];
-//         _houseNo.text = address.houseNo ?? '';
-//         _streetName.text = address.streetName ?? '';
-//         _city.text = address.city ?? '';
-//         _pincode.text = address.pincode ?? '';
-//       }
-//       _isExportSelected = profile.customerType == 'Export';
-//       _isDomesticSelected = profile.customerType == 'Domestic';
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: SafeArea(
-//         child: Center(
-//           child: SingleChildScrollView(
-//             child: Column(
-//               children: [
-//                 SizedBox(height: 10),
-//                 ClipRRect(
-//                   borderRadius: BorderRadius.circular(70),
-//                   child: Initicon(
-//                     text: profile?.name ?? "",
-//                     elevation: 10,
-//                     size: 120,
-//                   ),
-//                 ),
-//                 Text(
-//                   _name.text.isNotEmpty ? _name.text : 'No Name',
-//                   style: AppTextStyles.black28_600,
-//                 ),
-//                 // Text(
-//                 //   'Customer',
-//                 //   style:
-//                 //       AppTextStyles.black16_600.copyWith(color: Colors.black54),
-//                 // ),
-//                 SizedBox(height: 10),
-//                 SizedBox(
-//                   width: Utils().width(context) * 0.9,
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       _buildCustomerTypeSelection(),
-//                       ProfileDetailsField(
-//                         icon: Icons.person,
-//                         label: 'Full Name',
-//                         value: _name.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.email,
-//                         label: 'Email',
-//                         value: _email.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.phone,
-//                         label: 'Mobile Number',
-//                         value: _number.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.assignment,
-//                         label: 'GST Number',
-//                         value: _gstNo.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.assignment_ind,
-//                         label: 'PAN Number',
-//                         value: _panNo.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.home,
-//                         label: 'House No.',
-//                         value: _houseNo.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.streetview,
-//                         label: 'Street Name',
-//                         value: _streetName.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.location_city,
-//                         label: 'City',
-//                         value: _city.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.markunread_mailbox,
-//                         label: 'Pincode',
-//                         value: _pincode.text,
-//                       ),
-//                       SizedBox(height: 20),
-//                       Center(
-//                         child: CustomButton(
-//                           text: 'Edit',
-//                           onPressed: () async {
-//                             // Construct the Profile object with current data
-//                             final profile = Profile(
-//                               profileUrl: profileImageUrl,
-//                               name: _name.text,
-//                               email: _email.text,
-//                               mobile: int.tryParse(_number.text) ?? 0,
-//                               gstNo: _gstNo.text,
-//                               panNo: _panNo.text,
-//                               customerType:
-//                                   _isExportSelected ? 'Export' : 'Domestic',
-//                               address: [
-//                                 Address(
-//                                   houseNo: _houseNo.text,
-//                                   streetName: _streetName.text,
-//                                   city: _city.text,
-//                                   pincode: _pincode.text,
-//                                 ),
-//                               ],
-//                             );
-
-//                             // Navigate to the setup page with the Profile object
-//                             final updatedProfile = await Navigator.pushNamed(
-//                               context,
-//                               CustomerRoutes.customerProfileSetup,
-//                               arguments: {
-//                                 "forUpdate": true,
-//                                 "profile": profile,
-//                               },
-//                             ) as Profile?;
-
-//                             if (updatedProfile != null) {
-//                               _updateProfileFields(updatedProfile);
-//                             }
-//                           },
-//                           height: 45,
-//                           elevation: 5,
-//                           width: Utils().width(context) * 0.5,
-//                           fontSize: 16,
-//                           backgroundColor: AppColors.bluePrimary,
-//                         ),
-//                       ),
-//                       SizedBox(height: 40),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildCustomerTypeSelection() {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Padding(
-//           padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-//           child: Text('Customer Type', style: AppTextStyles.black16_600),
-//         ),
-//         Row(
-//           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//           children: [
-//             _buildCheckbox('Export', _isExportSelected),
-//             _buildCheckbox('Domestic', _isDomesticSelected),
-//           ],
-//         ),
-//       ],
-//     );
-//   }
-
-//   Widget _buildCheckbox(String label, bool value) {
-//     return Row(
-//       children: [
-//         Checkbox(
-//           visualDensity: VisualDensity.compact,
-//           value: value,
-//           activeColor: AppColors.blue,
-//           onChanged: null, // Disable manual changes
-//         ),
-//         Text(label, style: AppTextStyles.black14_600),
-//       ],
-//     );
-//   }
-
-//   // Widget _buildTextField(String label, TextEditingController controller,
-//   //     {int? maxLength}) {
-//   //   return Padding(
-//   //     padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-//   //     child: Column(
-//   //       crossAxisAlignment: CrossAxisAlignment.start,
-//   //       children: [
-//   //         Text(label, style: AppTextStyles.black14_600),
-//   //         CustomTextField(
-//   //           controller: controller,
-//   //           hintText: controller.text,
-//   //           hintStyle: AppTextStyles.black16_500,
-//   //           readOnly: true,
-//   //           height: 40,
-//   //           maxLength: maxLength,
-//   //         ),
-//   //       ],
-//   //     ),
-//   //   );
-//   // }
-// }
