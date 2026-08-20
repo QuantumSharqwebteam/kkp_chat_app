@@ -50,8 +50,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       });
 
       // ← FIX: fetch notifications for badge count
-      Provider.of<NotificationProvider>(context, listen: false)
-          .fetchNotifications();
+      Provider.of<MeetingManagement>(context, listen: false).fetchAllMeetings();
     });
   }
 
@@ -340,6 +339,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     ),
                   ),
                 );
+                Provider.of<MeetingManagement>(context, listen: false)
+                    .fetchAllMeetings();
               },
               child: const Text(
                 "See all",
@@ -402,6 +403,13 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Text(
+                  "${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}",
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey,
+                  ),
+                ),
                 Text(
                   "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}",
                   style: const TextStyle(

@@ -61,14 +61,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final dateOnly = DateUtils.dateOnly(date);
 
     if (dateOnly == today) {
-      final difference = now.difference(date);
-      if (difference.inMinutes < 1) {
-        return 'Just now';
-      } else if (difference.inMinutes < 60) {
-        return '${difference.inMinutes} mins ago';
-      } else {
-        return DateFormat('hh:mm a').format(date);
-      }
+      return DateFormat('hh:mm a').format(date);
     } else if (dateOnly == yesterday) {
       return 'Yesterday, ${DateFormat('hh:mm a').format(date)}';
     } else {
