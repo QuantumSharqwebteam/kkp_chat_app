@@ -433,7 +433,19 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                             'Customer: ${inquiry.customerName}',
                             style: AppTextStyles.black12_400
                                 .copyWith(fontSize: 14, color: Colors.black45),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          if (inquiry.buyerName.trim().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Buyer: ${inquiry.buyerName}',
+                              style: AppTextStyles.black12_400.copyWith(
+                                  fontSize: 14, color: Colors.black45),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -466,7 +478,18 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         ),
                       ],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
+                    // The whole card is tappable to expand, but nothing said
+                    // so. The chevron rotates to reflect the current state.
+                    AnimatedRotation(
+                      duration: const Duration(milliseconds: 200),
+                      turns: (expandedStates[inquiry.id] ?? false) ? 0.5 : 0,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Colors.grey.shade500,
+                        size: 22,
+                      ),
+                    ),
                   ],
                 ),
                 if (summaryChips.isNotEmpty) ...[
@@ -500,22 +523,39 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DottedLine(
+        const DottedLine(
           dashLength: 7.0,
           dashGapLength: 4.0,
           lineThickness: 1.5,
-          dashColor: Colors.grey,
+          dashColor: Color(0xFFCBD5E1),
         ),
-        SizedBox(
-          height: 10,
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Buyer leads the list: it identifies the order, and it was
+              // previously missing here entirely — the only place it appeared
+              // was a summary chip that is filtered out whenever the value is
+              // blank, which is every row while the backend returns the
+              // "Unknown Buyer" placeholder.
+              _buildDetailRow('Buyer', inquiry.buyerName),
+              _buildDetailRow('Quality', inquiry.quality),
+              _buildDetailRow('Weave', inquiry.weave),
+              _buildDetailRow('Quantity', inquiry.quantity),
+              _buildDetailRow('Composition', inquiry.composition),
+              _buildDetailRow('Rate', inquiry.rate),
+              if (inquiry.reason.trim().isNotEmpty)
+                _buildDetailRow('Reason', inquiry.reason),
+            ],
+          ),
         ),
-        _buildDetailRow('Quality', inquiry.quality),
-        _buildDetailRow('Weave', inquiry.weave),
-        _buildDetailRow('Quantity', inquiry.quantity),
-        _buildDetailRow('Composition', inquiry.composition),
-        _buildDetailRow('Rate', inquiry.rate),
-        if (inquiry.reason.trim().isNotEmpty)
-          _buildDetailRow('Reason', inquiry.reason),
       ],
     );
   }
@@ -602,26 +642,44 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     return AppColors.helperOrange;
   }
 
+  /// Label on the left, value on the right — the label column is fixed width so
+  /// every row in a card lines up instead of each value starting at a different
+  /// x-offset. Long values wrap within their own column rather than pushing the
+  /// label around.
   Widget _buildDetailRow(String label, String value) {
+    final isEmpty = value.trim().isEmpty;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style:
-                AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
+          SizedBox(
+            width: 104,
+            child: Text(
+              label,
+              style: AppTextStyles.black14_400.copyWith(
+                color: Colors.grey.shade600,
+                height: 1.35,
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value.isEmpty ? 'N/A' : value,
-            softWrap: true,
-            overflow: TextOverflow.visible,
-            style: AppTextStyles.black14_600.copyWith(
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w100,
-              height: 1.35,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              isEmpty ? 'N/A' : value,
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.black14_600.copyWith(
+                // Missing values stay muted so a real value reads as the
+                // emphasised one. The old style asked for weight 600 and then
+                // overrode it to w100, so nothing was emphasised at all.
+                color: isEmpty ? Colors.grey.shade400 : const Color(0xFF0F172A),
+                fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
+                fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
+                height: 1.35,
+              ),
             ),
           ),
         ],

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/agent.dart';
@@ -12,7 +13,7 @@ class AuthApi {
   static var baseUrl = '${dotenv.env["BASE_URL"]}/';
   final http.Client client;
 
-  AuthApi({http.Client? client}) : client = client ?? http.Client();
+  AuthApi({http.Client? client}) : client = client ?? ApiClient.create();
 
   Future<Map<String, dynamic>> updateFCMToken(String fcmToken) async {
     final endPoint = "user/updateUserDetails";
@@ -52,15 +53,13 @@ class AuthApi {
     );
 
     try {
-      final response = await client
-          .get(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $oldToken',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+      final response = await client.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $oldToken',
+        },
+      ).timeout(const Duration(seconds: 10));
 
       LoggingService.instance.logNetwork(
         "Refresh token status: ${response.statusCode}",
@@ -77,7 +76,10 @@ class AuthApi {
           "Non-JSON response received during token refresh",
           level: LogLevel.error,
         );
-        return {"success": false, "message": "Session expired. Please login again."};
+        return {
+          "success": false,
+          "message": "Session expired. Please login again."
+        };
       }
 
       final decoded = json.decode(response.body);
@@ -101,7 +103,8 @@ class AuthApi {
   }
 
   // login
-  Future<Map<String, dynamic>> login({required String email, required String password}) async {
+  Future<Map<String, dynamic>> login(
+      {required String email, required String password}) async {
     const endPoint = 'user/login';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {
@@ -129,7 +132,8 @@ class AuthApi {
   }
 
   //signup
-  Future<Map<String, dynamic>> signup({required String email, required String password}) async {
+  Future<Map<String, dynamic>> signup(
+      {required String email, required String password}) async {
     const endPoint = 'user/signup';
     final url = Uri.parse("$baseUrl$endPoint");
     final body = {
@@ -226,9 +230,25 @@ class AuthApi {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
-      } else {
-        throw Exception('Failed to update details: ${response.body}');
       }
+
+      // Surface the server's own message rather than a nested
+      // "Exception: Error during update: Exception: Failed to update details:
+      // {json}" — the previous shape threw inside the try and was then
+      // re-wrapped by the catch below, so the status code and the real reason
+      // both ended up buried in a string the UI showed verbatim.
+      String reason = 'Update failed (${response.statusCode})';
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['message'] is String) {
+          reason = decoded['message'] as String;
+        }
+      } catch (_) {
+        // Body was not JSON — keep the status-code message.
+      }
+      throw ApiException(reason, statusCode: response.statusCode);
+    } on ApiException {
+      rethrow;
     } catch (e) {
       throw Exception('Error during update: $e');
     }
@@ -336,8 +356,10 @@ class AuthApi {
     final token = await LocalDbHelper.getToken();
 
     try {
-      final response = await http.get(url,
-          headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"});
+      final response = await http.get(url, headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token"
+      });
 
       // Parse the JSON response into a Profile object
       final jsonResponse = jsonDecode(response.body);
@@ -348,7 +370,8 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> verifyOtp({required String email, required int otp}) async {
+  Future<Map<String, dynamic>> verifyOtp(
+      {required String email, required int otp}) async {
     const endPoint = "user/verifyOtp";
     final url = Uri.parse('$baseUrl$endPoint');
     final body = jsonEncode({
@@ -358,7 +381,7 @@ class AuthApi {
 
     final token = await LocalDbHelper.getToken();
     try {
-      final response = await http.Client().post(
+      final response = await ApiClient.create().post(
         url,
         body: body,
         headers: {
@@ -431,7 +454,8 @@ class AuthApi {
   }
 
   // create new  Agent / add new agent
-  Future<Map<String, dynamic>> addAgent({required Map<String, dynamic> body}) async {
+  Future<Map<String, dynamic>> addAgent(
+      {required Map<String, dynamic> body}) async {
     const endPoint = 'user/signup';
     final url = Uri.parse("$baseUrl$endPoint");
 
@@ -479,7 +503,8 @@ class AuthApi {
       final jsonResponse = jsonDecode(response.body);
       return jsonResponse;
     } catch (e) {
-      throw Exception("Failed to add agent in the Assigned agent list:${e.toString()}");
+      throw Exception(
+          "Failed to add agent in the Assigned agent list:${e.toString()}");
     }
   }
 
@@ -572,7 +597,8 @@ class AuthApi {
     final endPoint = "user/deleteUserAccount";
     final url = Uri.parse("$baseUrl$endPoint");
     final token = await LocalDbHelper.getToken();
-    final body = jsonEncode({"email": email, "password": password, "feedback": feedback});
+    final body = jsonEncode(
+        {"email": email, "password": password, "feedback": feedback});
     try {
       final response = await client.delete(url,
           headers: {
@@ -605,10 +631,12 @@ class AuthApi {
 
       final reponseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && reponseData['message'] == "Agent deleted successfully") {
+      if (response.statusCode == 200 &&
+          reponseData['message'] == "Agent deleted successfully") {
         return reponseData;
       } else {
-        throw Exception('Failed to delete agent: ${reponseData['message'] ?? response.body}');
+        throw Exception(
+            'Failed to delete agent: ${reponseData['message'] ?? response.body}');
       }
     } catch (e) {
       throw Exception('Delete request failed: $e');
@@ -638,7 +666,8 @@ class AuthApi {
         body: body,
       );
 
-      debugPrint("[AuthApi.changeAgentRole] statusCode: ${response.statusCode}");
+      debugPrint(
+          "[AuthApi.changeAgentRole] statusCode: ${response.statusCode}");
       debugPrint("[AuthApi.changeAgentRole] response: ${response.body}");
 
       final responseData = jsonDecode(response.body);
@@ -657,7 +686,8 @@ class AuthApi {
   Future<Map<String, dynamic>> getNotifications() async {
     final endPoint = "user/getNotification";
     final url = Uri.parse("$baseUrl$endPoint");
-    final token = await LocalDbHelper.getToken(); // Assuming you have a method to get the token
+    final token = await LocalDbHelper
+        .getToken(); // Assuming you have a method to get the token
 
     try {
       final response = await client.get(
@@ -679,7 +709,8 @@ class AuthApi {
     }
   }
 
-  Future<Map<String, dynamic>> updateNotificationRead({required String notificationId}) async {
+  Future<Map<String, dynamic>> updateNotificationRead(
+      {required String notificationId}) async {
     final endPoint = "user/updateNotification/$notificationId";
     final url = Uri.parse('$baseUrl$endPoint');
     final token = await LocalDbHelper.getToken();
@@ -725,7 +756,8 @@ class AuthApi {
         );
         debugPrint('[AuthApi] AWS keys fetched and cached.');
       } else {
-        debugPrint('[AuthApi] Failed to fetch AWS keys: ${response.statusCode}');
+        debugPrint(
+            '[AuthApi] Failed to fetch AWS keys: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('[AuthApi] Error prefetching AWS keys: $e');

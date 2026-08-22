@@ -269,6 +269,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
+  // Silence every debugPrint in production. Unlike print(), debugPrint is NOT
+  // compiled out of release builds, and the app makes ~470 such calls — socket
+  // traffic, chat payloads and message bodies among them. Reassigning the hook
+  // is the supported way to turn them all off in one place.
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   // Initialize logging service

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -87,19 +88,35 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   Timer? _dateHeaderTimer;
 
   // Keyed by message identity so Flutter reuses render objects across rebuilds.
-  final Map<String, GlobalKey> _globalKeys = {};
+  // An Expando holds its keys weakly, so entries for messages that fall out of
+  // the list are collected automatically — a Map here grew for the life of the
+  // screen and had to be walked on every scroll notification.
+  final Expando<GlobalKey> _itemKeys = Expando<GlobalKey>();
+
+  /// Last known first-visible row, used to bound the visible-index scan.
+  int _lastVisibleIndex = 0;
+
+  bool _keyboardVisible = false;
+
   ChatMessageModel? _replyToMessage;
 
   ScrollController get _scrollController => _provider.scrollController;
 
+  /// Verbose trace logging. Compiled out of release builds — debugPrint is
+  /// not, and some of these sit on hot paths.
   void _log(String message) {
+    if (!kDebugMode) return;
     debugPrint(
       '🧭 [CustomerChatTrace][Screen][${widget.customerEmail}] $message',
     );
   }
 
   void _showFloatingDateHeader() {
-    _showDateHeader.value = true;
+    if (!_showDateHeader.value) {
+      _showDateHeader.value = true;
+      // The header just appeared — make sure it carries the right date.
+      _updateTopDate();
+    }
     _dateHeaderTimer?.cancel();
     _dateHeaderTimer = Timer(const Duration(seconds: 1), () {
       _showDateHeader.value = false;
@@ -111,44 +128,68 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _showDateHeader.value = false;
   }
 
-  void _handleScroll() {
+  void _onScroll() {
+    _provider.updateScrollPosition();
+
     final dir = _scrollController.position.userScrollDirection;
-    if (dir == ScrollDirection.forward) _showFloatingDateHeader();
-    if (dir == ScrollDirection.reverse) _hideFloatingDateHeader();
+    if (dir == ScrollDirection.forward) {
+      _showFloatingDateHeader();
+    } else if (dir == ScrollDirection.reverse) {
+      _hideFloatingDateHeader();
+    }
 
     if (_scrollController.position.atEdge &&
         _scrollController.position.pixels == 0) {
-      _loadMoreMessages();
+      unawaited(_loadMoreMessages());
     }
 
-    final RenderBox? box = context.findRenderObject() as RenderBox?;
-    if (box != null && box.hasSize) {
-      final idx = _getFirstVisibleIndex();
-      if (idx != null && idx < _provider.messages.length) {
-        final newDate =
-            ChatUtils().formatDateHeader(_provider.messages[idx].timestamp);
-        if (_currentTopDate.value != newDate) _currentTopDate.value = newDate;
-      }
-    }
+    // Skip the visible-index scan entirely while the header is hidden — that is
+    // the whole downward-fling case, which used to do this work per frame.
+    if (_showDateHeader.value) _updateTopDate();
   }
 
+  void _updateTopDate() {
+    final messages = _provider.messages;
+    final idx = _getFirstVisibleIndex();
+    if (idx == null || idx >= messages.length) return;
+    final newDate = ChatUtils().formatDateHeader(messages[idx].timestamp);
+    if (_currentTopDate.value != newDate) _currentTopDate.value = newDate;
+  }
+
+  /// Index of the first row whose top edge is on screen.
+  ///
+  /// Scans a window around the previous answer first — only a handful of rows
+  /// are mounted at a time, so walking the whole list (as this used to) was
+  /// O(messages) per scroll notification. Falls back to the exact full scan on
+  /// a miss, so the result is identical to the unbounded version.
   int? _getFirstVisibleIndex() {
     final msgs = _provider.messages;
-    for (int i = 0; i < msgs.length; i++) {
-      final msg = msgs[i];
-      final msgKey =
-          msg.messageId ?? 'ts:${msg.timestamp.millisecondsSinceEpoch}';
-      final ctx = _globalKeys[msgKey]?.currentContext;
-      if (ctx != null) {
-        final box = ctx.findRenderObject() as RenderBox?;
-        if (box != null && box.localToGlobal(Offset.zero).dy >= 0) return i;
-      }
+    if (msgs.isEmpty) return null;
+
+    const window = 40;
+    final start = (_lastVisibleIndex - window).clamp(0, msgs.length);
+    final end = (_lastVisibleIndex + window).clamp(0, msgs.length);
+
+    final windowed = _firstVisibleInRange(msgs, start, end);
+    if (windowed != null) {
+      _lastVisibleIndex = windowed;
+      return windowed;
     }
-    return null;
+
+    final full = _firstVisibleInRange(msgs, 0, msgs.length);
+    if (full != null) _lastVisibleIndex = full;
+    return full;
   }
 
-  void _checkIfAtBottom() {
-    _provider.updateScrollPosition();
+  int? _firstVisibleInRange(List<ChatMessageModel> msgs, int start, int end) {
+    for (int i = start; i < end; i++) {
+      final ctx = _itemKeys[msgs[i]]?.currentContext;
+      if (ctx == null) continue;
+      final box = ctx.findRenderObject() as RenderBox?;
+      if (box == null) continue;
+      if (box.localToGlobal(Offset.zero).dy >= 0) return i;
+    }
+    return null;
   }
 
   Future<void> _loadMoreMessages() async {
@@ -195,10 +236,11 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     unawaited(_loadMessages());
 
     _initializeRecorder();
-    _scrollController.addListener(_handleScroll);
-    _scrollController.addListener(_checkIfAtBottom);
+    // One listener: two meant every scroll notification ran the chain twice.
+    _scrollController.addListener(_onScroll);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _provider.jumpToBottom();
       _emitChatOpened();
     });
 
@@ -219,8 +261,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     _log('dispose:start');
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
-    _scrollController.removeListener(_handleScroll);
-    _scrollController.removeListener(_checkIfAtBottom);
+    _scrollController.removeListener(_onScroll);
     _recorder.closeRecorder();
     _timer?.cancel();
     _dateHeaderTimer?.cancel();
@@ -259,13 +300,14 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
 
   @override
   void didChangeMetrics() {
-    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
-    final newValue = bottomInset > 0.0;
-
-    if (newValue) {
-      // Keyboard is opened
-      _provider.scrollToBottom();
-    }
+    if (!mounted) return;
+    final bottomInset = View.of(context).viewInsets.bottom;
+    final visible = bottomInset > 0.0;
+    if (visible == _keyboardVisible) return;
+    _keyboardVisible = visible;
+    // Only on the hidden -> visible transition. This used to fire on every
+    // keyboard animation frame, each scheduling its own retry chain.
+    if (visible) _provider.scrollToBottom();
   }
 
   void _emitChatOpened() {
@@ -286,7 +328,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     );
   }
 
+  /// The socket dispatches chatStatus / messagesReadUpTo on "a chat page is
+  /// open" alone, without matching the conversation. Fails open when the
+  /// payload omits customerEmail, preserving the previous behaviour.
+  bool _isForThisConversation(Map<String, dynamic> data) {
+    final email = data['customerEmail']?.toString();
+    return email == null || email == widget.customerEmail;
+  }
+
   void _handleChatStatus(Map<String, dynamic> data) {
+    if (!mounted || !_isForThisConversation(data)) return;
     _log('handleChatStatus data=$data');
     final status = data['status'];
     final lastMessageTimestampStr = data['lastMessageTimestamp'] as String?;
@@ -301,9 +352,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
     }
   }
 
-  void _handleMessagesReadUpTo(Map<String, dynamic> data) {}
+  void _handleMessagesReadUpTo(Map<String, dynamic> data) {
+    if (!mounted || !_isForThisConversation(data)) return;
+    final raw = data['lastMessageTimestamp'] ?? data['timestamp'];
+    if (raw == null) return;
+    final ts = DateTime.tryParse(raw.toString());
+    if (ts != null) _provider.markReadUpToTimestamp(ts);
+  }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
+    if (!mounted) return;
     _log('handleIncomingMessage data=$data');
     _provider.addIncoming(data);
   }
@@ -322,6 +380,9 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
   }
 
   void _handleMessageDeleted(String messageId) {
+    if (!mounted) return;
+    // messageDeleted is not filtered by conversation; markDeleted reports
+    // whether the id actually belonged to this chat.
     _provider.markDeleted(messageId);
   }
 
@@ -708,19 +769,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                 final msg = messages[index];
                                 final isCustomer =
                                     msg.sender == widget.customerEmail;
-                                final msgKey = msg.messageId ??
-                                    'ts:${msg.timestamp.millisecondsSinceEpoch}';
-                                final globalKey = _globalKeys.putIfAbsent(
-                                    msgKey, () => GlobalKey());
-                                final referencedMatches = msg.referenceId !=
-                                        null
-                                    ? messages.where((element) =>
-                                        element.messageId == msg.referenceId)
-                                    : const Iterable<ChatMessageModel>.empty();
-                                final ChatMessageModel? referencedMessage =
-                                    referencedMatches.isNotEmpty
-                                        ? referencedMatches.first
-                                        : null;
+                                final globalKey =
+                                    _itemKeys[msg] ??= GlobalKey();
+                                final referencedMessage =
+                                    _provider.messageById(msg.referenceId);
                                 String? dateHeader;
 
                                 if (index == 0 ||

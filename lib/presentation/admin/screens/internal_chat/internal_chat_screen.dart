@@ -67,17 +67,20 @@ class _InternalChatScreenState extends State<InternalChatScreen>
   GroupModel? _currentGroup;
   int _recordedSeconds = 0;
   Timer? _timer;
-  bool _isAtBottom = true;
+  final ValueNotifier<bool> _isAtBottom = ValueNotifier(true);
   final ValueNotifier<String?> currentTopDate = ValueNotifier(null);
-  final Map<Key, GlobalKey> _messageKeys = {};
+
+  /// Keyed on the message instance. An Expando holds its keys weakly, so no
+  /// pruning is needed — and unlike the old map it is not repopulated with a
+  /// brand-new GlobalKey on every single build, which forced element
+  /// reparenting for every visible row per frame.
+  final Expando<GlobalKey> _messageKeys = Expando<GlobalKey>();
   String? _nextCursor;
   final Set<String> _loadedMessageIds = {};
   final Set<String> fetchedCursors = {};
   // bool _isEditing = false;
   // String _editingMessageId = '';
   final _editController = TextEditingController();
-  int _currentPage = 1;
-  final Set<int> _fetchedPages = {};
 
   @override
   void initState() {
@@ -113,9 +116,12 @@ class _InternalChatScreenState extends State<InternalChatScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
+    _editController.dispose();
     _scrollController.dispose();
     _recorder.closeRecorder();
     _timer?.cancel();
+    _isAtBottom.dispose();
+    currentTopDate.dispose();
     _socketService.setGroupChatPageState(false);
     super.dispose();
   }
@@ -133,7 +139,6 @@ class _InternalChatScreenState extends State<InternalChatScreen>
   // --- Load Initial Messages ---
   Future<void> _loadInitialGroupMessages() async {
     final groupId = widget.groupId!;
-    setState(() => _isLoading = true);
     try {
       // 1. Load from local storage for an instant first paint.
       //    Display directly WITHOUT calling _removeDuplicates so _loadedMessageIds
@@ -141,12 +146,20 @@ class _InternalChatScreenState extends State<InternalChatScreen>
       final localMessages = await LocalDbHelper.getGroupMessages(groupId);
       debugPrint(
           "📦 [InternalChat] Local messages for group $groupId: ${localMessages.length}");
+      if (!mounted) return;
 
       if (localMessages.isNotEmpty) {
+        // Cache hit: paint it and sync in the background. The shimmer is only
+        // for a genuinely cold cache — showing it on every open (which is what
+        // an unconditional _isLoading = true did) hid content we already had.
         setState(() {
           messages = List.from(localMessages)
             ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _isLoading = false;
         });
+        _scrollToBottom();
+      } else {
+        setState(() => _isLoading = true);
       }
 
       // 2. Fetch from API
@@ -156,6 +169,7 @@ class _InternalChatScreenState extends State<InternalChatScreen>
       _nextCursor = result['nextCursor'];
       debugPrint(
           "🌐 [InternalChat] API messages for group $groupId: ${fetchedMessages.length}");
+      if (!mounted) return;
 
       // 3. Merge — reset the tracked-ID set first so _removeDuplicates inside
       //    _mergeMessages works on a clean slate.
@@ -170,9 +184,15 @@ class _InternalChatScreenState extends State<InternalChatScreen>
       debugPrint(
           "✅ [InternalChat] Merged total: ${messages.length} for group $groupId");
 
-      // 4. Persist merged messages to the group-specific box
-      for (var msg in messages) {
-        await LocalDbHelper.saveGroupMessage(msg, groupId);
+      // 4. Persist only what the API actually added, in one batched write.
+      //    Re-saving the entire merged list one message at a time on every open
+      //    was the slowest part of entering a busy group.
+      final localIds = localMessages.map((msg) => msg.messageId).toSet();
+      final unsaved = mergedMessages
+          .where((msg) => !localIds.contains(msg.messageId))
+          .toList();
+      if (unsaved.isNotEmpty) {
+        await LocalDbHelper.saveGroupMessages(unsaved, groupId);
       }
       _scrollToBottom();
     } catch (e) {
@@ -182,6 +202,7 @@ class _InternalChatScreenState extends State<InternalChatScreen>
       final localMessages = await LocalDbHelper.getGroupMessages(groupId);
       debugPrint(
           "📦 [InternalChat] Fallback local messages: ${localMessages.length}");
+      if (!mounted) return;
       _loadedMessageIds.clear();
       setState(() {
         messages = _removeDuplicates(localMessages)
@@ -216,12 +237,11 @@ class _InternalChatScreenState extends State<InternalChatScreen>
   // --- Load More Messages ---
   Future<void> _loadMoreGroupMessages() async {
     final groupId = widget.groupId!;
-    if (_isLoadingMore ||
-        _nextCursor == null ||
-        _fetchedPages.contains(_currentPage)) {
-      return;
-    }
-    _fetchedPages.add(_currentPage);
+    // _nextCursor is the whole pagination mechanism — a null cursor means the
+    // server has no more history. The old page counter was never advanced past
+    // 1, so its _fetchedPages guard permanently blocked every page after the
+    // first.
+    if (_isLoadingMore || _nextCursor == null) return;
     setState(() => _isLoadingMore = true);
 
     try {
@@ -237,18 +257,19 @@ class _InternalChatScreenState extends State<InternalChatScreen>
 
       if (olderMessages.isNotEmpty) {
         final uniqueMessages = _removeDuplicates(olderMessages);
-        setState(() {
-          messages.insertAll(0, uniqueMessages);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        });
-        for (var msg in uniqueMessages) {
-          await LocalDbHelper.saveGroupMessage(msg, groupId);
+        if (!mounted) return;
+        if (uniqueMessages.isNotEmpty) {
+          setState(() {
+            messages.insertAll(0, uniqueMessages);
+            messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          });
+          await LocalDbHelper.saveGroupMessages(uniqueMessages, groupId);
         }
       }
     } catch (e) {
       debugPrint("❌ [InternalChat] Error loading more messages: $e");
     } finally {
-      setState(() => _isLoadingMore = false);
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -580,20 +601,18 @@ class _InternalChatScreenState extends State<InternalChatScreen>
     if (_scrollController.position.atEdge &&
         _scrollController.position.pixels == 0 &&
         !_isLoadingMore) {
-      _currentPage++;
-      _loadMoreGroupMessages();
+      unawaited(_loadMoreGroupMessages());
     }
   }
 
   void _checkIfAtBottom() {
+    // ValueNotifier rather than setState: this fires on every scroll
+    // notification and used to rebuild the whole screen on each crossing.
     if (_scrollController.position.atEdge) {
-      bool isBottom = _scrollController.position.pixels ==
+      _isAtBottom.value = _scrollController.position.pixels ==
           _scrollController.position.maxScrollExtent;
-      if (isBottom != _isAtBottom) {
-        setState(() => _isAtBottom = isBottom);
-      }
-    } else if (_isAtBottom) {
-      setState(() => _isAtBottom = false);
+    } else {
+      _isAtBottom.value = false;
     }
   }
 
@@ -695,9 +714,11 @@ class _InternalChatScreenState extends State<InternalChatScreen>
                                 final msg = messages[index];
                                 final isAgent =
                                     msg.senderId == widget.agentEmail;
-                                final valueKey = ValueKey('group-msg-$index');
-                                final globalKey = GlobalKey();
-                                _messageKeys[valueKey] = globalKey;
+                                // Stable per message, not per build. Allocating
+                                // a fresh GlobalKey here every frame forced the
+                                // element tree to reparent every visible row.
+                                final globalKey =
+                                    _messageKeys[msg] ??= GlobalKey();
                                 String? dateHeader;
                                 if (index == 0 ||
                                     !ChatUtils().isSameDay(
@@ -810,16 +831,21 @@ class _InternalChatScreenState extends State<InternalChatScreen>
                 const SizedBox(height: 10),
               ],
             ),
-            if (!_isAtBottom)
-              Positioned(
-                bottom: 100,
-                right: 10,
-                child: FloatingActionButton(
-                  onPressed: _scrollToBottom,
-                  mini: true,
-                  child: const Icon(Icons.arrow_downward_rounded),
-                ),
-              ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _isAtBottom,
+              builder: (context, atBottom, _) {
+                if (atBottom) return const SizedBox.shrink();
+                return Positioned(
+                  bottom: 100,
+                  right: 10,
+                  child: FloatingActionButton(
+                    onPressed: _scrollToBottom,
+                    mini: true,
+                    child: const Icon(Icons.arrow_downward_rounded),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

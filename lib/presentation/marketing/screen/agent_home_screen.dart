@@ -42,14 +42,21 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Held in fields so dispose() can actually detach. Previously both the
+      // provider and the closure were locals, so removeListener had nothing to
+      // remove and every mount left another live listener behind.
       final chatRefreshProvider =
           Provider.of<ChatRefreshProvider>(context, listen: false);
-      chatRefreshProvider.addListener(() {
+      _chatRefreshProvider = chatRefreshProvider;
+      _chatRefreshListener = () {
+        if (!mounted) return;
         if (chatRefreshProvider.shouldRefresh) {
           context.read<AssignedCustomersProvider>().fetchAssignedCustomers();
           chatRefreshProvider.reset();
         }
-      });
+      };
+      chatRefreshProvider.addListener(_chatRefreshListener!);
 
       // ← FIX: fetch notifications for badge count
       Provider.of<MeetingManagement>(context, listen: false).fetchAllMeetings();
@@ -189,7 +196,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     context,
                     MarketingRoutes.marketingNotifications,
                   ).then((_) {
-                    notifProvider.fetchNotifications();
+                    // Cache-first: markAsRead/markAllRead already updated the
+                    // shared list, so the badge is correct without refetching.
+                    notifProvider.ensureLoaded();
                   });
                 },
                 icon: unreadCount > 0

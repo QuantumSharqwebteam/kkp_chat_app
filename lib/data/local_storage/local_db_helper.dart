@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/models/group_message_model.dart';
 import 'package:kkpchatapp/data/models/group_model.dart';
@@ -50,7 +51,8 @@ class LocalDbHelper {
   // for storing user last seen time or when he/ she came online
   static Box<dynamic> get _lastSeenBoxInstance => Hive.box("lastSeenTimeBox");
 
-  static Box<dynamic> get _lastMessageBoxInstance => Hive.box(_lastMessageMapKey);
+  static Box<dynamic> get _lastMessageBoxInstance =>
+      Hive.box(_lastMessageMapKey);
 
   static Box<dynamic> get _feedBox => Hive.box('feedBox');
 
@@ -204,7 +206,9 @@ class LocalDbHelper {
     final email = getProfile()?.email;
     if (email != null) {
       final box = await Hive.openBox<String>('callLogs_$email');
-      return box.values.map((log) => CallLogModel.fromJson(jsonDecode(log))).toList();
+      return box.values
+          .map((log) => CallLogModel.fromJson(jsonDecode(log)))
+          .toList();
     }
     return [];
   }
@@ -213,7 +217,9 @@ class LocalDbHelper {
     final email = getProfile()?.email;
     if (email != null) {
       final box = await Hive.openBox<String>('callLogs_$email');
-      final existingLogs = box.values.map((log) => CallLogModel.fromJson(jsonDecode(log))).toList();
+      final existingLogs = box.values
+          .map((log) => CallLogModel.fromJson(jsonDecode(log)))
+          .toList();
       final updatedLogs = [...existingLogs, ...newCallLogs];
       await box.clear();
       for (var log in updatedLogs) {
@@ -237,22 +243,26 @@ class LocalDbHelper {
     await _lastMessageBoxInstance.clear();
   }
 
-  static Future<void> updateUnreadCount(String agentEmail, String customerEmail, int count) async {
+  static Future<void> updateUnreadCount(
+      String agentEmail, String customerEmail, int count) async {
     final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
     await box.put(customerEmail, count);
   }
 
-  static Future<int?> getUnreadCount(String agentEmail, String customerEmail) async {
+  static Future<int?> getUnreadCount(
+      String agentEmail, String customerEmail) async {
     final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
     return box.get(customerEmail, defaultValue: 0);
   }
 
-  static Future<void> clearUnreadCount(String agentEmail, String customerEmail) async {
+  static Future<void> clearUnreadCount(
+      String agentEmail, String customerEmail) async {
     final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
     await box.put(customerEmail, 0);
   }
 
-  static Future<void> incrementUnreadCount(String agentEmail, String customerEmail) async {
+  static Future<void> incrementUnreadCount(
+      String agentEmail, String customerEmail) async {
     final box = await Hive.openBox<int>('${unreadCountsBoxKey}_$agentEmail');
     final currentCount = box.get(customerEmail, defaultValue: 0);
     await box.put(customerEmail, currentCount! + 1);
@@ -274,13 +284,15 @@ class LocalDbHelper {
   // Save product list to Hive as Map<String, dynamic>
   static Future<void> saveProducts(List<Product> products) async {
     try {
-      debugPrint("💾 [LocalDbHelper] Saving ${products.length} products to Hive...");
+      debugPrint(
+          "💾 [LocalDbHelper] Saving ${products.length} products to Hive...");
       final box = await Hive.openBox<dynamic>(_productBoxKey);
       await box.clear();
       for (var product in products) {
         await box.add(product.toJson());
       }
-      await _box.put(_lastProductFetchTimeKey, DateTime.now().millisecondsSinceEpoch);
+      await _box.put(
+          _lastProductFetchTimeKey, DateTime.now().millisecondsSinceEpoch);
       debugPrint("✅ [LocalDbHelper] Products saved successfully!");
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Failed to save products: $e");
@@ -300,7 +312,8 @@ class LocalDbHelper {
         }
         return Product.fromJson({});
       }).toList();
-      debugPrint("📋 [LocalDbHelper] Found ${products.length} products in Hive.");
+      debugPrint(
+          "📋 [LocalDbHelper] Found ${products.length} products in Hive.");
       return products;
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Failed to fetch products: $e");
@@ -313,10 +326,12 @@ class LocalDbHelper {
     try {
       final lastFetchTime = _box.get(_lastProductFetchTimeKey);
       if (lastFetchTime == null) {
-        debugPrint("🔄 [LocalDbHelper] No cached products found. Fetch required.");
+        debugPrint(
+            "🔄 [LocalDbHelper] No cached products found. Fetch required.");
         return true; // Never fetched before
       }
-      debugPrint("🗂️ [LocalDbHelper] Cached products found. Fetch not required.");
+      debugPrint(
+          "🗂️ [LocalDbHelper] Cached products found. Fetch not required.");
       return false;
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Failed to check fetch requirement: $e");
@@ -341,7 +356,8 @@ class LocalDbHelper {
   // Add or update a single product in Hive as Map<String, dynamic>
   static Future<void> addOrUpdateProduct(Product product) async {
     try {
-      debugPrint("🔄 [LocalDbHelper] Adding/updating product: ${product.productName}");
+      debugPrint(
+          "🔄 [LocalDbHelper] Adding/updating product: ${product.productName}");
       final box = await Hive.openBox<dynamic>(_productBoxKey);
       final productMaps = box.values.toList();
       final existingIndex = productMaps.indexWhere(
@@ -409,35 +425,55 @@ class LocalDbHelper {
   }
 
   // Returns the Hive box name for a specific group's messages
-  static String _groupChatBoxName(String groupId) => '${_groupChatBoxKey}_$groupId';
+  static String _groupChatBoxName(String groupId) =>
+      '${_groupChatBoxKey}_$groupId';
 
   // Save a message into the group-specific box
-  static Future<void> saveGroupMessage(GroupMessageModel message, String groupId) async {
-    debugPrint("💾 [LocalDbHelper] Saving message ${message.messageId} → group: $groupId");
+  static Future<void> saveGroupMessage(
+      GroupMessageModel message, String groupId) async {
+    debugPrint(
+        "💾 [LocalDbHelper] Saving message ${message.messageId} → group: $groupId");
     final box = await Hive.openBox<dynamic>(_groupChatBoxName(groupId));
     await box.put(message.messageId, message.toMap());
   }
 
+  // Save many messages into the group-specific box in a single write
+  static Future<void> saveGroupMessages(
+      List<GroupMessageModel> messages, String groupId) async {
+    if (messages.isEmpty) return;
+    final box = await Hive.openBox<dynamic>(_groupChatBoxName(groupId));
+    await box.putAll({
+      for (final message in messages) message.messageId: message.toMap(),
+    });
+  }
+
   // Get all messages for a specific group
-  static Future<List<GroupMessageModel>> getGroupMessages(String groupId) async {
+  static Future<List<GroupMessageModel>> getGroupMessages(
+      String groupId) async {
     debugPrint("📥 [LocalDbHelper] Loading messages for group: $groupId");
     final box = await Hive.openBox<dynamic>(_groupChatBoxName(groupId));
-    final groupMessages =
-        box.values.map((map) => GroupMessageModel.fromMap(Map<String, dynamic>.from(map))).toList();
-    debugPrint("📋 [LocalDbHelper] Found ${groupMessages.length} local messages for group: $groupId");
+    final groupMessages = box.values
+        .map((map) => GroupMessageModel.fromMap(Map<String, dynamic>.from(map)))
+        .toList();
+    debugPrint(
+        "📋 [LocalDbHelper] Found ${groupMessages.length} local messages for group: $groupId");
     return groupMessages;
   }
 
   // Delete a single message from a group's box
-  static Future<void> deleteGroupMessage(String messageId, String groupId) async {
-    debugPrint("🗑️ [LocalDbHelper] Deleting message: $messageId from group: $groupId");
+  static Future<void> deleteGroupMessage(
+      String messageId, String groupId) async {
+    debugPrint(
+        "🗑️ [LocalDbHelper] Deleting message: $messageId from group: $groupId");
     final box = await Hive.openBox<dynamic>(_groupChatBoxName(groupId));
     await box.delete(messageId);
   }
 
   // Update (overwrite) a message in a group's box
-  static Future<void> updateGroupMessage(GroupMessageModel message, String groupId) async {
-    debugPrint("🔄 [LocalDbHelper] Updating message: ${message.messageId} in group: $groupId");
+  static Future<void> updateGroupMessage(
+      GroupMessageModel message, String groupId) async {
+    debugPrint(
+        "🔄 [LocalDbHelper] Updating message: ${message.messageId} in group: $groupId");
     final box = await Hive.openBox<dynamic>(_groupChatBoxName(groupId));
     await box.put(message.messageId, message.toMap());
   }
@@ -457,7 +493,8 @@ class LocalDbHelper {
       'message': message,
       'timestamp': timestamp.toIso8601String(),
     });
-    debugPrint("💾 [LocalDbHelper] Saved last message for group $groupId: \"$message\"");
+    debugPrint(
+        "💾 [LocalDbHelper] Saved last message for group $groupId: \"$message\"");
   }
 
   // Get the last message preview for a group (returns null if none saved)
@@ -467,7 +504,9 @@ class LocalDbHelper {
     final data = box.get(groupId);
     if (data is Map) {
       final msg = data['message']?.toString() ?? '';
-      final ts = data['timestamp'] != null ? DateTime.tryParse(data['timestamp'].toString()) : null;
+      final ts = data['timestamp'] != null
+          ? DateTime.tryParse(data['timestamp'].toString())
+          : null;
       return (message: msg, timestamp: ts);
     }
     return (message: '', timestamp: null);
@@ -479,7 +518,8 @@ class LocalDbHelper {
   static Future<int> getGroupChatUnreadCount() async {
     try {
       final box = await Hive.openBox<int>(groupChatUnreadCountKey);
-      return box.get('count') ?? 0; // Use null-coalescing operator to handle null
+      return box.get('count') ??
+          0; // Use null-coalescing operator to handle null
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Error getting group chat unread count: $e");
       return 0; // Return default value on error
@@ -492,9 +532,11 @@ class LocalDbHelper {
       final box = await Hive.openBox<int>(groupChatUnreadCountKey);
       int currentCount = box.get('count') ?? 0; // Use null-coalescing operator
       await box.put('count', currentCount + 1);
-      debugPrint("✅ [LocalDbHelper] Incremented group chat unread count to ${currentCount + 1}");
+      debugPrint(
+          "✅ [LocalDbHelper] Incremented group chat unread count to ${currentCount + 1}");
     } catch (e) {
-      debugPrint("❌ [LocalDbHelper] Error incrementing group chat unread count: $e");
+      debugPrint(
+          "❌ [LocalDbHelper] Error incrementing group chat unread count: $e");
       rethrow;
     }
   }
@@ -518,7 +560,8 @@ class LocalDbHelper {
       await box.put('count', 0);
       debugPrint("✅ [LocalDbHelper] Cleared group chat unread count");
     } catch (e) {
-      debugPrint("❌ [LocalDbHelper] Error clearing group chat unread count: $e");
+      debugPrint(
+          "❌ [LocalDbHelper] Error clearing group chat unread count: $e");
       rethrow;
     }
   }
@@ -530,7 +573,8 @@ class LocalDbHelper {
       await Hive.openBox<int>(groupChatUnreadCountKey);
       debugPrint("✅ [LocalDbHelper] Initialized group chat unread count box");
     } catch (e) {
-      debugPrint("❌ [LocalDbHelper] Error initializing group chat unread count box: $e");
+      debugPrint(
+          "❌ [LocalDbHelper] Error initializing group chat unread count box: $e");
       rethrow;
     }
   }
@@ -546,7 +590,8 @@ class LocalDbHelper {
     final box = await Hive.openBox<int>(groupUnreadCountsBoxKey);
     final current = box.get(groupId, defaultValue: 0)!;
     await box.put(groupId, current + 1);
-    debugPrint("📈 [LocalDbHelper] Group $groupId unread count: ${current + 1}");
+    debugPrint(
+        "📈 [LocalDbHelper] Group $groupId unread count: ${current + 1}");
   }
 
   static Future<void> clearGroupUnreadCount(String groupId) async {
@@ -561,7 +606,8 @@ class LocalDbHelper {
       String targetId, String groupId) async {
     final box = await Hive.openBox<String>(groupTargetMappingBoxKey);
     await box.put(targetId, groupId);
-    debugPrint('🗺️ [LocalDbHelper] Mapped targetId $targetId → groupId $groupId');
+    debugPrint(
+        '🗺️ [LocalDbHelper] Mapped targetId $targetId → groupId $groupId');
   }
 
   static Future<String?> getGroupIdByTargetId(String targetId) async {
@@ -582,7 +628,8 @@ class LocalDbHelper {
       for (var group in groups) {
         await box.add(group.toJson());
       }
-      await _box.put('lastGroupsFetchTime', DateTime.now().millisecondsSinceEpoch);
+      await _box.put(
+          'lastGroupsFetchTime', DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Failed to save groups: $e");
       rethrow;
@@ -617,7 +664,8 @@ class LocalDbHelper {
       for (var group in userGroups) {
         await box.add(group.toJson());
       }
-      await _box.put('lastUserGroupsFetchTime', DateTime.now().millisecondsSinceEpoch);
+      await _box.put(
+          'lastUserGroupsFetchTime', DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
       debugPrint("❌ [LocalDbHelper] Failed to save user groups: $e");
       rethrow;
@@ -682,14 +730,20 @@ class LocalDbHelper {
     return await Hive.openBox<dynamic>(_inquiryFormsBoxKey);
   }
 
-  static Future<void> saveInquiryForms(String email, List<FormDataModel> forms) async {
+  static Future<void> saveInquiryForms(
+      String email, List<FormDataModel> forms) async {
     try {
       final box = await _inquiryFormsBox();
       final serialized = forms.map((form) => form.toMap()).toList();
       await box.put(email, serialized);
-      debugPrint("✅ [LocalDbHelper] Cached ${forms.length} inquiry forms for $email");
+      // No success line here — InquiryProvider already reports the same count
+      // for the same email on the line immediately above this one.
     } catch (e) {
-      debugPrint("❌ [LocalDbHelper] Failed to cache inquiry forms: $e");
+      LoggingService.instance.logStorage(
+        'Failed to cache inquiry forms for $email: $e',
+        level: LogLevel.error,
+        error: e,
+      );
     }
   }
 
@@ -705,7 +759,8 @@ class LocalDbHelper {
           } else if (item is String) {
             final json = jsonDecode(item);
             if (json is Map) {
-              forms.add(FormDataModel.fromJson(Map<String, dynamic>.from(json)));
+              forms
+                  .add(FormDataModel.fromJson(Map<String, dynamic>.from(json)));
             }
           }
         }
@@ -732,7 +787,8 @@ class LocalDbHelper {
       String agentEmail, List<dynamic> customers) async {
     try {
       final serialized = customers
-          .map((c) => c is Map ? Map<String, dynamic>.from(c) : <String, dynamic>{})
+          .map((c) =>
+              c is Map ? Map<String, dynamic>.from(c) : <String, dynamic>{})
           .toList();
       // Use jsonEncode/Decode so nested maps stay properly typed on read-back
       await _box.put('assignedCustomers_$agentEmail', jsonEncode(serialized));
@@ -750,8 +806,8 @@ class LocalDbHelper {
       if (raw is String && raw.isNotEmpty) {
         final decoded = jsonDecode(raw);
         if (decoded is List) {
-          return List<dynamic>.from(
-              decoded.map((c) => c is Map ? Map<String, dynamic>.from(c) : <String, dynamic>{}));
+          return List<dynamic>.from(decoded.map((c) =>
+              c is Map ? Map<String, dynamic>.from(c) : <String, dynamic>{}));
         }
       }
     } catch (e) {

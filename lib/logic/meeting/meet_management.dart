@@ -91,6 +91,36 @@ class MeetingManagement with ChangeNotifier {
     return null;
   }
 
+  /// Whether a meeting still counts as "upcoming".
+  ///
+  /// Being in the future is not enough — a meeting marked Completed or
+  /// Cancelled is done with, even if its start time has not passed yet (an
+  /// agent wrapping up early, or cancelling tomorrow's call). Those used to
+  /// keep showing on the agent home screen until the clock caught up.
+  ///
+  /// Deliberately a deny-list rather than `== 'scheduled'`: an empty or
+  /// unrecognised status keeps the meeting visible instead of silently hiding
+  /// it.
+  static bool _isOpenStatus(String status) {
+    final normalized = status.trim().toLowerCase();
+    return normalized != 'completed' && normalized != 'cancelled';
+  }
+
+  /// Newest `startTime` first. Meetings with an unparseable time sink to the
+  /// bottom rather than being dropped or landing at an arbitrary position.
+  static List<MeetingModel> _sortLatestFirst(List<MeetingModel> meetings) {
+    final sorted = List<MeetingModel>.from(meetings);
+    sorted.sort((a, b) {
+      final aTime = DateTime.tryParse(a.startTime);
+      final bTime = DateTime.tryParse(b.startTime);
+      if (aTime == null && bTime == null) return 0;
+      if (aTime == null) return 1;
+      if (bTime == null) return -1;
+      return bTime.compareTo(aTime);
+    });
+    return sorted;
+  }
+
   // Fetch all meetings
   Future<void> fetchAllMeetings() async {
     if (!ConnectivityService.instance.isOnline) {
@@ -108,7 +138,7 @@ class MeetingManagement with ChangeNotifier {
         level: LogLevel.info);
 
     try {
-      _meetings = await _meetingService.getAllMeetings();
+      _meetings = _sortLatestFirst(await _meetingService.getAllMeetings());
       _logger.logUi(
         'MeetingManagement.fetchAllMeetings success | Count: ${_meetings.length}',
         level: LogLevel.info,
@@ -131,6 +161,9 @@ class MeetingManagement with ChangeNotifier {
   List<MeetingModel> getTodaysUpcomingMeetings() {
     final now = DateTime.now();
     final todaysMeetings = _meetings.where((meeting) {
+      // Completed / Cancelled meetings are not "upcoming", whatever the clock
+      // says.
+      if (!_isOpenStatus(meeting.status)) return false;
       try {
         final meetingDate = DateTime.parse(meeting.startTime).toLocal();
         // Check if meeting is today and in the future
@@ -171,6 +204,9 @@ class MeetingManagement with ChangeNotifier {
     final now = DateTime.now();
 
     final upcomingMeetings = _meetings.where((meeting) {
+      // Completed / Cancelled meetings are not "upcoming", whatever the clock
+      // says — this is what left finished meetings on the agent home screen.
+      if (!_isOpenStatus(meeting.status)) return false;
       try {
         final meetingDate = DateTime.parse(meeting.startTime).toLocal();
         return meetingDate.isAfter(now);

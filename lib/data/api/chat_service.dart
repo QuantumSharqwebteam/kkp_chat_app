@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
@@ -14,7 +15,8 @@ class ChatService {
 
   final http.Client client;
 
-  ChatService({http.Client? httpClient}) : client = httpClient ?? http.Client();
+  ChatService({http.Client? httpClient})
+      : client = httpClient ?? ApiClient.create();
 
   /// ** Get Previous Chat Messages**
   // Future<List<Map<String, dynamic>>> getPreviousChats(
@@ -246,7 +248,6 @@ class ChatService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      LoggingService.instance.logNetwork("Form Data: ${data.toString()}");
 
       List<FormDataModel> formList = (data['formData'] as List)
           .map((item) => FormDataModel.fromJson(item))
@@ -272,7 +273,6 @@ class ChatService {
     // print(response.body);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      LoggingService.instance.logNetwork("Form Data: ${data.toString()}");
 
       List<FormDataModel> formList = (data['formData'] as List)
           .map((item) => FormDataModel.fromJson(item))
@@ -429,11 +429,14 @@ class ChatService {
     }
   }
 
-  Future<void> updateFormDetails({
+  /// Returns the decoded response body. The server echoes the stored form back
+  /// as `updatedMessage.form[0]`, which is the only reliable way to know which
+  /// of the submitted fields it actually persisted.
+  Future<Map<String, dynamic>> updateFormDetails({
     required String formId,
     required Map<String, dynamic> updates,
   }) async {
-    if (updates.isEmpty) return;
+    if (updates.isEmpty) return const {};
     final token = await LocalDbHelper.getToken();
     try {
       final url = Uri.parse("$baseUrl/chat/updateForm/$formId");
@@ -447,12 +450,19 @@ class ChatService {
       );
       final responseBody = jsonDecode(response.body);
 
-      if (responseBody['status'] != 200) {
-        if (kDebugMode) {
-          debugPrint("Failed to update form: ${response.body}");
-        }
-        throw Exception('Failed to update form: ${response.body}');
+      if (responseBody is! Map || responseBody['status'] != 200) {
+        // Surface the server's own message. The previous shape threw here and
+        // was re-wrapped by the catch below, so the UI toast read
+        // "Unable to update inquiry: Exception: Error updating form:
+        // Exception: Failed to update form: {json}".
+        final message = responseBody is Map && responseBody['message'] is String
+            ? responseBody['message'] as String
+            : 'Update failed (${response.statusCode})';
+        throw ApiException(message, statusCode: response.statusCode);
       }
+      return Map<String, dynamic>.from(responseBody);
+    } on ApiException {
+      rethrow;
     } catch (e) {
       throw Exception('Error updating form: $e');
     }
@@ -555,9 +565,6 @@ class ChatService {
           "Authorization": "Bearer $token",
         },
       );
-
-      // 🔴 ACTUAL BACKEND PAYLOAD PRINTING:
-      debugPrint('ACTUAL_CALL_LOGS_PAYLOAD: ${response.body}');
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);

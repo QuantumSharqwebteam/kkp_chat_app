@@ -37,6 +37,21 @@ class MeetingModel {
       version: json['__v'] ?? 0,
     );
   }
+
+  /// Mirrors [fromJson]'s key names so a logged payload can be compared
+  /// directly against the raw API response.
+  Map<String, dynamic> toJson() => {
+        '_id': id,
+        'title': title,
+        'location': location,
+        'link': link,
+        'startTime': startTime,
+        'status': status,
+        'scheduledPerson': scheduledPerson.toJson(),
+        'participants': participants,
+        'createdAt': createdAt,
+        '__v': version,
+      };
 }
 
 class ScheduledPerson {
@@ -57,4 +72,10 @@ class ScheduledPerson {
       name: json['name'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        '_id': id,
+        'email': email,
+        'name': name,
+      };
 }

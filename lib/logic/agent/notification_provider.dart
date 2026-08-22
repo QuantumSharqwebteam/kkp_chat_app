@@ -8,17 +8,67 @@ class NotificationProvider extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
 
+  /// The request currently in flight, if any. Several screens can ask for
+  /// notifications at once (home init, app resume, returning from the
+  /// notification screen); without this each caller fired its own HTTP request.
+  Future<void>? _inFlight;
+
+  /// When the list was last successfully loaded — lets callers decide whether a
+  /// refresh is worth making.
+  DateTime? _lastFetchedAt;
+
+  /// How long a loaded list is considered fresh enough to reuse without
+  /// hitting the network again.
+  static const Duration _freshFor = Duration(minutes: 2);
+
   List<NotificationModel> get notifications => _notifications;
   bool get isLoading => _isLoading;
+  DateTime? get lastFetchedAt => _lastFetchedAt;
 
-  Future<void> fetchNotifications() async {
+  /// True when nothing has been loaded yet, or the cached list has aged out.
+  bool get isStale {
+    final last = _lastFetchedAt;
+    return last == null || DateTime.now().difference(last) > _freshFor;
+  }
+
+  /// Cache-first entry point for screens.
+  ///
+  /// Returns immediately when the cached list is still fresh, so reopening the
+  /// notification screen renders instantly from the provider instead of
+  /// refetching and flashing a loader over data we already have. Pass
+  /// [force] for user-initiated refreshes (pull-to-refresh).
+  Future<void> ensureLoaded({bool force = false}) {
+    if (!force && !isStale) return Future<void>.value();
+    return fetchNotifications();
+  }
+
+  /// Fetches the notification list, collapsing concurrent callers onto a single
+  /// request.
+  Future<void> fetchNotifications() {
+    final existing = _inFlight;
+    if (existing != null) return existing;
+
+    final request = _fetchNotifications();
+    _inFlight = request;
+    return request.whenComplete(() {
+      if (identical(_inFlight, request)) _inFlight = null;
+    });
+  }
+
+  Future<void> _fetchNotifications() async {
     if (!ConnectivityService.instance.isOnline) {
       _isLoading = false;
       notifyListeners();
       return;
     }
-    _isLoading = true;
-    notifyListeners();
+    // Only advertise loading on a cold cache. A refresh over an existing list
+    // stays silent, so the screen keeps showing the notifications it already
+    // has instead of swapping them for a full-screen loader.
+    final showLoading = _notifications.isEmpty;
+    if (showLoading) {
+      _isLoading = true;
+      notifyListeners();
+    }
     try {
       final notifications = await _authRepo.getParsedNotifications();
       notifications.sort((a, b) {
@@ -27,6 +77,7 @@ class NotificationProvider extends ChangeNotifier {
         return dateB.compareTo(dateA);
       });
       _notifications = notifications;
+      _lastFetchedAt = DateTime.now();
     } catch (e) {
       debugPrint('Failed to load notifications: $e');
     } finally {

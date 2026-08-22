@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
@@ -18,15 +20,17 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  late NotificationProvider _notificationProvider;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notificationProvider =
-          Provider.of<NotificationProvider>(context, listen: false);
-      _notificationProvider.fetchNotifications();
+      if (!mounted) return;
+      // Cache-first: the provider outlives this screen, so a freshly-loaded
+      // list is reused as-is. Reopening the screen no longer refetches and no
+      // longer flashes a loader over notifications we already have.
+      unawaited(
+        context.read<NotificationProvider>().ensureLoaded(),
+      );
     });
   }
 
@@ -101,14 +105,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       body: Stack(
         children: [
-          if (provider.isLoading)
+          // Loader only on a cold cache — a background refresh must not hide
+          // the list that is already on screen.
+          if (provider.isLoading && provider.notifications.isEmpty)
             const FullScreenLoader()
           else if (provider.notifications.isEmpty)
             const EmptyNotificationsWidget()
           else
             RefreshIndicator(
               // ← FIX: pull to refresh support
-              onRefresh: () => provider.fetchNotifications(),
+              // User-initiated: always hits the network.
+              onRefresh: () => provider.ensureLoaded(force: true),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: grouped.entries

@@ -9,6 +9,9 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
+import 'package:kkpchatapp/core/services/s3_upload_service.dart';
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
@@ -25,9 +28,21 @@ class CustomerProfilePage extends StatefulWidget {
 
 class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final AuthRepository _authRepository = AuthRepository();
+  final S3UploadService _s3uploadService = S3UploadService();
   Profile? _profile;
   bool _isEditing = false;
   File? _selectedImage;
+
+  /// True when the user tapped "Remove Photo". Distinct from
+  /// `_selectedImage == null`, which just means "no new pick" — without this
+  /// flag a removal was indistinguishable from leaving the avatar alone, and
+  /// the existing server-side photo was never cleared.
+  bool _removePhoto = false;
+
+  /// In-flight guard for the save button (uploads make saving slow enough to
+  /// double-tap).
+  bool _isSaving = false;
+
   final ImagePicker _picker = ImagePicker();
 
   final _nameController = TextEditingController();
@@ -81,7 +96,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               },
             ),
             if (_selectedImage != null ||
-                (_profile?.profileUrl != null &&
+                (!_removePhoto &&
+                    _profile?.profileUrl != null &&
                     _profile!.profileUrl!.isNotEmpty))
               ListTile(
                 leading: Icon(Icons.delete, color: Colors.red),
@@ -89,7 +105,12 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     Text('Remove Photo', style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
-                  setState(() => _selectedImage = null);
+                  setState(() {
+                    _selectedImage = null;
+                    // Flag the removal so _saveChanges sends profileUrl: ''.
+                    // Clearing _selectedImage alone left the server photo intact.
+                    _removePhoto = true;
+                  });
                 },
               ),
           ],
@@ -106,7 +127,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       imageQuality: 80,
     );
     if (pickedFile != null) {
-      setState(() => _selectedImage = File(pickedFile.path));
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+        _removePhoto = false; // a new pick supersedes a pending removal
+      });
     }
   }
 
@@ -252,6 +276,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     }
 
     final profileData = Profile.fromJson(userData['message']);
+    if (!mounted) return;
     setState(() {
       _profile = profileData;
     });
@@ -276,10 +301,54 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     }
   }
 
+  /// Uploads a newly picked avatar and returns the value to send as
+  /// `profileUrl`:
+  ///   - a fresh S3 url when the user picked an image
+  ///   - `''` when the user chose "Remove Photo" (the API includes the key when
+  ///     it is non-null, so an empty string is what actually clears it)
+  ///   - `null` when the avatar is untouched, so the key is omitted entirely
+  ///     and the server keeps whatever it already had
+  ///
+  /// Throws when an upload was requested but failed, so the caller can abort
+  /// instead of silently saving the rest of the form without the image.
+  Future<String?> _resolveProfileUrl() async {
+    if (_removePhoto) {
+      LoggingService.instance.logNetwork('Profile image: removal requested');
+      return '';
+    }
+
+    final image = _selectedImage;
+    if (image == null) return null;
+
+    final bytes = await image.length();
+    LoggingService.instance.logNetwork(
+      'Profile image: uploading ${image.path.split('/').last} ($bytes bytes) to S3',
+    );
+
+    final uploadedUrl = await _s3uploadService.uploadFile(image);
+
+    // uploadFile swallows its own errors and returns null.
+    if (uploadedUrl == null || uploadedUrl.isEmpty) {
+      LoggingService.instance.logNetwork(
+        'Profile image: S3 upload failed',
+        level: LogLevel.error,
+      );
+      throw Exception('Image upload failed. Please try again.');
+    }
+
+    LoggingService.instance.logNetwork(
+      'Profile image: uploaded → $uploadedUrl',
+    );
+    return uploadedUrl;
+  }
+
   Future<void> _saveChanges() async {
+    if (_isSaving) return; // guard against double taps
     if (!_validateInputs()) {
       return;
     }
+
+    setState(() => _isSaving = true);
 
     final updatedProfile = Profile(
       name: _nameController.text.trim(),
@@ -299,6 +368,12 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     );
 
     try {
+      // Must happen before the update call — the picked file has to become a
+      // url before it can be sent. This is the step that was missing entirely:
+      // _selectedImage was set by the picker and then simply discarded.
+      final profileUrl = await _resolveProfileUrl();
+      if (!mounted) return;
+
       final response = await _authRepository.updateUserDetails(
         name: updatedProfile.name,
         number: _numberController.text.trim(),
@@ -306,22 +381,32 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         gstNo: updatedProfile.gstNo,
         panNo: updatedProfile.panNo,
         address: updatedProfile.address?.first,
+        profileUrl: profileUrl,
       );
+      if (!mounted) return;
 
       if (response['message'] == "Item updated successfully") {
         final newProfile = Profile.fromJson(response['data']);
         await LocalDbHelper.saveProfile(newProfile);
+        if (!mounted) return;
+
+        // CachedNetworkImage keys its cache by url. If the server hands back
+        // the same url for a replaced image, the stale bitmap would keep
+        // showing until the cache expired — so evict it explicitly.
+        await _evictAvatarCache(_profile?.profileUrl);
+        await _evictAvatarCache(newProfile.profileUrl);
+        if (!mounted) return;
+
         setState(() {
           _profile = newProfile;
           _isEditing = false;
           _selectedImage = null;
+          _removePhoto = false;
         });
 
-        if (mounted) {
-          final homeProvider =
-              Provider.of<CustomerHomeProvider>(context, listen: false);
-          await homeProvider.loadUserInfo();
-        }
+        final homeProvider =
+            Provider.of<CustomerHomeProvider>(context, listen: false);
+        await homeProvider.loadUserInfo();
 
         if (!mounted) return;
         Utils().showSuccessDialog(context, "Profile Updated!", true);
@@ -332,8 +417,52 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         _showError(response['message'] ?? "Update failed");
       }
     } catch (e) {
-      _showError("Error: ${e.toString()}");
+      LoggingService.instance.logNetwork(
+        'Profile update failed: $e',
+        level: LogLevel.error,
+        error: e,
+      );
+      // ApiException.toString() is already the server's own message; only a
+      // genuinely unexpected error needs the "Error:" prefix.
+      _showError(e is ApiException ? e.message : "Error: $e");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  /// Drops a url from both the CachedNetworkImage store and Flutter's in-memory
+  /// image cache, so a replaced avatar actually re-renders.
+  Future<void> _evictAvatarCache(String? url) async {
+    if (url == null || url.isEmpty || !url.startsWith('http')) return;
+    try {
+      await CachedNetworkImage.evictFromCache(url);
+      await NetworkImage(url).evict();
+    } catch (e) {
+      LoggingService.instance.logNetwork('Avatar cache evict failed: $e');
+    }
+  }
+
+  /// Cancelling out of edit mode discards any pending avatar change and
+  /// restores the form to the saved profile — previously a picked image and a
+  /// pending removal both survived "Cancel".
+  void _toggleEditing() {
+    setState(() {
+      _isEditing = !_isEditing;
+      if (!_isEditing) {
+        _selectedImage = null;
+        _removePhoto = false;
+        _nameError = null;
+        _mobileError = null;
+        _gstError = null;
+        _panError = null;
+        _houseNoError = null;
+        _streetError = null;
+        _cityError = null;
+        _pincodeError = null;
+        final profile = _profile;
+        if (profile != null) _populateControllers(profile);
+      }
+    });
   }
 
   void _showError(String message) {
@@ -367,7 +496,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         elevation: 0.5,
         actions: [
           TextButton(
-            onPressed: () => setState(() => _isEditing = !_isEditing),
+            onPressed: _isSaving ? null : _toggleEditing,
             child: Text(
               _isEditing
                   ? AppLocalizations.of(context)!.cancel
@@ -533,7 +662,10 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   Widget _buildHeader() {
     final profileUrl = _profile?.profileUrl;
-    final hasNetworkImage = profileUrl != null &&
+    // A pending removal previews as initials, so the user sees what they are
+    // about to save rather than the photo they just asked to delete.
+    final hasNetworkImage = !_removePhoto &&
+        profileUrl != null &&
         profileUrl.isNotEmpty &&
         profileUrl.startsWith('http');
 
@@ -750,12 +882,25 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             ),
             elevation: 2,
           ),
-          onPressed: _saveChanges,
-          child: Text(
-            AppLocalizations.of(context)!.saveChanges,
-            style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
+          // Disabled while saving — an image upload makes this slow enough
+          // that a second tap would fire a duplicate update.
+          onPressed: _isSaving ? null : _saveChanges,
+          child: _isSaving
+              ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  AppLocalizations.of(context)!.saveChanges,
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
         ),
       ),
     );

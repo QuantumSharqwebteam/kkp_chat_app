@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/utils/chat_utils.dart';
@@ -13,6 +17,11 @@ class CustomerChatProvider extends ChangeNotifier {
   final String customerEmail;
   final String agentEmail;
 
+  /// Frames of unchanged scroll extent before a bottom-pin run is considered
+  /// settled, and the absolute ceiling on one run (~2s at 60fps).
+  static const int _bottomScrollSettleTicks = 8;
+  static const int _bottomScrollMaxTicks = 120;
+
   final ChatStorageService _storage = ChatStorageService();
   final ChatRepository _repo = ChatRepository();
   final ScrollController scrollController = ScrollController();
@@ -24,9 +33,28 @@ class CustomerChatProvider extends ChangeNotifier {
   bool _isLoadingMore = false;
   bool _hasScrolledToInitial = false;
   bool _keepPinnedToBottom = true;
+  bool _disposed = false;
+
+  /// False once the server reports no more history above [_oldestCursor].
+  bool _hasMoreOlder = true;
+
+  /// Strictly-decreasing pagination cursor.
+  DateTime? _oldestCursor;
+
+  // Bottom-pin loop state.
+  bool _bottomScrollScheduled = false;
+  bool _bottomScrollAnimate = false;
+  bool _pendingMarkInitial = false;
+  int _bottomScrollStableTicks = 0;
+  int _bottomScrollTotalTicks = 0;
+  double? _lastBottomExtent;
 
   final Set<String> _loadedMessageIds = {};
   final Set<String> _loadedCallIds = {};
+
+  /// messageId -> message. O(1) reply lookup; the screen used to scan the whole
+  /// list per row, which is O(messages²) for one full list rebuild.
+  final Map<String, ChatMessageModel> _byId = {};
 
   List<ChatMessageModel> get messages => _messages;
   bool get isInitialized => _isInitialized;
@@ -34,14 +62,23 @@ class CustomerChatProvider extends ChangeNotifier {
 
   CustomerChatProvider({required this.customerEmail, required this.agentEmail});
 
+  /// Verbose load/scroll tracing. Compiled out of release builds — debugPrint
+  /// is not, and these fire on hot paths.
   void _log(String message) {
+    if (!kDebugMode) return;
     debugPrint(
       '🧭 [CustomerChatTrace][Provider][$customerEmail] $message',
     );
   }
 
+  /// Single funnel for every message-list mutation. The ListView listens to
+  /// messageListVersion, so a mutation that only calls notifyListeners() would
+  /// not repaint — which is why read ticks used to stay grey until something
+  /// else happened to bump the version.
   void _notifyMessageListChanged(String reason) {
+    if (_disposed) return;
     messageListVersion.value++;
+    notifyListeners();
     _log(
       'messageListVersion=${messageListVersion.value} reason=$reason '
       'messages=${_messages.length} initialized=$_isInitialized '
@@ -69,9 +106,11 @@ class CustomerChatProvider extends ChangeNotifier {
 
     // Step 1: cache
     final bool boxExists = await Hive.boxExists(boxName);
+    if (_disposed) return;
     _log('load:cacheBoxExists=$boxExists');
     if (boxExists) {
       final cached = await _storage.getCustomerMessages(boxName);
+      if (_disposed) return;
       _log(
         'load:cacheFetched count=${cached.length} '
         'last=${cached.isNotEmpty ? cached.last.messageId : null}',
@@ -96,6 +135,7 @@ class CustomerChatProvider extends ChangeNotifier {
         customerEmail: customerEmail,
         limit: 20,
       );
+      if (_disposed) return;
       final chatMessages = fetched.map(_fromModel).toList();
       final newMessages = _removeDuplicates(chatMessages);
       _log(
@@ -112,32 +152,33 @@ class CustomerChatProvider extends ChangeNotifier {
       }
 
       if (_isInitialized && newMessages.isEmpty) {
-        // Cache was already in sync — no rebuild needed.
+        // Cache was already in sync — no rebuild needed, but fall through to
+        // the read-status sync below (this used to return and skip it, so read
+        // ticks never synced on the common path).
         if (hasDeferredInitialMessages) {
           _notifyMessageListChanged('load.deferred-cache-api-no-new');
           _jumpToBottom(markInitial: true);
         }
-        _log('load:apiNoNewMessages:return-no-rebuild');
-        return;
-      }
-
-      final shouldStayAtBottom = shouldAutoScrollForNewMessage;
-      if (!_isInitialized) {
-        _messages = chatMessages;
+        _log('load:apiNoNewMessages:no-rebuild');
       } else {
-        _messages.addAll(newMessages);
-      }
-      _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-      _isInitialized = true;
-      _notifyMessageListChanged(
-        hasDeferredInitialMessages
-            ? 'load.deferred-cache-api-new-messages'
-            : 'load.api-new-messages',
-      );
-      if (!_hasScrolledToInitial) {
-        _jumpToBottom(markInitial: true);
-      } else if (newMessages.isNotEmpty && shouldStayAtBottom) {
-        _jumpToBottom();
+        final shouldStayAtBottom = shouldAutoScrollForNewMessage;
+        if (!_isInitialized) {
+          _messages = chatMessages;
+        } else {
+          _messages.addAll(newMessages);
+        }
+        _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        _isInitialized = true;
+        _notifyMessageListChanged(
+          hasDeferredInitialMessages
+              ? 'load.deferred-cache-api-new-messages'
+              : 'load.api-new-messages',
+        );
+        if (!_hasScrolledToInitial) {
+          _jumpToBottom(markInitial: true);
+        } else if (newMessages.isNotEmpty && shouldStayAtBottom) {
+          _jumpToBottom();
+        }
       }
     } catch (e) {
       debugPrint('[CustomerChatProvider] API sync failed: $e');
@@ -151,13 +192,19 @@ class CustomerChatProvider extends ChangeNotifier {
       }
     }
 
+    if (_disposed) return;
+    _oldestCursor = _messages.isEmpty ? null : _messages.first.timestamp;
+
     // Step 3: read-status
     if (_messages.isEmpty) return;
     try {
       _log('load:readStatus:start');
       final lastTs = await _repo.fetchUserLastTimestamp(customerEmail);
+      if (_disposed) return;
       _log('load:readStatus:done ts=$lastTs');
-      if (lastTs != null) _markReadUpTo(lastTs, notify: false);
+      // Notify: this lands after the list has already rendered, so without it
+      // the ticks stay grey until some unrelated change repaints them.
+      if (lastTs != null) _markReadUpTo(lastTs);
     } catch (e) {
       debugPrint('[CustomerChatProvider] read-status sync failed: $e');
     }
@@ -166,10 +213,13 @@ class CustomerChatProvider extends ChangeNotifier {
   // ── Pagination ───────────────────────────────────────────────────────────
 
   Future<void> loadMore() async {
-    if (_isLoadingMore || !_hasScrolledToInitial) {
+    if (_disposed ||
+        _isLoadingMore ||
+        !_hasScrolledToInitial ||
+        !_hasMoreOlder) {
       _log(
         'loadMore:skip loadingMore=$_isLoadingMore '
-        'hasInitialScroll=$_hasScrolledToInitial',
+        'hasInitialScroll=$_hasScrolledToInitial hasMore=$_hasMoreOlder',
       );
       return;
     }
@@ -180,29 +230,50 @@ class CustomerChatProvider extends ChangeNotifier {
     _log('loadMore:start current=${_messages.length}');
 
     try {
-      final before = _messages.isNotEmpty
-          ? _messages.first.timestamp.toIso8601String()
-          : null;
+      // Explicit cursor rather than _messages.first: a page that comes back as
+      // pure duplicates must still advance it, or every scroll at the top
+      // re-issues the identical request forever.
+      final cursor = _oldestCursor ??
+          (_messages.isEmpty ? null : _messages.first.timestamp);
 
       final fetched = await _repo.fetchCustomerMessages(
         customerEmail: customerEmail,
         limit: 20,
-        before: before,
+        before: cursor?.toIso8601String(),
       );
+      if (_disposed) return;
 
       if (fetched.isEmpty) {
+        // Genuinely the start of history. Never infer this from a short page.
+        _hasMoreOlder = false;
         _log('loadMore:fetched-empty return-no-rebuild');
         return;
       }
 
       final chatMessages = fetched.map(_fromModel).toList();
+
+      DateTime? oldest;
+      for (final msg in chatMessages) {
+        if (oldest == null || msg.timestamp.isBefore(oldest)) {
+          oldest = msg.timestamp;
+        }
+      }
+      if (oldest != null) {
+        if (cursor != null && !oldest.isBefore(cursor)) {
+          _hasMoreOlder = false;
+        } else {
+          _oldestCursor = oldest;
+        }
+      }
+
       final newMessages = _removeDuplicates(chatMessages);
       _log(
         'loadMore:fetched=${fetched.length} new=${newMessages.length} '
-        'before=$before',
+        'before=$cursor',
       );
       if (newMessages.isNotEmpty) {
         await _storage.saveMessages(newMessages, customerEmail);
+        if (_disposed) return;
         _messages.insertAll(0, newMessages);
         _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         messagesChanged = true;
@@ -226,6 +297,7 @@ class CustomerChatProvider extends ChangeNotifier {
   // ── Incoming socket message ───────────────────────────────────────────────
 
   void addIncoming(Map<String, dynamic> data) {
+    if (_disposed) return;
     final shouldStayAtBottom = shouldAutoScrollForNewMessage;
     DateTime timestamp;
     try {
@@ -234,7 +306,9 @@ class CustomerChatProvider extends ChangeNotifier {
       timestamp = DateTime.now();
     }
 
-    final messageId = data['messageId'] as String?;
+    // The server returns '_id' on some paths; the background writer already
+    // hedges the same way, so honour it here or the two disagree and duplicate.
+    final messageId = (data['messageId'] ?? data['_id'])?.toString();
     final tsKey = 'ts:${timestamp.millisecondsSinceEpoch}';
 
     if ((messageId != null && _loadedMessageIds.contains(messageId)) ||
@@ -262,31 +336,41 @@ class CustomerChatProvider extends ChangeNotifier {
     _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     if (messageId != null) _loadedMessageIds.add(messageId);
     _loadedMessageIds.add(tsKey);
+    _index(msg);
     _notifyMessageListChanged('socket.addIncoming messageId=$messageId');
     if (shouldStayAtBottom) scrollToBottom();
 
-    _storage.saveMessage(msg, customerEmail);
+    unawaited(_storage.saveMessage(msg, customerEmail));
   }
 
   // ── Sent message (optimistic add) ────────────────────────────────────────
 
   void addSent(ChatMessageModel msg) {
+    if (_disposed) return;
     _messages.add(msg);
     _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     if (msg.messageId != null) _loadedMessageIds.add(msg.messageId!);
     _loadedMessageIds.add('ts:${msg.timestamp.millisecondsSinceEpoch}');
+    _index(msg);
     _notifyMessageListChanged('send.addSent messageId=${msg.messageId}');
     scrollToBottom();
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────
 
-  void markDeleted(String messageId) {
-    final idx = _messages.indexWhere((m) => m.messageId == messageId);
-    if (idx == -1) return;
-    _messages[idx].isDeleted = true;
-    _messages[idx].message = 'This message is deleted';
+  /// Returns true only when [messageId] belongs to THIS conversation.
+  /// The socket's messageDeleted dispatch is not filtered by customer, so
+  /// callers must gate their side effects on the return value.
+  bool markDeleted(String messageId) {
+    if (_disposed) return false;
+    final msg = _byId[messageId];
+    if (msg == null) return false;
+    if (msg.isDeleted) return true;
+    msg.isDeleted = true;
+    msg.message = 'This message is deleted';
     _notifyMessageListChanged('delete.markDeleted messageId=$messageId');
+    unawaited(_storage.saveMessage(msg, customerEmail));
+    return true;
   }
 
   // ── Read status ───────────────────────────────────────────────────────────
@@ -294,20 +378,24 @@ class CustomerChatProvider extends ChangeNotifier {
   void markReadUpToTimestamp(DateTime ts) => _markReadUpTo(ts);
 
   void _markReadUpTo(DateTime ts, {bool notify = true}) {
-    bool changed = false;
+    if (_disposed) return;
+    // `!isAfter` rather than `isBefore || ==`: DateTime.== also compares the
+    // isUtc flag, so with API timestamps parsed as UTC and socket ones as local
+    // the boundary message would never be marked read.
+    final changed = <ChatMessageModel>[];
     for (final msg in _messages) {
-      if (msg.read != true &&
-          (msg.timestamp.isBefore(ts) || msg.timestamp == ts)) {
+      if (msg.read != true && !msg.timestamp.isAfter(ts)) {
         msg.read = true;
-        changed = true;
+        changed.add(msg);
       }
     }
-    if (!changed) return;
-    _log('markReadUpTo changed notify=$notify ts=$ts');
-    if (notify) notifyListeners();
-    for (final msg in _messages) {
-      if (msg.read == true) _storage.saveMessage(msg, customerEmail);
-    }
+    if (changed.isEmpty) return;
+    _log('markReadUpTo changed=${changed.length} notify=$notify ts=$ts');
+    // Must go through the version funnel — the ListView listens to
+    // messageListVersion, so a bare notifyListeners() left ticks stale.
+    if (notify) _notifyMessageListChanged('markReadUpTo');
+    // One batched write of only what changed, not N writes of every read row.
+    unawaited(_storage.saveMessages(changed, customerEmail));
   }
 
   // ── Deduplication ─────────────────────────────────────────────────────────
@@ -319,6 +407,7 @@ class CustomerChatProvider extends ChangeNotifier {
           return false;
         }
         _loadedCallIds.add(msg.callId!);
+        _index(msg);
         return true;
       }
       final id = msg.messageId;
@@ -329,8 +418,20 @@ class CustomerChatProvider extends ChangeNotifier {
       }
       if (id != null) _loadedMessageIds.add(id);
       _loadedMessageIds.add(tsKey);
+      _index(msg);
       return true;
     }).toList();
+  }
+
+  // ── Message index ─────────────────────────────────────────────────────────
+
+  /// The message with [id], if it is still loaded in this chat.
+  ChatMessageModel? messageById(String? id) =>
+      (id == null || id.isEmpty) ? null : _byId[id];
+
+  void _index(ChatMessageModel msg) {
+    final id = msg.messageId;
+    if (id != null && id.isNotEmpty) _byId[id] = msg;
   }
 
   // ── Model conversion ──────────────────────────────────────────────────────
@@ -383,7 +484,8 @@ class CustomerChatProvider extends ChangeNotifier {
       !_hasScrolledToInitial || _keepPinnedToBottom || isAtBottom.value;
 
   void updateScrollPosition() {
-    if (!scrollController.hasClients ||
+    if (_disposed ||
+        !scrollController.hasClients ||
         !scrollController.position.hasContentDimensions) {
       return;
     }
@@ -407,50 +509,97 @@ class CustomerChatProvider extends ChangeNotifier {
   void _scheduleBottomScroll({
     required bool animate,
     bool markInitial = false,
-    int attemptsLeft = 6,
   }) {
+    if (_disposed) return;
+    if (markInitial) _pendingMarkInitial = true;
+    if (animate) _bottomScrollAnimate = true;
+    // Restart the settle window; an in-flight loop picks the new target up.
+    _bottomScrollStableTicks = 0;
+    _bottomScrollTotalTicks = 0;
+    _lastBottomExtent = null;
+    if (_bottomScrollScheduled) return;
+    _bottomScrollScheduled = true;
+    _tickBottomScroll();
+  }
+
+  /// Keeps re-pinning to the bottom until the scroll extent stops growing.
+  ///
+  /// A ListView.builder only *estimates* maxScrollExtent until its children are
+  /// laid out, and image bubbles resize again when their bitmaps arrive. A
+  /// fixed handful of retries (what this used to do) lands short of the real
+  /// bottom on a busy chat, and — worse — the short landing then clears
+  /// _keepPinnedToBottom, so later messages stop auto-scrolling too.
+  void _tickBottomScroll() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!scrollController.hasClients ||
-          !scrollController.position.hasContentDimensions) {
-        if (attemptsLeft > 0) {
-          _scheduleBottomScroll(
-            animate: animate,
-            markInitial: markInitial,
-            attemptsLeft: attemptsLeft - 1,
-          );
-        }
+      if (_disposed) {
+        _bottomScrollScheduled = false;
         return;
       }
-      final target = scrollController.position.maxScrollExtent;
-      if (animate) {
-        scrollController.animateTo(
-          target,
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-        );
-      } else {
-        scrollController.jumpTo(target);
+
+      if (!scrollController.hasClients ||
+          !scrollController.position.hasContentDimensions) {
+        _continueOrStopBottomScroll(extentChanged: false);
+        return;
       }
-      if (markInitial) _hasScrolledToInitial = true;
+
+      final position = scrollController.position;
+
+      // Never fight the user: if they have started dragging, stop pinning.
+      if (position.userScrollDirection != ScrollDirection.idle) {
+        _bottomScrollScheduled = false;
+        _pendingMarkInitial = false;
+        _bottomScrollAnimate = false;
+        return;
+      }
+
+      final target = position.maxScrollExtent;
+      if ((target - position.pixels).abs() > 1.0) {
+        if (_bottomScrollAnimate) {
+          scrollController.animateTo(
+            target,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+          );
+        } else {
+          scrollController.jumpTo(target);
+        }
+      }
+      // Only the first hop of a run animates; the settle hops are instant.
+      _bottomScrollAnimate = false;
+
+      if (_pendingMarkInitial) {
+        _hasScrolledToInitial = true;
+        _pendingMarkInitial = false;
+      }
       isAtBottom.value = true;
       _keepPinnedToBottom = true;
-      _log(
-        'scrollToBottom applied animate=$animate markInitial=$markInitial '
-        'target=$target attemptsLeft=$attemptsLeft',
-      );
 
-      if (attemptsLeft > 0) {
-        _scheduleBottomScroll(
-          animate: false,
-          markInitial: markInitial,
-          attemptsLeft: attemptsLeft - 1,
-        );
-      }
+      final extentChanged = _lastBottomExtent == null ||
+          (target - _lastBottomExtent!).abs() > 0.5;
+      _lastBottomExtent = target;
+      _continueOrStopBottomScroll(extentChanged: extentChanged);
     });
   }
 
+  void _continueOrStopBottomScroll({required bool extentChanged}) {
+    // Every time the content grows, give it a fresh settle window.
+    if (extentChanged) _bottomScrollStableTicks = 0;
+    _bottomScrollStableTicks++;
+    _bottomScrollTotalTicks++;
+
+    if (_bottomScrollStableTicks >= _bottomScrollSettleTicks ||
+        _bottomScrollTotalTicks >= _bottomScrollMaxTicks) {
+      _bottomScrollScheduled = false;
+      _pendingMarkInitial = false;
+      _lastBottomExtent = null;
+      return;
+    }
+    _tickBottomScroll();
+  }
+
   double? get _currentMaxScrollExtent {
-    if (!scrollController.hasClients ||
+    if (_disposed ||
+        !scrollController.hasClients ||
         !scrollController.position.hasContentDimensions) {
       return null;
     }
@@ -458,7 +607,8 @@ class CustomerChatProvider extends ChangeNotifier {
   }
 
   double? get _currentPixels {
-    if (!scrollController.hasClients ||
+    if (_disposed ||
+        !scrollController.hasClients ||
         !scrollController.position.hasContentDimensions) {
       return null;
     }
@@ -469,8 +619,9 @@ class CustomerChatProvider extends ChangeNotifier {
     required double? oldMaxScrollExtent,
     required double? oldPixels,
   }) {
-    if (oldMaxScrollExtent == null || oldPixels == null) return;
+    if (_disposed || oldMaxScrollExtent == null || oldPixels == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_disposed) return;
       if (!scrollController.hasClients ||
           !scrollController.position.hasContentDimensions) {
         return;
@@ -483,6 +634,7 @@ class CustomerChatProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     scrollController.dispose();
     isAtBottom.dispose();
     messageListVersion.dispose();

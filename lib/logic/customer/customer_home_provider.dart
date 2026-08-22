@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/services/connectivity_service.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/poster_model.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
@@ -101,16 +102,42 @@ class CustomerHomeProvider with ChangeNotifier {
   Future<void> loadUserInfo() async {
     try {
       final Map<String, dynamic> userData = await _authRepository.getUserInfo();
-      _profileData = Profile.fromJson(userData['message']);
+      final payload = userData['message'];
+
+      // The endpoint returns a String here for session-expiry / unauthorized
+      // ("Session expired due to login on another device", "You are Not
+      // Authorized"). Profile.fromJson takes a Map, so those payloads used to
+      // throw into the catch below and be swallowed — leaving the stale
+      // profile in place and, because notifyListeners() sat inside the try,
+      // never repainting. Every refresh path (init, resume, pull-to-refresh,
+      // post-profile-save) could therefore no-op invisibly.
+      if (payload is! Map) {
+        LoggingService.instance.logNetwork(
+          'loadUserInfo: unexpected payload — $payload',
+          level: LogLevel.warning,
+        );
+        return;
+      }
+
+      _profileData = Profile.fromJson(Map<String, dynamic>.from(payload));
       _name = _profileData?.name;
       _customerEmail = _profileData?.email;
       final box = await Hive.openBox('profileBox');
-      box.put('profile', _profileData!.toJson());
-      notifyListeners();
-    } catch (e) {
+      await box.put('profile', _profileData!.toJson());
+    } catch (e, stack) {
+      LoggingService.instance.logNetwork(
+        'loadUserInfo failed: $e',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stack,
+      );
       if (kDebugMode) {
         print(e.toString());
       }
+    } finally {
+      // Outside the try: a failed refresh must still repaint, otherwise
+      // listeners keep rendering whatever they had with no signal.
+      notifyListeners();
     }
   }
 

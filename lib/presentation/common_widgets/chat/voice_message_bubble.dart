@@ -29,59 +29,101 @@ class VoiceMessageBubble extends StatefulWidget {
 }
 
 class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
+  static const int _barCount = 20;
+  static const int _durationCacheLimit = 200;
+
   final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isPlaying = false;
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
+
+  // ValueNotifiers instead of setState: the waveform ticks at 10Hz and the
+  // position stream at ~60Hz. Driving those through setState repainted the
+  // whole bubble — timestamp, read tick and all 20 bars — on every tick.
+  final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
+  final ValueNotifier<Duration> _duration = ValueNotifier(Duration.zero);
+  final ValueNotifier<Duration> _position = ValueNotifier(Duration.zero);
+  final ValueNotifier<int> _waveTick = ValueNotifier(0);
+
+  /// Set when the audio source cannot be loaded or played (expired/404 S3 URL,
+  /// unsupported container). Renders a muted, tappable retry state instead of
+  /// a play button that silently does nothing.
+  final ValueNotifier<bool> _hasError = ValueNotifier(false);
 
   Timer? _waveformTimer;
-  final List<double> _barHeights = List.generate(20, (index) => 10.0);
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
 
+  /// Insertion-ordered, capped. Previously unbounded for the process lifetime.
   static final Map<String, Duration> _durationCache = {};
+
+  static void _cacheDuration(String url, Duration d) {
+    if (_durationCache.length >= _durationCacheLimit &&
+        !_durationCache.containsKey(url)) {
+      _durationCache.remove(_durationCache.keys.first);
+    }
+    _durationCache[url] = d;
+  }
 
   @override
   void initState() {
     super.initState();
 
-    for (int i = 0; i < _barHeights.length; i++) {
-      _barHeights[i] = 12 + 8 * sin(i * pi / _barHeights.length);
-    }
-
-    if (_durationCache.containsKey(widget.voiceUrl)) {
-      _duration = _durationCache[widget.voiceUrl]!;
+    final cached = _durationCache[widget.voiceUrl];
+    if (cached != null) {
+      _duration.value = cached;
     } else {
       // Load source only if not cached
-      _loadDuration();
+      unawaited(_loadDuration());
     }
 
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        final playing = state == PlayerState.playing;
-        setState(() => _isPlaying = playing);
-        _toggleWaveformAnimation(playing);
-      }
-    });
+    // Every subscription is retained so dispose() can cancel it, and every one
+    // carries an onError. In audioplayers the native error channel is funnelled
+    // into the same event stream onDurationChanged / onPositionChanged /
+    // onPlayerComplete derive from, so a stream error here without a handler
+    // escapes to the root zone and takes the app down.
+    _subscriptions.add(
+      _audioPlayer.onPlayerStateChanged.listen(
+        (state) {
+          final playing = state == PlayerState.playing;
+          _isPlaying.value = playing;
+          _toggleWaveformAnimation(playing);
+        },
+        onError: _handlePlaybackError,
+      ),
+    );
 
-    _audioPlayer.onDurationChanged.listen((d) {
-      if (mounted) {
-        setState(() => _duration = d);
-        _durationCache[widget.voiceUrl] = d; // Cache it
-      }
-    });
+    _subscriptions.add(
+      _audioPlayer.onDurationChanged.listen(
+        (d) {
+          _duration.value = d;
+          _cacheDuration(widget.voiceUrl, d);
+        },
+        onError: _handlePlaybackError,
+      ),
+    );
 
-    _audioPlayer.onPositionChanged.listen((p) {
-      if (mounted) setState(() => _position = p);
-    });
+    _subscriptions.add(
+      _audioPlayer.onPositionChanged.listen(
+        (p) => _position.value = p,
+        onError: _handlePlaybackError,
+      ),
+    );
 
-    _audioPlayer.onPlayerComplete.listen((event) {
-      if (mounted) {
-        setState(() {
-          _position = Duration.zero;
-          _isPlaying = false;
-        });
-        _toggleWaveformAnimation(false);
-      }
-    });
+    _subscriptions.add(
+      _audioPlayer.onPlayerComplete.listen(
+        (event) {
+          _position.value = Duration.zero;
+          _isPlaying.value = false;
+          _toggleWaveformAnimation(false);
+        },
+        onError: _handlePlaybackError,
+      ),
+    );
+  }
+
+  void _handlePlaybackError(Object error, [StackTrace? stackTrace]) {
+    debugPrint('🔇 [VoiceMessageBubble] ${widget.voiceUrl} failed: $error');
+    if (!mounted) return;
+    _waveformTimer?.cancel();
+    _isPlaying.value = false;
+    _hasError.value = true;
   }
 
   Future<void> _loadDuration() async {
@@ -89,53 +131,63 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
       await _audioPlayer.setSource(UrlSource(widget.voiceUrl));
       final d = await _audioPlayer.getDuration();
       if (d != null && mounted) {
-        setState(() => _duration = d);
-        _durationCache[widget.voiceUrl] = d;
+        _duration.value = d;
+        _cacheDuration(widget.voiceUrl, d);
       }
-    } catch (_) {}
+    } catch (e) {
+      // Duration is cosmetic — do not surface an error state here. The play
+      // path reports failure if the source is genuinely unusable.
+      debugPrint('🔇 [VoiceMessageBubble] duration load failed: $e');
+    }
   }
 
   @override
   void dispose() {
-    _audioPlayer.dispose();
     _waveformTimer?.cancel();
+    for (final subscription in _subscriptions) {
+      unawaited(subscription.cancel());
+    }
+    _subscriptions.clear();
+    _audioPlayer.dispose();
+    _isPlaying.dispose();
+    _duration.dispose();
+    _position.dispose();
+    _waveTick.dispose();
+    _hasError.dispose();
     super.dispose();
   }
 
+  /// Never throws. Wired to a VoidCallback onTap, so a rejected Future here
+  /// would have no handler at all.
   Future<void> _togglePlay() async {
-    if (_isPlaying) {
-      await _audioPlayer.pause();
-    } else {
-      await _audioPlayer.play(UrlSource(widget.voiceUrl));
+    try {
+      if (_isPlaying.value) {
+        await _audioPlayer.pause();
+      } else {
+        _hasError.value = false;
+        await _audioPlayer.play(UrlSource(widget.voiceUrl));
+      }
+    } catch (e, stackTrace) {
+      _handlePlaybackError(e, stackTrace);
     }
   }
 
-// 2. Update _toggleWaveformAnimation to simulate curving
   void _toggleWaveformAnimation(bool start) {
     _waveformTimer?.cancel();
     if (start) {
-      int tick = 0;
       _waveformTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
         if (!mounted) return;
-        setState(() {
-          for (int i = 0; i < _barHeights.length; i++) {
-            _barHeights[i] =
-                12 + 8 * sin((i + tick * 2) * pi / _barHeights.length);
-          }
-          tick++;
-        });
+        _waveTick.value++;
       });
     } else {
-      // When stopped, return to calm wave
-      setState(() {
-        for (int i = 0; i < _barHeights.length; i++) {
-          _barHeights[i] = 12 + 8 * sin(i * pi / _barHeights.length);
-        }
-      });
+      _waveTick.value = 0;
     }
   }
 
-  String _formatDuration(Duration d) {
+  static double _barHeight(int index, int tick) =>
+      12 + 8 * sin((index + tick * 2) * pi / _barCount);
+
+  static String _formatDuration(Duration d) {
     final minutes = d.inMinutes.toString();
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
@@ -171,22 +223,40 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                   children: [
                     // Play/Pause button
                     GestureDetector(
-                      onTap: _togglePlay,
-                      child: CircleAvatar(
-                        backgroundColor: AppColors.blue00ABE9,
-                        radius: 20,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xFF007BFF),
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: Icon(
-                            _isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
+                      onTap: () => unawaited(_togglePlay()),
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _hasError,
+                        builder: (context, hasError, _) {
+                          return ValueListenableBuilder<bool>(
+                            valueListenable: _isPlaying,
+                            builder: (context, playing, __) {
+                              return CircleAvatar(
+                                backgroundColor: hasError
+                                    ? Colors.grey
+                                    : AppColors.blue00ABE9,
+                                radius: 20,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: hasError
+                                        ? Colors.grey
+                                        : const Color(0xFF007BFF),
+                                  ),
+                                  padding: const EdgeInsets.all(4),
+                                  child: Icon(
+                                    hasError
+                                        ? Icons.refresh
+                                        : (playing
+                                            ? Icons.pause
+                                            : Icons.play_arrow),
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -195,35 +265,46 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 3. In build method, fix height of waveform row:
                         SizedBox(
                           height: 28, // Fixed height to prevent vibrating
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: List.generate(
-                              _barHeights.length,
-                              (index) => AnimatedContainer(
-                                duration: const Duration(milliseconds: 100),
-                                width: 3,
-                                height: _barHeights[index],
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 1),
-                                decoration: BoxDecoration(
-                                  color: Colors.blueAccent,
-                                  borderRadius: BorderRadius.circular(2),
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: _waveTick,
+                            builder: (context, tick, _) {
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: List.generate(
+                                  _barCount,
+                                  (index) => AnimatedContainer(
+                                    duration: const Duration(milliseconds: 100),
+                                    width: 3,
+                                    height: _barHeight(index, tick),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 1),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
                         ),
-
                         const SizedBox(height: 4),
-                        Text(
-                          _isPlaying || _position > Duration.zero
-                              ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
-                              : _formatDuration(_duration),
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.black87),
+                        ListenableBuilder(
+                          listenable: Listenable.merge(
+                              [_isPlaying, _position, _duration]),
+                          builder: (context, _) {
+                            final position = _position.value;
+                            final duration = _duration.value;
+                            return Text(
+                              _isPlaying.value || position > Duration.zero
+                                  ? '${_formatDuration(position)} / ${_formatDuration(duration)}'
+                                  : _formatDuration(duration),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.black87),
+                            );
+                          },
                         ),
                       ],
                     ),

@@ -7,7 +7,8 @@ class ChatRepository {
   final ChatService chatService = ChatService();
 
   /// Get previous chat messages
-  Future<List<MessageModel>> fetchPreviousChats(String agentEmail, String customerEmail) async {
+  Future<List<MessageModel>> fetchPreviousChats(
+      String agentEmail, String customerEmail) async {
     return await chatService.fetchPreviousMessages(
         agentEmail: agentEmail, customerEmail: customerEmail);
   }
@@ -15,7 +16,8 @@ class ChatRepository {
   /// Fetch agent messages with pagination
 
   /// Get the list of assigned customers to that agent
-  Future<List<Map<String, dynamic>>> fetchAssignedCustomerList(String agentId) async {
+  Future<List<Map<String, dynamic>>> fetchAssignedCustomerList(
+      String agentId) async {
     return await chatService.getAssignedCustomers(agentId);
   }
 
@@ -35,7 +37,8 @@ class ChatRepository {
   }
 
   // Fetch form data for a specific agent
-  Future<List<FormDataModel>> fetchFormDataForEnquiery(String agentEmail) async {
+  Future<List<FormDataModel>> fetchFormDataForEnquiery(
+      String agentEmail) async {
     return await chatService.getFormDataForEnquiery(email: agentEmail);
   }
 
@@ -49,7 +52,8 @@ class ChatRepository {
     return await chatService.getAdminGraphData();
   }
 
-  Future<void> updateInquiryFormStatus(String formId, String status, {String? reason}) async {
+  Future<void> updateInquiryFormStatus(String formId, String status,
+      {String? reason}) async {
     return chatService.updateFormStatus(
       formId: formId,
       status: status,
@@ -61,7 +65,8 @@ class ChatRepository {
     return chatService.updateFormRate(formId: formId, rate: rate);
   }
 
-  Future<void> updateInquiryForm(String formId, Map<String, dynamic> updates) async {
+  Future<Map<String, dynamic>> updateInquiryForm(
+      String formId, Map<String, dynamic> updates) async {
     return chatService.updateFormDetails(formId: formId, updates: updates);
   }
 
@@ -88,8 +93,10 @@ class ChatRepository {
   }
 
   /// Update Call Data
-  Future<void> updateCallData(String messageId, String callStatus, {String? callDuration}) async {
-    return chatService.updateCallData(messageId, callStatus, callDuration: callDuration);
+  Future<void> updateCallData(String messageId, String callStatus,
+      {String? callDuration}) async {
+    return chatService.updateCallData(messageId, callStatus,
+        callDuration: callDuration);
   }
 
   /// Get call logs for a given email
@@ -131,6 +138,7 @@ class ChatRepository {
   /// Get Last Message Timestamp of customer last seen chat messages
   Future<Map<String, dynamic>?> fetchCustomerLastMessageTimestampForAgent(
       {required String customerEmail, required String agentEmail}) async {
-    return await chatService.getCustomerLastMessageTimestampForAgent(customerEmail, agentEmail);
+    return await chatService.getCustomerLastMessageTimestampForAgent(
+        customerEmail, agentEmail);
   }
 }

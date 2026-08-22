@@ -29,12 +29,20 @@ class FormDataModel {
     required this.orderId,
   });
 
-  static String _asString(dynamic value) {
+  /// Trims a raw field and maps the backend's "Unknown Buyer" placeholder to an
+  /// empty string, so the UI can show its own "not available" copy.
+  ///
+  /// Public because local optimistic updates must normalize exactly the same
+  /// way as a fresh fetch — otherwise an edited row renders differently from
+  /// the same row after a refresh.
+  static String normalize(dynamic value) {
     if (value == null) return '';
     final str = value.toString().trim();
     if (str.toLowerCase() == 'unknown buyer') return '';
     return str;
   }
+
+  static String _asString(dynamic value) => normalize(value);
 
   factory FormDataModel.fromJson(Map<String, dynamic> json) {
     return FormDataModel(
