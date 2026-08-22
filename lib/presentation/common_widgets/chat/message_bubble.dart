@@ -11,6 +11,7 @@ class MessageBubble extends StatelessWidget {
   final ChatMessageModel message;
   final bool isMe;
   final VoidCallback? onLongPress;
+  final bool? read;
   final ChatMessageModel? referencedMessage;
   final String? referencedSenderLabel;
 
@@ -19,13 +20,14 @@ class MessageBubble extends StatelessWidget {
     required this.message,
     required this.isMe,
     this.onLongPress,
+    this.read = false,
     this.referencedMessage,
     this.referencedSenderLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isRead = message.read ?? false;
+    final isRead = read ?? false;
     return message.isDeleted
         ? DeletedMessageBubble(
             isMe: isMe,
@@ -103,7 +105,7 @@ class MessageBubble extends StatelessWidget {
                           ),
                           if (isMe)
                             Icon(
-                              Icons.check,
+                              isRead ? Icons.done_all : Icons.done,
                               color: isRead ? Colors.blue : Colors.grey,
                               size: 14,
                             ),

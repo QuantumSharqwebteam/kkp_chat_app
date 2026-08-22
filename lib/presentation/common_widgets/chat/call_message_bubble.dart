@@ -5,7 +5,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 class CallMessageBubble extends StatelessWidget {
   final bool isMe;
   final String timestamp;
-  final String callStatus; // "missed", "answered", "not_answered"
+  final String callStatus;
   final String callDuration;
 
   const CallMessageBubble({
@@ -42,23 +42,23 @@ class CallMessageBubble extends StatelessWidget {
     }
 
     return Align(
-      //   alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      alignment: Alignment.centerRight,
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: IntrinsicWidth(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: //isMe
-                //? AppColors.senderMessageBubbleColor:
-                AppColors.recieverMessageBubble,
-            // borderRadius: BorderRadius.only(
-            //   topLeft: Radius.circular(16),
-            //   topRight: Radius.circular(16),
-            //   bottomLeft: isMe ? Radius.circular(16) : Radius.circular(0),
-            //   bottomRight: isMe ? Radius.circular(0) : Radius.circular(16),
-            // ),
-            borderRadius: BorderRadius.circular(16),
+            color: isMe
+                ? AppColors.senderMessageBubbleColor
+                : AppColors.recieverMessageBubble,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft:
+                  isMe ? const Radius.circular(16) : const Radius.circular(0),
+              bottomRight:
+                  isMe ? const Radius.circular(0) : const Radius.circular(16),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,13 +68,17 @@ class CallMessageBubble extends StatelessWidget {
                   Icon(iconData, color: iconColor, size: 20),
                   const SizedBox(width: 8),
                   Text(statusText,
-                      style: AppTextStyles.black14_600
-                          .copyWith(color: Colors.black)),
+                      style: AppTextStyles.black14_600.copyWith(
+                        color: isMe ? Colors.white : Colors.black,
+                      )),
                 ],
               ),
               if (callStatus == 'answered') ...[
                 const SizedBox(height: 4),
-                Text(callDuration, style: AppTextStyles.grey5C5C5C_18_700),
+                Text(callDuration,
+                    style: AppTextStyles.grey5C5C5C_18_700.copyWith(
+                      color: isMe ? Colors.white70 : null,
+                    )),
               ],
               const SizedBox(height: 4),
               Text(

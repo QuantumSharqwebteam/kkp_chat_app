@@ -91,16 +91,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   int _recordedSeconds = 0;
   Timer? _timer;
   String? userRole;
+  final Set<String> _loadedCallIds = {};
+  bool _isAtBottom = true;
+  Timer? _dateHeaderTimer;
 
-  // ValueNotifiers so scroll / date-header changes never rebuild the ListView.
+  // ValueNotifiers: updates to these never trigger a full-screen rebuild.
   final ValueNotifier<bool> _showDateHeader = ValueNotifier(false);
   final ValueNotifier<String?> _currentTopDate = ValueNotifier(null);
 
-  Timer? _dateHeaderTimer;
-
+  // Keyed by message identity so Flutter reuses render objects across rebuilds.
   final Map<String, GlobalKey> _globalKeys = {};
 
   ScrollController get _scrollController => _provider.scrollController;
+
+  // ← FIX: any non-customer sender = agent side (agent head, assigned agent, etc.)
+  bool _isFromAgentSide(String? sender) {
+    return sender != null && sender != widget.customerEmail;
+  }
 
   @override
   void initState() {
@@ -121,9 +128,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     _socketService.onChatStatus(_handleChatStatus);
     _socketService.onMessagesReadUpTo(_handleMessagesReadUpTo);
 
+    unawaited(_loadMessages());
+
     _initializeRecorder();
 
-    unawaited(_loadMessages());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _emitChatOpened());
 
@@ -174,11 +185,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   @override
   void deactivate() {
-    // _socketService.sendChatClosed(
-    //   customerEmail: widget.customerEmail,
-    //   agentEmail: widget.agentEmail,
-    //   role: 'agent',
-    // );
     _socketService.setChatPageState(isOpen: false);
     super.deactivate();
   }
@@ -193,13 +199,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
           customerEmail: widget.customerEmail,
           role: "agent");
     } else if (state == AppLifecycleState.resumed) {
-      // _socketService.toggleChatPageOpen(true);
       _socketService.setChatPageState(
         isOpen: true,
         customerId: widget.customerEmail,
       );
-      // Scroll to bottom when the app is resumed
-      _provider.scrollToBottom();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _emitChatOpened();
       });
@@ -212,9 +218,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     final newValue = bottomInset > 0.0;
 
     if (newValue) {
-      // Keyboard is opened
-      _provider.scrollToBottom();
+      _scrollToBottom();
     }
+  }
+
+  void _updateMessagesReadStatus(DateTime lastMessageTimestamp) {
+    _provider.markReadUpToTimestamp(lastMessageTimestamp);
   }
 
   void _emitChatOpened() {
@@ -240,37 +249,17 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     final status = data['status'];
     final lastMessageTimestampStr = data['lastMessageTimestamp'];
     if (status == 'opened' && lastMessageTimestampStr != null) {
-      final ts = DateTime.tryParse(lastMessageTimestampStr);
-      if (ts != null) {
+      final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
+      if (lastMessageTimestamp != null) {
         LocalDbHelper.saveReceiverOnChatPageStatus(true);
-        _provider.markReadUpToTimestamp(ts);
+        _updateMessagesReadStatus(lastMessageTimestamp);
       }
     } else if (status == 'closed') {
       LocalDbHelper.saveReceiverOnChatPageStatus(false);
     }
   }
 
-  void _handleMessagesReadUpTo(Map<String, dynamic> data) {
-    // final customerEmail = data['customerEmail'];
-    // final lastMessageTimestampStr = data['lastMessageTimestamp'];
-    // if (customerEmail == widget.customerEmail &&
-    //     lastMessageTimestampStr != null) {
-    //   final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
-    //   if (lastMessageTimestamp != null) {
-    //     setState(() {
-    //       messages.forEach((message) {
-    //         if (message.sender == widget.agentEmail &&
-    //             (message.timestamp.isBefore(lastMessageTimestamp) ||
-    //                 message.timestamp == lastMessageTimestamp)) {
-    //           message.read = true;
-    //         }
-    //       });
-    //     });
-    //     // Save updated messages to local database
-    //     _saveMessagesToLocalDatabase();
-    //   }
-    // }
-  }
+  void _handleMessagesReadUpTo(Map<String, dynamic> data) {}
 
   Future<void> _fetchUserRole() async {
     final role = await LocalDbHelper.getUserType();
@@ -301,7 +290,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     if (_scrollController.position.userScrollDirection ==
         ScrollDirection.forward) {
       _showFloatingDateHeader();
-    } else if (_scrollController.position.userScrollDirection ==
+    }
+
+    if (_scrollController.position.userScrollDirection ==
         ScrollDirection.reverse) {
       _hideFloatingDateHeader();
     }
@@ -314,11 +305,13 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     final RenderBox? box = context.findRenderObject() as RenderBox?;
     if (box != null && box.hasSize) {
       final firstVisibleIndex = _getFirstVisibleIndex();
-      final msgs = _provider.messages;
-      if (firstVisibleIndex != null && firstVisibleIndex < msgs.length) {
-        final newDate =
-            ChatUtils().formatDateHeader(msgs[firstVisibleIndex].timestamp);
-        if (_currentTopDate.value != newDate) _currentTopDate.value = newDate;
+      if (firstVisibleIndex != null &&
+          firstVisibleIndex < _provider.messages.length) {
+        final message = _provider.messages[firstVisibleIndex];
+        final newDate = ChatUtils().formatDateHeader(message.timestamp);
+        if (_currentTopDate.value != newDate) {
+          _currentTopDate.value = newDate;
+        }
       }
     }
   }
@@ -343,34 +336,40 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
   void _checkIfAtBottom() {
     _provider.updateScrollPosition();
+    final atBottom = _provider.isAtBottom.value;
+    if (atBottom != _isAtBottom && mounted) {
+      setState(() {
+        _isAtBottom = atBottom;
+      });
+    }
   }
 
   void _handleIncomingMessage(Map<String, dynamic> data) {
+    debugPrint("message received: ${data.toString()}");
     if (data['type'] == "product") {
       _socketService.updateLastMessage(data["senderId"], "shared product");
     } else {
       _socketService.updateLastMessage(data['senderId'], data['message']);
     }
+
     _provider.addIncoming(data);
+
     _saveLastMessageTime();
-  }
-
-  void _setReplyToMessage(ChatMessageModel message) {
-    setState(() {
-      _replyToMessage = message;
-    });
-  }
-
-  void _cancelReply() {
-    if (_replyToMessage == null) return;
-    setState(() {
-      _replyToMessage = null;
-    });
+    if (!mounted) return;
+    Provider.of<ChatRefreshProvider>(context, listen: false).markNeedsRefresh();
   }
 
   void _handleMessageDeleted(String messageId) {
     _provider.markDeleted(messageId);
+    _persistMessageById(messageId);
     _socketService.updateLastMessage(widget.customerEmail, "message deleted");
+  }
+
+  /// Writes the current in-memory state of a message back to Hive.
+  void _persistMessageById(String messageId) {
+    final idx = _provider.messages.indexWhere((m) => m.messageId == messageId);
+    if (idx == -1) return;
+    _provider.persistMessage(_provider.messages[idx]);
   }
 
   void _sendMessage({
@@ -380,10 +379,9 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }) {
     if (messageText.trim().isEmpty && mediaUrl == null) return;
     final currentTime = DateTime.now();
-    // Generate a unique message ID
     final messageId = ChatUtils().generateMessageId();
-    // Set the receiverIsOnChatPage to false when the app is paused or inactive
     final isReceiverOnChatPage = LocalDbHelper.getReceiverOnChatPageStatus();
+    final referenceId = _replyToMessage?.messageId;
     final message = ChatMessageModel(
       message: messageText,
       timestamp: currentTime,
@@ -393,11 +391,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       messageId: messageId,
       isDeleted: false,
       read: isReceiverOnChatPage,
-      referenceId: _replyToMessage?.messageId,
+      referenceId: referenceId,
     );
 
     _provider.addSent(message);
-    _provider.persistMessage(message);
 
     _socketService.sendMessage(
       targetEmail: widget.customerEmail,
@@ -410,8 +407,10 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       timestamp: currentTime.toIso8601String(),
       messageId: messageId,
       read: isReceiverOnChatPage ?? false,
-      referenceId: _replyToMessage?.messageId,
+      referenceId: referenceId,
     );
+
+    _provider.persistMessage(message);
 
     _chatController.clear();
     _cancelReply();
@@ -424,7 +423,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   }
 
   void _sendProductMessage(Product product) {
-    // Convert the product object to a JSON string
     final productJson = jsonEncode(product.toCreateJson());
 
     _sendMessage(
@@ -460,8 +458,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                   ],
                 ),
               ),
-              if (textToCopy !=
-                  null) // Only show the copy option if textToCopy is not null
+              if (textToCopy != null)
                 ListTile(
                   leading: const Icon(Icons.content_copy),
                   title: Text(
@@ -494,8 +491,23 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   void _deleteMessage(String messageId) {
     _socketService.deleteMessage(
         messageId, widget.agentEmail!, widget.customerEmail);
+
     _provider.markDeleted(messageId);
+    _persistMessageById(messageId);
     _socketService.updateLastMessage(widget.customerEmail, "message deleted");
+  }
+
+  void _setReplyToMessage(ChatMessageModel message) {
+    setState(() {
+      _replyToMessage = message;
+    });
+  }
+
+  void _cancelReply() {
+    if (_replyToMessage == null) return;
+    setState(() {
+      _replyToMessage = null;
+    });
   }
 
   // Instant jump — used when opening the chat so there is no visible scroll
@@ -541,7 +553,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     final XFile? pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
-      // Add a temporary message
       _addTemporaryMessage("Sending image...");
 
       final File imageFile = File(pickedFile.path);
@@ -549,6 +560,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
       if (imageUrl != null) {
         _provider.removeOptimistic("Sending image...");
+
         _sendMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
@@ -561,7 +573,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
     );
 
     if (result != null) {
-      // Add a temporary message
       _addTemporaryMessage(
         "Sending document...",
       );
@@ -571,6 +582,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
       final documentUrl = await _s3uploadService.uploadDocument(documentFile);
       if (documentUrl != null) {
         _provider.removeOptimistic("Sending document...");
+
         _sendMessage(
             messageText: "document", type: 'document', mediaUrl: documentUrl);
       }
@@ -605,6 +617,24 @@ class _AgentChatScreenState extends State<AgentChatScreen>
   String? _replyPreviewImageUrl(ChatMessageModel? message) {
     if (message?.type != 'media') return null;
     return message?.mediaUrl;
+  }
+
+  /// The message [msg] replies to, if it is still loaded in this chat.
+  ChatMessageModel? _findReferencedMessage(
+      List<ChatMessageModel> messages, ChatMessageModel msg) {
+    if (msg.referenceId == null) return null;
+    for (final candidate in messages) {
+      if (candidate.messageId == msg.referenceId) return candidate;
+    }
+    return null;
+  }
+
+  /// Label shown on top of a reply preview strip.
+  String? _senderLabel(ChatMessageModel? message) {
+    if (message == null) return null;
+    return _isFromAgentSide(message.sender)
+        ? 'You'
+        : (widget.customerName ?? message.sender ?? '');
   }
 
   void _handleImageLoaded() {
@@ -664,7 +694,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
 
               debugPrint("📞 Generated UID for agent (caller): $uid");
 
-              // 1. 🔁 Send outgoing call signal
               _socketService.sendAgoraCall(
                 targetId: widget.customerEmail,
                 channelName: channelName,
@@ -674,7 +703,6 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 timestamp: timestamp.toIso8601String(),
               );
 
-              // 2. 🚀 Start call via Provider
               await callProvider.startNewCall(
                 channelName: channelName,
                 remoteUserName: widget.customerName!,
@@ -684,28 +712,34 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                 targetUserId: widget.customerEmail,
               );
 
-              // 3. ⏳ Wait for call to complete and message to be returned
-              // This is done via callProvider.callDetailsMessage after call ends
               void handleCallMessage(ChatMessageModel message) {
-                if (!mounted) {
+                if (message.callId != null &&
+                    _loadedCallIds.contains(message.callId)) {
                   return;
+                }
+                if (!mounted) return;
+
+                if (message.callId != null) {
+                  _loadedCallIds.add(message.callId!);
                 }
                 _provider.addSent(message);
                 _provider.persistMessage(message);
               }
 
-              // 4. ✅ Listen once for callDetailsMessage change
-              late final VoidCallback subscription;
-              subscription = () {
-                final message = callProvider.callDetailsMessage;
-                if (message != null) {
-                  handleCallMessage(message);
-                  callProvider
-                      .removeListener(subscription); // Remove after first call
-                }
-              };
-
-              callProvider.addListener(subscription);
+              final existingMessage = callProvider.callDetailsMessage;
+              if (existingMessage != null) {
+                handleCallMessage(existingMessage);
+              } else {
+                late final VoidCallback subscription;
+                subscription = () {
+                  final message = callProvider.callDetailsMessage;
+                  if (message != null) {
+                    handleCallMessage(message);
+                    callProvider.removeListener(subscription);
+                  }
+                };
+                callProvider.addListener(subscription);
+              }
             },
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
@@ -749,40 +783,38 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                       children: [
                         if (_provider.isLoadingMore)
                           const Padding(
-                            padding: EdgeInsets.only(top: 8.0),
+                            padding: EdgeInsets.only(top: 15.0),
                             child: CircularProgressIndicator(),
                           ),
                         Expanded(
-                            child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(10),
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            final msg = messages[index];
-                            final isAgent = msg.sender == widget.agentEmail;
-                            final msgKey = msg.messageId ??
-                                'ts:${msg.timestamp.millisecondsSinceEpoch}';
-                            final globalKey = _globalKeys.putIfAbsent(
-                                msgKey, () => GlobalKey());
-                            final referencedMatches = msg.referenceId != null
-                                ? messages.where((element) =>
-                                    element.messageId == msg.referenceId)
-                                : const Iterable<ChatMessageModel>.empty();
-                            final ChatMessageModel? referencedMessage =
-                                referencedMatches.isNotEmpty
-                                    ? referencedMatches.first
-                                    : null;
-                            String? dateHeader;
-                            if (index == 0 ||
-                                !ChatUtils().isSameDay(
-                                    messages[index - 1].timestamp,
-                                    msg.timestamp)) {
-                              dateHeader =
-                                  ChatUtils().formatDateHeader(msg.timestamp);
-                            }
-                            return SwipeToReply(
-                              onReply: () => _setReplyToMessage(msg),
-                              child: Container(
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(10),
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final msg = messages[index];
+                              // ← FIX: for display — any agent's message on right side
+                              final isMe = _isFromAgentSide(msg.sender);
+                              // ← FIX: for actions — only THIS agent can delete their own messages
+                              final isMyMessage =
+                                  msg.sender == widget.agentEmail;
+                              final msgKey = msg.messageId ??
+                                  'ts:${msg.timestamp.millisecondsSinceEpoch}';
+                              final globalKey = _globalKeys.putIfAbsent(
+                                  msgKey, () => GlobalKey());
+                              final referencedMessage =
+                                  _findReferencedMessage(messages, msg);
+                              String? dateHeader;
+
+                              if (index == 0 ||
+                                  !ChatUtils().isSameDay(
+                                      messages[index - 1].timestamp,
+                                      msg.timestamp)) {
+                                dateHeader =
+                                    ChatUtils().formatDateHeader(msg.timestamp);
+                              }
+
+                              final Widget content = Container(
                                 key: globalKey,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -793,15 +825,15 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                       ImageMessageBubble(
                                         read: msg.read,
                                         imageUrl: msg.mediaUrl!,
-                                        isMe: msg.sender == widget.agentEmail,
+                                        isMe: isMe,
                                         timestamp: ChatUtils().formatTimestamp(
                                             msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
+                                        onImageLoaded: _handleImageLoaded,
                                         referencedMessage: referencedMessage,
                                         referencedSenderLabel:
-                                            referencedMessage?.sender,
-                                        onImageLoaded: _handleImageLoaded,
-                                        onLongPress: isAgent
+                                            _senderLabel(referencedMessage),
+                                        onLongPress: isMyMessage
                                             ? () =>
                                                 _showMessageOptionsBottomSheet(
                                                     context, msg.messageId!)
@@ -810,11 +842,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                     else if (msg.type == 'document')
                                       DocumentMessageBubble(
                                         documentUrl: msg.mediaUrl!,
-                                        isMe: msg.sender == widget.agentEmail,
+                                        read: msg.read,
+                                        isMe: isMe,
                                         timestamp: ChatUtils().formatTimestamp(
                                             msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
-                                        onLongPress: isAgent
+                                        onLongPress: isMyMessage
                                             ? () =>
                                                 _showMessageOptionsBottomSheet(
                                                     context, msg.messageId!)
@@ -823,11 +856,12 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                     else if (msg.type == 'voice')
                                       VoiceMessageBubble(
                                         voiceUrl: msg.mediaUrl!,
-                                        isMe: msg.sender == widget.agentEmail,
+                                        read: msg.read,
+                                        isMe: isMe,
                                         timestamp: ChatUtils().formatTimestamp(
                                             msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
-                                        onLongPress: isAgent
+                                        onLongPress: isMyMessage
                                             ? () =>
                                                 _showMessageOptionsBottomSheet(
                                                     context, msg.messageId!)
@@ -835,7 +869,7 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                       )
                                     else if (msg.type == 'call')
                                       CallMessageBubble(
-                                        isMe: msg.sender == widget.agentEmail,
+                                        isMe: isMe,
                                         timestamp: ChatUtils().formatTimestamp(
                                             msg.timestamp.toIso8601String()),
                                         callStatus: msg.callStatus ?? "",
@@ -846,13 +880,14 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                               msg.message!.isNotEmpty)
                                           ? ProductMessageBubble(
                                               productJson: msg.message!,
-                                              isMe: msg.sender ==
-                                                  widget.agentEmail,
-                                              timestamp: ChatUtils()
-                                                  .formatTimestamp(msg.timestamp
-                                                      .toIso8601String()),
+                                              isMe: isMe,
+                                              read: msg.read,
+                                              timestamp:
+                                                  ChatUtils().formatTimestamp(
+                                                msg.timestamp.toIso8601String(),
+                                              ),
                                               isDeleted: msg.isDeleted,
-                                              onLongPress: isAgent
+                                              onLongPress: isMyMessage
                                                   ? () =>
                                                       _showMessageOptionsBottomSheet(
                                                           context,
@@ -874,20 +909,21 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                               },
                                             )
                                           : DeletedMessageBubble(
-                                              isMe: msg.sender ==
-                                                  widget.agentEmail,
-                                              timestamp: ChatUtils()
-                                                  .formatTimestamp(msg.timestamp
-                                                      .toIso8601String()),
+                                              isMe: isMe,
+                                              timestamp:
+                                                  ChatUtils().formatTimestamp(
+                                                msg.timestamp.toIso8601String(),
+                                              ),
                                             )
                                     else
                                       MessageBubble(
                                         message: msg,
-                                        isMe: msg.sender == widget.agentEmail,
+                                        isMe: isMe,
+                                        read: msg.read,
                                         referencedMessage: referencedMessage,
                                         referencedSenderLabel:
-                                            referencedMessage?.sender,
-                                        onLongPress: isAgent
+                                            _senderLabel(referencedMessage),
+                                        onLongPress: isMyMessage
                                             ? () =>
                                                 _showMessageOptionsBottomSheet(
                                                     context, msg.messageId!,
@@ -896,12 +932,18 @@ class _AgentChatScreenState extends State<AgentChatScreen>
                                       ),
                                   ],
                                 ),
-                              ),
-                            );
-                          },
-                        )), // Expanded + ListView.builder
+                              );
+
+                              if (!widget.canMessage) return content;
+                              return SwipeToReply(
+                                onReply: () => _setReplyToMessage(msg),
+                                child: content,
+                              );
+                            },
+                          ),
+                        ),
                       ],
-                    ); // Column
+                    );
                   },
                 ),
               ),
@@ -959,21 +1001,16 @@ class _AgentChatScreenState extends State<AgentChatScreen>
               const SizedBox(height: 10),
             ],
           ),
-          ValueListenableBuilder<bool>(
-            valueListenable: _provider.isAtBottom,
-            builder: (context, atBottom, _) {
-              if (atBottom) return const SizedBox.shrink();
-              return Positioned(
-                bottom: 80,
-                right: 16,
-                child: FloatingActionButton(
-                  onPressed: _scrollToBottom,
-                  mini: true,
-                  child: const Icon(Icons.arrow_downward_rounded),
-                ),
-              );
-            },
-          ),
+          if (!_isAtBottom)
+            Positioned(
+              bottom: 80,
+              right: 16,
+              child: FloatingActionButton(
+                onPressed: _scrollToBottom,
+                mini: true,
+                child: Icon(Icons.arrow_downward_rounded),
+              ),
+            ),
           Positioned(
             top: 10,
             left: 0,

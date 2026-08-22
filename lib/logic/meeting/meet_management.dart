@@ -43,7 +43,8 @@ class MeetingManagement with ChangeNotifier {
     String? roleName,
   }) {
     final isScheduledPerson = meeting.scheduledPerson.email == currentUserEmail;
-    return isScheduledPerson || _isPrivilegedMeetingEditor(userType: userType, roleName: roleName);
+    return isScheduledPerson ||
+        _isPrivilegedMeetingEditor(userType: userType, roleName: roleName);
   }
 
   static String? validateMeetingUrl(String? value) {
@@ -71,15 +72,17 @@ class MeetingManagement with ChangeNotifier {
     }
 
     final host = uri.host.toLowerCase();
-    final hasMeetingTarget =
-        uri.pathSegments.isNotEmpty || uri.queryParameters.isNotEmpty || uri.fragment.isNotEmpty;
+    final hasMeetingTarget = uri.pathSegments.isNotEmpty ||
+        uri.queryParameters.isNotEmpty ||
+        uri.fragment.isNotEmpty;
     if (!hasMeetingTarget) {
       return "Enter a complete meeting link";
     }
 
     final isZoomHost = host == 'zoom.us' || host.endsWith('.zoom.us');
     final isGoogleMeetHost = host == 'meet.google.com';
-    final isTeamsHost = host == 'teams.microsoft.com' || host == 'teams.live.com';
+    final isTeamsHost =
+        host == 'teams.microsoft.com' || host == 'teams.live.com';
 
     if (!isZoomHost && !isGoogleMeetHost && !isTeamsHost) {
       return "Only Zoom, Google Meet, or Microsoft Teams links are allowed";
@@ -101,7 +104,8 @@ class MeetingManagement with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    _logger.logUi('MeetingManagement.fetchAllMeetings started', level: LogLevel.info);
+    _logger.logUi('MeetingManagement.fetchAllMeetings started',
+        level: LogLevel.info);
 
     try {
       _meetings = await _meetingService.getAllMeetings();
@@ -143,7 +147,8 @@ class MeetingManagement with ChangeNotifier {
         return false;
       }
     }).toList()
-      ..sort((a, b) => DateTime.parse(a.startTime).compareTo(DateTime.parse(b.startTime)));
+      ..sort((a, b) =>
+          DateTime.parse(a.startTime).compareTo(DateTime.parse(b.startTime)));
 
     // debugPrint("Found ${todaysMeetings.length} upcoming meetings for today");
 
@@ -161,22 +166,24 @@ class MeetingManagement with ChangeNotifier {
   // Get the next upcoming meeting (if any)
   // Get the next upcoming meetings for today (MAX 2)
 // Returns null when there are NO upcoming meetings
+// Get the next upcoming meetings (MAX 2) — any future date, not just today
   List<MeetingModel>? getNextUpcomingMeeting() {
-    final todaysMeetings = getTodaysUpcomingMeetings();
+    final now = DateTime.now();
 
-    // ✅ IMPORTANT: Return null when no meetings exist
-    if (todaysMeetings.isEmpty) {
-      // debugPrint("No upcoming meetings found for today");
-      return null;
-    }
+    final upcomingMeetings = _meetings.where((meeting) {
+      try {
+        final meetingDate = DateTime.parse(meeting.startTime).toLocal();
+        return meetingDate.isAfter(now);
+      } catch (e) {
+        return false;
+      }
+    }).toList()
+      ..sort((a, b) =>
+          DateTime.parse(a.startTime).compareTo(DateTime.parse(b.startTime)));
 
-    // ✅ Take only first 2 meetings safely
-    final upcomingMeetings = todaysMeetings.take(2).toList();
+    if (upcomingMeetings.isEmpty) return null;
 
-    // debugPrint(
-    //     "Next upcoming meeting: ${upcomingMeetings.first.title} at ${upcomingMeetings.first.startTime}");
-
-    return upcomingMeetings;
+    return upcomingMeetings.take(2).toList();
   }
 
   // Create a new meeting
@@ -238,10 +245,12 @@ class MeetingManagement with ChangeNotifier {
         startTime: startTime,
       );
       if (success) {
-        _logger.logUi('MeetingManagement.createMeeting success', level: LogLevel.info);
+        _logger.logUi('MeetingManagement.createMeeting success',
+            level: LogLevel.info);
         await fetchAllMeetings(); // Refresh the list
       } else {
-        _logger.logUi('MeetingManagement.createMeeting failed', level: LogLevel.warning);
+        _logger.logUi('MeetingManagement.createMeeting failed',
+            level: LogLevel.warning);
       }
       return success;
     } catch (e, stackTrace) {
@@ -307,7 +316,8 @@ class MeetingManagement with ChangeNotifier {
     _isUpdating = true; // Set updating state to true
     _error = null;
     notifyListeners();
-    _logger.logUi('MeetingManagement.updateMeeting started | id: $id', level: LogLevel.info);
+    _logger.logUi('MeetingManagement.updateMeeting started | id: $id',
+        level: LogLevel.info);
     try {
       final success = await _meetingService.updateMeeting(
         id: id,
@@ -318,10 +328,12 @@ class MeetingManagement with ChangeNotifier {
         status: status,
       );
       if (success) {
-        _logger.logUi('MeetingManagement.updateMeeting success | id: $id', level: LogLevel.info);
+        _logger.logUi('MeetingManagement.updateMeeting success | id: $id',
+            level: LogLevel.info);
         await fetchAllMeetings(); // Refresh the list
       } else {
-        _logger.logUi('MeetingManagement.updateMeeting failed | id: $id', level: LogLevel.warning);
+        _logger.logUi('MeetingManagement.updateMeeting failed | id: $id',
+            level: LogLevel.warning);
       }
       return success;
     } catch (e, stackTrace) {
@@ -344,14 +356,17 @@ class MeetingManagement with ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
-    _logger.logUi('MeetingManagement.deleteMeeting started | id: $id', level: LogLevel.info);
+    _logger.logUi('MeetingManagement.deleteMeeting started | id: $id',
+        level: LogLevel.info);
     try {
       final success = await _meetingService.deleteMeeting(id);
       if (success) {
-        _logger.logUi('MeetingManagement.deleteMeeting success | id: $id', level: LogLevel.info);
+        _logger.logUi('MeetingManagement.deleteMeeting success | id: $id',
+            level: LogLevel.info);
         await fetchAllMeetings(); // Refresh the list
       } else {
-        _logger.logUi('MeetingManagement.deleteMeeting failed | id: $id', level: LogLevel.warning);
+        _logger.logUi('MeetingManagement.deleteMeeting failed | id: $id',
+            level: LogLevel.warning);
       }
       return success;
     } catch (e, stackTrace) {

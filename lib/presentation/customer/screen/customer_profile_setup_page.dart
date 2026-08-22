@@ -30,7 +30,8 @@ class CustomerProfileSetupPage extends StatefulWidget {
   final String? name;
 
   @override
-  State<CustomerProfileSetupPage> createState() => _CustomerProfileSetupPageState();
+  State<CustomerProfileSetupPage> createState() =>
+      _CustomerProfileSetupPageState();
 }
 
 class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
@@ -54,7 +55,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
   String? _customerType;
   DateTime? _lastPressed;
   String? _completePhoneNumber;
-  String? _countryCode;
+  String _countryIsoCode = 'IN';
+  int _phoneMinLength = 10; // ← FIX: dynamic min length based on country
+  int _phoneMaxLength = 10; // ← FIX: dynamic max length based on country
   bool _isSavingProfile = false;
 
   // Error texts for each field
@@ -81,12 +84,23 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
     return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(name);
   }
 
+  // ← FIX: now uses dynamic min/max length instead of hardcoded 10
   bool _isValidPhoneNumber(String phoneNumber) {
-    return RegExp(r'^[0-9]{10}$').hasMatch(phoneNumber);
+    if (!RegExp(r'^[0-9]+$').hasMatch(phoneNumber)) return false;
+    return phoneNumber.length >= _phoneMinLength &&
+        phoneNumber.length <= _phoneMaxLength;
   }
 
   bool _isValidPanNumber(String panNumber) {
+    // PAN format: ABCDE1234F (5 letters + 4 digits + 1 letter)
     return RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(panNumber.toUpperCase());
+  }
+
+  bool _isValidGstNumber(String gst) {
+    // Indian GST format: 22AAAAA0000A1Z5
+    // 2-digit state code (01-37) + 10-char PAN + 1 entity code + Z + 1 check char
+    return RegExp(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$')
+        .hasMatch(gst.toUpperCase());
   }
 
   Widget _requiredLabel(
@@ -132,7 +146,9 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         _completePhoneNumber = phoneStr;
         // Extract country code and phone number
         if (phoneStr.startsWith('+91')) {
-          _countryCode = '+91';
+          _countryIsoCode = 'IN';
+          _phoneMinLength = 10;
+          _phoneMaxLength = 10;
           _phoneNumber.text = phoneStr.substring(3);
         } else {
           // For other countries, you might need more sophisticated parsing
@@ -140,13 +156,17 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         }
       } else {
         _phoneNumber.text = phoneStr;
-        _countryCode = '+91'; // Default to India
+// Default to India
+        _countryIsoCode = 'IN';
+        _phoneMinLength = 10;
+        _phoneMaxLength = 10;
         _completePhoneNumber = '+91$phoneStr';
       }
 
       _gstNumber.text = widget.profile!.gstNo ?? '';
       _panNumber.text = widget.profile!.panNo ?? '';
-      if (widget.profile!.address != null && widget.profile!.address!.isNotEmpty) {
+      if (widget.profile!.address != null &&
+          widget.profile!.address!.isNotEmpty) {
         var address = widget.profile!.address![0];
         _houseFlatNumber.text = address.houseNo ?? '';
         _streetNumber.text = address.streetName ?? '';
@@ -159,7 +179,10 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       // Set default customer type to Export
       _isExportSelected = true;
       _isDomesticSelected = false;
-      _countryCode = '+91'; // Default to India
+// Default to India
+      _countryIsoCode = 'IN';
+      _phoneMinLength = 10;
+      _phoneMaxLength = 10;
     }
     _customerType = _isExportSelected ? 'Export' : 'Domestic';
   }
@@ -200,12 +223,12 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
 
       if (!pinValidationResult.isValid) {
         setState(() {
-          _pinCodeError = pinValidationResult.message ?? 'Please enter a valid Indian PIN code';
+          _pinCodeError = pinValidationResult.message ??
+              'Please enter a valid Indian PIN code';
           _isSavingProfile = false;
         });
         return;
       }
-
     }
 
     final trimmedName = _name.text.trim();
@@ -247,7 +270,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         await LocalDbHelper.saveProfile(updatedProfile);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(AppLocalizations.of(context)!.profileDetailsUpdatedSuccessfully)));
+            content: Text(AppLocalizations.of(context)!
+                .profileDetailsUpdatedSuccessfully)));
 
         // Return the updated profile and image URL to the previous screen
         if (widget.forUpdate) {
@@ -258,8 +282,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       } else {
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(response[AppLocalizations.of(context)!.message])));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(response[AppLocalizations.of(context)!.message])));
       }
     } catch (e) {
       if (!mounted) return;
@@ -267,7 +291,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       if (kDebugMode) {
         print(e.toString());
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -279,7 +304,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
 
   @override
   Widget build(BuildContext context) {
-    bool isAndroid12orAbove = Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
+    bool isAndroid12orAbove =
+        Platform.isAndroid && int.parse(Platform.version.split('.')[0]) > 12;
 
     Widget content = GestureDetector(
       onTap: () {
@@ -318,8 +344,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   ),
                 Spacer(),
                 CustomButton(
-                  text: _currentStep == getSteps(context).length - 1 ? 'Finish' : 'Next',
-                  isLoading: _currentStep == getSteps(context).length - 1 && _isSavingProfile,
+                  text: _currentStep == getSteps(context).length - 1
+                      ? 'Finish'
+                      : 'Next',
+                  isLoading: _currentStep == getSteps(context).length - 1 &&
+                      _isSavingProfile,
                   onPressed: _isSavingProfile
                       ? null
                       : () async {
@@ -377,11 +406,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         ? PopScope(
             onPopInvoked: (_) {
               DateTime now = DateTime.now();
-              if (_lastPressed == null || now.difference(_lastPressed!) > Duration(seconds: 2)) {
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
                 _lastPressed = now;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(AppLocalizations.of(context)!.pressBackAgainToExit),
+                    content: Text(
+                        AppLocalizations.of(context)!.pressBackAgainToExit),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -395,11 +426,13 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         : WillPopScope(
             onWillPop: () async {
               DateTime now = DateTime.now();
-              if (_lastPressed == null || now.difference(_lastPressed!) > Duration(seconds: 2)) {
+              if (_lastPressed == null ||
+                  now.difference(_lastPressed!) > Duration(seconds: 2)) {
                 _lastPressed = now;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(AppLocalizations.of(context)!.pressBackAgainToExit),
+                    content: Text(
+                        AppLocalizations.of(context)!.pressBackAgainToExit),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -461,7 +494,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     hintText: AppLocalizations.of(context)!.enterYourName,
                     errorText: _nameError,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r"[A-Za-z .'-]")),
                     ],
                     onChanged: (value) {
                       final trimmed = value.trim();
@@ -518,7 +552,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                               setState(() {
                                 _isExportSelected = value!;
                                 _isDomesticSelected = !_isExportSelected;
-                                _customerType = _isExportSelected ? 'Export' : 'Domestic';
+                                _customerType =
+                                    _isExportSelected ? 'Export' : 'Domestic';
                                 // Clear GST and PAN errors when switching to Export
                                 if (_isExportSelected) {
                                   _gstNumberError = null;
@@ -543,7 +578,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                               setState(() {
                                 _isDomesticSelected = value!;
                                 _isExportSelected = !_isDomesticSelected;
-                                _customerType = _isDomesticSelected ? 'Domestic' : 'Export';
+                                _customerType =
+                                    _isDomesticSelected ? 'Domestic' : 'Export';
                                 // Clear GST and PAN errors when switching to Export
                                 if (_isExportSelected) {
                                   _gstNumberError = null;
@@ -572,36 +608,46 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                   IntlPhoneField(
                     controller: _phoneNumber,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.enterYourMobileNumber,
+                      hintText:
+                          AppLocalizations.of(context)!.enterYourMobileNumber,
                       border: OutlineInputBorder(
                         borderSide: BorderSide(),
                       ),
                       errorText: _phoneNumberError,
-                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 12),
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 15, horizontal: 12),
                     ),
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(10),
+                      LengthLimitingTextInputFormatter(
+                          _phoneMaxLength), // ← FIX: dynamic max length
                     ],
-                    initialCountryCode: _countryCode?.replaceAll('+', '') ?? 'IN',
+                    initialCountryCode: _countryIsoCode,
                     onChanged: (phone) {
                       _completePhoneNumber = phone.completeNumber;
-                      _countryCode = phone.countryCode;
-                      if (_currentStep < getSteps(context).length - 1) {
+                      if (_phoneNumberError != null) {
                         setState(() {
                           _phoneNumberError = null; // Clear error on change
                         });
                       }
                     },
                     onCountryChanged: (country) {
-                      _countryCode = '+${country.dialCode}';
+                      setState(() {
+                        _countryIsoCode = country.code;
+                        _phoneMinLength =
+                            country.minLength; // ← FIX: update from country
+                        _phoneMaxLength =
+                            country.maxLength; // ← FIX: update from country
+                        _phoneNumberError =
+                            null; // Clear error when country changes
+                      });
                     },
                     validator: (phone) {
                       if (phone == null || phone.number.isEmpty) {
                         return 'Mobile number is required';
                       }
                       if (!_isValidPhoneNumber(phone.number)) {
-                        return 'Enter a 10-digit mobile number';
+                        return 'Enter a valid mobile number ($_phoneMinLength-$_phoneMaxLength digits)';
                       }
                       return null;
                     },
@@ -624,6 +670,22 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                     keyboardType: TextInputType.text,
                     maxLength: 15,
                     errorText: _gstNumberError,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                      LengthLimitingTextInputFormatter(15),
+                      TextInputFormatter.withFunction((oldValue, newValue) {
+                        return newValue.copyWith(
+                            text: newValue.text.toUpperCase());
+                      }),
+                    ],
+                    onChanged: (value) {
+                      final trimmed = value.trim();
+                      if (trimmed.isEmpty || _isValidGstNumber(trimmed)) {
+                        setState(() {
+                          _gstNumberError = null;
+                        });
+                      }
+                    },
                   ),
                 ],
               ),
@@ -729,7 +791,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       errorText: _cityNameError,
                       keyboardType: TextInputType.text,
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r"[A-Za-z .'-]")),
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r"[A-Za-z .'-]")),
                       ],
                       onChanged: (value) {
                         final city = value.trim();
@@ -762,7 +825,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
                       ],
                       onChanged: (value) {
                         final pinCode = value.trim();
-                        if (pinCode.isEmpty || (pinCode.length == 6 && _isValidPinCode(pinCode))) {
+                        if (pinCode.isEmpty ||
+                            (pinCode.length == 6 && _isValidPinCode(pinCode))) {
                           setState(() {
                             _pinCodeError = null;
                           });
@@ -813,8 +877,15 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         });
         isValid = false;
       } else if (!_isValidPhoneNumber(phoneInput)) {
+        // ← FIX: dynamic error message showing expected digit range
         setState(() {
-          _phoneNumberError = 'Enter a valid 10-digit mobile number';
+          if (_phoneMinLength == _phoneMaxLength) {
+            _phoneNumberError =
+                'Enter a valid $_phoneMinLength-digit mobile number';
+          } else {
+            _phoneNumberError =
+                'Enter a valid mobile number ($_phoneMinLength-$_phoneMaxLength digits)';
+          }
         });
         isValid = false;
       } else {
@@ -827,6 +898,11 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
       if (_isDomesticSelected && gstInput.isEmpty) {
         setState(() {
           _gstNumberError = 'GST number is required for domestic customers';
+        });
+        isValid = false;
+      } else if (gstInput.isNotEmpty && !_isValidGstNumber(gstInput)) {
+        setState(() {
+          _gstNumberError = 'Enter valid GST (e.g. 22AAAAA0000A1Z5)';
         });
         isValid = false;
       } else {
@@ -844,7 +920,7 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
         isValid = false;
       } else if (panProvided && !_isValidPanNumber(panInput)) {
         setState(() {
-          _panNumberError = 'Enter valid PAN (ABCDE1234F)';
+          _panNumberError = 'Enter valid PAN (e.g. ABCDE1234F)';
         });
         isValid = false;
       } else {
@@ -858,7 +934,8 @@ class _CustomerProfileSetupPageState extends State<CustomerProfileSetupPage> {
           context: context,
           builder: (context) => AlertDialog(
             title: Text(AppLocalizations.of(context)!.validationError),
-            content: Text(AppLocalizations.of(context)!.pleaseSelectCustomerType),
+            content:
+                Text(AppLocalizations.of(context)!.pleaseSelectCustomerType),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),

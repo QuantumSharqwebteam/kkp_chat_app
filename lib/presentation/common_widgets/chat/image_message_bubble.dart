@@ -173,7 +173,7 @@ class _ImageMessageBubbleState extends State<ImageMessageBubble> {
                       const SizedBox(width: 4),
                       if (widget.isMe)
                         Icon(
-                          Icons.check,
+                          isRead ? Icons.done_all : Icons.done,
                           color: isRead ? Colors.blue : Colors.grey,
                           size: 16,
                         ),

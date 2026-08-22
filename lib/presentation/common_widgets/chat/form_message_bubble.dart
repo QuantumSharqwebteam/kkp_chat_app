@@ -19,6 +19,7 @@ class FormMessageBubble extends StatefulWidget {
   final VoidCallback? onFormUpdateEnd;
   final Function(Map<String, dynamic>)? onFormUpdated;
   final Function(Map<String, dynamic>)? onFormEditRequested;
+  final bool? read;
 
   FormMessageBubble({
     super.key,
@@ -27,6 +28,7 @@ class FormMessageBubble extends StatefulWidget {
     required this.timestamp,
     required this.userRole,
     this.serialNumber,
+    this.read = false,
     this.onRateUpdated,
     this.onStatusUpdated,
     this.onFormUpdateStart,
@@ -46,8 +48,10 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
 
   Map<String, dynamic> get _activeForm => widget.forms[_currentPage];
 
-  bool get _isPrivilegedUser => widget.userRole == '2' || widget.userRole == '3';
-  bool get _showAllOptions => _activeForm['_formOptionsUnlocked'] == true || _normalizedRate() > 0;
+  bool get _isPrivilegedUser =>
+      widget.userRole == '2' || widget.userRole == '3';
+  bool get _showAllOptions =>
+      _activeForm['_formOptionsUnlocked'] == true || _normalizedRate() > 0;
 
   @override
   void initState() {
@@ -78,14 +82,16 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     );
   }
 
-  Future<void> _updateFormStatus(BuildContext context, String status, {String? reason}) async {
+  Future<void> _updateFormStatus(BuildContext context, String status,
+      {String? reason}) async {
     if (widget.onFormUpdateStart != null) {
       widget.onFormUpdateStart!();
     }
 
     final id = _activeForm['_id']?.toString();
     if (id == null || id.isEmpty) {
-      debugPrint('Form id required : $id in the form data: ${_activeForm.toString()} ');
+      debugPrint(
+          'Form id required : $id in the form data: ${_activeForm.toString()} ');
     }
     try {
       await chatRepository.updateInquiryFormStatus(id!, status, reason: reason);
@@ -112,7 +118,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     }
   }
 
-  void _handleMenuSelection(BuildContext context, String value, Map<String, dynamic> formData) {
+  void _handleMenuSelection(
+      BuildContext context, String value, Map<String, dynamic> formData) {
     if (value == 'confirm') {
       _updateFormStatus(context, 'Confirmed');
     } else if (value == 'decline') {
@@ -166,7 +173,9 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
     );
 
     controller.dispose();
-    if (!mounted || !context.mounted || reason == null || reason.isEmpty) return;
+    if (!mounted || !context.mounted || reason == null || reason.isEmpty) {
+      return;
+    }
     await _updateFormStatus(context, 'Declined', reason: reason);
   }
 
@@ -266,7 +275,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
             child: Text(
               label,
               style: AppTextStyles.black14_600.copyWith(
-                color: widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
+                color:
+                    widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
               ),
             ),
           ),
@@ -274,7 +284,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
             child: Text(
               value,
               style: TextStyle(
-                color: widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
+                color:
+                    widget.isMe ? Colors.white : Colors.black.withOpacity(0.6),
               ),
               textAlign: TextAlign.right,
             ),
@@ -296,7 +307,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
           maxWidth: MediaQuery.of(context).size.width * 0.65,
         ),
         decoration: BoxDecoration(
-          color: widget.isMe ? const Color(0xFF00ABE9) : const Color(0xFFF2F2F2),
+          color:
+              widget.isMe ? const Color(0xFF00ABE9) : const Color(0xFFF2F2F2),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -311,7 +323,8 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
               Align(
                 alignment: Alignment.topRight,
                 child: PopupMenuButton<String>(
-                  onSelected: (value) => _handleMenuSelection(context, value, _activeForm),
+                  onSelected: (value) =>
+                      _handleMenuSelection(context, value, _activeForm),
                   itemBuilder: (BuildContext context) {
                     final List<String> options = [];
                     if (_showAllOptions) {
@@ -334,8 +347,9 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                 margin: const EdgeInsets.only(bottom: 5),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color:
-                      widget.isMe ? Colors.white.withOpacity(0.22) : Colors.black.withOpacity(0.08),
+                  color: widget.isMe
+                      ? Colors.white.withOpacity(0.22)
+                      : Colors.black.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -348,9 +362,11 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
             _buildPager(),
             LayoutBuilder(
               builder: (context, constraints) {
-                final double screenMaxHeight = MediaQuery.of(context).size.height * 0.35;
-                final double availableMax =
-                    constraints.maxHeight.isFinite ? constraints.maxHeight : screenMaxHeight;
+                final double screenMaxHeight =
+                    MediaQuery.of(context).size.height * 0.35;
+                final double availableMax = constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : screenMaxHeight;
                 final double height = math.min(screenMaxHeight, availableMax);
                 return SizedBox(
                   height: height,
@@ -375,11 +391,24 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              child: Text(
-                widget.timestamp,
-                style: widget.isMe
-                    ? AppTextStyles.white8_600.copyWith(fontSize: 10)
-                    : AppTextStyles.greyAAAAAA_10_400,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.timestamp,
+                    style: widget.isMe
+                        ? AppTextStyles.white8_600.copyWith(fontSize: 10)
+                        : AppTextStyles.greyAAAAAA_10_400,
+                  ),
+                  if (widget.isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      (widget.read ?? false) ? Icons.done_all : Icons.done,
+                      color: (widget.read ?? false) ? Colors.blue : Colors.grey,
+                      size: 14,
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
