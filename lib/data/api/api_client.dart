@@ -50,6 +50,23 @@ class LoggingHttpClient extends http.BaseClient {
     'x-api-key',
   };
 
+  /// Body fields whose values are never printed, in requests or responses.
+  /// Login and signup post credentials through here.
+  static const Set<String> _redactedFields = {
+    'password',
+    'newpassword',
+    'oldpassword',
+    'confirmpassword',
+    'token',
+    'accesstoken',
+    'refreshtoken',
+    'secret',
+    'otp',
+    'apikey',
+    'secretkey',
+    'accesskey',
+  };
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final logger = LoggingService.instance;
@@ -150,9 +167,24 @@ class LoggingHttpClient extends http.BaseClient {
 
   static Object? _decodeText(String text) {
     try {
-      return jsonDecode(text);
+      return _redact(jsonDecode(text));
     } catch (_) {
       return text;
     }
+  }
+
+  /// Walks a decoded payload and masks any sensitive field, at any depth.
+  static Object? _redact(Object? value) {
+    if (value is Map) {
+      return value.map((key, val) {
+        final normalized = key.toString().toLowerCase().replaceAll('_', '');
+        return MapEntry(
+          key,
+          _redactedFields.contains(normalized) ? '<redacted>' : _redact(val),
+        );
+      });
+    }
+    if (value is List) return value.map(_redact).toList();
+    return value;
   }
 }
