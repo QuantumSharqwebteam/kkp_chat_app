@@ -8,6 +8,7 @@ import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/api/product_service.dart';
 import 'package:kkpchatapp/core/services/s3_upload_service.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
+import 'package:kkpchatapp/presentation/common_widgets/failure_details_sheet.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/add_product_provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
@@ -104,7 +105,42 @@ class _AddProductScreenState extends State<AddProductScreen> {
                                   return;
                                 }
 
-                                bool success = await provider.addProduct();
+                                bool success;
+                                try {
+                                  success = await provider.addProduct();
+                                } on UploadException catch (e, stack) {
+                                  // The image never reached S3 — say which
+                                  // stage broke instead of blaming the form.
+                                  if (!context.mounted) return;
+                                  showFailureDetailsSheet(
+                                    context,
+                                    title: 'Image upload failed',
+                                    stage: e.stage,
+                                    message: e.message,
+                                    detail: [
+                                      if (e.detail != null) e.detail!,
+                                      if (provider.s3UploadService
+                                              .compressionNote !=
+                                          null)
+                                        provider
+                                            .s3UploadService.compressionNote!,
+                                    ].join('\n'),
+                                    location: e.location,
+                                    stackTrace: stack,
+                                    file: provider.selectedImage,
+                                  );
+                                  return;
+                                } catch (e, stack) {
+                                  if (!context.mounted) return;
+                                  showFailureDetailsSheet(
+                                    context,
+                                    title: 'Could not add product',
+                                    stage: 'Unexpected',
+                                    message: '${e.runtimeType}: $e',
+                                    stackTrace: stack,
+                                  );
+                                  return;
+                                }
                                 if (context.mounted) {
                                   if (!success) {
                                     Utils().showSuccessDialog(context,
@@ -150,6 +186,31 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  /// Picks a product image, reporting picker failures instead of letting them
+  /// escape as unhandled async errors — on Android 13 a photo-picker or
+  /// permission failure throws a PlatformException here.
+  Future<void> _pickProductImage(
+      BuildContext context, AddProductProvider provider) async {
+    try {
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (pickedFile == null) return; // user cancelled
+      provider.pickImage(File(pickedFile.path));
+    } catch (e, stack) {
+      if (!context.mounted) return;
+      showFailureDetailsSheet(
+        context,
+        title: 'Could not open gallery',
+        stage: 'Picker',
+        message: 'The photo picker failed to open. Check the app\'s Photos '
+            'permission in Settings, then try again.',
+        detail: '${e.runtimeType}: $e',
+        location: 'AddProductScreen._pickProductImage (gallery)',
+        stackTrace: stack,
+      );
+    }
+  }
+
   Widget _buildImagePickerContainer(
       BuildContext context, AddProductProvider provider) {
     final locale = AppLocalizations.of(context)!;
@@ -157,13 +218,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return SizedBox(
       width: double.maxFinite,
       child: GestureDetector(
-        onTap: () async {
-          final pickedFile =
-              await ImagePicker().pickImage(source: ImageSource.gallery);
-          if (pickedFile != null) {
-            provider.pickImage(File(pickedFile.path));
-          }
-        },
+        onTap: () => _pickProductImage(context, provider),
         child: Card(
           color: Colors.white,
           surfaceTintColor: Colors.white,
@@ -194,13 +249,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                               width: Utils().width(context) * 0.35,
                               fontSize: 13,
                               backgroundColor: AppColors.background,
-                              onPressed: () async {
-                                final pickedFile = await ImagePicker()
-                                    .pickImage(source: ImageSource.gallery);
-                                if (pickedFile != null) {
-                                  provider.pickImage(File(pickedFile.path));
-                                }
-                              },
+                              onPressed: () =>
+                                  _pickProductImage(context, provider),
                               textColor: AppColors.blue,
                               borderColor: AppColors.background,
                               text: locale.chooseFile,

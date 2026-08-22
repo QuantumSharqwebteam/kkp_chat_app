@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 and below (API 23-30), used via android:fullBackupContent.
+
+  Redundant while android:allowBackup="false", but kept so that re-enabling
+  backup later cannot silently start shipping tokens and Hive caches to Drive.
+-->
+<full-backup-content>
+    <exclude domain="root" />
+    <exclude domain="file" />
+    <exclude domain="database" />
+    <exclude domain="sharedpref" />
+    <exclude domain="external" />
+</full-backup-content>

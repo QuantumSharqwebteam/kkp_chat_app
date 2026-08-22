@@ -16,6 +16,7 @@ import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/failure_details_sheet.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -120,17 +121,51 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: source,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 80,
-    );
-    if (pickedFile != null) {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (pickedFile == null) return; // user cancelled
+      if (!mounted) return;
+
+      final file = File(pickedFile.path);
+      LoggingService.instance.logNetwork(
+        'Profile image picked from ${source.name}: ${pickedFile.path}',
+      );
       setState(() {
-        _selectedImage = File(pickedFile.path);
+        _selectedImage = file;
         _removePhoto = false; // a new pick supersedes a pending removal
       });
+    } catch (e, stack) {
+      // Previously uncaught. On Android 13 a denied camera permission or a
+      // photo-picker failure throws a PlatformException here, which became an
+      // unhandled async error and looked to the user like nothing happened.
+      LoggingService.instance.logNetwork(
+        'Profile image pick failed (${source.name}): $e',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stack,
+      );
+      if (!mounted) return;
+      showFailureDetailsSheet(
+        context,
+        title:
+            'Could not open ${source == ImageSource.camera ? "camera" : "gallery"}',
+        stage: 'Picker',
+        message: source == ImageSource.camera
+            ? 'Camera access failed. Check the app\'s Camera permission in '
+                'Settings, then try again.'
+            : 'The photo picker failed to open. Check the app\'s Photos '
+                'permission in Settings, then try again.',
+        // runtimeType matters: PlatformException means the OS refused,
+        // anything else means the plugin itself broke.
+        detail: '${e.runtimeType}: $e',
+        location: 'CustomerProfilePage._pickImage (${source.name})',
+        stackTrace: stack,
+      );
     }
   }
 
@@ -325,16 +360,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       'Profile image: uploading ${image.path.split('/').last} ($bytes bytes) to S3',
     );
 
-    final uploadedUrl = await _s3uploadService.uploadFile(image);
-
-    // uploadFile swallows its own errors and returns null.
-    if (uploadedUrl == null || uploadedUrl.isEmpty) {
-      LoggingService.instance.logNetwork(
-        'Profile image: S3 upload failed',
-        level: LogLevel.error,
-      );
-      throw Exception('Image upload failed. Please try again.');
-    }
+    // The throwing variant: uploadFile() collapses every failure to null, which
+    // is why an upload problem on a device was impossible to diagnose.
+    final uploadedUrl = await _s3uploadService.uploadFileOrThrow(image);
 
     LoggingService.instance.logNetwork(
       'Profile image: uploaded → $uploadedUrl',
@@ -416,15 +444,42 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       } else {
         _showError(response['message'] ?? "Update failed");
       }
-    } catch (e) {
+    } catch (e, stack) {
       LoggingService.instance.logNetwork(
         'Profile update failed: $e',
         level: LogLevel.error,
         error: e,
+        stackTrace: stack,
       );
-      // ApiException.toString() is already the server's own message; only a
-      // genuinely unexpected error needs the "Error:" prefix.
-      _showError(e is ApiException ? e.message : "Error: $e");
+      if (!mounted) return;
+      if (e is UploadException) {
+        // Full detail on screen and copyable — the device that fails is rarely
+        // the one attached to a debugger.
+        showFailureDetailsSheet(
+          context,
+          title: 'Image upload failed',
+          stage: e.stage,
+          message: e.message,
+          detail: [
+            if (e.detail != null) e.detail!,
+            if (_s3uploadService.compressionNote != null)
+              _s3uploadService.compressionNote!,
+          ].join('\n'),
+          location: e.location,
+          stackTrace: stack,
+          file: _selectedImage,
+        );
+      } else if (e is ApiException) {
+        _showError(e.message);
+      } else {
+        showFailureDetailsSheet(
+          context,
+          title: 'Could not save profile',
+          stage: 'Unexpected',
+          message: '${e.runtimeType}: $e',
+          stackTrace: stack,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
