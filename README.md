@@ -2,7 +2,14 @@
 
 Marketplace app for KKP Group's textile business: customers browse and order, agents handle enquiries over real-time chat and calls, admins manage users, catalogue and marketing. Live on the Play Store and the App Store.
 
-<p><img src="docs/screens/hero.png" width="720" alt="Screenshots"></p>
+<p>
+  <img src="docs/screens/1.png" width="150" alt="KKP Group app screen 1">
+  <img src="docs/screens/2.png" width="150" alt="KKP Group app screen 2">
+  <img src="docs/screens/3.png" width="150" alt="KKP Group app screen 3">
+  <img src="docs/screens/4.png" width="150" alt="KKP Group app screen 4">
+  <img src="docs/screens/5.png" width="150" alt="KKP Group app screen 5">
+</p>
+<p><a href="https://apps.apple.com/in/app/kkp-group/id6748518075">App Store</a> · <a href="https://play.google.com/store/apps/details?id=com.kkptextile.kkpchatapp">Play Store</a></p>
 
 ## Features
 - Three roles in one app (admin, agent, customer) with role-based navigation and screens
