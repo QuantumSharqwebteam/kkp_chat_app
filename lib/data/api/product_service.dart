@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/product_model.dart';
@@ -10,7 +11,7 @@ import 'package:kkpchatapp/data/models/product_model.dart';
 
 //   final http.Client client;
 
-//   ProductService({http.Client? client}) : client = client ?? http.Client();
+//   ProductService({http.Client? client}) : client = client ?? ApiClient.create();
 
 //   Future<List<Product>> fetchProducts() async {
 //     final token = await LocalDbHelper.getToken();
@@ -108,7 +109,7 @@ class ProductService {
 
   final LoggingService _logger = LoggingService.instance;
 
-  ProductService({http.Client? client}) : client = client ?? http.Client();
+  ProductService({http.Client? client}) : client = client ?? ApiClient.create();
 
   /// Fetch all products
   Future<List<Product>> fetchProducts() async {

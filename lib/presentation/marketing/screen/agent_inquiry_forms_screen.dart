@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
@@ -25,7 +26,8 @@ class AgentInquiryFormsScreen extends StatefulWidget {
   });
 
   @override
-  State<AgentInquiryFormsScreen> createState() => _AgentInquiryFormsScreenState();
+  State<AgentInquiryFormsScreen> createState() =>
+      _AgentInquiryFormsScreenState();
 }
 
 class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
@@ -82,7 +84,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
     return parsedRate != null && parsedRate > 0;
   }
 
-  Future<void> _handleStatusSelection(String formId, String status, {String? reason}) async {
+  Future<void> _handleStatusSelection(String formId, String status,
+      {String? reason}) async {
     _setBusy(formId, true);
     try {
       await context.read<InquiryProvider>().updateFormStatus(
@@ -95,7 +98,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showStatusToast('Unable to update status: $e', success: false);
+        final reason = e is ApiException ? e.message : '$e';
+        _showStatusToast('Unable to update status: $reason', success: false);
       }
     } finally {
       _setBusy(formId, false);
@@ -112,8 +116,10 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Text('Reason for decline', style: AppTextStyles.black18_600),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              title:
+                  Text('Reason for decline', style: AppTextStyles.black18_600),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,7 +187,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
     );
   }
 
-  Future<bool> _handleFormUpdate(String formId, Map<String, dynamic> updates) async {
+  Future<bool> _handleFormUpdate(
+      String formId, Map<String, dynamic> updates) async {
     _setBusy(formId, true);
     try {
       await context.read<InquiryProvider>().updateFormDetails(formId, updates);
@@ -191,7 +198,10 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
       return true;
     } catch (e) {
       if (mounted) {
-        _showStatusToast('Unable to update inquiry: $e', success: false);
+        // ApiException.toString() is already the server's own message; only an
+        // unexpected error needs the raw exception text.
+        final reason = e is ApiException ? e.message : '$e';
+        _showStatusToast('Unable to update inquiry: $reason', success: false);
       }
       return false;
     } finally {
@@ -235,7 +245,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                   Expanded(
                     child: Text(
                       message,
-                      style: AppTextStyles.black12_500.copyWith(color: Colors.white),
+                      style: AppTextStyles.black12_500
+                          .copyWith(color: Colors.white),
                     ),
                   ),
                   GestureDetector(
@@ -258,7 +269,13 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
 
   Widget _buildFilterChips(InquiryProvider provider) {
     const statuses = ['All', 'Processed', 'Confirmed', 'Declined'];
-    const dateRanges = ['All', 'Today', 'Last Week', 'Last Month', 'Last 30 days'];
+    const dateRanges = [
+      'All',
+      'Today',
+      'Last Week',
+      'Last Month',
+      'Last 30 days'
+    ];
 
     Widget buildStatusChips() {
       return SingleChildScrollView(
@@ -266,7 +283,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
         physics: const BouncingScrollPhysics(),
         child: Row(
           children: statuses.map((status) {
-            final isSelected = provider.selectedStatus.toLowerCase() == status.toLowerCase();
+            final isSelected =
+                provider.selectedStatus.toLowerCase() == status.toLowerCase();
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: _buildOvalFilterChip(
@@ -275,7 +293,9 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                 selectedColor: AppColors.blue.withOpacity(0.2),
                 unselectedColor: Colors.white,
                 onTap: () {
-                  if (_searchController.text.isNotEmpty) _searchController.clear();
+                  if (_searchController.text.isNotEmpty) {
+                    _searchController.clear();
+                  }
                   provider.updateStatus(status);
                 },
               ),
@@ -291,7 +311,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
         physics: const BouncingScrollPhysics(),
         child: Row(
           children: dateRanges.map((range) {
-            final isSelected = provider.selectedDateRange.toLowerCase() == range.toLowerCase();
+            final isSelected =
+                provider.selectedDateRange.toLowerCase() == range.toLowerCase();
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: _buildOvalFilterChip(
@@ -301,7 +322,9 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                 unselectedColor: Colors.white,
                 labelColor: isSelected ? AppColors.blue : Colors.black54,
                 onTap: () {
-                  if (_searchController.text.isNotEmpty) _searchController.clear();
+                  if (_searchController.text.isNotEmpty) {
+                    _searchController.clear();
+                  }
                   provider.updateDateRange(range);
                 },
               ),
@@ -336,7 +359,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
     final backgroundColor = selected
         ? (selectedColor ?? AppColors.blue.withOpacity(0.2))
         : (unselectedColor ?? Colors.white);
-    final textColor = labelColor ?? (selected ? AppColors.blue : Colors.black87);
+    final textColor =
+        labelColor ?? (selected ? AppColors.blue : Colors.black87);
     final borderColor = selected ? AppColors.blue : Colors.grey.shade300;
 
     return InkWell(
@@ -415,7 +439,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                           ],
                         ),
                       ),
-                      child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF0F766E)),
+                      child: const Icon(Icons.inventory_2_outlined,
+                          color: Color(0xFF0F766E)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -423,7 +448,9 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            form.buyerName.isNotEmpty ? form.buyerName : 'Buyer not available',
+                            form.buyerName.isNotEmpty
+                                ? form.buyerName
+                                : 'Buyer not available',
                             style: AppTextStyles.black16_600,
                           ),
                           const SizedBox(height: 4),
@@ -431,13 +458,15 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                             form.customerName.isNotEmpty
                                 ? 'Customer: ${form.customerName}'
                                 : 'Requested on ${_formatDate(form.date)}',
-                            style: AppTextStyles.grey12_400.copyWith(fontSize: 13),
+                            style:
+                                AppTextStyles.grey12_400.copyWith(fontSize: 13),
                           ),
                           if (form.customerName.isNotEmpty) ...[
                             const SizedBox(height: 3),
                             Text(
                               'Requested on ${_formatDate(form.date)}',
-                              style: AppTextStyles.grey12_400.copyWith(fontSize: 12),
+                              style: AppTextStyles.grey12_400
+                                  .copyWith(fontSize: 12),
                             ),
                           ],
                         ],
@@ -448,7 +477,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: _statusBackground(form.status),
                             borderRadius: BorderRadius.circular(14),
@@ -464,7 +494,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _formatTime(form.date),
-                          style: AppTextStyles.grey12_400.copyWith(fontSize: 12),
+                          style:
+                              AppTextStyles.grey12_400.copyWith(fontSize: 12),
                         ),
                       ],
                     ),
@@ -477,9 +508,14 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : PopupMenuButton<String>(
-                              onSelected: (value) => _onMenuSelection(value, form),
+                              onSelected: (value) =>
+                                  _onMenuSelection(value, form),
                               itemBuilder: (_) {
-                                final options = <String>['confirm', 'decline', 'edit'];
+                                final options = <String>[
+                                  'confirm',
+                                  'decline',
+                                  'edit'
+                                ];
                                 return options.map((choice) {
                                   final text = choice == 'edit'
                                       ? 'Edit form'
@@ -500,8 +536,9 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children:
-                        detailChips.map((entry) => _buildInfoChip(entry.key, entry.value)).toList(),
+                    children: detailChips
+                        .map((entry) => _buildInfoChip(entry.key, entry.value))
+                        .toList(),
                   ),
                 ],
                 if (hasReason) ...[
@@ -546,11 +583,13 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
           children: [
             TextSpan(
               text: '$label\n',
-              style: AppTextStyles.black12_500.copyWith(color: Colors.grey.shade600),
+              style: AppTextStyles.black12_500
+                  .copyWith(color: Colors.grey.shade600),
             ),
             TextSpan(
               text: value,
-              style: AppTextStyles.black14_600.copyWith(color: const Color(0xFF0F172A)),
+              style: AppTextStyles.black14_600
+                  .copyWith(color: const Color(0xFF0F172A)),
             ),
           ],
         ),
@@ -581,12 +620,14 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
               children: [
                 Text(
                   'Reason',
-                  style: AppTextStyles.black12_500.copyWith(color: const Color(0xFF991B1B)),
+                  style: AppTextStyles.black12_500
+                      .copyWith(color: const Color(0xFF991B1B)),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   reason,
-                  style: AppTextStyles.black14_400.copyWith(color: const Color(0xFF7F1D1D)),
+                  style: AppTextStyles.black14_400
+                      .copyWith(color: const Color(0xFF7F1D1D)),
                 ),
               ],
             ),
@@ -604,12 +645,14 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
         children: [
           Text(
             label,
-            style: AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
+            style:
+                AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
           ),
           const SizedBox(height: 4),
           Text(
             value.isEmpty ? 'N/A' : value,
-            style: AppTextStyles.black14_600.copyWith(color: Colors.grey.shade700),
+            style:
+                AppTextStyles.black14_600.copyWith(color: Colors.grey.shade700),
           ),
         ],
       ),
@@ -647,8 +690,12 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
 
   Color _statusBackground(String status) {
     final normalized = status.toLowerCase();
-    if (normalized == 'confirmed') return AppColors.green22C55E.withOpacity(0.15);
-    if (normalized == 'declined') return AppColors.inActiveRed.withOpacity(0.15);
+    if (normalized == 'confirmed') {
+      return AppColors.green22C55E.withOpacity(0.15);
+    }
+    if (normalized == 'declined') {
+      return AppColors.inActiveRed.withOpacity(0.15);
+    }
     return AppColors.helperOrange.withOpacity(0.15);
   }
 
@@ -726,7 +773,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                 return Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
                       child: CustomSearchBar(
                         enable: true,
                         controller: _searchController,
@@ -736,7 +784,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                     ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -752,7 +801,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                     ),
                     if (provider.isLoading)
                       const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 6),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16.0, vertical: 6),
                         child: LinearProgressIndicator(),
                       ),
                     Expanded(
@@ -761,8 +811,8 @@ class _AgentInquiryFormsScreenState extends State<AgentInquiryFormsScreen> {
                           : RefreshIndicator(
                               onRefresh: provider.refreshInquiries,
                               child: ListView.builder(
-                                padding:
-                                    const EdgeInsets.only(top: 12, bottom: 32, left: 4, right: 4),
+                                padding: const EdgeInsets.only(
+                                    top: 12, bottom: 32, left: 4, right: 4),
                                 itemCount: inquiries.length,
                                 itemBuilder: (context, index) {
                                   return _buildInquiryCard(inquiries[index]);
@@ -802,12 +852,14 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
       TextEditingController(text: widget.form.customerName);
   late final TextEditingController qualityController =
       TextEditingController(text: widget.form.quality);
-  late final TextEditingController weaveController = TextEditingController(text: widget.form.weave);
+  late final TextEditingController weaveController =
+      TextEditingController(text: widget.form.weave);
   late final TextEditingController quantityController =
       TextEditingController(text: widget.form.quantity);
   late final TextEditingController compositionController =
       TextEditingController(text: widget.form.composition);
-  late final TextEditingController rateController = TextEditingController(text: widget.form.rate);
+  late final TextEditingController rateController =
+      TextEditingController(text: widget.form.rate);
   late final TextEditingController reasonController =
       TextEditingController(text: widget.form.reason);
 
@@ -821,7 +873,9 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedStatus = _statuses.contains(widget.form.status) ? widget.form.status : _statuses.first;
+    _selectedStatus = _statuses.contains(widget.form.status)
+        ? widget.form.status
+        : _statuses.first;
   }
 
   @override
@@ -841,7 +895,8 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
     if (isSubmitting) return;
     // validate decline reason inline
     if (_selectedStatus == 'Declined' && reasonController.text.trim().isEmpty) {
-      setState(() => _reasonError = 'Reason is required when declining an inquiry');
+      setState(
+          () => _reasonError = 'Reason is required when declining an inquiry');
       return;
     }
     setState(() {
@@ -852,7 +907,8 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
     // Prevent negative values for quantity (supports "1000 metres", "100 m", etc.)
     final qtyText = quantityController.text.trim();
     if (qtyText.isNotEmpty) {
-      final numericMatch = RegExp(r'\d+').firstMatch(qtyText.replaceAll(',', ''));
+      final numericMatch =
+          RegExp(r'\d+').firstMatch(qtyText.replaceAll(',', ''));
       if (numericMatch != null) {
         final q = int.tryParse(numericMatch.group(0)!);
         if (q != null && q < 0) {
@@ -871,7 +927,8 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
       'composition': compositionController.text.trim(),
       'rate': rateController.text.trim(),
       'status': _selectedStatus,
-      'reason': _selectedStatus == 'Declined' ? reasonController.text.trim() : '',
+      'reason':
+          _selectedStatus == 'Declined' ? reasonController.text.trim() : '',
     };
     final success = await widget.onSubmit(updates);
     if (!mounted) return;
@@ -953,7 +1010,9 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
                 ],
                 errorText: _quantityError,
                 onChanged: (_) {
-                  if (_quantityError != null) setState(() => _quantityError = null);
+                  if (_quantityError != null) {
+                    setState(() => _quantityError = null);
+                  }
                 },
               ),
               const SizedBox(height: 12),
@@ -1009,7 +1068,9 @@ class _InquiryFormEditSheetState extends State<InquiryFormEditSheet> {
                   maxLines: 4,
                   errorText: _reasonError,
                   onChanged: (_) {
-                    if (_reasonError != null) setState(() => _reasonError = null);
+                    if (_reasonError != null) {
+                      setState(() => _reasonError = null);
+                    }
                   },
                 ),
               ],

@@ -1,0 +1,35 @@
+[33m9db4c05[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mkaran_dv[m[33m, [m[1;31morigin/prem_dv[m[33m)[m Merge branch 'karan_dv' of https://github.com/QuantumSharqwebteam/kkp_chat_app into prem_dv
+[33mb65c2ab[m Solved all user side bugs
+[33m668c653[m[33m ([m[1;31morigin/karan_dv[m[33m)[m Merge branch 'prem_dv' of https://github.com/QuantumSharqwebteam/kkp_chat_app into karan_dv
+[33m91c1a48[m notification icon replace into product screen to home screen
+[33m4522ff1[m Solved 4 user side bugs
+[33m9ff1ec3[m Merge branch 'karan_dv' into prem_dv
+[33m727b7cb[m add validation in stock and customer inquiries list fix properly
+[33mf977fa7[m Merge branch 'karan_dv' of https://github.com/QuantumSharqwebteam/kkp_chat_app into prem_dv
+[33maae4585[m Solved the voice message time issue
+[33m5ade6af[m add missing form validation error messages for required fields
+[33mdc841af[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge branch 'mac_develope' of https://github.com/QuantumSharqwebteam/kkp_chat_app
+[33m0751906[m[33m ([m[1;31morigin/new_feature_releases[m[33m)[m 1.1.3
+[33m4b48d95[m fixes
+[33mb103a0e[m verion ios 1.1.2 and android verison 55
+[33m86b2390[m fetch keys method add and fixed and forground srvice fix in android manaifext
+[33mc0a0aa6[m call kit impelmeentation guidemd file added
+[33me69409e[m flutter call kit implementqation added
+[33mef463d5[m 1.1.0 uploaded
+[33m67d5764[m notifications updsted
+[33mfbdde22[m bg service added
+[33mf3ae0ae[m Merge branch 'new_feature_releases' of https://github.com/QuantumSharqwebteam/kkp_chat_app into mac_develope
+[33mca75440[m fix
+[33m9f2d459[m Merge branch 'after-version-release-11+' of https://github.com/QuantumSharqwebteam/kkp_chat_app into mac_develope
+[33me38cd68[m 1.0.9
+[33ma4c96f6[m fix
+[33mec771c0[m updates
+[33m71f20d2[m chat chnages added , flow , changes and fixes
+[33m8285db1[m fixes
+[33m3412387[m forntend ml kit extration removed
+[33m88505d6[m Merge branch 'after-version-release-11+' of https://github.com/QuantumSharqwebteam/kkp_chat_app
+[33m1d82d7a[m[33m ([m[1;31morigin/after-version-release-11+[m[33m)[m fchanges
+[33m94e9e6c[m ui chnage update order sheet
+[33m8b6faec[m llm flow added
+[33mb4ca92f[m smart chat llm kit integration
+[33mc46edc1[m fixes

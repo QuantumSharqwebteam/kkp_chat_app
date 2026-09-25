@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppConstants {
   // UI Constants
   static const double defaultPadding = 16.0;
@@ -44,9 +46,13 @@ class AppConstants {
   static const Duration longAnimation = Duration(milliseconds: 600);
 
   // Logging Configuration
-  static const bool enableLogging = true;
-  static const bool enableConsoleLogging = true;
-  static const bool enableColoredConsoleOutput = true;
+  //
+  // Tied to kDebugMode so release builds do no logging work at all: these are
+  // compile-time constants, so every guarded branch is tree-shaken out of the
+  // release binary rather than merely skipped at runtime.
+  static const bool enableLogging = kDebugMode;
+  static const bool enableConsoleLogging = kDebugMode;
+  static const bool enableColoredConsoleOutput = kDebugMode;
 
   // Log Levels
   static const String logLevelDebug = 'DEBUG';
@@ -71,4 +77,8 @@ class AppConstants {
   static const String logCategoryStorage = 'STORAGE';
   static const String logCategoryNetwork = 'NETWORK';
   static const String logCategoryGeneral = 'GENERAL';
+
+  /// Full API payload dumps. Printed in bright yellow and never truncated —
+  /// see LoggingService.logApiData.
+  static const String logCategoryApiData = 'API-DATA';
 }

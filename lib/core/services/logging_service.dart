@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:kkpchatapp/core/constant.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter/foundation.dart';
@@ -46,7 +48,8 @@ class LoggingService {
       );
 
       _isInitialized = true;
-      _log(LogLevel.info, 'LoggingService', 'Logging service initialized successfully');
+      _log(LogLevel.info, 'LoggingService',
+          'Logging service initialized successfully');
     } catch (e) {
       if (kDebugMode) print('Failed to initialize logging service: $e');
     }
@@ -159,15 +162,20 @@ class LoggingService {
   // }
 
   // Public logging methods
-  void debug(String source, String message, {Object? error, StackTrace? stackTrace}) =>
+  void debug(String source, String message,
+          {Object? error, StackTrace? stackTrace}) =>
       _log(LogLevel.debug, source, message, error, stackTrace);
-  void info(String source, String message, {Object? error, StackTrace? stackTrace}) =>
+  void info(String source, String message,
+          {Object? error, StackTrace? stackTrace}) =>
       _log(LogLevel.info, source, message, error, stackTrace);
-  void warning(String source, String message, {Object? error, StackTrace? stackTrace}) =>
+  void warning(String source, String message,
+          {Object? error, StackTrace? stackTrace}) =>
       _log(LogLevel.warning, source, message, error, stackTrace);
-  void error(String source, String message, {Object? error, StackTrace? stackTrace}) =>
+  void error(String source, String message,
+          {Object? error, StackTrace? stackTrace}) =>
       _log(LogLevel.error, source, message, error, stackTrace);
-  void fatal(String source, String message, {Object? error, StackTrace? stackTrace}) =>
+  void fatal(String source, String message,
+          {Object? error, StackTrace? stackTrace}) =>
       _log(LogLevel.fatal, source, message, error, stackTrace);
 
   // Category-specific logging
@@ -214,6 +222,41 @@ class LoggingService {
   }) =>
       _log(level, AppConstants.logCategoryGeneral, message, error, stackTrace);
 
+  /// Dumps a full API payload to the console in **bright yellow**, pretty
+  /// printed and split across as many lines as it takes.
+  ///
+  /// Use this instead of [logApi] / [logNetwork] when you need to actually read
+  /// the response: those emit one long line, and the platform console truncates
+  /// a single line at ~1KB, so large payloads were silently cut off.
+  ///
+  /// ```dart
+  /// LoggingService.instance.logApiData('GET /profile', responseJson);
+  /// ```
+  void logApiData(String label, Object? data) {
+    if (!AppConstants.enableLogging) return;
+    _log(
+      LogLevel.info,
+      AppConstants.logCategoryApiData,
+      '$label\n${_prettyPrint(data)}',
+    );
+  }
+
+  static String _prettyPrint(Object? data) {
+    if (data == null) return 'null';
+    try {
+      return const JsonEncoder.withIndent('  ').convert(data);
+    } catch (_) {
+      // Not JSON-encodable (models without toJson, non-string map keys, …).
+      // Re-encode through a tolerant converter before giving up on toString().
+      try {
+        return const JsonEncoder.withIndent('  ')
+            .convert(jsonDecode(jsonEncode(data, toEncodable: (v) => '$v')));
+      } catch (_) {
+        return data.toString();
+      }
+    }
+  }
+
   // void recordCrash(dynamic error, StackTrace? stackTrace, {String? reason, bool fatal = true}) {
   //   try {
   //     final crashlytics = FirebaseCrashlytics.instance;
@@ -252,17 +295,54 @@ class _CustomLogFilter extends LogFilter {
 
 /// Custom log printer
 class _CustomLogPrinter extends LogPrinter {
+  /// The platform console drops anything past ~1KB on a single line, which is
+  /// what used to cut API payloads short. Emit multiple shorter lines instead.
+  static const int _maxLineLength = 800;
+
+  /// Bright yellow, distinct from warning's plain yellow.
+  static const String _apiDataColor = '\x1B[93m';
+
+  /// Categories printed in bright yellow so API traffic stands out from the
+  /// rest of the log stream.
+  static const List<String> _yellowCategories = [
+    AppConstants.logCategoryApiData,
+    AppConstants.logCategoryNetwork,
+    AppConstants.logCategoryApi,
+  ];
+
   @override
   List<String> log(LogEvent event) {
-    final color = _getColorForLevel(event.level);
-    final timestamp =
-        AppConstants.showTimestamp ? '[${DateTime.now().toString().substring(11, 19)}] ' : '';
+    final raw = '${event.message}';
+    final isYellow = event.level != Level.error &&
+        event.level != Level.fatal &&
+        _yellowCategories.any((category) => raw.startsWith('[$category]'));
+    final color = isYellow ? _apiDataColor : _getColorForLevel(event.level);
+
+    final timestamp = AppConstants.showTimestamp
+        ? '[${DateTime.now().toString().substring(11, 19)}] '
+        : '';
     final levelStr = AppConstants.showLogLevel ? '[${event.level.name}] ' : '';
-    final message = '$timestamp$levelStr${event.message}';
-    if (AppConstants.enableColoredConsoleOutput && color != null) {
-      return ['$color$message\x1B[0m'];
+
+    final lines = <String>[];
+    var isFirst = true;
+    for (final logical in raw.split('\n')) {
+      final prefix = isFirst ? '$timestamp$levelStr' : '';
+      isFirst = false;
+      final text = '$prefix$logical';
+      if (text.length <= _maxLineLength) {
+        lines.add(text);
+        continue;
+      }
+      for (var i = 0; i < text.length; i += _maxLineLength) {
+        final end = (i + _maxLineLength).clamp(0, text.length);
+        lines.add(text.substring(i, end));
+      }
     }
-    return [message];
+
+    if (AppConstants.enableColoredConsoleOutput && color != null) {
+      return lines.map((line) => '$color$line\x1B[0m').toList();
+    }
+    return lines;
   }
 
   String? _getColorForLevel(Level level) {

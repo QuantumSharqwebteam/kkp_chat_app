@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/call_log_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
@@ -37,15 +38,50 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
 
   Future<void> fetchCallLogs() async {
     final email = LocalDbHelper.getEmail();
-    try {
-      final fetchedLogs = await _chatRepo.fetchCallLogs(email!);
+    final userType = await LocalDbHelper.getUserType();
+    // "0" is the customer role; label the dump so agent and customer runs are
+    // distinguishable in the console (this screen is shared by both).
+    final side = userType == '0' ? 'customer' : 'agent';
+
+    if (email == null) {
+      LoggingService.instance.logNetwork(
+        'Call history ($side): no logged-in email, skipping fetch',
+        level: LogLevel.warning,
+      );
       if (!mounted) return;
+      setState(() => isLoading = false);
+      return;
+    }
+
+    try {
+      final fetchedLogs = await _chatRepo.fetchCallLogs(email);
+      if (!mounted) return;
+
+      // Deduplicate by id
+      final seen = <String>{};
+      final uniqueLogs = fetchedLogs.where((log) => seen.add(log.id)).toList();
+
+      // Sort newest first
+      uniqueLogs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+      LoggingService.instance.logApiData(
+        'Call history ($side) $email — '
+        '${fetchedLogs.length} fetched, ${uniqueLogs.length} after dedupe',
+        uniqueLogs.map((log) => log.toJson()).toList(),
+      );
+
       setState(() {
-        callLogs = fetchedLogs;
+        callLogs = uniqueLogs;
         isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Error fetching call logs: $e');
+      LoggingService.instance.logNetwork(
+        'Failed to fetch call logs ($side) for $email: $e',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stack,
+      );
       if (!mounted) return;
       setState(() {
         isLoading = false;
@@ -57,7 +93,8 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context)!.callHistory, style: AppTextStyles.black16_500),
+        title: Text(AppLocalizations.of(context)!.callHistory,
+            style: AppTextStyles.black16_500),
         backgroundColor: Colors.white,
       ),
       body: buildCallLogList(),
@@ -82,7 +119,8 @@ class _CallHistoryScreenState extends State<CallHistoryScreen> {
 
       if (DateUtils.isSameDay(date, now)) {
         key = "Today";
-      } else if (DateUtils.isSameDay(date, now.subtract(const Duration(days: 1)))) {
+      } else if (DateUtils.isSameDay(
+          date, now.subtract(const Duration(days: 1)))) {
         key = "Yesterday";
       } else {
         key = "${date.day}/${date.month}/${date.year}";

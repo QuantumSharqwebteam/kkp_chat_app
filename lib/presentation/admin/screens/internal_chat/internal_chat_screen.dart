@@ -50,7 +50,8 @@ class InternalChatScreen extends StatefulWidget {
   State<InternalChatScreen> createState() => _InternalChatScreenState();
 }
 
-class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBindingObserver {
+class _InternalChatScreenState extends State<InternalChatScreen>
+    with WidgetsBindingObserver {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   final _chatController = TextEditingController();
@@ -58,23 +59,28 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   final ChatService _chatService = ChatService();
   final S3UploadService _s3uploadService = S3UploadService();
   final ScrollController _scrollController = ScrollController();
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder(logLevel: Level.nothing);
+  final FlutterSoundRecorder _recorder =
+      FlutterSoundRecorder(logLevel: Level.nothing);
   List<GroupMessageModel> messages = [];
   bool _isRecording = false;
+  GroupMessageModel? _replyToMessage;
   GroupModel? _currentGroup;
   int _recordedSeconds = 0;
   Timer? _timer;
-  bool _isAtBottom = true;
+  final ValueNotifier<bool> _isAtBottom = ValueNotifier(true);
   final ValueNotifier<String?> currentTopDate = ValueNotifier(null);
-  final Map<Key, GlobalKey> _messageKeys = {};
+
+  /// Keyed on the message instance. An Expando holds its keys weakly, so no
+  /// pruning is needed — and unlike the old map it is not repopulated with a
+  /// brand-new GlobalKey on every single build, which forced element
+  /// reparenting for every visible row per frame.
+  final Expando<GlobalKey> _messageKeys = Expando<GlobalKey>();
   String? _nextCursor;
   final Set<String> _loadedMessageIds = {};
   final Set<String> fetchedCursors = {};
   // bool _isEditing = false;
   // String _editingMessageId = '';
   final _editController = TextEditingController();
-  int _currentPage = 1;
-  final Set<int> _fetchedPages = {};
 
   @override
   void initState() {
@@ -110,9 +116,12 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _chatController.dispose();
+    _editController.dispose();
     _scrollController.dispose();
     _recorder.closeRecorder();
     _timer?.cancel();
+    _isAtBottom.dispose();
+    currentTopDate.dispose();
     _socketService.setGroupChatPageState(false);
     super.dispose();
   }
@@ -130,26 +139,37 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   // --- Load Initial Messages ---
   Future<void> _loadInitialGroupMessages() async {
     final groupId = widget.groupId!;
-    setState(() => _isLoading = true);
     try {
       // 1. Load from local storage for an instant first paint.
       //    Display directly WITHOUT calling _removeDuplicates so _loadedMessageIds
       //    stays empty — poisoning it here is what caused the merge to return 0.
       final localMessages = await LocalDbHelper.getGroupMessages(groupId);
-      debugPrint("📦 [InternalChat] Local messages for group $groupId: ${localMessages.length}");
+      debugPrint(
+          "📦 [InternalChat] Local messages for group $groupId: ${localMessages.length}");
+      if (!mounted) return;
 
       if (localMessages.isNotEmpty) {
+        // Cache hit: paint it and sync in the background. The shimmer is only
+        // for a genuinely cold cache — showing it on every open (which is what
+        // an unconditional _isLoading = true did) hid content we already had.
         setState(() {
           messages = List.from(localMessages)
             ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _isLoading = false;
         });
+        _scrollToBottom();
+      } else {
+        setState(() => _isLoading = true);
       }
 
       // 2. Fetch from API
-      final result = await _chatService.fetchGroupMessages(limit: 20, groupId: groupId);
+      final result =
+          await _chatService.fetchGroupMessages(limit: 20, groupId: groupId);
       final List<GroupMessageModel> fetchedMessages = result['messages'];
       _nextCursor = result['nextCursor'];
-      debugPrint("🌐 [InternalChat] API messages for group $groupId: ${fetchedMessages.length}");
+      debugPrint(
+          "🌐 [InternalChat] API messages for group $groupId: ${fetchedMessages.length}");
+      if (!mounted) return;
 
       // 3. Merge — reset the tracked-ID set first so _removeDuplicates inside
       //    _mergeMessages works on a clean slate.
@@ -161,18 +181,28 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _isLoading = false;
       });
-      debugPrint("✅ [InternalChat] Merged total: ${messages.length} for group $groupId");
+      debugPrint(
+          "✅ [InternalChat] Merged total: ${messages.length} for group $groupId");
 
-      // 4. Persist merged messages to the group-specific box
-      for (var msg in messages) {
-        await LocalDbHelper.saveGroupMessage(msg, groupId);
+      // 4. Persist only what the API actually added, in one batched write.
+      //    Re-saving the entire merged list one message at a time on every open
+      //    was the slowest part of entering a busy group.
+      final localIds = localMessages.map((msg) => msg.messageId).toSet();
+      final unsaved = mergedMessages
+          .where((msg) => !localIds.contains(msg.messageId))
+          .toList();
+      if (unsaved.isNotEmpty) {
+        await LocalDbHelper.saveGroupMessages(unsaved, groupId);
       }
       _scrollToBottom();
     } catch (e) {
-      debugPrint("❌ [InternalChat] Error loading messages for group $groupId: $e");
+      debugPrint(
+          "❌ [InternalChat] Error loading messages for group $groupId: $e");
       // Fallback: show whatever is in local storage
       final localMessages = await LocalDbHelper.getGroupMessages(groupId);
-      debugPrint("📦 [InternalChat] Fallback local messages: ${localMessages.length}");
+      debugPrint(
+          "📦 [InternalChat] Fallback local messages: ${localMessages.length}");
+      if (!mounted) return;
       _loadedMessageIds.clear();
       setState(() {
         messages = _removeDuplicates(localMessages)
@@ -185,11 +215,12 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   }
 
   // --- Merge Local and API Messages ---
-  List<GroupMessageModel> _mergeMessages(
-      List<GroupMessageModel> localMessages, List<GroupMessageModel> apiMessages) {
+  List<GroupMessageModel> _mergeMessages(List<GroupMessageModel> localMessages,
+      List<GroupMessageModel> apiMessages) {
     final merged = [...localMessages];
     for (var apiMsg in apiMessages) {
-      final index = merged.indexWhere((msg) => msg.messageId == apiMsg.messageId);
+      final index =
+          merged.indexWhere((msg) => msg.messageId == apiMsg.messageId);
       if (index != -1) {
         // Replace local message with API message if API message is newer
         if (apiMsg.timestamp.isAfter(merged[index].timestamp)) {
@@ -206,8 +237,11 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   // --- Load More Messages ---
   Future<void> _loadMoreGroupMessages() async {
     final groupId = widget.groupId!;
-    if (_isLoadingMore || _nextCursor == null || _fetchedPages.contains(_currentPage)) return;
-    _fetchedPages.add(_currentPage);
+    // _nextCursor is the whole pagination mechanism — a null cursor means the
+    // server has no more history. The old page counter was never advanced past
+    // 1, so its _fetchedPages guard permanently blocked every page after the
+    // first.
+    if (_isLoadingMore || _nextCursor == null) return;
     setState(() => _isLoadingMore = true);
 
     try {
@@ -218,27 +252,30 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       );
       final List<GroupMessageModel> olderMessages = result['messages'];
       _nextCursor = result['nextCursor'];
-      debugPrint("📜 [InternalChat] Loaded ${olderMessages.length} older messages for group $groupId");
+      debugPrint(
+          "📜 [InternalChat] Loaded ${olderMessages.length} older messages for group $groupId");
 
       if (olderMessages.isNotEmpty) {
         final uniqueMessages = _removeDuplicates(olderMessages);
-        setState(() {
-          messages.insertAll(0, uniqueMessages);
-          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        });
-        for (var msg in uniqueMessages) {
-          await LocalDbHelper.saveGroupMessage(msg, groupId);
+        if (!mounted) return;
+        if (uniqueMessages.isNotEmpty) {
+          setState(() {
+            messages.insertAll(0, uniqueMessages);
+            messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          });
+          await LocalDbHelper.saveGroupMessages(uniqueMessages, groupId);
         }
       }
     } catch (e) {
       debugPrint("❌ [InternalChat] Error loading more messages: $e");
     } finally {
-      setState(() => _isLoadingMore = false);
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
   // --- Remove Duplicates ---
-  List<GroupMessageModel> _removeDuplicates(List<GroupMessageModel> messagesList) {
+  List<GroupMessageModel> _removeDuplicates(
+      List<GroupMessageModel> messagesList) {
     return messagesList.where((message) {
       if (_loadedMessageIds.contains(message.messageId)) {
         return false;
@@ -251,7 +288,16 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
 
   // --- Handle Incoming Messages ---
   void _handleIncomingGroupMessage(Map<String, dynamic> data) {
-    debugPrint("📨 [InternalChat] Group message received for group ${widget.groupId}: ${data.toString()}");
+    debugPrint(
+        "📨 [InternalChat] Group message received for group ${widget.groupId}: ${data.toString()}");
+
+    // Server broadcasts targetId instead of groupId — persist the mapping so
+    // background notifications can resolve the correct group badge.
+    final targetId = data['targetId']?.toString();
+    if (targetId != null && targetId.isNotEmpty && widget.groupId != null) {
+      LocalDbHelper.saveGroupTargetMapping(targetId, widget.groupId!);
+    }
+
     final message = GroupMessageModel.fromApiJson(data);
     if (!_loadedMessageIds.contains(message.messageId)) {
       _loadedMessageIds.add(message.messageId);
@@ -262,6 +308,13 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       _saveLastMessagePreview(message.message, message.type, message.timestamp);
       _scrollToBottom();
     }
+  }
+
+  void _cancelReply() {
+    if (_replyToMessage == null) return;
+    setState(() {
+      _replyToMessage = null;
+    });
   }
 
   // --- Handle Message Deletion ---
@@ -283,7 +336,9 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   // --- Delete Message ---
   void _deleteMessage(String messageId) {
     _socketService.deleteGroupMessage(
-        messageId: messageId, senderId: widget.agentEmail, groupId: widget.groupId!);
+        messageId: messageId,
+        senderId: widget.agentEmail,
+        groupId: widget.groupId!);
     setState(() {
       final index = messages.indexWhere((msg) => msg.messageId == messageId);
       if (index != -1) {
@@ -314,7 +369,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
   }
 
   // --- Save last message preview for the group list tile ---
-  void _saveLastMessagePreview(String messageText, String type, DateTime timestamp) {
+  void _saveLastMessagePreview(
+      String messageText, String type, DateTime timestamp) {
     String preview;
     switch (type) {
       case 'media':
@@ -327,7 +383,9 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         preview = '[Document]';
         break;
       default:
-        preview = messageText.length > 60 ? '${messageText.substring(0, 60)}...' : messageText;
+        preview = messageText.length > 60
+            ? '${messageText.substring(0, 60)}...'
+            : messageText;
     }
     LocalDbHelper.saveGroupLastMessage(widget.groupId!, preview, timestamp);
   }
@@ -438,9 +496,11 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       final path = await _recorder.stopRecorder();
       if (path != null) {
         final File voiceFile = File(path);
-        final voiceUrl = await _s3uploadService.uploadFile(voiceFile, isVoiceMessage: true);
+        final voiceUrl =
+            await _s3uploadService.uploadFile(voiceFile, isVoiceMessage: true);
         if (voiceUrl != null) {
-          _sendGroupMessage(messageText: "voice", type: 'voice', mediaUrl: voiceUrl);
+          _sendGroupMessage(
+              messageText: "voice", type: 'voice', mediaUrl: voiceUrl);
         }
       }
     } catch (e) {
@@ -472,6 +532,7 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       mediaUrl: mediaUrl,
       messageId: messageId,
       groupId: groupId,
+      replyTo: _replyToMessage?.messageId,
     );
     setState(() {
       messages.add(message);
@@ -482,12 +543,14 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
         senderName: widget.agentName,
         type: type,
         mediaUrl: mediaUrl,
+        replyTo: _replyToMessage?.messageId,
         timestamp: currentTime.toIso8601String(),
         messageId: messageId,
         groupId: groupId);
     LocalDbHelper.saveGroupMessage(message, groupId);
     _saveLastMessagePreview(messageText, type, currentTime);
     _chatController.clear();
+    _cancelReply();
     _scrollToBottom();
   }
 
@@ -499,7 +562,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       final File imageFile = File(pickedFile.path);
       final imageUrl = await _s3uploadService.uploadFile(imageFile);
       if (imageUrl != null) {
-        _sendGroupMessage(messageText: "image", type: 'media', mediaUrl: imageUrl);
+        _sendGroupMessage(
+            messageText: "image", type: 'media', mediaUrl: imageUrl);
       }
     }
   }
@@ -514,7 +578,8 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
       final File documentFile = File(file.path!);
       final documentUrl = await _s3uploadService.uploadDocument(documentFile);
       if (documentUrl != null) {
-        _sendGroupMessage(messageText: "document", type: 'document', mediaUrl: documentUrl);
+        _sendGroupMessage(
+            messageText: "document", type: 'document', mediaUrl: documentUrl);
       }
     }
   }
@@ -536,20 +601,18 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
     if (_scrollController.position.atEdge &&
         _scrollController.position.pixels == 0 &&
         !_isLoadingMore) {
-      _currentPage++;
-      _loadMoreGroupMessages();
+      unawaited(_loadMoreGroupMessages());
     }
   }
 
   void _checkIfAtBottom() {
+    // ValueNotifier rather than setState: this fires on every scroll
+    // notification and used to rebuild the whole screen on each crossing.
     if (_scrollController.position.atEdge) {
-      bool isBottom =
-          _scrollController.position.pixels == _scrollController.position.maxScrollExtent;
-      if (isBottom != _isAtBottom) {
-        setState(() => _isAtBottom = isBottom);
-      }
-    } else if (_isAtBottom) {
-      setState(() => _isAtBottom = false);
+      _isAtBottom.value = _scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent;
+    } else {
+      _isAtBottom.value = false;
     }
   }
 
@@ -566,10 +629,11 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
             if (_currentGroup != null) {
               final navigator = Navigator.of(context);
               final result = await navigator.push(
-                MaterialPageRoute(builder: (context) => GroupDescriptionScreen(
-                  groupId: widget.groupId ?? "Na",
-                  group: _currentGroup!,
-                )),
+                MaterialPageRoute(
+                    builder: (context) => GroupDescriptionScreen(
+                          groupId: widget.groupId ?? "Na",
+                          group: _currentGroup!,
+                        )),
               );
               if (!mounted) return;
               if (result == true) {
@@ -648,32 +712,41 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
                                 final msg = messages[index];
-                                final isAgent = msg.senderId == widget.agentEmail;
-                                final valueKey = ValueKey('group-msg-$index');
-                                final globalKey = GlobalKey();
-                                _messageKeys[valueKey] = globalKey;
+                                final isAgent =
+                                    msg.senderId == widget.agentEmail;
+                                // Stable per message, not per build. Allocating
+                                // a fresh GlobalKey here every frame forced the
+                                // element tree to reparent every visible row.
+                                final globalKey =
+                                    _messageKeys[msg] ??= GlobalKey();
                                 String? dateHeader;
                                 if (index == 0 ||
-                                    !ChatUtils()
-                                        .isSameDay(messages[index - 1].timestamp, msg.timestamp)) {
-                                  dateHeader = ChatUtils().formatDateHeader(msg.timestamp);
+                                    !ChatUtils().isSameDay(
+                                        messages[index - 1].timestamp,
+                                        msg.timestamp)) {
+                                  dateHeader = ChatUtils()
+                                      .formatDateHeader(msg.timestamp);
                                 }
                                 return Container(
                                   key: globalKey,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      if (dateHeader != null) DateHeader(date: dateHeader),
+                                      if (dateHeader != null)
+                                        DateHeader(date: dateHeader),
                                       if (msg.type == 'media')
                                         ImageMessageBubble(
                                           imageUrl: msg.mediaUrl!,
                                           isMe: isAgent,
                                           timestamp: ChatUtils()
-                                              .formatTimestamp(msg.timestamp.toIso8601String()),
+                                              .formatTimestamp(msg.timestamp
+                                                  .toIso8601String()),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isAgent
-                                              ? () => _showMessageOptionsBottomSheet(
-                                                  context, msg.messageId)
+                                              ? () =>
+                                                  _showMessageOptionsBottomSheet(
+                                                      context, msg.messageId)
                                               : null,
                                         )
                                       else if (msg.type == 'document')
@@ -681,11 +754,13 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                                           documentUrl: msg.mediaUrl!,
                                           isMe: isAgent,
                                           timestamp: ChatUtils()
-                                              .formatTimestamp(msg.timestamp.toIso8601String()),
+                                              .formatTimestamp(msg.timestamp
+                                                  .toIso8601String()),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isAgent
-                                              ? () => _showMessageOptionsBottomSheet(
-                                                  context, msg.messageId)
+                                              ? () =>
+                                                  _showMessageOptionsBottomSheet(
+                                                      context, msg.messageId)
                                               : null,
                                         )
                                       else if (msg.type == 'voice')
@@ -693,21 +768,36 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                                           voiceUrl: msg.mediaUrl!,
                                           isMe: isAgent,
                                           timestamp: ChatUtils()
-                                              .formatTimestamp(msg.timestamp.toIso8601String()),
+                                              .formatTimestamp(msg.timestamp
+                                                  .toIso8601String()),
                                           isDeleted: msg.isDeleted,
                                           onLongPress: isAgent
-                                              ? () => _showMessageOptionsBottomSheet(
-                                                  context, msg.messageId)
+                                              ? () =>
+                                                  _showMessageOptionsBottomSheet(
+                                                      context, msg.messageId)
                                               : null,
                                         )
                                       else
                                         GroupMessageBubble(
                                           message: msg,
                                           isMe: isAgent,
+                                          referencedMessage: msg.replyTo != null
+                                              ? messages
+                                                      .where((element) =>
+                                                          element.messageId ==
+                                                          msg.replyTo)
+                                                      .isNotEmpty
+                                                  ? messages.firstWhere(
+                                                      (element) =>
+                                                          element.messageId ==
+                                                          msg.replyTo)
+                                                  : null
+                                              : null,
                                           onLongPress: isAgent
-                                              ? () => _showMessageOptionsBottomSheet(
-                                                  context, msg.messageId,
-                                                  textToCopy: msg.message)
+                                              ? () =>
+                                                  _showMessageOptionsBottomSheet(
+                                                      context, msg.messageId,
+                                                      textToCopy: msg.message)
                                               : null,
                                         ),
                                     ],
@@ -720,11 +810,17 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                   minimum: const EdgeInsets.only(bottom: 1),
                   child: ChatInputField(
                     controller: _chatController,
-                    onSend: () => _sendGroupMessage(messageText: _chatController.text),
+                    replyToSender: _replyToMessage?.senderName,
+                    replyToText: _replyToMessage?.message,
+                    onCancelReply: _cancelReply,
+                    onSend: () =>
+                        _sendGroupMessage(messageText: _chatController.text),
                     onSendImage: () => _pickAndSendImage(ImageSource.gallery),
                     onSendDocument: _pickAndSendDocument,
-                    onSendImageByCamera: () => _pickAndSendImage(ImageSource.camera),
-                    onSendVoice: _isRecording ? _stopRecording : _startRecording,
+                    onSendImageByCamera: () =>
+                        _pickAndSendImage(ImageSource.camera),
+                    onSendVoice:
+                        _isRecording ? _stopRecording : _startRecording,
                     isRecording: _isRecording,
                     recordedSeconds: _recordedSeconds,
                     onSendForm: () {},
@@ -735,16 +831,21 @@ class _InternalChatScreenState extends State<InternalChatScreen> with WidgetsBin
                 const SizedBox(height: 10),
               ],
             ),
-            if (!_isAtBottom)
-              Positioned(
-                bottom: 100,
-                right: 10,
-                child: FloatingActionButton(
-                  onPressed: _scrollToBottom,
-                  mini: true,
-                  child: const Icon(Icons.arrow_downward_rounded),
-                ),
-              ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _isAtBottom,
+              builder: (context, atBottom, _) {
+                if (atBottom) return const SizedBox.shrink();
+                return Positioned(
+                  bottom: 100,
+                  right: 10,
+                  child: FloatingActionButton(
+                    onPressed: _scrollToBottom,
+                    mini: true,
+                    child: const Icon(Icons.arrow_downward_rounded),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

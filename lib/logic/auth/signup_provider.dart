@@ -184,6 +184,8 @@ class SignupProvider with ChangeNotifier {
           //   await saveUser(context, _name);
           // }
 
+          await LocalDbHelper.saveName(_name);
+
           final result = await AuthRepository().sendOtp(email: _email);
           if (result['message'] == "OTP sent") {
             if (context.mounted) {

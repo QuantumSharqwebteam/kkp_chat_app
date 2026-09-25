@@ -56,7 +56,8 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       AppLocalizations.of(context)!.deleteAgent,
       () async {
         // Delete agent using provider
-        final agentProvider = Provider.of<AgentProvider>(context, listen: false);
+        final agentProvider =
+            Provider.of<AgentProvider>(context, listen: false);
         final response = await agentProvider.deleteAgent(email: email);
 
         if (response["status"] == 200) {
@@ -133,7 +134,7 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             _buildDetailsCard(),
             const Spacer(),
             _buildAddAgentButton(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 50),
           ],
         ),
       ),
@@ -189,7 +190,8 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
           children: [
             _buildInputField(Icons.person, l.fullName, profile?.name ?? "NA"),
             _buildInputField(Icons.email, l.email, profile?.email ?? "NA"),
-            _buildInputField(Icons.phone, l.phoneNumber, profile?.mobile.toString() ?? "0"),
+            _buildInputField(
+                Icons.phone, l.phoneNumber, profile?.mobile.toString() ?? "0"),
           ],
         ),
       ),

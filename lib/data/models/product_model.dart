@@ -7,6 +7,7 @@ class Product {
   final String? productId;
   final String productName;
   final String? description;
+  final String? createdAt;
 
   Product({
     required this.imageUrl,
@@ -17,6 +18,7 @@ class Product {
     this.productId,
     required this.productName,
     this.description,
+    this.createdAt,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -42,6 +44,7 @@ class Product {
       productId: json['productId'] ?? json['_id'],
       productName: productNameValue?.toString() ?? '',
       description: json['description']?.toString(),
+      createdAt: json['createdAt']?.toString(),
     );
   }
 

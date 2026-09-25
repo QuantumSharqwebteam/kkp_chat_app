@@ -15,6 +15,7 @@ class CustomTextField extends StatefulWidget {
     this.helperText,
     this.helperStyle,
     this.condition,
+    this.validator,
     this.textStyle,
     this.hintStyle,
     this.suffixIcon,
@@ -42,6 +43,7 @@ class CustomTextField extends StatefulWidget {
   final String? helperText;
   final TextStyle? helperStyle;
   final bool Function(String)? condition;
+  final String? Function(String?)? validator;
   final TextStyle? textStyle;
   final TextStyle? hintStyle;
   final Widget? suffixIcon;
@@ -108,6 +110,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             onTap: widget.readOnly ? widget.onTap : null,
             inputFormatters: widget.inputFormatters,
             onChanged: widget.onChanged,
+            validator: widget.validator,
             decoration: InputDecoration(
               filled: true,
               errorText: widget.errorText,
@@ -119,17 +122,22 @@ class _CustomTextFieldState extends State<CustomTextField> {
               ),
               fillColor: widget.backgroundColor ?? Colors.white,
               hintText: widget.hintText,
-              hintStyle: widget.hintStyle ?? const TextStyle(fontSize: 14.0, color: Colors.grey),
+              hintStyle: widget.hintStyle ??
+                  const TextStyle(fontSize: 14.0, color: Colors.grey),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 borderSide: BorderSide(
-                  color: widget.errorText != null ? Colors.red : Colors.grey.shade400,
+                  color: widget.errorText != null
+                      ? Colors.red
+                      : Colors.grey.shade400,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(widget.borderRadius),
                 borderSide: BorderSide(
-                  color: widget.errorText != null ? Colors.red : Colors.grey.shade400,
+                  color: widget.errorText != null
+                      ? Colors.red
+                      : Colors.grey.shade400,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -147,7 +155,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
                       if (widget.isPassword)
                         IconButton(
                           icon: Icon(
-                            _isObscured ? Icons.visibility_off : Icons.visibility,
+                            _isObscured
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                           ),
                           onPressed: () {
                             setState(() => _isObscured = !_isObscured);
@@ -160,7 +170,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
                         ),
                     ],
                   ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               counterText: widget.showLength ? null : "",
             ),
           ),
@@ -170,7 +181,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
             padding: const EdgeInsets.only(left: 8),
             child: Text(
               widget.helperText!,
-              style: widget.helperStyle ?? const TextStyle(fontSize: 12, color: Colors.black),
+              style: widget.helperStyle ??
+                  const TextStyle(fontSize: 12, color: Colors.black),
             ),
           ),
       ],

@@ -79,12 +79,15 @@ class AddProductProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    String? imageUrl = await s3UploadService.uploadFile(selectedImage!);
-
-    isLoading = false;
-    notifyListeners();
-
-    if (imageUrl == null) return false;
+    final String imageUrl;
+    try {
+      // Throwing variant: uploadFile() returns null for every failure mode, so
+      // an S3 problem was reported to the user as "please fill all fields".
+      imageUrl = await s3UploadService.uploadFileOrThrow(selectedImage!);
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
 
     List<ProductColor> colorList = selectedColors.map((color) {
       return ProductColor(

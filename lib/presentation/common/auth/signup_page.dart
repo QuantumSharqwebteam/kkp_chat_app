@@ -9,6 +9,7 @@ import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_textfield.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -80,6 +81,9 @@ class _SignupPageState extends State<SignupPage> {
                         keyboardType: TextInputType.name,
                         hintText: l.enterFullName,
                         onChanged: (value) => signupProvider.setName(value),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                        ],
                       ),
                     ],
                   ),

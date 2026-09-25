@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kkpchatapp/config/routes/customer_routes.dart';
 import 'package:kkpchatapp/config/theme/app_colors.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
+import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/presentation/customer/screen/customer_product_description_page.dart';
 import 'package:provider/provider.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_grid.dart';
@@ -23,17 +27,41 @@ class CustomerHomePage extends StatefulWidget {
   State<CustomerHomePage> createState() => _CustomerHomePageState();
 }
 
-class _CustomerHomePageState extends State<CustomerHomePage> {
+class _CustomerHomePageState extends State<CustomerHomePage>
+    with WidgetsBindingObserver {
   late CustomerHomeProvider _provider;
+  late NotificationProvider
+      _notificationProvider; // ← FIX: use NotificationProvider for bell badge
   bool _initialized = false;
   int _currentCarouselIndex = 0;
 
+  /// Minimum gap between refreshes triggered by the app coming back to the
+  /// foreground.
+  ///
+  /// `AppLifecycleState.resumed` fires for every brief excursion — the image
+  /// picker, a permission dialog, pulling down the notification shade, a
+  /// passing phone call, a quick app switch. Refreshing on each one re-hit
+  /// getUserInfo and the notifications endpoint every single time. User-driven
+  /// refreshes (pull-to-refresh, returning from the notification screen) are
+  /// deliberately NOT throttled.
+  static const Duration _resumeRefreshInterval = Duration(minutes: 2);
+
+  DateTime? _lastRefreshedAt;
+
+  void _markRefreshed() => _lastRefreshedAt = DateTime.now();
+
   Future<void> _safeLoadHomeData() async {
+    _markRefreshed();
     try {
       await _provider.loadUserInfo();
       await _provider.fetchProducts();
       await _provider.fetchPosters();
+      await _provider.fetchNotificationCount();
       _provider.initSocketService();
+      // ← FIX: fetch actual notifications so we can count unread ones.
+      // Cache-first — main.dart already kicks off a load at startup, so this
+      // reuses it rather than issuing a second request.
+      await _notificationProvider.ensureLoaded();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('CustomerHomePage init load error: $e');
@@ -41,9 +69,17 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
     }
   }
 
-  Future<void> _safeRefresh() async {
+  /// [force] distinguishes a user pulling to refresh (always hits the network)
+  /// from the app merely coming back to the foreground (cache-first).
+  Future<void> _safeRefresh({bool force = false}) async {
+    // Stamped up front, not on completion: two resumes a second apart must not
+    // both get through while the first request is still running.
+    _markRefreshed();
     try {
+      await _provider.loadUserInfo();
       await _provider.fetchNotificationCount();
+      // ← FIX: refresh notifications on pull-to-refresh
+      await _notificationProvider.ensureLoaded(force: force);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('CustomerHomePage refresh error: $e');
@@ -52,15 +88,68 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+
+    final last = _lastRefreshedAt;
+    if (last != null &&
+        DateTime.now().difference(last) < _resumeRefreshInterval) {
+      // Refreshed recently — a short trip out of the app is not a reason to
+      // re-hit the API.
+      return;
+    }
+
+    // Routed through _safeRefresh so a failure is caught: the three calls used
+    // to be fired bare here, so any throw became an unhandled async error.
+    unawaited(_safeRefresh());
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _provider = Provider.of<CustomerHomeProvider>(context);
+    // ← FIX: listen to NotificationProvider for unread count updates
+    _notificationProvider = Provider.of<NotificationProvider>(context);
     if (!_initialized) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _safeLoadHomeData();
       });
       _initialized = true;
     }
+  }
+
+  // ← FIX: count notifications where viewed == false
+  int get _unreadNotificationCount {
+    return _notificationProvider.notifications
+        .where((n) => !(n.viewed ?? false))
+        .length;
+  }
+
+  void _onNotificationTap() {
+    Navigator.pushNamed(context, CustomerRoutes.customerNotification).then((_) {
+      if (!mounted) return;
+      // ← FIX: refresh both counts when coming back from notification screen.
+      // Stamped as a refresh so the resume that follows (if the user left the
+      // app from the notification screen) does not immediately refetch.
+      _markRefreshed();
+      // Local Hive read, always cheap.
+      unawaited(_provider.fetchNotificationCount());
+      // Cache-first: markAsRead/markAllRead already updated the shared list in
+      // place, so the badge is correct without another round trip.
+      unawaited(_notificationProvider.ensureLoaded());
+    });
   }
 
   @override
@@ -75,12 +164,16 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         child: SafeArea(
           child: CustomAppBar(
             name: _provider.profileData?.name,
+            profileUrl: _provider.profileData?.profileUrl,
+            // ← FIX: use unread notification count from NotificationProvider
+            notificationCount: _unreadNotificationCount,
+            onNotificationTap: _onNotificationTap,
           ),
         ),
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _safeRefresh,
+          onRefresh: () => _safeRefresh(force: true),
           child: SingleChildScrollView(
             child: Column(
               children: [
@@ -91,7 +184,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                 const SizedBox(height: 10),
                 Container(
                   margin: EdgeInsets.symmetric(horizontal: 5),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                   decoration: BoxDecoration(
                     color: Colors.black.withAlpha(15),
                     borderRadius: BorderRadius.circular(12),
@@ -119,18 +213,26 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                       style: AppTextStyles.black16_500,
                                     ),
                                     ResponsiveGridList(
-                                      horizontalGridSpacing: Utils().width(context) * 0.025,
-                                      verticalGridSpacing: Utils().height(context) * 0.0125,
-                                      horizontalGridMargin: Utils().width(context) * 0.025,
-                                      verticalGridMargin: Utils().height(context) * 0.015,
-                                      minItemWidth: isTablet ? (isLandscape ? 420 : 340) : 200,
+                                      horizontalGridSpacing:
+                                          Utils().width(context) * 0.025,
+                                      verticalGridSpacing:
+                                          Utils().height(context) * 0.0125,
+                                      horizontalGridMargin:
+                                          Utils().width(context) * 0.025,
+                                      verticalGridMargin:
+                                          Utils().height(context) * 0.015,
+                                      minItemWidth: isTablet
+                                          ? (isLandscape ? 420 : 340)
+                                          : 200,
                                       minItemsPerRow: isLandscape ? 1 : 2,
                                       maxItemsPerRow: isLandscape ? 2 : 2,
-                                      listViewBuilderOptions: ListViewBuilderOptions(
+                                      listViewBuilderOptions:
+                                          ListViewBuilderOptions(
                                         physics: NeverScrollableScrollPhysics(),
                                         shrinkWrap: true,
                                       ),
-                                      children: _provider.newProducts!.map((product) {
+                                      children:
+                                          _provider.newProducts!.map((product) {
                                         return ProductItem(
                                           product: product,
                                           onTap: () {
@@ -146,26 +248,39 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
                                         );
                                       }).toList(),
                                     ),
-                                    if ((_provider.products?.length ?? 0) >= 3 &&
-                                        (_provider.previousProducts?.isNotEmpty ?? false)) ...[
+                                    if ((_provider.products?.length ?? 0) >=
+                                            3 &&
+                                        (_provider
+                                                .previousProducts?.isNotEmpty ??
+                                            false)) ...[
                                       const SizedBox(height: 20),
                                       Text(
-                                        AppLocalizations.of(context)!.previousProducts,
+                                        AppLocalizations.of(context)!
+                                            .previousProducts,
                                         style: AppTextStyles.black16_500,
                                       ),
                                       ResponsiveGridList(
-                                        horizontalGridSpacing: Utils().width(context) * 0.025,
-                                        verticalGridSpacing: Utils().height(context) * 0.0125,
-                                        horizontalGridMargin: Utils().width(context) * 0.025,
-                                        verticalGridMargin: Utils().height(context) * 0.015,
-                                        minItemWidth: isTablet ? (isLandscape ? 420 : 340) : 200,
+                                        horizontalGridSpacing:
+                                            Utils().width(context) * 0.025,
+                                        verticalGridSpacing:
+                                            Utils().height(context) * 0.0125,
+                                        horizontalGridMargin:
+                                            Utils().width(context) * 0.025,
+                                        verticalGridMargin:
+                                            Utils().height(context) * 0.015,
+                                        minItemWidth: isTablet
+                                            ? (isLandscape ? 420 : 340)
+                                            : 200,
                                         minItemsPerRow: isLandscape ? 1 : 2,
                                         maxItemsPerRow: isLandscape ? 2 : 2,
-                                        listViewBuilderOptions: ListViewBuilderOptions(
-                                          physics: NeverScrollableScrollPhysics(),
+                                        listViewBuilderOptions:
+                                            ListViewBuilderOptions(
+                                          physics:
+                                              NeverScrollableScrollPhysics(),
                                           shrinkWrap: true,
                                         ),
-                                        children: _provider.previousProducts!.map((product) {
+                                        children: _provider.previousProducts!
+                                            .map((product) {
                                           return ProductItem(
                                             product: product,
                                             onTap: () {
@@ -233,7 +348,7 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
           options: CarouselOptions(
             autoPlay: true,
             enlargeCenterPage: true,
-            height: carouselHeight, // 👈 explicitly set height
+            height: carouselHeight,
             viewportFraction: 1,
             onPageChanged: (index, reason) {
               setState(() {
@@ -302,8 +417,8 @@ class _CustomerHomePageState extends State<CustomerHomePage> {
         ]),
         title: Text(AppLocalizations.of(context)!.productEnquirers,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        subtitle:
-            Text(AppLocalizations.of(context)!.howMayIHelpYou, style: TextStyle(fontSize: 12)),
+        subtitle: Text(AppLocalizations.of(context)!.howMayIHelpYou,
+            style: TextStyle(fontSize: 12)),
         trailing: notificationCount != null && notificationCount > 0
             ? Container(
                 padding: EdgeInsets.all(6),

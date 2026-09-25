@@ -122,6 +122,10 @@ class CallKitService {
     final callId = body['id']?.toString() ?? body['uuid']?.toString();
 
     switch (event.event) {
+      case Event.actionCallIncoming:
+        // Native call UI just appeared — pre-warm Agora so the Answer tap is instant.
+        if (callId != null) unawaited(_handleIncoming(callId, body));
+        break;
       case Event.actionCallAccept:
         if (callId != null) await _handleAccept(callId, body);
         break;
@@ -144,6 +148,37 @@ class CallKitService {
       default:
         break;
     }
+  }
+
+  Future<void> _handleIncoming(String callId, Map<String, dynamic> body) async {
+    // Resolve call data (in-memory first, then CallKit extra field).
+    Map<String, dynamic>? data = _pendingCalls[callId];
+    if (data == null) {
+      final extra = (body['extra'] as Map?)?.cast<String, dynamic>() ?? {};
+      final uid = int.tryParse(extra['uid']?.toString() ?? '');
+      if (uid == null || extra['channelName'] == null) return;
+      data = {
+        'channelName': extra['channelName'].toString(),
+        'uid': uid,
+      };
+    }
+    final channelName = data['channelName'] as String?;
+    final uid = data['uid'] as int?;
+    if (channelName == null || uid == null) return;
+
+    // Wait briefly for the Flutter engine to be ready (backgrounded-app case).
+    int attempts = 0;
+    while (!isAppInitialized && attempts < 20) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    debugPrint('🔥 [CallKit] Incoming — pre-warming Agora for channel $channelName');
+    // ignore: use_build_context_synchronously
+    final callProvider = Provider.of<CallProvider>(context, listen: false);
+    await callProvider.preWarm(channelName: channelName, uid: uid);
   }
 
   Future<void> _handleAccept(String callId, Map<String, dynamic> body) async {
@@ -204,7 +239,12 @@ class CallKitService {
     }
 
     final data = _pendingCalls.remove(callId);
-    final extra = (body['extra'] as Map?)?.cast<String, dynamic>() ?? {};
+
+    // Defensive cast: on Android the body values arrive as _Map<dynamic,dynamic>
+    final rawExtra = body['extra'];
+    final extra = rawExtra is Map
+        ? Map<String, dynamic>.from(rawExtra)
+        : <String, dynamic>{};
 
     final callerId = (data?['callerId'] ?? extra['callerId'])?.toString();
     final channelName =
@@ -216,7 +256,8 @@ class CallKitService {
       debugPrint('CallKitService.decline updateCallData error: $e');
     }
 
-    if (callerId != null && channelName != null) {
+    if (callerId != null && callerId.isNotEmpty &&
+        channelName != null && channelName.isNotEmpty) {
       try {
         SocketService(navigatorKey).terminateCall(
           targetId: callerId,
@@ -226,6 +267,10 @@ class CallKitService {
       } catch (e) {
         debugPrint('CallKitService.decline terminateCall error: $e');
       }
+    } else {
+      debugPrint(
+          'CallKitService: decline — callerId or channelName missing, terminate not sent '
+          '(callerId=$callerId, channelName=$channelName)');
     }
   }
 
@@ -263,25 +308,65 @@ class CallKitService {
   }
 
   // Cold-start after user accepted from lock screen while app was killed.
-  // activeCalls() returns the still-active call with its extra payload.
+  // Validates every active call before restoring — stale / invalid calls
+  // are ended immediately to prevent Agora from initialising unnecessarily
+  // (which was causing IrisMethodChannel to stay alive / memory leak).
   Future<void> _restoreKilledStateAccept() async {
     try {
       final calls = await FlutterCallkitIncoming.activeCalls();
-      if (calls == null) return;
-      for (final call in calls as List<dynamic>) {
+      if (calls == null || (calls as List).isEmpty) return;
+
+      bool restoredAny = false;
+      for (final call in calls) {
         final callMap = (call as Map).cast<String, dynamic>();
+        final callId =
+            callMap['id']?.toString() ?? callMap['uuid']?.toString();
+        if (callId == null) continue;
+
         final isAccepted =
             callMap['isAccepted'] == true || callMap['hasAccepted'] == true;
-        if (isAccepted) {
-          final callId =
-              callMap['id']?.toString() ?? callMap['uuid']?.toString();
-          if (callId != null) {
-            await _handleAccept(callId, callMap);
-          }
+
+        if (!isAccepted) {
+          // Stale ringing notification from a previous session — clear it.
+          debugPrint(
+              'CallKitService: clearing stale non-accepted call $callId');
+          await FlutterCallkitIncoming.endCall(callId);
+          continue;
         }
+
+        // Validate the call data before attempting to rejoin Agora.
+        final rawExtra = callMap['extra'];
+        final extra = rawExtra is Map
+            ? Map<String, dynamic>.from(rawExtra)
+            : <String, dynamic>{};
+        final uid = int.tryParse(extra['uid']?.toString() ?? '');
+        final channelName = extra['channelName']?.toString() ?? '';
+
+        // uid must be a positive integer and channelName must be set.
+        // uid=0 happens when the FCM background handler couldn't compute the
+        // real uid — treat it as stale and end the call.
+        if (uid == null || uid <= 0 || channelName.isEmpty) {
+          debugPrint(
+              'CallKitService: clearing invalid accepted call $callId '
+              '(uid=$uid, channel="$channelName") — prevents Agora memory leak');
+          await FlutterCallkitIncoming.endCall(callId);
+          continue;
+        }
+
+        restoredAny = true;
+        await _handleAccept(callId, callMap);
+      }
+
+      if (!restoredAny) {
+        // Safety net: if nothing was worth restoring, wipe the slate clean.
+        await FlutterCallkitIncoming.endAllCalls();
       }
     } catch (e) {
       debugPrint('CallKitService._restoreKilledStateAccept error: $e');
+      // Safety net: clear all stale calls so Agora is never init'd spuriously.
+      try {
+        await FlutterCallkitIncoming.endAllCalls();
+      } catch (_) {}
     }
   }
 }

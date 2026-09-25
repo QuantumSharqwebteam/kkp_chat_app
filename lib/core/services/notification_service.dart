@@ -29,6 +29,12 @@ class NotificationService with WidgetsBindingObserver {
   static final List<Map<String, dynamic>> _pendingPushNotifications = [];
   static Timer? pendingProcessorTimer;
   static bool _pendingProcessorRunning = false;
+  // Guard: prevents registering duplicate FCM listeners when init() is called
+  // from multiple screens (main, marketing_host, customer_host).
+  static bool _fcmListenersRegistered = false;
+  // Updated by SocketService on connect/disconnect so the FCM foreground
+  // handler can decide whether to show a local notification or stay silent.
+  static bool socketIsConnected = false;
 
   // Initialize notification service
   static Future<void> init(
@@ -49,18 +55,9 @@ class NotificationService with WidgetsBindingObserver {
       bool isGranted = await requestPermission(context);
       if (isGranted) {
         await checkAndUpdateFCMToken();
-        _setupBackgroundNotification();
+        _setupFCMListeners();
         // Initial message from terminated state is handled by main.dart
         // via handleInitialMessage() — no need to call getInitialMessage() here.
-
-        _messaging.onTokenRefresh.listen((newToken) async {
-          debugPrint("🔄 [FCM Token Refreshed]: $newToken");
-          await checkAndUpdateFCMToken(newToken: newToken);
-        });
-      } else {
-        // if (context.mounted) {
-        //   showPermissionDialog();
-        // }
       }
     }
   }
@@ -71,30 +68,70 @@ class NotificationService with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
   }
 
-  // Setup for background notifications (when the app is in the background)
-  static void _setupBackgroundNotification() {
-    // Foreground FCM messages — log full payload for debugging
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('═══════════════════════════════════════════════');
-      debugPrint('📲 [FCM FOREGROUND] message received');
-      debugPrint('   messageId   : ${message.messageId}');
-      debugPrint('   from        : ${message.from}');
-      debugPrint('   notification: title="${message.notification?.title}" body="${message.notification?.body}"');
-      debugPrint('   data        : ${message.data}');
-      debugPrint('═══════════════════════════════════════════════');
-      // Foreground chat/call notifications are handled by the socket service.
-      // No local notification shown here to avoid duplicates.
+  // Registers FCM listeners exactly once — guard prevents duplicate
+  // registrations when init() is called from multiple screens.
+  static void _setupFCMListeners() {
+    if (_fcmListenersRegistered) return;
+    _fcmListenersRegistered = true;
+
+    // iOS: suppress the system push banner while the app is in the foreground.
+    // We show our own local notification via the socket instead.
+    if (Platform.isIOS) {
+      _messaging.setForegroundNotificationPresentationOptions(
+        alert: false,
+        badge: false,
+        sound: false,
+      );
+    }
+
+    // Register token-refresh listener once.
+    _messaging.onTokenRefresh.listen((newToken) async {
+      debugPrint('🔄 [FCM Token Refreshed]: $newToken');
+      await checkAndUpdateFCMToken(newToken: newToken);
     });
 
-    // Notification tapped while app was in background
+    // Foreground FCM push.
+    // When the socket is connected it already delivered the message and
+    // _chatNotification() showed a local notification — suppress the FCM push
+    // to avoid duplicates.  When the socket is offline (user unreachable via
+    // socket) we show a local notification from the FCM payload instead.
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('📲 [FCM FOREGROUND] id=${message.messageId} '
+          'socket=${socketIsConnected ? "connected→silent" : "offline→show"}');
+
+      if (socketIsConnected) return; // socket already handled it
+
+      // Socket offline — show a local notification from the FCM payload.
+      final data = message.data;
+      final title = message.notification?.title ??
+          (data['senderName'] != null ? 'New message from ${data['senderName']}' : 'New message');
+      final body = message.notification?.body ?? data['message']?.toString() ?? '';
+      if (body.isEmpty) return;
+
+      const androidDetails = AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription: 'This channel is for important notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+      );
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      _localNotificationsPlugin.show(
+        message.hashCode,
+        title,
+        body,
+        const NotificationDetails(android: androidDetails, iOS: iosDetails),
+        payload: jsonEncode(data),
+      );
+    });
+
+    // Notification tapped while app was in background → foreground.
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('═══════════════════════════════════════════════');
-      debugPrint('🔔 [FCM TAP / Background→Foreground]');
-      debugPrint('   messageId   : ${message.messageId}');
-      debugPrint('   from        : ${message.from}');
-      debugPrint('   notification: title="${message.notification?.title}" body="${message.notification?.body}"');
-      debugPrint('   data        : ${message.data}');
-      debugPrint('═══════════════════════════════════════════════');
+      debugPrint('🔔 [FCM TAP background→foreground] id=${message.messageId}');
       _handleBackgroundMessage(message);
       handleNotificationClick(message);
     });
@@ -433,6 +470,14 @@ class NotificationService with WidgetsBindingObserver {
   // }
 
   static Future<void> checkAndUpdateFCMToken({String? newToken}) async {
+    // No auth token → user is not logged in; the backend will reject the update
+    // anyway and logging the error is just noise (e.g. fresh install).
+    final authToken = await LocalDbHelper.getToken();
+    if (authToken == null || authToken.isEmpty) {
+      debugPrint('⏭️ [FCM] Not logged in — skipping token update');
+      return;
+    }
+
     final AuthApi auth = AuthApi();
     debugPrint("🔑 CHECKING FCM TOKEN ##########");
     try {

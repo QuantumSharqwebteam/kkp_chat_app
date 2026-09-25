@@ -10,6 +10,7 @@ import 'package:kkpchatapp/presentation/common_widgets/back_press_handler.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
+import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 
 class VerificationPage extends StatefulWidget {
   const VerificationPage({
@@ -153,6 +154,12 @@ class _VerificationPageState extends State<VerificationPage> {
                           text: 'Verify',
                           isLoading: verificationProvider.isVerifyLoading,
                           onPressed: () async {
+                            if (_otp.text.trim().isEmpty || _otp.text.trim().length < 6) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Please enter the OTP')),
+                              );
+                              return;
+                            }
                             if (await verificationProvider.verifyOtp(
                                   context,
                                   widget.email,
@@ -160,6 +167,19 @@ class _VerificationPageState extends State<VerificationPage> {
                                 ) ==
                                 true) {
                               if (widget.isNewAccount == true) {
+                                if (widget.name != null && widget.name!.isNotEmpty) {
+                                  try {
+                                    await AuthRepository().updateUserDetails(
+                                      name: widget.name,
+                                      address: null,
+                                      customerType: null,
+                                      gstNo: null,
+                                      number: null,
+                                      panNo: null,
+                                    );
+                                  } catch (_) {}
+                                }
+
                                 if (context.mounted) {
                                   Navigator.pushReplacementNamed(
                                       context, CustomerRoutes.customerProfileSetup,

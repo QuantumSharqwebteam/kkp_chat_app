@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/poster_model.dart';
@@ -10,7 +11,7 @@ class PosterService {
   final http.Client client;
 
   PosterService({http.Client? httpClient})
-      : client = httpClient ?? http.Client();
+      : client = httpClient ?? ApiClient.create();
 
   /// Fetches all posters from the backend
   Future<List<PosterModel>> getAllPosters() async {

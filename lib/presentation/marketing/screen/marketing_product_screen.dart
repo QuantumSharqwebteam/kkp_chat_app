@@ -97,13 +97,7 @@ class _MarketingProductScreenState extends State<MarketingProductScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(locale.product, style: AppTextStyles.black20_600),
-              IconButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, MarketingRoutes.marketingNotifications);
-                },
-                icon: const Icon(Icons.notifications_active_outlined),
-                iconSize: 25,
-              ),
+
               // IconButton(
               //   icon: const Icon(Icons.refresh),
               //   onPressed: provider.isRefreshing

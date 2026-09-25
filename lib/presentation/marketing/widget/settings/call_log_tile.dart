@@ -41,7 +41,7 @@ class CallLogTile extends StatelessWidget {
           const SizedBox(width: 4),
           Expanded(
             child: Text(
-              '$status${durationText ?? ''}',
+              '${_getDisplayStatus(status, isOutgoing)}${durationText ?? ''}',
               style: TextStyle(fontSize: 13, color: statusColor),
               overflow: TextOverflow.ellipsis,
             ),
@@ -53,6 +53,19 @@ class CallLogTile extends StatelessWidget {
         style: const TextStyle(fontSize: 12, color: Colors.grey),
       ),
     );
+  }
+
+  String _getDisplayStatus(String status, bool isOutgoing) {
+    switch (status.toLowerCase()) {
+      case 'missed':
+        return isOutgoing ? 'No Answer' : 'Missed Call';
+      case 'answered':
+        return isOutgoing ? 'Outgoing' : 'Incoming';
+      case 'declined':
+        return isOutgoing ? 'Declined' : 'You Declined';
+      default:
+        return status;
+    }
   }
 
   IconData _getCallStatusIcon(String status, bool isOutgoing) {

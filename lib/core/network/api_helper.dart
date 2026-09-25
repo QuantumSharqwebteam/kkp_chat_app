@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:kkpchatapp/core/network/app_exception.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
+import 'package:kkpchatapp/data/api/api_client.dart';
 
 class ApiHelper {
   static const String _defaultBaseUrl = "https://api.boomiboutique.com/";
@@ -11,6 +12,11 @@ class ApiHelper {
 
   static const String otherBaseUrl = "https://kkp-chat.onrender.com";
   final LoggingService _logger = LoggingService.instance;
+
+  /// Same logging client every other service uses, so requests made through
+  /// ApiHelper (groups, among others) appear in the log stream with the same
+  /// "→ METHOD url / ← status" shape as the rest of the app.
+  final http.Client _client = ApiClient.create();
 
   String _currentBaseUrl; // Global base URL for the current service
 
@@ -21,7 +27,8 @@ class ApiHelper {
     _currentBaseUrl = baseUrl;
   }
 
-  Future<ApiResponse<T>> get<T>(String endpoint, {Map<String, String>? headers}) async {
+  Future<ApiResponse<T>> get<T>(String endpoint,
+      {Map<String, String>? headers}) async {
     return _request<T>('GET', endpoint, headers: headers);
   }
 
@@ -65,35 +72,32 @@ class ApiHelper {
   }) async {
     final url = Uri.parse('$_currentBaseUrl$endpoint');
     http.Response response;
-    final sanitizedBody = body != null ? _sanitizeRequestBody(jsonEncode(body)) : null;
-
-    _logger.logApi(
-        '=== REQUEST START ===\nMethod: $method\nURL: $url\nHeaders: ${_sanitizeHeaders(headers ?? {})}\nBody: $sanitizedBody');
 
     try {
       switch (method.toUpperCase()) {
         case 'GET':
-          response = await http.get(url, headers: _defaultHeaders(headers));
+          response = await _client.get(url, headers: _defaultHeaders(headers));
           break;
         case 'POST':
-          response = await http.post(
+          response = await _client.post(
             url,
             headers: _defaultHeaders(headers),
             body: jsonEncode(body),
           );
           break;
         case 'PUT':
-          response = await http.put(url, headers: _defaultHeaders(headers), body: jsonEncode(body));
+          response = await _client.put(url,
+              headers: _defaultHeaders(headers), body: jsonEncode(body));
           break;
         case 'PATCH':
-          response = await http.patch(
+          response = await _client.patch(
             url,
             headers: _defaultHeaders(headers),
             body: jsonEncode(body),
           );
           break;
         case 'DELETE':
-          response = await http.delete(
+          response = await _client.delete(
             url,
             headers: _defaultHeaders(headers),
             body: body != null ? jsonEncode(body) : null,
@@ -103,67 +107,23 @@ class ApiHelper {
           throw BadRequestException('Invalid HTTP method');
       }
 
-      final result = _handleResponse<T>(response);
-      _logger.logApi(
-        '=== RESPONSE ===\nStatus Code: ${response.statusCode}\nBody: ${_sanitizeResponseBody(response.body)}',
-      );
-
-      return result;
+      return _handleResponse<T>(response);
     } on SocketException catch (e, s) {
-      _logger.error('NETWORK', 'No Internet Connection', error: e, stackTrace: s);
+      _logger.error('NETWORK', 'No Internet Connection',
+          error: e, stackTrace: s);
       return ApiResponse.error('No Internet Connection');
     } on AppException catch (e, s) {
       _logger.error('API_EXCEPTION', e.message, error: e, stackTrace: s);
       return ApiResponse.error(e.message);
     } catch (e, s) {
-      _logger.error('UNEXPECTED', 'Unexpected error: $e', error: e, stackTrace: s);
+      _logger.error('UNEXPECTED', 'Unexpected error: $e',
+          error: e, stackTrace: s);
       return ApiResponse.error('Something went wrong. Please try again later.');
     }
   }
 
   Map<String, String> _defaultHeaders(Map<String, String>? customHeaders) {
     return {'Content-Type': 'application/json', ...?customHeaders};
-  }
-
-  Map<String, String> _sanitizeHeaders(Map<String, String> headers) {
-    final sanitized = Map<String, String>.from(headers);
-    const sensitiveHeaders = ['authorization', 'x-api-key', 'cookie', 'set-cookie'];
-    for (final key in sanitized.keys.toList()) {
-      if (sensitiveHeaders.contains(key.toLowerCase())) {
-        sanitized[key] = '***REDACTED***';
-      }
-    }
-    return sanitized;
-  }
-
-  String _sanitizeRequestBody(String body) {
-    try {
-      final data = jsonDecode(body);
-      if (data is Map<String, dynamic>) {
-        final sanitized = Map<String, dynamic>.from(data);
-        const sensitiveFields = ['password', 'token', 'secret', 'key', 'otp'];
-        for (final field in sensitiveFields) {
-          if (sanitized.containsKey(field)) sanitized[field] = '***REDACTED***';
-        }
-        return jsonEncode(sanitized);
-      }
-    } catch (_) {}
-    return body;
-  }
-
-  String _sanitizeResponseBody(String body) {
-    try {
-      final data = jsonDecode(body);
-      if (data is Map<String, dynamic>) {
-        final sanitized = Map<String, dynamic>.from(data);
-        const sensitiveFields = ['token', 'secret', 'key', 'password'];
-        for (final field in sensitiveFields) {
-          if (sanitized.containsKey(field)) sanitized[field] = '***REDACTED***';
-        }
-        return jsonEncode(sanitized);
-      }
-    } catch (_) {}
-    return body.length > 1000 ? '${body.substring(0, 1000)}...[TRUNCATED]' : body;
   }
 
   ApiResponse<T> _handleResponse<T>(http.Response response) {
@@ -197,13 +157,19 @@ class ApiResponse<T> {
   final String? message;
   final int? statusCode;
 
-  ApiResponse({required this.success, this.data, this.message, this.statusCode});
+  ApiResponse(
+      {required this.success, this.data, this.message, this.statusCode});
 
   factory ApiResponse.success(T data, {String? message, int? statusCode}) {
-    return ApiResponse(success: true, data: data, message: message, statusCode: statusCode ?? 200);
+    return ApiResponse(
+        success: true,
+        data: data,
+        message: message,
+        statusCode: statusCode ?? 200);
   }
 
   factory ApiResponse.error(String message, {int? statusCode}) {
-    return ApiResponse(success: false, message: message, statusCode: statusCode ?? 500);
+    return ApiResponse(
+        success: false, message: message, statusCode: statusCode ?? 500);
   }
 }

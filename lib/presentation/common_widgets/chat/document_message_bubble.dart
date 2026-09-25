@@ -12,12 +12,14 @@ class DocumentMessageBubble extends StatelessWidget {
   final String timestamp;
   final VoidCallback? onLongPress;
   final bool isDeleted;
+  final bool? read;
 
   const DocumentMessageBubble({
     super.key,
     required this.documentUrl,
     required this.isMe,
     required this.timestamp,
+    this.read,
     this.onLongPress,
     this.isDeleted = false,
   });
@@ -81,13 +83,13 @@ class DocumentMessageBubble extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            timestamp,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isMe ? Colors.white70 : Colors.black54,
+                          if (isMe)
+                            Icon(
+                              (read ?? false) ? Icons.done_all : Icons.done,
+                              color:
+                                  (read ?? false) ? Colors.blue : Colors.grey,
+                              size: 14,
                             ),
-                          ),
                         ],
                       ),
                     ),

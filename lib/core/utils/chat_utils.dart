@@ -2,17 +2,29 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 class ChatUtils {
+  // Constructing a DateFormat is the expensive part (locale lookup + pattern
+  // tokenization), not formatting with it. These used to be allocated per call,
+  // and a chat row calls into here up to 6 times per rebuild.
+  // Safe as process-lifetime statics: Intl.defaultLocale is never assigned
+  // anywhere in the app, so a formatter built at first use cannot go stale.
+  static final DateFormat _timeFormat = DateFormat('hh:mm a');
+  static final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
+  static const Uuid _uuid = Uuid();
+
+  /// Allocation-free path for chat rows — avoids the
+  /// DateTime -> ISO String -> DateTime round-trip that [formatTimestamp]
+  /// forces on callers that already hold a DateTime.
+  static String timeLabel(DateTime dateTime) =>
+      _timeFormat.format(dateTime.toLocal());
+
   String formatTimestamp(String? timestamp) {
     if (timestamp == null || timestamp.isEmpty) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
+      return _timeFormat.format(DateTime.now());
     }
     try {
-      final dateTime = DateTime.parse(timestamp).toLocal();
-      return DateFormat('hh:mm a').format(dateTime);
+      return _timeFormat.format(DateTime.parse(timestamp).toLocal());
     } catch (e) {
-      final currentTime = DateTime.now();
-      return DateFormat('hh:mm a').format(currentTime);
+      return _timeFormat.format(DateTime.now());
     }
   }
 
@@ -26,18 +38,19 @@ class ChatUtils {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final messageDate = DateTime(date.year, date.month, date.day);
+    final local = date.isUtc ? date.toLocal() : date;
+    final messageDate = DateTime(local.year, local.month, local.day);
 
     if (messageDate == today) {
       return 'Today';
     } else if (messageDate == yesterday) {
       return 'Yesterday';
     } else {
-      return DateFormat('dd/MM/yyyy').format(date);
+      return _dateFormat.format(local);
     }
   }
 
   String generateMessageId() {
-    return const Uuid().v4(); // Use the uuid package to generate a unique ID
+    return _uuid.v4(); // Use the uuid package to generate a unique ID
   }
 }

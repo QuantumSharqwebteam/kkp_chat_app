@@ -48,13 +48,19 @@ class _MeetingsListScreenState extends State<MeetingsListScreen> {
     final meetingManagement = Provider.of<MeetingManagement>(context);
     final upcomingMeetings = meetingManagement.getTodaysUpcomingMeetings();
     final upcomingIds = upcomingMeetings.map((meeting) => meeting.id).toSet();
-    final remainingMeetings =
-        meetingManagement.meetings.where((meeting) => !upcomingIds.contains(meeting.id)).toList()
-          ..sort((a, b) {
-            final aTime = DateTime.tryParse(a.startTime) ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final bTime = DateTime.tryParse(b.startTime) ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return aTime.compareTo(bTime);
-          });
+    // Latest first. Today's upcoming meetings still lead the list (soonest
+    // first) so the next one you have to attend stays on top; everything else
+    // is newest-to-oldest instead of oldest-to-newest.
+    final remainingMeetings = meetingManagement.meetings
+        .where((meeting) => !upcomingIds.contains(meeting.id))
+        .toList()
+      ..sort((a, b) {
+        final aTime = DateTime.tryParse(a.startTime) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = DateTime.tryParse(b.startTime) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
     final sortedMeetings = [...upcomingMeetings, ...remainingMeetings];
 
     return Scaffold(
@@ -81,7 +87,9 @@ class _MeetingsListScreenState extends State<MeetingsListScreen> {
                   child: sortedMeetings.isEmpty
                       ? ListView(
                           children: [
-                            SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+                            SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height * 0.25),
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -112,7 +120,8 @@ class _MeetingsListScreenState extends State<MeetingsListScreen> {
                           itemCount: sortedMeetings.length,
                           itemBuilder: (context, index) {
                             final meeting = sortedMeetings[index];
-                            final canManageMeeting = meetingManagement.canEditMeeting(
+                            final canManageMeeting =
+                                meetingManagement.canEditMeeting(
                               meeting: meeting,
                               currentUserEmail: widget.email,
                               userType: _userType,

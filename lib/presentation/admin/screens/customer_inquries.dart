@@ -14,7 +14,6 @@ import 'package:kkpchatapp/presentation/common_widgets/custom_drop_down.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_image.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/empty_inquries_widget.dart';
-import 'package:kkpchatapp/core/utils/route_observer.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:open_file/open_file.dart';
@@ -28,7 +27,7 @@ class CustomerInquiriesPage extends StatefulWidget {
 }
 
 class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
-    with SingleTickerProviderStateMixin, RouteAware {
+    with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   final chatRepository = ChatRepository();
   late InquiryProvider _inquiryProvider;
@@ -39,7 +38,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
   bool isDownloading = false;
 
-  List<String> dateRanges = ['Today', 'Last Week', 'Last Month', 'Last 30 days'];
+  List<String> dateRanges = [
+    'Today',
+    'Last Week',
+    'Last Month',
+    'Last 30 days'
+  ];
   List<String> status = ["All", "Confirmed", "Processed", "Declined"];
 
   // Map to track the expanded state of each inquiry card
@@ -61,38 +65,21 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     );
   }
 
-  bool _isRouteObserverSubscribed = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isRouteObserverSubscribed) {
-      final modalRoute = ModalRoute.of(context);
-      if (modalRoute is PageRoute) {
-        routeObserver.subscribe(this, modalRoute);
-        _isRouteObserverSubscribed = true;
-      }
-    }
-  }
-
   @override
   void dispose() {
-    if (_isRouteObserverSubscribed) {
-      routeObserver.unsubscribe(this);
-    }
     _searchController.dispose();
     super.dispose();
   }
 
-  @override
-  void didPush() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
-  }
-
-  @override
-  void didPopNext() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchInitialData());
-  }
+  // didPush() and didPopNext() intentionally removed.
+  //
+  // didPush() duplicated the initState fetch (both fire when MarketingHost is
+  // first pushed as a PageRoute).
+  //
+  // didPopNext() fired every time any route on top of the MarketingHost was
+  // popped — including the chat screen — causing a full API re-fetch on every
+  // navigation back. The inquiry screen has no child routes of its own that
+  // could mutate inquiry data, so there is nothing to refresh on return.
 
   String _getFormattedDate(String rawDate) {
     final parsed = DateTime.tryParse(rawDate);
@@ -160,7 +147,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       }
 
       final bytes = excel.save();
-      final formattedDate = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final formattedDate =
+          DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/inquiries_$formattedDate.xlsx');
       await file.writeAsBytes(bytes!);
@@ -217,7 +205,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         ? const SizedBox(
                             width: 35,
                             height: 35,
-                            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            child: Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
                           )
                         : Container(
                             width: 35,
@@ -225,7 +215,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(width: 1, color: AppColors.greyB2BACD),
+                              border: Border.all(
+                                  width: 1, color: AppColors.greyB2BACD),
                             ),
                             child: const Icon(Icons.download),
                           ),
@@ -256,7 +247,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                                     child: CustomSearchBar(
                                       enable: true,
                                       controller: _searchController,
-                                      hintText: AppLocalizations.of(context)!.searchByAnything,
+                                      hintText: AppLocalizations.of(context)!
+                                          .searchByAnything,
                                       onChanged: (value) {
                                         _inquiryProvider.updateSearch(value);
                                       },
@@ -422,7 +414,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                           ],
                         ),
                       ),
-                      child: const Icon(Icons.groups_rounded, color: Color(0xFF166534)),
+                      child: const Icon(Icons.groups_rounded,
+                          color: Color(0xFF166534)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -430,7 +423,9 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            inquiry.agentName.isEmpty ? 'Agent not assigned' : inquiry.agentName,
+                            inquiry.agentName.isEmpty
+                                ? 'Agent not assigned'
+                                : inquiry.agentName,
                             style: AppTextStyles.black16_600,
                           ),
                           const SizedBox(height: 4),
@@ -438,7 +433,19 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                             'Customer: ${inquiry.customerName}',
                             style: AppTextStyles.black12_400
                                 .copyWith(fontSize: 14, color: Colors.black45),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          if (inquiry.buyerName.trim().isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              'Buyer: ${inquiry.buyerName}',
+                              style: AppTextStyles.black12_400.copyWith(
+                                  fontSize: 14, color: Colors.black45),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -447,14 +454,16 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                       children: [
                         Text(
                           _getFormattedDate(inquiry.date),
-                          style: AppTextStyles.black12_400.copyWith(color: Colors.black45),
+                          style: AppTextStyles.black12_400
+                              .copyWith(color: Colors.black45),
                         ),
                         const SizedBox(
                           height: 8,
                         ),
                         Container(
                           margin: const EdgeInsets.only(top: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: _statusBackground(inquiry.status),
                             borderRadius: BorderRadius.circular(20),
@@ -469,7 +478,18 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                         ),
                       ],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
+                    // The whole card is tappable to expand, but nothing said
+                    // so. The chevron rotates to reflect the current state.
+                    AnimatedRotation(
+                      duration: const Duration(milliseconds: 200),
+                      turns: (expandedStates[inquiry.id] ?? false) ? 0.5 : 0,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Colors.grey.shade500,
+                        size: 22,
+                      ),
+                    ),
                   ],
                 ),
                 if (summaryChips.isNotEmpty) ...[
@@ -478,7 +498,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                     spacing: 8,
                     runSpacing: 8,
                     children: summaryChips
-                        .map((entry) => _buildSummaryChip(entry.key, entry.value))
+                        .map((entry) =>
+                            _buildSummaryChip(entry.key, entry.value))
                         .toList(),
                   ),
                 ],
@@ -502,21 +523,39 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DottedLine(
+        const DottedLine(
           dashLength: 7.0,
           dashGapLength: 4.0,
           lineThickness: 1.5,
-          dashColor: Colors.grey,
+          dashColor: Color(0xFFCBD5E1),
         ),
-        SizedBox(
-          height: 10,
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Buyer leads the list: it identifies the order, and it was
+              // previously missing here entirely — the only place it appeared
+              // was a summary chip that is filtered out whenever the value is
+              // blank, which is every row while the backend returns the
+              // "Unknown Buyer" placeholder.
+              _buildDetailRow('Buyer', inquiry.buyerName),
+              _buildDetailRow('Quality', inquiry.quality),
+              _buildDetailRow('Weave', inquiry.weave),
+              _buildDetailRow('Quantity', inquiry.quantity),
+              _buildDetailRow('Composition', inquiry.composition),
+              _buildDetailRow('Rate', inquiry.rate),
+              if (inquiry.reason.trim().isNotEmpty)
+                _buildDetailRow('Reason', inquiry.reason),
+            ],
+          ),
         ),
-        _buildDetailRow('Quality', inquiry.quality),
-        _buildDetailRow('Weave', inquiry.weave),
-        _buildDetailRow('Quantity', inquiry.quantity),
-        _buildDetailRow('Composition', inquiry.composition),
-        _buildDetailRow('Rate', inquiry.rate),
-        if (inquiry.reason.trim().isNotEmpty) _buildDetailRow('Reason', inquiry.reason),
       ],
     );
   }
@@ -534,11 +573,13 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           children: [
             TextSpan(
               text: '$label\n',
-              style: AppTextStyles.black12_400.copyWith(color: Colors.grey.shade600),
+              style: AppTextStyles.black12_400
+                  .copyWith(color: Colors.grey.shade600),
             ),
             TextSpan(
               text: value,
-              style: AppTextStyles.black14_600.copyWith(color: const Color(0xFF0F172A)),
+              style: AppTextStyles.black14_600
+                  .copyWith(color: const Color(0xFF0F172A)),
             ),
           ],
         ),
@@ -560,7 +601,8 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 1),
-            child: Icon(Icons.report_gmailerrorred_rounded, color: Color(0xFFEA580C), size: 18),
+            child: Icon(Icons.report_gmailerrorred_rounded,
+                color: Color(0xFFEA580C), size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -569,12 +611,14 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
               children: [
                 Text(
                   'Reason',
-                  style: AppTextStyles.black12_500.copyWith(color: const Color(0xFF9A3412)),
+                  style: AppTextStyles.black12_500
+                      .copyWith(color: const Color(0xFF9A3412)),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   reason,
-                  style: AppTextStyles.black14_400.copyWith(color: const Color(0xFF7C2D12)),
+                  style: AppTextStyles.black14_400
+                      .copyWith(color: const Color(0xFF7C2D12)),
                 ),
               ],
             ),
@@ -598,25 +642,44 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     return AppColors.helperOrange;
   }
 
+  /// Label on the left, value on the right — the label column is fixed width so
+  /// every row in a card lines up instead of each value starting at a different
+  /// x-offset. Long values wrap within their own column rather than pushing the
+  /// label around.
   Widget _buildDetailRow(String label, String value) {
+    final isEmpty = value.trim().isEmpty;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTextStyles.black14_400.copyWith(color: Colors.grey.shade600),
+          SizedBox(
+            width: 104,
+            child: Text(
+              label,
+              style: AppTextStyles.black14_400.copyWith(
+                color: Colors.grey.shade600,
+                height: 1.35,
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value.isEmpty ? 'N/A' : value,
-            softWrap: true,
-            overflow: TextOverflow.visible,
-            style: AppTextStyles.black14_600.copyWith(
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w100,
-              height: 1.35,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              isEmpty ? 'N/A' : value,
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.right,
+              style: AppTextStyles.black14_600.copyWith(
+                // Missing values stay muted so a real value reads as the
+                // emphasised one. The old style asked for weight 600 and then
+                // overrode it to w100, so nothing was emphasised at all.
+                color: isEmpty ? Colors.grey.shade400 : const Color(0xFF0F172A),
+                fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
+                fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
+                height: 1.35,
+              ),
             ),
           ),
         ],

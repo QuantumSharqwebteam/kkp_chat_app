@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:kkpchatapp/config/routes/marketing_routes.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -8,14 +7,16 @@ import 'package:kkpchatapp/data/models/meet_model.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
 import 'package:kkpchatapp/logic/agent/agent_home_screen_provider.dart';
 import 'package:kkpchatapp/logic/agent/chat_refresh_provider.dart';
+import 'package:kkpchatapp/logic/agent/notification_provider.dart';
 import 'package:kkpchatapp/logic/meeting/meet_management.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/meetings/meeting_list_screen.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/common_widgets/custom_search_field.dart';
 import 'package:kkpchatapp/presentation/common_widgets/shimmer_list.dart';
 import 'package:kkpchatapp/presentation/marketing/screen/agent_chat_screen.dart';
+import 'package:kkpchatapp/config/routes/marketing_routes.dart';
+import 'package:kkpchatapp/presentation/common/chat/call_history_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/custom_drawer.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/feed_list_card.dart';
 import 'package:kkpchatapp/presentation/marketing/widget/no_customer_assigned_widget.dart';
@@ -30,23 +31,35 @@ class AgentHomeScreen extends StatefulWidget {
 }
 
 class _AgentHomeScreenState extends State<AgentHomeScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _searchController = TextEditingController();
   StreamSubscription<List<String>>? _statusSubscription;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  ChatRefreshProvider? _chatRefreshProvider;
+  VoidCallback? _chatRefreshListener;
 
-  @override
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final chatRefreshProvider = Provider.of<ChatRefreshProvider>(context, listen: false);
-      chatRefreshProvider.addListener(() {
+      if (!mounted) return;
+      // Held in fields so dispose() can actually detach. Previously both the
+      // provider and the closure were locals, so removeListener had nothing to
+      // remove and every mount left another live listener behind.
+      final chatRefreshProvider =
+          Provider.of<ChatRefreshProvider>(context, listen: false);
+      _chatRefreshProvider = chatRefreshProvider;
+      _chatRefreshListener = () {
+        if (!mounted) return;
         if (chatRefreshProvider.shouldRefresh) {
           context.read<AssignedCustomersProvider>().fetchAssignedCustomers();
           chatRefreshProvider.reset();
         }
-      });
+      };
+      chatRefreshProvider.addListener(_chatRefreshListener!);
+
+      // ← FIX: fetch notifications for badge count
+      Provider.of<MeetingManagement>(context, listen: false).fetchAllMeetings();
     });
   }
 
@@ -70,6 +83,10 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
 
   @override
   void dispose() {
+    final listener = _chatRefreshListener;
+    if (listener != null) {
+      _chatRefreshProvider?.removeListener(listener);
+    }
     _statusSubscription?.cancel();
     super.dispose();
   }
@@ -80,7 +97,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final provider = Provider.of<AssignedCustomersProvider>(context);
     final meetingManagement = Provider.of<MeetingManagement>(context);
 
-    // final nextMeeting = meetingManagement.getNextUpcomingMeeting();
     return Scaffold(
       key: _scaffoldKey,
       drawer: CustomDrawer(
@@ -95,7 +111,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             _buildProfileSection(provider.agentName),
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
@@ -109,10 +126,11 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 // Today's Meetings Section
-                                _buildUpcomingMeetingsSection(meetingManagement, context),
-                                //_buildSearchBar(provider),
+                                _buildUpcomingMeetingsSection(
+                                    meetingManagement, context),
                                 const SizedBox(height: 15),
-                                Text(locale.customerInquiries, style: AppTextStyles.black16_500),
+                                Text(locale.customerInquiries,
+                                    style: AppTextStyles.black16_500),
                                 const SizedBox(height: 5),
                                 _buildSearchBar(provider),
                               ],
@@ -148,29 +166,62 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
       leading: IconButton(
         onPressed: () {
-//open drawer
           _scaffoldKey.currentState?.openDrawer();
         },
         icon: Icon(Icons.menu),
       ),
       title: Text(name ?? "", style: AppTextStyles.black16_500),
-      subtitle: Text(locale.findLatestMessages, style: AppTextStyles.black10_500),
+      subtitle:
+          Text(locale.findLatestMessages, style: AppTextStyles.black10_500),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // IconButton(
-          //   onPressed: () => Navigator.pushNamed(context, MarketingRoutes.marketingNotifications),
-          //   icon: const Icon(Icons.notifications_active_outlined, color: Colors.black),
-          // ),
           IconButton(
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const CallHistoryScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const CallHistoryScreen()),
             ),
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
+          // ← FIX: notification icon with unread badge using Consumer
+          Consumer<NotificationProvider>(
+            builder: (context, notifProvider, _) {
+              final unreadCount = notifProvider.notifications
+                  .where((n) => !(n.viewed ?? false))
+                  .length;
+              return IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    MarketingRoutes.marketingNotifications,
+                  ).then((_) {
+                    // Cache-first: markAsRead/markAllRead already updated the
+                    // shared list, so the badge is correct without refetching.
+                    notifProvider.ensureLoaded();
+                  });
+                },
+                icon: unreadCount > 0
+                    ? Badge(
+                        label: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: Colors.red,
+                        child: const Icon(Icons.notifications_active_outlined),
+                      )
+                    : const Icon(Icons.notifications_active_outlined),
+                iconSize: 25,
+              );
+            },
+          ),
           IconButton(
-            onPressed: () => Navigator.pushNamed(context, MarketingRoutes.marketingSettings),
+            onPressed: () =>
+                Navigator.pushNamed(context, MarketingRoutes.marketingSettings),
             icon: const Icon(Icons.settings_outlined, color: Colors.black),
           ),
         ],
@@ -192,14 +243,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final locale = AppLocalizations.of(context)!;
     final socket = provider.socketService;
 
-    // Get the list of valid customers from the provider (already sorted by the provider)
     final validCustomers = provider.filteredCustomers.where((customer) {
       final email = customer['email']?.toString();
       final isDeleted = customer['isDeleted'] ?? false;
       return email != null && email.isNotEmpty && !isDeleted;
     }).toList();
 
-    // We don't need to sort here anymore since the provider handles it
     return RefreshIndicator(
       onRefresh: () async => provider.fetchAssignedCustomers(),
       child: ListView.builder(
@@ -210,9 +259,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
           final name = customer['name'] ?? locale.unnamed;
           final email = customer['email']?.toString() ?? "";
           final isAccountDeleted = customer['isDeleted'] ?? false;
-          final isOnline = customer['isOnline'] ?? false; // Use the flag we set
+          final isOnline = customer['isOnline'] ?? false;
           final lastSeen = isOnline ? "Online" : socket.getLastSeenTime(email);
           final notificationCount = customer['notificationCount'] ?? 0;
+          // false when this customer was transferred to another agent —
+          // the chat then opens read-only.
+          final bool canMessage = customer['canMessage'] as bool? ?? true;
           final lastMessage = socket.getLastMessage(email);
 
           return Padding(
@@ -223,7 +275,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   name: name,
                   message: lastMessage,
                   isAccountDeleted: isAccountDeleted,
-                  isActive: isOnline, // Use our local flag
+                  isActive: isOnline,
                   time: isOnline ? locale.online : lastSeen,
                   enableLongPress: false,
                   onTap: () async {
@@ -239,6 +291,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                             agentEmail: provider.agentEmail,
                             agentName: provider.agentName,
                             isAccountDeleted: isAccountDeleted,
+                            canMessage: canMessage,
                           ),
                         ),
                       );
@@ -260,7 +313,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                       ),
                       child: Text(
                         notificationCount.toString(),
-                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 10),
                       ),
                     ),
                   ),
@@ -281,8 +335,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  // New method to build the upcoming meetings section
-  Widget _buildUpcomingMeetingsSection(MeetingManagement meetingManagement, BuildContext context) {
+  Widget _buildUpcomingMeetingsSection(
+      MeetingManagement meetingManagement, BuildContext context) {
     final nextMeetings = meetingManagement.getNextUpcomingMeeting();
     final locale = AppLocalizations.of(context)!;
 
@@ -304,6 +358,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     ),
                   ),
                 );
+                Provider.of<MeetingManagement>(context, listen: false)
+                    .fetchAllMeetings();
               },
               child: const Text(
                 "See all",
@@ -315,7 +371,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
         hasMeetings
             ? Column(
                 children: nextMeetings
-                    .map((meeting) => _buildUpcomingMeetingCard(meeting, context))
+                    .map((meeting) =>
+                        _buildUpcomingMeetingCard(meeting, context))
                     .toList(),
               )
             : _buildNoMeetingsCard(context),
@@ -328,12 +385,13 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     final now = DateTime.now();
     final timeDifference = startTime.difference(now);
 
-    // Format the time remaining
     String timeRemaining;
     if (timeDifference.inDays > 0) {
-      timeRemaining = "${timeDifference.inDays} day${timeDifference.inDays > 1 ? 's' : ''}";
+      timeRemaining =
+          "${timeDifference.inDays} day${timeDifference.inDays > 1 ? 's' : ''}";
     } else if (timeDifference.inHours > 0) {
-      timeRemaining = "${timeDifference.inHours} hour${timeDifference.inHours > 1 ? 's' : ''}";
+      timeRemaining =
+          "${timeDifference.inHours} hour${timeDifference.inHours > 1 ? 's' : ''}";
     } else {
       timeRemaining =
           "${timeDifference.inMinutes} minute${timeDifference.inMinutes > 1 ? 's' : ''}";
@@ -358,13 +416,19 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       ),
       child: Row(
         children: [
-          // Time and status indicator
           Container(
             width: 60,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Text(
+                  "${startTime.day.toString().padLeft(2, '0')}/${startTime.month.toString().padLeft(2, '0')}",
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey,
+                  ),
+                ),
                 Text(
                   "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}",
                   style: const TextStyle(
@@ -374,7 +438,8 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -392,8 +457,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Meeting details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -433,8 +496,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               ],
             ),
           ),
-
-          // Time remaining and join button
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -450,11 +511,11 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () {
-                  // Open the meeting link
                   launchUrl(Uri.parse(meeting.link));
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.blue,
                     borderRadius: BorderRadius.circular(6),
@@ -481,14 +542,14 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.grey[100], // Light grey background
+          color: Colors.grey[100],
         ),
         child: Text(
           "No upcoming meetings for today",
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Colors.grey[600], // Darker grey text
+            color: Colors.grey[600],
           ),
         ),
       ),

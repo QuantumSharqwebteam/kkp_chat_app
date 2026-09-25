@@ -18,17 +18,17 @@ class MarketingNavBar extends StatelessWidget {
       initialSelectedTab: _getTabName(selectedIndex),
       labels: [
         "Home",
-        "Feed",
-        "Inquiry", // 🔹 NEW
+        "Chats",
+        "Inquiry",
         "Product",
-        "Profile",
+        "Settings",
       ],
       icons: [
         Icons.home_filled,
         Icons.feed,
-        Icons.live_help_outlined, // 🔹 NEW
+        Icons.live_help_outlined,
         Icons.shopping_bag_rounded,
-        Icons.person_add_alt_1,
+        Icons.settings_outlined,
       ],
       tabSize: 40,
       tabBarHeight: 55,
@@ -54,13 +54,13 @@ class MarketingNavBar extends StatelessWidget {
       case 0:
         return "Home";
       case 1:
-        return "Product";
+        return "Chats";
       case 2:
-        return "Profile";
-      case 3:
-        return "Feed";
-      case 4:
         return "Inquiry";
+      case 3:
+        return "Product";
+      case 4:
+        return "Settings";
       default:
         return "Home";
     }

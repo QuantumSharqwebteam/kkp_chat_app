@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:kkpchatapp/core/services/logging_service.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/meet_model.dart';
@@ -11,14 +12,16 @@ class MeetingService {
   final http.Client client;
   final LoggingService _logger = LoggingService.instance;
 
-  MeetingService({http.Client? httpClient}) : client = httpClient ?? http.Client();
+  MeetingService({http.Client? httpClient})
+      : client = httpClient ?? ApiClient.create();
 
   /// Fetches all meetings from the backend
   Future<List<MeetingModel>> getAllMeetings() async {
     final url = Uri.parse('$baseUrl/meet/getAll');
     final token = await LocalDbHelper.getToken();
 
-    _logger.logNetwork('Fetching all meetings | GET $url', level: LogLevel.info);
+    _logger.logNetwork('Fetching all meetings | GET $url',
+        level: LogLevel.info);
 
     if (token == null) {
       _logger.logNetwork(
@@ -127,7 +130,8 @@ class MeetingService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        _logger.logNetwork('Meeting created successfully.', level: LogLevel.info);
+        _logger.logNetwork('Meeting created successfully.',
+            level: LogLevel.info);
         return true;
       }
 
@@ -200,7 +204,8 @@ class MeetingService {
       );
 
       if (response.statusCode == 200) {
-        _logger.logNetwork('Meeting updated successfully.', level: LogLevel.info);
+        _logger.logNetwork('Meeting updated successfully.',
+            level: LogLevel.info);
         return true;
       } else {
         _logger.logNetwork(
@@ -253,7 +258,8 @@ class MeetingService {
       );
 
       if (response.statusCode == 200) {
-        _logger.logNetwork('Meeting deleted successfully.', level: LogLevel.info);
+        _logger.logNetwork('Meeting deleted successfully.',
+            level: LogLevel.info);
         return true;
       } else {
         _logger.logNetwork(

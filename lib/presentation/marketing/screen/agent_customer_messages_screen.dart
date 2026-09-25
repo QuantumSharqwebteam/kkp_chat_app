@@ -35,15 +35,17 @@ class AgentCustomerMessagesScreen extends StatefulWidget {
   });
 
   @override
-  State<AgentCustomerMessagesScreen> createState() => _AgentCustomerMessagesScreenState();
+  State<AgentCustomerMessagesScreen> createState() =>
+      _AgentCustomerMessagesScreenState();
 }
 
-class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScreen> {
+class _AgentCustomerMessagesScreenState
+    extends State<AgentCustomerMessagesScreen> {
   final ChatRepository _chatRepository = ChatRepository();
   List<ChatMessageModel> messages = [];
   bool _isLoading = true;
   final ScrollController _scrollController = ScrollController();
-  bool _isAtBottom = true; // Track if the user is at the bottom of the list
+  bool _isAtBottom = true;
 
   @override
   void initState() {
@@ -60,8 +62,8 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
 
   void _checkIfAtBottom() {
     if (_scrollController.position.atEdge) {
-      bool isBottom =
-          _scrollController.position.pixels == _scrollController.position.maxScrollExtent;
+      bool isBottom = _scrollController.position.pixels ==
+          _scrollController.position.maxScrollExtent;
       if (isBottom != _isAtBottom) {
         setState(() {
           _isAtBottom = isBottom;
@@ -89,8 +91,10 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
   List<Map<String, dynamic>>? _normalizeFormData(dynamic raw) {
     if (raw == null) return null;
     if (raw is List) {
-      final entries =
-          raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
+      final entries = raw
+          .whereType<Map>()
+          .map((entry) => Map<String, dynamic>.from(entry))
+          .toList();
       return entries.isNotEmpty ? entries : null;
     }
     if (raw is Map) {
@@ -101,10 +105,12 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
 
   ChatMessageModel _chatMessageFromModel(MessageModel messageJson) {
     final normalizedForms = _normalizeFormData(messageJson.form);
-    final primaryForm = normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
+    final primaryForm =
+        normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
     return ChatMessageModel(
       message: messageJson.message ?? '',
-      timestamp: DateTime.parse(messageJson.timestamp ?? DateTime.now().toIso8601String()),
+      timestamp: DateTime.parse(
+          messageJson.timestamp ?? DateTime.now().toIso8601String()),
       sender: messageJson.senderId!,
       type: messageJson.type,
       mediaUrl: messageJson.mediaUrl,
@@ -115,22 +121,35 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
       callId: messageJson.callId,
       messageId: messageJson.messageId,
       isDeleted: messageJson.isDeleted!,
+      read: messageJson.read,
     );
   }
 
+  // check if sender is NOT the customer, so messages from ANY agent
+  // (agent head, assigned agent, or any other agent) show on the right side
+  bool _isFromAgentSide(String? sender) {
+    return sender != null && sender != widget.customerEmail;
+  }
+
+  // ← FIX: fetch from BOTH APIs and merge so assigned agent sees
+  //         agent head's previous chats + their own chats with the customer
   Future<void> _fetchMessages() async {
     try {
-      final fetchedMessages = await _chatRepository.fetchPreviousChats(
-        widget.agentEmail,
-        widget.customerEmail,
+      // Fetch ALL messages for this customer (includes all agents' messages)
+      final allChats = await _chatRepository.fetchCustomerMessages(
+        customerEmail: widget.customerEmail,
+        limit: 500,
       );
 
+      // Convert and sort by timestamp
+      final chatMessages = allChats.map(_chatMessageFromModel).toList();
+      chatMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
       setState(() {
-        messages = fetchedMessages.map(_chatMessageFromModel).toList();
+        messages = chatMessages;
         _isLoading = false;
       });
 
-      // Scroll to bottom after messages are loaded
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
       });
@@ -175,61 +194,69 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
                                 final msg = messages[index];
-                                final isAgent = msg.sender == widget.agentEmail;
+                                final isAgent = _isFromAgentSide(msg.sender);
                                 String? dateHeader;
 
                                 if (index == 0 ||
-                                    !ChatUtils()
-                                        .isSameDay(messages[index - 1].timestamp, msg.timestamp)) {
-                                  dateHeader = ChatUtils().formatDateHeader(msg.timestamp);
+                                    !ChatUtils().isSameDay(
+                                        messages[index - 1].timestamp,
+                                        msg.timestamp)) {
+                                  dateHeader = ChatUtils()
+                                      .formatDateHeader(msg.timestamp);
                                 }
 
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (dateHeader != null) DateHeader(date: dateHeader),
+                                    if (dateHeader != null)
+                                      DateHeader(date: dateHeader),
                                     if (msg.type == 'media')
                                       ImageMessageBubble(
                                         imageUrl: msg.mediaUrl!,
+                                        read: msg.read,
                                         isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                       )
                                     else if (msg.type == 'form')
                                       FormMessageBubble(
                                         forms: msg.formEntries,
+                                        read: msg.read,
                                         isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
                                         userRole: 'agent',
-                                        onRateUpdated: (Map<String, dynamic> updatedFormData) {},
-                                        onStatusUpdated: (String status, String id) {},
+                                        onRateUpdated: (Map<String, dynamic>
+                                            updatedFormData) {},
+                                        onStatusUpdated:
+                                            (String status, String id) {},
                                         onFormUpdateStart: () {},
                                         onFormUpdateEnd: () {},
-                                        // onAskForRateUpdate: (Map<String, dynamic> formData) {},
                                       )
                                     else if (msg.type == 'document')
                                       DocumentMessageBubble(
                                         documentUrl: msg.mediaUrl!,
+                                        read: msg.read,
                                         isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                       )
                                     else if (msg.type == 'voice')
                                       VoiceMessageBubble(
                                         voiceUrl: msg.mediaUrl!,
+                                        read: msg.read,
                                         isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
                                         isDeleted: msg.isDeleted,
                                       )
                                     else if (msg.type == 'call')
                                       CallMessageBubble(
                                         isMe: isAgent,
-                                        timestamp: ChatUtils()
-                                            .formatTimestamp(msg.timestamp.toIso8601String()),
+                                        timestamp: ChatUtils().formatTimestamp(
+                                            msg.timestamp.toIso8601String()),
                                         callStatus: msg.callStatus ?? "",
                                         callDuration: msg.callDuration ?? '',
                                       )
@@ -248,11 +275,14 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
                                         },
                                       )
                                     else if (msg.type == 'product')
-                                      (msg.message != null && msg.message!.isNotEmpty)
+                                      (msg.message != null &&
+                                              msg.message!.isNotEmpty)
                                           ? ProductMessageBubble(
                                               productJson: msg.message!,
-                                              isMe: msg.sender == widget.agentEmail,
-                                              timestamp: ChatUtils().formatTimestamp(
+                                              isMe: isAgent,
+                                              read: msg.read,
+                                              timestamp:
+                                                  ChatUtils().formatTimestamp(
                                                 msg.timestamp.toIso8601String(),
                                               ),
                                               isDeleted: msg.isDeleted,
@@ -260,8 +290,9 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
                                               onTap: () {},
                                             )
                                           : DeletedMessageBubble(
-                                              isMe: msg.sender == widget.agentEmail,
-                                              timestamp: ChatUtils().formatTimestamp(
+                                              isMe: isAgent,
+                                              timestamp:
+                                                  ChatUtils().formatTimestamp(
                                                 msg.timestamp.toIso8601String(),
                                               ),
                                             )
@@ -269,6 +300,7 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
                                       MessageBubble(
                                         message: msg,
                                         isMe: isAgent,
+                                        read: msg.read,
                                         onLongPress: () {
                                           //
                                         },
@@ -282,8 +314,8 @@ class _AgentCustomerMessagesScreenState extends State<AgentCustomerMessagesScree
             ),
             if (!_isAtBottom)
               Positioned(
-                bottom: 20, // Adjust the position as needed
-                right: 20, // Adjust the position as needed
+                bottom: 20,
+                right: 20,
                 child: FloatingActionButton(
                   onPressed: _scrollToBottom,
                   mini: true,

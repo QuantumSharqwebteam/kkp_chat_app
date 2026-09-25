@@ -9,7 +9,7 @@ import 'package:kkpchatapp/logic/agent/group_provider.dart';
 import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/admin/screens/internal_chat/internal_chat_screen.dart';
 import 'package:kkpchatapp/presentation/marketing/add_new_group_scree.dart';
-import 'package:kkpchatapp/presentation/marketing/widget/group_chat_file.dart';
+import 'package:kkpchatapp/presentation/marketing/widget/group_chat_tile.dart';
 import 'package:provider/provider.dart';
 
 class GroupListScreen extends StatefulWidget {
@@ -21,8 +21,6 @@ class GroupListScreen extends StatefulWidget {
 
 class _GroupListScreenState extends State<GroupListScreen> {
   String? role;
-  final Map<String, String> _groupLastMessages = {};
-  final Map<String, DateTime?> _groupLastMessageTimes = {};
 
   @override
   void initState() {
@@ -42,21 +40,17 @@ class _GroupListScreenState extends State<GroupListScreen> {
   Future<void> _loadGroups() async {
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
     await groupProvider.fetchAllGroups();
-    // fetchAllGroups already calls loadUnreadCountsFromStorage internally
-    await _loadGroupPreviews(groupProvider.groups);
+    // fetchAllGroups already loads unread counts; also load last messages.
+    await groupProvider.loadLastMessagesFromStorage();
   }
 
-  Future<void> _loadGroupPreviews(List<GroupModel> groups) async {
-    for (final group in groups) {
-      final info = await LocalDbHelper.getGroupLastMessage(group.id);
-      if (!mounted) return;
-      if (info.message.isNotEmpty || info.timestamp != null) {
-        setState(() {
-          _groupLastMessages[group.id] = info.message;
-          _groupLastMessageTimes[group.id] = info.timestamp;
-        });
-      }
-    }
+  /// Pull-to-refresh. Forces the network fetch — the plain load short-circuits
+  /// on a warm cache, which would make the gesture look like it did nothing.
+  Future<void> _refreshGroups() async {
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    await groupProvider.fetchAllGroups(forceRefresh: true);
+    if (!mounted) return;
+    await groupProvider.loadLastMessagesFromStorage();
   }
 
   Future<void> _openGroupChat(BuildContext context, GroupModel group) async {
@@ -80,9 +74,9 @@ class _GroupListScreenState extends State<GroupListScreen> {
       ),
     );
 
-    // Reload previews when returning from chat
+    // Refresh last message previews when returning from chat.
     if (mounted) {
-      await _loadGroupPreviews(groupProvider.groups);
+      await groupProvider.loadLastMessagesFromStorage();
     }
   }
 
@@ -94,36 +88,60 @@ class _GroupListScreenState extends State<GroupListScreen> {
       ),
       body: Consumer<GroupProvider>(
         builder: (context, groupProvider, child) {
-          if (groupProvider.state == GroupState.loading && groupProvider.groups.isEmpty) {
+          // Cold start only — once groups exist, a refresh shows the pull
+          // spinner rather than replacing the list with a loader.
+          if (groupProvider.state == GroupState.loading &&
+              groupProvider.groups.isEmpty) {
             return const Center(child: CircularProgressIndicator());
-          } else if (groupProvider.groups.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('You are not added to any groups.'),
-                  SizedBox(height: 20),
-                  Icon(Icons.group_off, size: 60, color: Colors.grey),
-                ],
-              ),
-            );
-          } else {
-            return ListView.builder(
-              itemCount: groupProvider.groups.length,
-              itemBuilder: (context, index) {
-                final group = groupProvider.groups[index];
-                final unread = groupProvider.groupUnreadCounts[group.id] ?? 0;
-                return GroupChatTile(
-                  groupName: group.groupName,
-                  memberCount: group.members.length,
-                  lastMessage: _groupLastMessages[group.id] ?? '',
-                  time: _groupLastMessageTimes[group.id],
-                  unreadCount: unread,
-                  onTap: () => _openGroupChat(context, group),
-                );
-              },
-            );
           }
+
+          return RefreshIndicator(
+            onRefresh: _refreshGroups,
+            child: groupProvider.groups.isEmpty
+                // A plain Center is not scrollable, so the pull gesture would
+                // never trigger on the empty state. AlwaysScrollableScrollPhysics
+                // on a ListView keeps it draggable with nothing in it.
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.3),
+                      const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('You are not added to any groups.'),
+                          SizedBox(height: 20),
+                          Icon(Icons.group_off, size: 60, color: Colors.grey),
+                        ],
+                      ),
+                    ],
+                  )
+                : Builder(
+                    builder: (context) {
+                      // Most recently messaged group first.
+                      final orderedGroups =
+                          groupProvider.groupsByRecentActivity;
+                      return ListView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        itemCount: orderedGroups.length,
+                        itemBuilder: (context, index) {
+                          final group = orderedGroups[index];
+                          final unread =
+                              groupProvider.groupUnreadCounts[group.id] ?? 0;
+                          return GroupChatTile(
+                            groupName: group.groupName,
+                            memberCount: group.members.length,
+                            lastMessage:
+                                groupProvider.groupLastMessages[group.id] ?? '',
+                            time: groupProvider.groupLastMessageTimes[group.id],
+                            unreadCount: unread,
+                            onTap: () => _openGroupChat(context, group),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          );
         },
       ),
       floatingActionButton: role == "2"

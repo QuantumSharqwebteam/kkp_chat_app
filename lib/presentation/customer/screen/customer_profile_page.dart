@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
@@ -6,9 +9,16 @@ import 'package:kkpchatapp/core/utils/utils.dart';
 import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
 import 'package:kkpchatapp/data/models/address_model.dart';
 import 'package:kkpchatapp/data/models/profile_model.dart';
+import 'package:kkpchatapp/core/services/logging_service.dart';
+import 'package:kkpchatapp/core/services/s3_upload_service.dart';
+import 'package:kkpchatapp/data/api/api_client.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+import 'package:kkpchatapp/logic/customer/customer_home_provider.dart';
 import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
+import 'package:kkpchatapp/presentation/common_widgets/failure_details_sheet.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class CustomerProfilePage extends StatefulWidget {
   const CustomerProfilePage({super.key});
@@ -19,8 +29,22 @@ class CustomerProfilePage extends StatefulWidget {
 
 class _CustomerProfilePageState extends State<CustomerProfilePage> {
   final AuthRepository _authRepository = AuthRepository();
+  final S3UploadService _s3uploadService = S3UploadService();
   Profile? _profile;
   bool _isEditing = false;
+  File? _selectedImage;
+
+  /// True when the user tapped "Remove Photo". Distinct from
+  /// `_selectedImage == null`, which just means "no new pick" — without this
+  /// flag a removal was indistinguishable from leaving the avatar alone, and
+  /// the existing server-side photo was never cleared.
+  bool _removePhoto = false;
+
+  /// In-flight guard for the save button (uploads make saving slow enough to
+  /// double-tap).
+  bool _isSaving = false;
+
+  final ImagePicker _picker = ImagePicker();
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -46,6 +70,104 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   String? _streetError;
   String? _cityError;
   String? _pincodeError;
+
+  bool get _isExport => _customerType == 'Export';
+  bool get _isDomestic => _customerType == 'Domestic';
+
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt),
+              title: Text('Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library),
+              title: Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            if (_selectedImage != null ||
+                (!_removePhoto &&
+                    _profile?.profileUrl != null &&
+                    _profile!.profileUrl!.isNotEmpty))
+              ListTile(
+                leading: Icon(Icons.delete, color: Colors.red),
+                title:
+                    Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _selectedImage = null;
+                    // Flag the removal so _saveChanges sends profileUrl: ''.
+                    // Clearing _selectedImage alone left the server photo intact.
+                    _removePhoto = true;
+                  });
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 80,
+      );
+      if (pickedFile == null) return; // user cancelled
+      if (!mounted) return;
+
+      final file = File(pickedFile.path);
+      LoggingService.instance.logNetwork(
+        'Profile image picked from ${source.name}: ${pickedFile.path}',
+      );
+      setState(() {
+        _selectedImage = file;
+        _removePhoto = false; // a new pick supersedes a pending removal
+      });
+    } catch (e, stack) {
+      // Previously uncaught. On Android 13 a denied camera permission or a
+      // photo-picker failure throws a PlatformException here, which became an
+      // unhandled async error and looked to the user like nothing happened.
+      LoggingService.instance.logNetwork(
+        'Profile image pick failed (${source.name}): $e',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stack,
+      );
+      if (!mounted) return;
+      showFailureDetailsSheet(
+        context,
+        title:
+            'Could not open ${source == ImageSource.camera ? "camera" : "gallery"}',
+        stage: 'Picker',
+        message: source == ImageSource.camera
+            ? 'Camera access failed. Check the app\'s Camera permission in '
+                'Settings, then try again.'
+            : 'The photo picker failed to open. Check the app\'s Photos '
+                'permission in Settings, then try again.',
+        // runtimeType matters: PlatformException means the OS refused,
+        // anything else means the plugin itself broke.
+        detail: '${e.runtimeType}: $e',
+        location: 'CustomerProfilePage._pickImage (${source.name})',
+        stackTrace: stack,
+      );
+    }
+  }
 
   bool _isValidFullName(String name) {
     return RegExp(r"^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$").hasMatch(name);
@@ -78,7 +200,6 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     final street = _streetNameController.text.trim();
     final city = _cityController.text.trim();
     final pincode = _pincodeController.text.trim();
-    final isDomestic = _customerType == 'Domestic';
 
     setState(() {
       _nameError = null;
@@ -107,18 +228,34 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       isValid = false;
     }
 
-    if (isDomestic && gst.isEmpty) {
+    // ← FIX: GST — required only for Domestic; format check only for Domestic
+    //         or when Export user types exactly 15 chars (full length)
+    if (_isDomestic && gst.isEmpty) {
       _gstError = 'GST number is required for domestic customers';
       isValid = false;
-    } else if (gst.isNotEmpty && !_isValidGstNumber(gst)) {
+    } else if (_isDomestic && gst.isNotEmpty && !_isValidGstNumber(gst)) {
+      _gstError = 'Enter a valid 15-character GSTIN';
+      isValid = false;
+    } else if (_isExport &&
+        gst.isNotEmpty &&
+        gst.length == 15 &&
+        !_isValidGstNumber(gst)) {
       _gstError = 'Enter a valid 15-character GSTIN';
       isValid = false;
     }
 
-    if (isDomestic && pan.isEmpty) {
+    // ← FIX: PAN — required only for Domestic; format check only for Domestic
+    //         or when Export user types exactly 10 chars (full length)
+    if (_isDomestic && pan.isEmpty) {
       _panError = 'PAN number is required for domestic customers';
       isValid = false;
-    } else if (pan.isNotEmpty && !_isValidPanNumber(pan)) {
+    } else if (_isDomestic && pan.isNotEmpty && !_isValidPanNumber(pan)) {
+      _panError = 'Enter valid PAN (ABCDE1234F)';
+      isValid = false;
+    } else if (_isExport &&
+        pan.isNotEmpty &&
+        pan.length == 10 &&
+        !_isValidPanNumber(pan)) {
       _panError = 'Enter valid PAN (ABCDE1234F)';
       isValid = false;
     }
@@ -164,7 +301,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   Future<void> _loadUserProfile() async {
     final userData = await _authRepository.getUserInfo();
-    if (userData['message'] == "Session expired due to login on another device") {
+    if (userData['message'] ==
+        "Session expired due to login on another device") {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -173,6 +311,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     }
 
     final profileData = Profile.fromJson(userData['message']);
+    if (!mounted) return;
     setState(() {
       _profile = profileData;
     });
@@ -197,10 +336,47 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     }
   }
 
+  /// Uploads a newly picked avatar and returns the value to send as
+  /// `profileUrl`:
+  ///   - a fresh S3 url when the user picked an image
+  ///   - `''` when the user chose "Remove Photo" (the API includes the key when
+  ///     it is non-null, so an empty string is what actually clears it)
+  ///   - `null` when the avatar is untouched, so the key is omitted entirely
+  ///     and the server keeps whatever it already had
+  ///
+  /// Throws when an upload was requested but failed, so the caller can abort
+  /// instead of silently saving the rest of the form without the image.
+  Future<String?> _resolveProfileUrl() async {
+    if (_removePhoto) {
+      LoggingService.instance.logNetwork('Profile image: removal requested');
+      return '';
+    }
+
+    final image = _selectedImage;
+    if (image == null) return null;
+
+    final bytes = await image.length();
+    LoggingService.instance.logNetwork(
+      'Profile image: uploading ${image.path.split('/').last} ($bytes bytes) to S3',
+    );
+
+    // The throwing variant: uploadFile() collapses every failure to null, which
+    // is why an upload problem on a device was impossible to diagnose.
+    final uploadedUrl = await _s3uploadService.uploadFileOrThrow(image);
+
+    LoggingService.instance.logNetwork(
+      'Profile image: uploaded → $uploadedUrl',
+    );
+    return uploadedUrl;
+  }
+
   Future<void> _saveChanges() async {
+    if (_isSaving) return; // guard against double taps
     if (!_validateInputs()) {
       return;
     }
+
+    setState(() => _isSaving = true);
 
     final updatedProfile = Profile(
       name: _nameController.text.trim(),
@@ -220,6 +396,12 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     );
 
     try {
+      // Must happen before the update call — the picked file has to become a
+      // url before it can be sent. This is the step that was missing entirely:
+      // _selectedImage was set by the picker and then simply discarded.
+      final profileUrl = await _resolveProfileUrl();
+      if (!mounted) return;
+
       final response = await _authRepository.updateUserDetails(
         name: updatedProfile.name,
         number: _numberController.text.trim(),
@@ -227,15 +409,33 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         gstNo: updatedProfile.gstNo,
         panNo: updatedProfile.panNo,
         address: updatedProfile.address?.first,
+        profileUrl: profileUrl,
       );
+      if (!mounted) return;
 
       if (response['message'] == "Item updated successfully") {
         final newProfile = Profile.fromJson(response['data']);
         await LocalDbHelper.saveProfile(newProfile);
+        if (!mounted) return;
+
+        // CachedNetworkImage keys its cache by url. If the server hands back
+        // the same url for a replaced image, the stale bitmap would keep
+        // showing until the cache expired — so evict it explicitly.
+        await _evictAvatarCache(_profile?.profileUrl);
+        await _evictAvatarCache(newProfile.profileUrl);
+        if (!mounted) return;
+
         setState(() {
           _profile = newProfile;
           _isEditing = false;
+          _selectedImage = null;
+          _removePhoto = false;
         });
+
+        final homeProvider =
+            Provider.of<CustomerHomeProvider>(context, listen: false);
+        await homeProvider.loadUserInfo();
+
         if (!mounted) return;
         Utils().showSuccessDialog(context, "Profile Updated!", true);
         await Future.delayed(const Duration(seconds: 1), () {
@@ -244,14 +444,86 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       } else {
         _showError(response['message'] ?? "Update failed");
       }
-    } catch (e) {
-      _showError("Error: ${e.toString()}");
+    } catch (e, stack) {
+      LoggingService.instance.logNetwork(
+        'Profile update failed: $e',
+        level: LogLevel.error,
+        error: e,
+        stackTrace: stack,
+      );
+      if (!mounted) return;
+      if (e is UploadException) {
+        // Full detail on screen and copyable — the device that fails is rarely
+        // the one attached to a debugger.
+        showFailureDetailsSheet(
+          context,
+          title: 'Image upload failed',
+          stage: e.stage,
+          message: e.message,
+          detail: [
+            if (e.detail != null) e.detail!,
+            if (_s3uploadService.compressionNote != null)
+              _s3uploadService.compressionNote!,
+          ].join('\n'),
+          location: e.location,
+          stackTrace: stack,
+          file: _selectedImage,
+        );
+      } else if (e is ApiException) {
+        _showError(e.message);
+      } else {
+        showFailureDetailsSheet(
+          context,
+          title: 'Could not save profile',
+          stage: 'Unexpected',
+          message: '${e.runtimeType}: $e',
+          stackTrace: stack,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  /// Drops a url from both the CachedNetworkImage store and Flutter's in-memory
+  /// image cache, so a replaced avatar actually re-renders.
+  Future<void> _evictAvatarCache(String? url) async {
+    if (url == null || url.isEmpty || !url.startsWith('http')) return;
+    try {
+      await CachedNetworkImage.evictFromCache(url);
+      await NetworkImage(url).evict();
+    } catch (e) {
+      LoggingService.instance.logNetwork('Avatar cache evict failed: $e');
+    }
+  }
+
+  /// Cancelling out of edit mode discards any pending avatar change and
+  /// restores the form to the saved profile — previously a picked image and a
+  /// pending removal both survived "Cancel".
+  void _toggleEditing() {
+    setState(() {
+      _isEditing = !_isEditing;
+      if (!_isEditing) {
+        _selectedImage = null;
+        _removePhoto = false;
+        _nameError = null;
+        _mobileError = null;
+        _gstError = null;
+        _panError = null;
+        _houseNoError = null;
+        _streetError = null;
+        _cityError = null;
+        _pincodeError = null;
+        final profile = _profile;
+        if (profile != null) _populateControllers(profile);
+      }
+    });
   }
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -279,7 +551,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
         elevation: 0.5,
         actions: [
           TextButton(
-            onPressed: () => setState(() => _isEditing = !_isEditing),
+            onPressed: _isSaving ? null : _toggleEditing,
             child: Text(
               _isEditing
                   ? AppLocalizations.of(context)!.cancel
@@ -334,7 +606,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               _buildSectionContainer([
                 _section("Business Details"),
                 _input(
-                  _customerType == 'Domestic' ? "Pan No. *" : "Pan No.",
+                  _isDomestic ? "Pan No. *" : "Pan No.",
                   _panNoController,
                   errorText: _panError,
                   maxLength: 10,
@@ -343,15 +615,18 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     LengthLimitingTextInputFormatter(10),
                     _panUpperCaseFormatter,
                   ],
+                  // ← FIX: for Export, never show error while typing
                   onChanged: (value) {
                     final trimmed = value.trim().toUpperCase();
-                    if (trimmed.isEmpty || _isValidPanNumber(trimmed)) {
+                    if (_isExport ||
+                        trimmed.isEmpty ||
+                        _isValidPanNumber(trimmed)) {
                       setState(() => _panError = null);
                     }
                   },
                 ),
                 _input(
-                  _customerType == 'Domestic' ? "GST No. *" : "GST No.",
+                  _isDomestic ? "GST No. *" : "GST No.",
                   _gstNoController,
                   errorText: _gstError,
                   maxLength: 15,
@@ -359,12 +634,16 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
                     LengthLimitingTextInputFormatter(15),
                     TextInputFormatter.withFunction((oldValue, newValue) {
-                      return newValue.copyWith(text: newValue.text.toUpperCase());
+                      return newValue.copyWith(
+                          text: newValue.text.toUpperCase());
                     }),
                   ],
+                  // ← FIX: for Export, never show error while typing
                   onChanged: (value) {
                     final trimmed = value.trim().toUpperCase();
-                    if (trimmed.isEmpty || _isValidGstNumber(trimmed)) {
+                    if (_isExport ||
+                        trimmed.isEmpty ||
+                        _isValidGstNumber(trimmed)) {
                       setState(() => _gstError = null);
                     }
                   },
@@ -420,8 +699,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   ],
                   onChanged: (value) {
                     final trimmed = value.trim();
-                    if (trimmed.isEmpty ||
-                        trimmed.length == 6) {
+                    if (trimmed.isEmpty || trimmed.length == 6) {
                       setState(() => _pincodeError = null);
                     }
                   },
@@ -438,24 +716,79 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   }
 
   Widget _buildHeader() {
+    final profileUrl = _profile?.profileUrl;
+    // A pending removal previews as initials, so the user sees what they are
+    // about to save rather than the photo they just asked to delete.
+    final hasNetworkImage = !_removePhoto &&
+        profileUrl != null &&
+        profileUrl.isNotEmpty &&
+        profileUrl.startsWith('http');
+
     return Container(
       width: double.infinity,
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 50,
-            backgroundColor: const Color(0xFFE0E0E0),
-            child: Initicon(
-              text: _profile?.name ?? '',
-              size: 90,
+          GestureDetector(
+            onTap: _isEditing ? _showImagePickerOptions : null,
+            child: Stack(
+              children: [
+                if (_selectedImage != null)
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: const Color(0xFFE0E0E0),
+                    backgroundImage: FileImage(_selectedImage!),
+                  )
+                else if (hasNetworkImage)
+                  CachedNetworkImage(
+                    imageUrl: profileUrl,
+                    imageBuilder: (context, imageProvider) => CircleAvatar(
+                      radius: 50,
+                      backgroundColor: const Color(0xFFE0E0E0),
+                      backgroundImage: imageProvider,
+                    ),
+                    placeholder: (context, url) => CircleAvatar(
+                      radius: 50,
+                      backgroundColor: const Color(0xFFE0E0E0),
+                      child: Initicon(text: _profile?.name ?? '', size: 90),
+                    ),
+                    errorWidget: (context, url, error) => CircleAvatar(
+                      radius: 50,
+                      backgroundColor: const Color(0xFFE0E0E0),
+                      child: Initicon(text: _profile?.name ?? '', size: 90),
+                    ),
+                  )
+                else
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: const Color(0xFFE0E0E0),
+                    child: Initicon(text: _profile?.name ?? '', size: 90),
+                  ),
+                if (_isEditing)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child:
+                          Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 10),
           Text(_profile?.name ?? '',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          Text(_profile?.email ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(_profile?.email ?? '',
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
     );
@@ -484,7 +817,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             color: Colors.black54,
           ),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          Text(title,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
         ],
       ),
     );
@@ -505,7 +840,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
@@ -520,7 +857,8 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               counterText: '',
               filled: true,
               fillColor: enabled ? Colors.white : const Color(0xFFF5F5F5),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               enabledBorder: OutlineInputBorder(
                 borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
                 borderRadius: BorderRadius.circular(10),
@@ -546,22 +884,28 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             value: _customerType,
-            items: options.map((val) => DropdownMenuItem(value: val, child: Text(val))).toList(),
+            items: options
+                .map((val) => DropdownMenuItem(value: val, child: Text(val)))
+                .toList(),
             onChanged: _isEditing
                 ? (val) => setState(() {
                       _customerType = val!;
-                      if (_customerType == 'Export') {
+                      // ← FIX: clear GST/PAN errors when switching to Export
+                      if (_isExport) {
                         _gstError = null;
                         _panError = null;
                       }
                     })
                 : null,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -593,374 +937,27 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             ),
             elevation: 2,
           ),
-          onPressed: _saveChanges,
-          child: Text(
-            AppLocalizations.of(context)!.saveChanges,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-          ),
+          // Disabled while saving — an image upload makes this slow enough
+          // that a second tap would fire a duplicate update.
+          onPressed: _isSaving ? null : _saveChanges,
+          child: _isSaving
+              ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  AppLocalizations.of(context)!.saveChanges,
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
         ),
       ),
     );
   }
 }
-
-
-
- // bool _isExportSelected = false;
-// if (_isEditing)
-//                 SizedBox(
-//                   width: double.infinity,
-//                   child: ElevatedButton(
-//                     style: ElevatedButton.styleFrom(
-//                       backgroundColor: AppColors.bluePrimary,
-//                       padding: const EdgeInsets.symmetric(vertical: 14),
-//                       shape: RoundedRectangleBorder(
-//                         borderRadius: BorderRadius.circular(8),
-//                       ),
-//                       elevation: 2,
-//                     ),
-//                     onPressed: () {
-//                       final updatedProfile = Profile(
-//                         profileUrl: profileImageUrl,
-//                         name: _name.text,
-//                         email: _email.text,
-//                         mobile: int.tryParse(_number.text) ?? 0,
-//                         gstNo: _gstNo.text,
-//                         panNo: _panNo.text,
-//                         customerType: _isExportSelected ? 'Export' : 'Domestic',
-//                         address: [
-//                           Address(
-//                             houseNo: _houseNo.text,
-//                             streetName: _streetName.text,
-//                             city: _city.text,
-//                             pincode: _pincode.text,
-//                           ),
-//                         ],
-//                       );
-//                       setState(() {
-//                         profile = updatedProfile;
-//                         _isEditing = false;
-//                       });
-//                     },
-//                     child: const Text(
-//                       'Save Changes',
-//                       style: TextStyle(fontSize: 16, color: Colors.white),
-//                     ),
-//                   ),
-//                 ),
-
-
-
-
-
-  // Widget _buildCustomerTypeSelection() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       Padding(
-  //         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-  //         child: Text('Customer Type', style: AppTextStyles.black16_600),
-  //       ),
-  //       Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  //         children: [
-  //           _buildCheckbox('Export', _isExportSelected),
-  //           _buildCheckbox('Domestic', _isDomesticSelected),
-  //         ],
-  //       ),
-  //     ],
-  //   );
-  // }
-
-  // Widget _buildCheckbox(String label, bool value) {
-  //   return Row(
-  //     children: [
-  //       Checkbox(
-  //         visualDensity: VisualDensity.compact,
-  //         value: value,
-  //         activeColor: AppColors.blue,
-  //         onChanged: null,
-  //       ),
-  //       Text(label, style: AppTextStyles.black14_600),
-  //     ],
-  //   );
-  // }
-
-
-
-
-// import 'package:flutter/material.dart';
-// import 'package:flutter_initicon/flutter_initicon.dart';
-// import 'package:kkpchatapp/config/routes/customer_routes.dart';
-// import 'package:kkpchatapp/config/theme/app_colors.dart';
-// import 'package:kkpchatapp/config/theme/app_text_styles.dart';
-// import 'package:kkpchatapp/core/utils/utils.dart';
-// import 'package:kkpchatapp/data/local_storage/local_db_helper.dart';
-// import 'package:kkpchatapp/data/models/address_model.dart';
-// import 'package:kkpchatapp/data/models/profile_model.dart';
-// import 'package:kkpchatapp/data/repositories/auth_repository.dart';
-// import 'package:kkpchatapp/presentation/common/auth/login_page.dart';
-// import 'package:kkpchatapp/presentation/common_widgets/custom_button.dart';
-// import 'package:kkpchatapp/presentation/common_widgets/profile_details_field.dart';
-
-// class CustomerProfilePage extends StatefulWidget {
-//   const CustomerProfilePage({super.key});
-
-//   @override
-//   State<CustomerProfilePage> createState() => _CustomerProfilePageState();
-// }
-
-// class _CustomerProfilePageState extends State<CustomerProfilePage> {
-//   final AuthRepository auth = AuthRepository();
-//   Profile? profile;
-//   bool _isExportSelected = false;
-//   bool _isDomesticSelected = false;
-//   String? profileImageUrl = "";
-//   final TextEditingController _name = TextEditingController();
-//   final TextEditingController _email = TextEditingController();
-//   final TextEditingController _number = TextEditingController();
-//   final TextEditingController _gstNo = TextEditingController();
-//   final TextEditingController _panNo = TextEditingController();
-//   final TextEditingController _houseNo = TextEditingController();
-//   final TextEditingController _streetName = TextEditingController();
-//   final TextEditingController _city = TextEditingController();
-//   final TextEditingController _pincode = TextEditingController();
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _loadUserInfo();
-//   }
-
-//   Future<void> _loadUserInfo() async {
-//     final Map<String, dynamic> userData = await auth.getUserInfo();
-//     if (userData['message'] ==
-//         "Session expired due to login on another device") {
-//       if (mounted) {
-//         Navigator.of(context)
-//             .pushReplacement(MaterialPageRoute(builder: (context) {
-//           return LoginPage();
-//         }));
-//       }
-//     } else {
-//       profile = Profile.fromJson(userData['message']);
-//       if (profile != null) {
-//         LocalDbHelper.saveProfile(profile!);
-//         profileImageUrl = profile?.profileUrl;
-//         _updateProfileFields(profile!);
-//       }
-//     }
-//   }
-
-//   void _updateProfileFields(Profile profile) {
-//     setState(() {
-//       _name.text = profile.name ?? '';
-//       _email.text = profile.email ?? '';
-//       _number.text = profile.mobile.toString();
-//       _gstNo.text = profile.gstNo ?? '';
-//       _panNo.text = profile.panNo ?? '';
-//       if (profileImageUrl != profile.profileUrl) {
-//         profileImageUrl = profile.profileUrl;
-//       }
-//       if (profile.address?.isNotEmpty == true) {
-//         final address = profile.address![0];
-//         _houseNo.text = address.houseNo ?? '';
-//         _streetName.text = address.streetName ?? '';
-//         _city.text = address.city ?? '';
-//         _pincode.text = address.pincode ?? '';
-//       }
-//       _isExportSelected = profile.customerType == 'Export';
-//       _isDomesticSelected = profile.customerType == 'Domestic';
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: SafeArea(
-//         child: Center(
-//           child: SingleChildScrollView(
-//             child: Column(
-//               children: [
-//                 SizedBox(height: 10),
-//                 ClipRRect(
-//                   borderRadius: BorderRadius.circular(70),
-//                   child: Initicon(
-//                     text: profile?.name ?? "",
-//                     elevation: 10,
-//                     size: 120,
-//                   ),
-//                 ),
-//                 Text(
-//                   _name.text.isNotEmpty ? _name.text : 'No Name',
-//                   style: AppTextStyles.black28_600,
-//                 ),
-//                 // Text(
-//                 //   'Customer',
-//                 //   style:
-//                 //       AppTextStyles.black16_600.copyWith(color: Colors.black54),
-//                 // ),
-//                 SizedBox(height: 10),
-//                 SizedBox(
-//                   width: Utils().width(context) * 0.9,
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       _buildCustomerTypeSelection(),
-//                       ProfileDetailsField(
-//                         icon: Icons.person,
-//                         label: 'Full Name',
-//                         value: _name.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.email,
-//                         label: 'Email',
-//                         value: _email.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.phone,
-//                         label: 'Mobile Number',
-//                         value: _number.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.assignment,
-//                         label: 'GST Number',
-//                         value: _gstNo.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.assignment_ind,
-//                         label: 'PAN Number',
-//                         value: _panNo.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.home,
-//                         label: 'House No.',
-//                         value: _houseNo.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.streetview,
-//                         label: 'Street Name',
-//                         value: _streetName.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.location_city,
-//                         label: 'City',
-//                         value: _city.text,
-//                       ),
-//                       ProfileDetailsField(
-//                         icon: Icons.markunread_mailbox,
-//                         label: 'Pincode',
-//                         value: _pincode.text,
-//                       ),
-//                       SizedBox(height: 20),
-//                       Center(
-//                         child: CustomButton(
-//                           text: 'Edit',
-//                           onPressed: () async {
-//                             // Construct the Profile object with current data
-//                             final profile = Profile(
-//                               profileUrl: profileImageUrl,
-//                               name: _name.text,
-//                               email: _email.text,
-//                               mobile: int.tryParse(_number.text) ?? 0,
-//                               gstNo: _gstNo.text,
-//                               panNo: _panNo.text,
-//                               customerType:
-//                                   _isExportSelected ? 'Export' : 'Domestic',
-//                               address: [
-//                                 Address(
-//                                   houseNo: _houseNo.text,
-//                                   streetName: _streetName.text,
-//                                   city: _city.text,
-//                                   pincode: _pincode.text,
-//                                 ),
-//                               ],
-//                             );
-
-//                             // Navigate to the setup page with the Profile object
-//                             final updatedProfile = await Navigator.pushNamed(
-//                               context,
-//                               CustomerRoutes.customerProfileSetup,
-//                               arguments: {
-//                                 "forUpdate": true,
-//                                 "profile": profile,
-//                               },
-//                             ) as Profile?;
-
-//                             if (updatedProfile != null) {
-//                               _updateProfileFields(updatedProfile);
-//                             }
-//                           },
-//                           height: 45,
-//                           elevation: 5,
-//                           width: Utils().width(context) * 0.5,
-//                           fontSize: 16,
-//                           backgroundColor: AppColors.bluePrimary,
-//                         ),
-//                       ),
-//                       SizedBox(height: 40),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildCustomerTypeSelection() {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Padding(
-//           padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-//           child: Text('Customer Type', style: AppTextStyles.black16_600),
-//         ),
-//         Row(
-//           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-//           children: [
-//             _buildCheckbox('Export', _isExportSelected),
-//             _buildCheckbox('Domestic', _isDomesticSelected),
-//           ],
-//         ),
-//       ],
-//     );
-//   }
-
-//   Widget _buildCheckbox(String label, bool value) {
-//     return Row(
-//       children: [
-//         Checkbox(
-//           visualDensity: VisualDensity.compact,
-//           value: value,
-//           activeColor: AppColors.blue,
-//           onChanged: null, // Disable manual changes
-//         ),
-//         Text(label, style: AppTextStyles.black14_600),
-//       ],
-//     );
-//   }
-
-//   // Widget _buildTextField(String label, TextEditingController controller,
-//   //     {int? maxLength}) {
-//   //   return Padding(
-//   //     padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-//   //     child: Column(
-//   //       crossAxisAlignment: CrossAxisAlignment.start,
-//   //       children: [
-//   //         Text(label, style: AppTextStyles.black14_600),
-//   //         CustomTextField(
-//   //           controller: controller,
-//   //           hintText: controller.text,
-//   //           hintStyle: AppTextStyles.black16_500,
-//   //           readOnly: true,
-//   //           height: 40,
-//   //           maxLength: maxLength,
-//   //         ),
-//   //       ],
-//   //     ),
-//   //   );
-//   // }
-// }

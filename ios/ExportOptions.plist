@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>app-store-connect</string>
+
+	<key>teamID</key>
+	<string>GL6676MZKG</string>
+
+	<key>signingStyle</key>
+	<string>manual</string>
+
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+
+	<!-- Profile name must match the App Store profile created on the developer
+	     portal for this bundle id, exactly, and the
+	     PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*] in project.pbxproj.
+	     Update all three together. -->
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.hertzworkworkz.kkpgroupchatapp</key>
+		<string>kkp distribution 2026</string>
+	</dict>
+
+	<!-- Symbol upload is DISABLED deliberately.
+	     Agora ships ~24 prebuilt xcframeworks with no dSYMs, which produced an
+	     "Upload Symbols Failed" warning each per upload. Turning uploadSymbols off
+	     silences all of them.
+	     TRADE-OFF: crash reports in App Store Connect now come back as raw addresses
+	     for ALL code, including ours, not just Agora's. KKP has no Crashlytics, so
+	     App Store Connect is the only iOS crash reporting. Flip this back to <true/>
+	     before investigating any production crash. -->
+	<key>uploadSymbols</key>
+	<false/>
+
+	<key>stripSwiftSymbols</key>
+	<true/>
+
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

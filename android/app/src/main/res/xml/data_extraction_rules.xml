@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31+).
+
+  android:allowBackup="false" stops Google Drive cloud backup, but it does NOT
+  cover device-to-device transfer on API 31+ — that is governed here. Without
+  both, uninstalling the app did not clear its data: Android restored the old
+  SharedPreferences and Hive boxes on reinstall, so stale auth tokens and
+  cached AWS credentials came back and image uploads failed until the user
+  cleared storage by hand.
+
+  This app stores auth tokens, prefetched AWS keys and chat caches. None of it
+  should ever leave the device or survive an uninstall.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>
