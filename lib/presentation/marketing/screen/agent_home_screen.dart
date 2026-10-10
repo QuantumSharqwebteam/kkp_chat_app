@@ -37,15 +37,26 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
   ChatRefreshProvider? _chatRefreshProvider;
   VoidCallback? _chatRefreshListener;
 
+  // ─── Logged-in user's identity ─────────────────────────────────────────────
+  // Always read from local storage (written on login, cleared on logout).
+  // AssignedCustomersProvider outlives logout, so its agentName/agentEmail can
+  // still belong to the previously logged-in agent — never use those for
+  // "who am I".
+  String get _currentName {
+    final profileName = LocalDbHelper.getProfile()?.name;
+    if (profileName != null && profileName.isNotEmpty) return profileName;
+    return LocalDbHelper.getName() ?? '';
+  }
+
+  String get _currentEmail => LocalDbHelper.getEmail() ?? '';
+
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // Held in fields so dispose() can actually detach. Previously both the
-      // provider and the closure were locals, so removeListener had nothing to
-      // remove and every mount left another live listener behind.
+      // Held in fields so dispose() can actually detach.
       final chatRefreshProvider =
           Provider.of<ChatRefreshProvider>(context, listen: false);
       _chatRefreshProvider = chatRefreshProvider;
@@ -58,7 +69,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       };
       chatRefreshProvider.addListener(_chatRefreshListener!);
 
-      // ← FIX: fetch notifications for badge count
+      // Reload data for the user who is logged in NOW, so nothing from the
+      // previous session's in-memory state is shown.
+      context.read<AssignedCustomersProvider>().fetchAssignedCustomers();
       Provider.of<MeetingManagement>(context, listen: false).fetchAllMeetings();
     });
   }
@@ -88,6 +101,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
       _chatRefreshProvider?.removeListener(listener);
     }
     _statusSubscription?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -100,15 +114,15 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: CustomDrawer(
-        agentName: provider.agentName,
-        agentEmail: provider.agentEmail,
+        agentName: _currentName,
+        agentEmail: _currentEmail,
         onLogout: logout,
       ),
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            _buildProfileSection(provider.agentName),
+            _buildProfileSection(_currentName),
             Expanded(
               child: Container(
                 padding:
@@ -125,7 +139,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Today's Meetings Section
                                 _buildUpcomingMeetingsSection(
                                     meetingManagement, context),
                                 const SizedBox(height: 15),
@@ -160,7 +173,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     );
   }
 
-  Widget _buildProfileSection(String? name) {
+  Widget _buildProfileSection(String name) {
     final locale = AppLocalizations.of(context)!;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
@@ -168,9 +181,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
         onPressed: () {
           _scaffoldKey.currentState?.openDrawer();
         },
-        icon: Icon(Icons.menu),
+        icon: const Icon(Icons.menu),
       ),
-      title: Text(name ?? "", style: AppTextStyles.black16_500),
+      title: Text(name, style: AppTextStyles.black16_500),
       subtitle:
           Text(locale.findLatestMessages, style: AppTextStyles.black10_500),
       trailing: Row(
@@ -184,7 +197,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
             ),
             icon: const Icon(Icons.call_outlined, color: Colors.black),
           ),
-          // ← FIX: notification icon with unread badge using Consumer
           Consumer<NotificationProvider>(
             builder: (context, notifProvider, _) {
               final unreadCount = notifProvider.notifications
@@ -196,8 +208,6 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     context,
                     MarketingRoutes.marketingNotifications,
                   ).then((_) {
-                    // Cache-first: markAsRead/markAllRead already updated the
-                    // shared list, so the badge is correct without refetching.
                     notifProvider.ensureLoaded();
                   });
                 },
@@ -288,8 +298,10 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                             navigatorKey: navigatorKey,
                             customerName: name,
                             customerEmail: email,
-                            agentEmail: provider.agentEmail,
-                            agentName: provider.agentName,
+                            // Logged-in user's identity, not the provider's
+                            // possibly stale values.
+                            agentEmail: _currentEmail,
+                            agentName: _currentName,
                             isAccountDeleted: isAccountDeleted,
                             canMessage: canMessage,
                           ),
@@ -354,7 +366,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => MeetingsListScreen(
-                      email: LocalDbHelper.getEmail()!,
+                      email: _currentEmail,
                     ),
                   ),
                 );

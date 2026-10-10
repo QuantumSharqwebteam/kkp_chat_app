@@ -414,162 +414,103 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Remove member from group
-  Future<bool> removeMember({
-    required String groupId,
-    required String email,
-  }) async {
-    _state = GroupState.loading;
-    notifyListeners();
-    // Resolved before the call — fetchAllGroups() below replaces _groups.
+  /// Remove member from group — no loading state, no full refresh.
+  Future<bool> removeMember(
+      {required String groupId, required String email}) async {
     final label = _label(groupId);
     try {
-      final response = await _groupService.removeMember(
-        groupId: groupId,
-        email: email,
-      );
+      final response =
+          await _groupService.removeMember(groupId: groupId, email: email);
       if (response.success) {
         _logger.logGeneral('✅ Member removed: $email from $label');
-        await fetchAllGroups(forceRefresh: true);
-        _state = GroupState.success;
-        notifyListeners();
+        // Background sync — keeps cache fresh without blocking UI.
+        _fetchAllGroupsInBackground();
         return true;
-      } else {
-        _errorMessage = response.message;
-        _logger.logGeneral(
-          '❌ Failed to remove member $email from $label: ${response.message}',
-          level: LogLevel.error,
-        );
-        _state = GroupState.error;
-        notifyListeners();
-        return false;
       }
+      _errorMessage = response.message;
+      _logger.logGeneral(
+          '❌ Failed to remove member $email from $label: ${response.message}',
+          level: LogLevel.error);
+      return false;
     } catch (e, s) {
       _errorMessage = 'Failed to remove member: $e';
       _logger.error('GROUP_PROVIDER', 'removeMember failed: $email from $label',
           error: e, stackTrace: s);
-      _state = GroupState.error;
-      notifyListeners();
       return false;
     }
   }
 
-  /// Add member to group
-  Future<bool> addMember({
-    required String groupId,
-    required String email,
-  }) async {
-    _state = GroupState.loading;
-    notifyListeners();
-    // Resolved before the call — fetchAllGroups() below replaces _groups.
+  /// Add member to group — no loading state, no full refresh.
+  Future<bool> addMember(
+      {required String groupId, required String email}) async {
     final label = _label(groupId);
     try {
-      final response = await _groupService.addMember(
-        groupId: groupId,
-        email: email,
-      );
+      final response =
+          await _groupService.addMember(groupId: groupId, email: email);
       if (response.success) {
         _logger.logGeneral('✅ Member added: $email to $label');
-        await fetchAllGroups(forceRefresh: true);
-        _state = GroupState.success;
-        notifyListeners();
+        _fetchAllGroupsInBackground();
         return true;
-      } else {
-        _errorMessage = response.message;
-        _logger.logGeneral(
-          '❌ Failed to add member $email to $label: ${response.message}',
-          level: LogLevel.error,
-        );
-        _state = GroupState.error;
-        notifyListeners();
-        return false;
       }
+      _errorMessage = response.message;
+      _logger.logGeneral(
+          '❌ Failed to add member $email to $label: ${response.message}',
+          level: LogLevel.error);
+      return false;
     } catch (e, s) {
       _errorMessage = 'Failed to add member: $e';
       _logger.error('GROUP_PROVIDER', 'addMember failed: $email to $label',
           error: e, stackTrace: s);
-      _state = GroupState.error;
-      notifyListeners();
       return false;
     }
   }
 
-  /// Add admin to group
-  Future<bool> addAdmin({
-    required String groupId,
-    required String email,
-  }) async {
-    _state = GroupState.loading;
-    notifyListeners();
-    // Resolved before the call — fetchAllGroups() below replaces _groups.
+  /// Add admin to group — no loading state, no full refresh.
+  Future<bool> addAdmin(
+      {required String groupId, required String email}) async {
     final label = _label(groupId);
     try {
-      final response = await _groupService.addAdmin(
-        groupId: groupId,
-        email: email,
-      );
+      final response =
+          await _groupService.addAdmin(groupId: groupId, email: email);
       if (response.success) {
         _logger.logGeneral('✅ Admin added: $email in $label');
-        await fetchAllGroups(forceRefresh: true);
-        _state = GroupState.success;
-        notifyListeners();
+        _fetchAllGroupsInBackground();
         return true;
-      } else {
-        _errorMessage = response.message;
-        _logger.logGeneral(
-          '❌ Failed to add admin $email in $label: ${response.message}',
-          level: LogLevel.error,
-        );
-        _state = GroupState.error;
-        notifyListeners();
-        return false;
       }
+      _errorMessage = response.message;
+      _logger.logGeneral(
+          '❌ Failed to add admin $email in $label: ${response.message}',
+          level: LogLevel.error);
+      return false;
     } catch (e, s) {
       _errorMessage = 'Failed to add admin: $e';
       _logger.error('GROUP_PROVIDER', 'addAdmin failed: $email in $label',
           error: e, stackTrace: s);
-      _state = GroupState.error;
-      notifyListeners();
       return false;
     }
   }
 
-  /// Remove admin from group
-  Future<bool> removeAdmin({
-    required String groupId,
-    required String email,
-  }) async {
-    _state = GroupState.loading;
-    notifyListeners();
-    // Resolved before the call — fetchAllGroups() below replaces _groups.
+  /// Remove admin from group — no loading state, no full refresh.
+  Future<bool> removeAdmin(
+      {required String groupId, required String email}) async {
     final label = _label(groupId);
     try {
-      final response = await _groupService.removeAdmin(
-        groupId: groupId,
-        email: email,
-      );
+      final response =
+          await _groupService.removeAdmin(groupId: groupId, email: email);
       if (response.success) {
         _logger.logGeneral('✅ Admin removed: $email in $label');
-        await fetchAllGroups(forceRefresh: true);
-        _state = GroupState.success;
-        notifyListeners();
+        _fetchAllGroupsInBackground();
         return true;
-      } else {
-        _errorMessage = response.message;
-        _logger.logGeneral(
-          '❌ Failed to remove admin $email in $label: ${response.message}',
-          level: LogLevel.error,
-        );
-        _state = GroupState.error;
-        notifyListeners();
-        return false;
       }
+      _errorMessage = response.message;
+      _logger.logGeneral(
+          '❌ Failed to remove admin $email in $label: ${response.message}',
+          level: LogLevel.error);
+      return false;
     } catch (e, s) {
       _errorMessage = 'Failed to remove admin: $e';
       _logger.error('GROUP_PROVIDER', 'removeAdmin failed: $email in $label',
           error: e, stackTrace: s);
-      _state = GroupState.error;
-      notifyListeners();
       return false;
     }
   }

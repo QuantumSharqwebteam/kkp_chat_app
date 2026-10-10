@@ -34,20 +34,25 @@ class SocketService with WidgetsBindingObserver {
   late io.Socket _socket;
   bool _isConnected = false;
   bool get isConnected => _isConnected;
+
+  /// Logged-in user's email. Used by CallProvider as a fallback caller ID so
+  /// call logs are always saved with the correct sender.
+  String? get currentUserEmail => _currentUserEmail;
+
   final String serverUrl = dotenv.env["SOCKET_IO_URL"]!;
   final ChatStorageService _chatStorageService = ChatStorageService();
-  // int _reconnectAttempts = 0;
-  // final int _maxReconnectAttempts = 5;
-  // final Duration _reconnectInterval = const Duration(seconds: 3);
   Function(Map<String, dynamic>)? _onMessageReceived;
   Function(String)? _onMessageDeleted;
   Function(Map<String, dynamic>)? _onIncomingCall;
-  // Function(Map<String, dynamic>)? _onCallAnswered;
   final List<Function(Map<String, dynamic>)> _onCallTerminatedListeners = [];
-  // Function? _onDisconnect;
   Function? _onConnect;
   Function(Map<String, dynamic>)? _onChatStatus;
   Function(Map<String, dynamic>)? _onMessagesReadUpTo;
+
+  /// Fired when a call log's final status/duration becomes known (either from
+  /// the server or from the local CallProvider). The open chat page should
+  /// patch its in-memory message with the same callId / _id.
+  final List<Function(Map<String, dynamic>)> _callLogListeners = [];
 
   Function(Map<String, dynamic>)? _onProductAdd;
   Function(Map<String, dynamic>)? _onProductUpdate;
@@ -78,10 +83,67 @@ class SocketService with WidgetsBindingObserver {
 
   List<String> get onlineUsers => List.from(_roomMembers);
 
-  // Use the shared plugin instance from NotificationService to ensure
-  // it's initialized once at app start and usable across services.
+  // ── Notification-list refresh signal ──────────────────────────────────────
+
+  /// Tells NotificationProvider that the server-side notification list may
+  /// have changed (incoming call, call ended/missed, new message, app resumed).
+  /// Static and never closed: it lives as long as the app, like the singleton,
+  /// and survives socket dispose/re-init on logout/login.
+  static final StreamController<String> _notificationEvents =
+      StreamController<String>.broadcast();
+
+  static Stream<String> get notificationEvents => _notificationEvents.stream;
+
+  static void _pingNotifications(String reason) {
+    if (!_notificationEvents.isClosed) _notificationEvents.add(reason);
+  }
 
   SocketService._internal();
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  static String? _str(dynamic v) {
+    final s = v?.toString().trim();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
+  /// Sender of a socket payload. For call logs the caller is the sender,
+  /// and some servers send it only as `callerId`.
+  static String? _payloadSender(Map data) {
+    if (_str(data['type']) == 'call') {
+      return _str(data['callerId']) ?? _str(data['senderId']);
+    }
+    return _str(data['senderId']) ?? _str(data['callerId']);
+  }
+
+  static String _callPreview(dynamic status) {
+    switch (_str(status)) {
+      case 'answered':
+        return 'Call ended';
+      case 'not answered':
+        return 'Not answered';
+      case 'missed':
+        return 'Missed call';
+      default:
+        return 'Call';
+    }
+  }
+
+  /// Final statuses outrank the placeholder the server writes while ringing.
+  /// Used so a stale "missed" never overwrites an "answered" log.
+  static int _callStatusRank(String? status) {
+    switch (status) {
+      case 'answered':
+        return 3;
+      case 'not answered':
+      case 'declined':
+        return 2;
+      case 'missed':
+        return 1;
+      default:
+        return 0;
+    }
+  }
 
   ({String formId, num rate})? _extractRateUpdateInfo(String? messageText) {
     if (messageText == null || messageText.isEmpty) return null;
@@ -165,6 +227,135 @@ class SocketService with WidgetsBindingObserver {
     }
   }
 
+  // ── Call log status sync ──────────────────────────────────────────────────
+
+  /// Patch a cached call log with its final status/duration.
+  ///
+  /// Call this from CallProvider when a call ends on THIS device (agent or
+  /// customer), passing the other party's email as [peerEmail]. It is also
+  /// invoked automatically for server `callLogUpdated` / `callTerminated`
+  /// events that carry a `callStatus`.
+  ///
+  /// A lower-ranked status never overwrites a higher one, so the server's
+  /// ringing-time "missed" placeholder can't clobber "answered".
+  Future<void> patchCallLog({
+    required String callId,
+    required String peerEmail,
+    required String callStatus,
+    String? callDuration,
+    String? logId,
+  }) async {
+    final me = _currentUserEmail;
+    if (me == null || me.isEmpty || peerEmail.isEmpty) return;
+
+    try {
+      final userType = await LocalDbHelper.getUserType();
+      // Same box naming as _chatNotification:
+      //   customer → own email, agent → agentEmail + customerEmail
+      final boxName = userType == "0" ? me : '$me$peerEmail';
+
+      final cached = await _chatStorageService.getMessages(boxName,
+          page: 1, limit: 100000);
+      bool updated = false;
+
+      for (final msg in cached) {
+        final sameCall = msg.callId != null && msg.callId == callId;
+        final sameLog = logId != null && msg.messageId == logId;
+        if (!sameCall && !sameLog) continue;
+
+        if (_callStatusRank(msg.callStatus) > _callStatusRank(callStatus)) {
+          continue; // never downgrade answered → missed
+        }
+
+        msg.callStatus = callStatus;
+        if (callDuration != null && callDuration.isNotEmpty) {
+          msg.callDuration = callDuration;
+        }
+        msg.callId ??= callId;
+        await _chatStorageService.saveMessage(msg, boxName);
+        updated = true;
+      }
+
+      debugPrint('📞 [CallLog] patch callId=$callId status=$callStatus '
+          'duration=$callDuration box=$boxName updated=$updated');
+
+      if (updated && userType != "0") {
+        updateLastMessage(peerEmail, _callPreview(callStatus));
+      }
+
+      // Let the open chat page update its in-memory list too.
+      final update = <String, dynamic>{
+        'callId': callId,
+        if (logId != null) '_id': logId,
+        'callStatus': callStatus,
+        if (callDuration != null) 'callDuration': callDuration,
+        'peerEmail': peerEmail,
+      };
+      for (final l
+          in List<Function(Map<String, dynamic>)>.from(_callLogListeners)) {
+        l(update);
+      }
+      if (updated) onMessageReceivedCallback?.call();
+    } catch (e) {
+      debugPrint('❌ [CallLog] patch failed: $e');
+    }
+  }
+
+  /// Backup "caller cancelled" signal. If a call log for [data]'s callId
+  /// arrives with a final NOT-answered status, the call is over — so a still
+  /// ringing incoming-call UI on this device must be dismissed, even if the
+  /// `callTerminated` event itself was missed (socket reconnecting, etc.).
+  /// "missed" is deliberately excluded: the server writes it as a placeholder
+  /// while the call is still ringing.
+  void _forwardCancelFromCallLog(Map<String, dynamic> data) {
+    if (_str(data['type']) != null && _str(data['type']) != 'call') return;
+    final callId = _str(data['callId']);
+    final status = _str(data['callStatus']);
+    if (callId == null) return;
+    if (status != 'not answered' && status != 'declined') return;
+
+    final payload = <String, dynamic>{
+      'callId': callId,
+      if (_str(data['channelName']) != null)
+        'channelName': _str(data['channelName']),
+      'source': 'callLog',
+    };
+    for (final listener in List<Function(Map<String, dynamic>)>.from(
+        _onCallTerminatedListeners)) {
+      listener(payload);
+    }
+  }
+
+  void _handleServerCallLogUpdate(Map<String, dynamic> data) {
+    final callId = _str(data['callId']);
+    final status = _str(data['callStatus']);
+    final me = _currentUserEmail;
+    if (callId == null || status == null || me == null) return;
+
+    final caller = _str(data['callerId']) ?? _str(data['senderId']);
+    final target = _str(data['targetId']);
+    final peer = caller == me ? target : caller;
+    if (peer == null) return;
+
+    patchCallLog(
+      callId: callId,
+      peerEmail: peer,
+      callStatus: status,
+      callDuration: _str(data['callDuration']),
+      logId: _str(data['_id']) ?? _str(data['messageId']),
+    );
+  }
+
+  /// Several screens can listen at once (chat page + history screen).
+  /// Always pair with [offCallLogUpdated] in dispose().
+  void onCallLogUpdated(Function(Map<String, dynamic>) callback) {
+    if (!_callLogListeners.contains(callback)) _callLogListeners.add(callback);
+  }
+
+  void offCallLogUpdated(Function(Map<String, dynamic>) callback) {
+    _callLogListeners.remove(callback);
+  }
+
   void onMessageReceived(Function(Map<String, dynamic>) callback,
       {Function? refreshCallback}) {
     _onMessageReceived = callback;
@@ -173,7 +364,7 @@ class SocketService with WidgetsBindingObserver {
 
   void initSocket(String userName, String userEmail, String role,
       {String? token}) {
-    // ✅ Prevent duplicate socket creation
+    // Prevent duplicate socket creation
     if (_isConnected) {
       debugPrint('⚠️ Socket already connected, skipping init');
       return;
@@ -201,7 +392,6 @@ class SocketService with WidgetsBindingObserver {
     _socket.onConnect((_) {
       _isConnected = true;
       NotificationService.socketIsConnected = true;
-      // _reconnectAttempts = 0;
       debugPrint('✅ Connected to socket server');
       _socket.emit('join', {
         'user': userName,
@@ -209,9 +399,9 @@ class SocketService with WidgetsBindingObserver {
         "role": role,
         "token": token,
       });
-      if (_onConnect != null) {
-        _onConnect?.call(); // Trigger the connect callback
-      }
+      _onConnect?.call();
+      // Events may have been missed while disconnected — resync the list.
+      _pingNotifications('socketConnected');
     });
 
     _socket.on('socketId', (socketId) {
@@ -235,42 +425,57 @@ class SocketService with WidgetsBindingObserver {
 
     _socket.on('receiveMessage', (data) {
       debugPrint('📥 [Socket] receiveMessage: $data');
-      final String senderId = data['senderId'] ?? '';
-      final String targetId = data['targetId'] ?? '';
+      if (data is! Map) return;
+      final payload = Map<String, dynamic>.from(data);
+
+      // New message / call log → server-side notification list changed.
+      _pingNotifications('receiveMessage:${payload['type']}');
+
+      // Call logs may carry the caller only in `callerId`.
+      final String senderId = _payloadSender(payload) ?? '';
+      final String targetId = _str(payload['targetId']) ?? '';
+
+      if (_str(payload['type']) == 'call') _forwardCancelFromCallLog(payload);
 
       if (isChatPageOpen &&
           (activeCustomerId == senderId || activeCustomerId == targetId)) {
-        _onMessageReceived?.call(data);
+        _onMessageReceived?.call(payload);
       } else {
-        if (data is Map) {
-          _applyFormRateUpdateInBackground(Map<String, dynamic>.from(data));
-        }
-        _chatNotification(data);
+        _applyFormRateUpdateInBackground(payload);
+        _chatNotification(payload);
       }
     });
 
     _socket.on('incomingCall', (data) {
       debugPrint('📥 Agora incomingCall: $data');
-      if (_onIncomingCall != null) {
-        // CallOverlayService().startRinging();
-        _onIncomingCall!(data);
-      }
+      _pingNotifications('incomingCall');
+      _onIncomingCall?.call(data);
     });
 
-    // _socket.on('callAnswered', (data) {
-    //   debugPrint('📥 callAnswered: $data');
-    //   _onCallAnswered?.call(data);
-    // });
-
-    // inside SocketService.initSocket after _socket.on('callTerminated' …)
     _socket.on('callTerminated', (data) {
       debugPrint('📥 callTerminated from server: $data');
+      _pingNotifications('callTerminated');
 
       final payload = Map<String, dynamic>.from((data as Map?) ?? const {});
       for (final listener in List<Function(Map<String, dynamic>)>.from(
           _onCallTerminatedListeners)) {
         listener(payload);
       }
+      // If the server includes the final status, sync the cached log.
+      if (_str(payload['callStatus']) != null) {
+        _handleServerCallLogUpdate(payload);
+      }
+    });
+
+    // Server should emit this to BOTH parties once a call's final status and
+    // duration are saved. Harmless if the backend doesn't send it yet.
+    _socket.on('callLogUpdated', (data) {
+      debugPrint('📥 callLogUpdated: $data');
+      if (data is! Map) return;
+      _pingNotifications('callLogUpdated');
+      final payload = Map<String, dynamic>.from(data);
+      _forwardCancelFromCallLog(payload);
+      _handleServerCallLogUpdate(payload);
     });
 
     _socket.on('messageDeleted', (data) {
@@ -278,10 +483,8 @@ class SocketService with WidgetsBindingObserver {
       final messageId = data['messageId'];
 
       if (isChatPageOpen) {
-        // If the chat page is open, call the existing callback
         _onMessageDeleted?.call(messageId);
       } else {
-        // If the chat page is not open, handle the deletion in the background
         _handleBackgroundMessageDeletion(data);
       }
     });
@@ -336,7 +539,6 @@ class SocketService with WidgetsBindingObserver {
       if (isGroupChatPageOpen) {
         _onGroupMessageDeleted?.call(data);
       } else {
-        // Handle in background if needed
         _handleBackgroundGroupMessageDeletion(data);
       }
     });
@@ -346,7 +548,6 @@ class SocketService with WidgetsBindingObserver {
       if (isGroupChatPageOpen) {
         _onGroupMessageEdited?.call(data);
       } else {
-        // Handle in background if needed
         _handleBackgroundGroupMessageEdit(data);
       }
     });
@@ -360,20 +561,10 @@ class SocketService with WidgetsBindingObserver {
             "⏳ Saved last seen for $email: ${DateTime.now().toIso8601String()}");
       }
       debugPrint('⚠️ Disconnected from socket server');
-      // _attemptReconnect(userName, userEmail, role);
     });
-
-    // _socket.onError((error) {
-    //   debugPrint('❌ Socket Error: $error');
-    //   _attemptReconnect(userName, userEmail, role);
-    // });
 
     _socket.connect();
   }
-
-  // void onDisconnect(Function callback) {
-  //   _onDisconnect = callback;
-  // }
 
   void onConnect(Function callback) {
     _onConnect = callback;
@@ -418,7 +609,6 @@ class SocketService with WidgetsBindingObserver {
     _onGroupMessageReceived = callback;
   }
 
-  // Add these methods to register callbacks
   void onGroupMessageDeleted(Function(Map<String, dynamic>) callback) {
     debugPrint("🔧 [SocketService] Group message deleted callback registered");
     _onGroupMessageDeleted = callback;
@@ -537,7 +727,6 @@ class SocketService with WidgetsBindingObserver {
     }
   }
 
-// Add this method to delete a group message
   void deleteGroupMessage(
       {required String messageId,
       required String senderId,
@@ -557,7 +746,6 @@ class SocketService with WidgetsBindingObserver {
     debugPrint('🗑️ Delete group message event emitted: $messageId');
   }
 
-// Add this method to edit a group message
   void editGroupMessage(
       {required String messageId,
       required String senderId,
@@ -657,7 +845,6 @@ class SocketService with WidgetsBindingObserver {
         customerEmail != null) {
       final lastMessageTimestamp = DateTime.tryParse(lastMessageTimestampStr);
       if (lastMessageTimestamp != null) {
-        // Set the receiver as on the chat page using LocalDbHelper
         LocalDbHelper.saveReceiverOnChatPageStatus(true);
 
         final userType = await LocalDbHelper.getUserType();
@@ -675,8 +862,7 @@ class SocketService with WidgetsBindingObserver {
           debugPrint(
               "✅ Updated customer messages as read up to $lastMessageTimestampStr");
         } else {
-          // Agent
-          // Required from backend
+          // Agent — agentEmail required from backend
           final agentEmail = data['agentEmail'];
           final boxName = '$agentEmail$customerEmail';
           final messages = await ChatStorageService().getMessages(boxName);
@@ -692,7 +878,6 @@ class SocketService with WidgetsBindingObserver {
         }
       }
     } else if (status == 'closed') {
-      // Set the receiver as not on the chat page using LocalDbHelper
       LocalDbHelper.saveReceiverOnChatPageStatus(false);
     }
   }
@@ -719,8 +904,8 @@ class SocketService with WidgetsBindingObserver {
       debugPrint(
           "✅ Updated customer messages as read up to $lastMessageTimestampStr");
     } else {
-      // Agent
-      final agentEmail = data['agentEmail']; // Required from backend
+      // Agent — agentEmail required from backend
+      final agentEmail = data['agentEmail'];
 
       final boxName = '$agentEmail$customerEmail';
       final messages = await ChatStorageService().getMessages(boxName);
@@ -734,9 +919,7 @@ class SocketService with WidgetsBindingObserver {
           "✅ Updated agent messages as read up to $lastMessageTimestampStr in box: $boxName");
     }
 
-    if (onMessageReceivedCallback != null) {
-      onMessageReceivedCallback!(); // Refresh UI if needed
-    }
+    onMessageReceivedCallback?.call();
   }
 
   void _handleBackgroundMessageDeletion(Map<String, dynamic> data) async {
@@ -757,12 +940,10 @@ class SocketService with WidgetsBindingObserver {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
 
-        // Save the updated message state to local storage
         await ChatStorageService().saveMessage(messages[index], targetId);
         debugPrint(
             "Message marked as deleted for customer with ID: $messageId");
 
-        // Verify the message is updated in the storage
         final updatedMessages =
             await ChatStorageService().getCustomerMessages(targetId);
         final updatedIndex = updatedMessages
@@ -779,7 +960,6 @@ class SocketService with WidgetsBindingObserver {
       // For agents, the box name is a combination of targetId and senderId
       String boxName = '$targetId$senderId';
 
-      // Retrieve and update the message in local storage
       final messages = await ChatStorageService().getMessages(boxName);
       final index =
           messages.indexWhere((message) => message.messageId == messageId);
@@ -787,10 +967,8 @@ class SocketService with WidgetsBindingObserver {
         messages[index].isDeleted = true;
         messages[index].message = "This message is deleted";
 
-        // Save the updated message state to local storage
         await ChatStorageService().saveMessage(messages[index], boxName);
 
-        // Update the last message status
         updateLastMessage(senderId, "message deleted");
       }
     }
@@ -852,10 +1030,6 @@ class SocketService with WidgetsBindingObserver {
     _onIncomingCall = callback;
   }
 
-  // void onCallAnswered(Function(Map<String, dynamic>) callback) {
-  //   _onCallAnswered = callback;
-  // }
-
   void onCallTerminated(Function(Map<String, dynamic>) callback) {
     if (!_onCallTerminatedListeners.contains(callback)) {
       _onCallTerminatedListeners.add(callback);
@@ -865,32 +1039,6 @@ class SocketService with WidgetsBindingObserver {
   void offCallTerminated(Function(Map<String, dynamic>) callback) {
     _onCallTerminatedListeners.remove(callback);
   }
-
-  // void _attemptReconnect(String userName, String userEmail, String role) {
-  //   if (!_isConnected && _reconnectAttempts < _maxReconnectAttempts) {
-  //     _reconnectAttempts++;
-  //     debugPrint('🔄 Reconnecting... Attempt $_reconnectAttempts/$_maxReconnectAttempts');
-
-  //     Future.delayed(_reconnectInterval, () {
-  //       if (!_isConnected) {
-  //         _socket.connect();
-  //         _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
-  //       }
-  //     });
-  //   } else {
-  //     debugPrint('🚫 Max reconnection attempts reached or user logged out.');
-  //     if (_onDisconnect != null) {
-  //       _onDisconnect!(); // Trigger the disconnect callback only when max attempts are reached
-  //     }
-  //     // Reset reconnection attempts and reinitialize the socket
-  //     _reconnectAttempts = 0;
-  //     Future.delayed(_reconnectInterval, () {
-  //       debugPrint('🔄 Reinitializing socket connection...');
-  //       _socket.connect();
-  //       _socket.emit('join', {'user': userName, 'userId': userEmail, "role": role});
-  //     });
-  //   }
-  // }
 
   void updateLastMessage(String email, String message) {
     LocalDbHelper.updateLastMessage(email, message);
@@ -932,21 +1080,18 @@ class SocketService with WidgetsBindingObserver {
       if (referenceId != null) messageData['referenceId'] = referenceId;
 
       _socket.emit('sendMessage', messageData);
-      // debugPrint("message sent :${messageData.toString()}");
 
       // Save the last message for the user last chatted
       if (type == "product") {
         updateLastMessage(targetEmail ?? "", "shared product");
       } else if (message != null &&
           message.contains("Your order is confirmed with form Id")) {
-        // Handle order confirmation
         updateLastMessage(targetEmail ?? "", "Order Confirmed");
       } else if (message != null &&
           message.contains("Your order is declined with form Id")) {
-        // Handle order decline
         updateLastMessage(targetEmail ?? "", "Order Declined");
       } else {
-        updateLastMessage(targetEmail ?? "", messageData['message']);
+        updateLastMessage(targetEmail ?? "", message ?? "");
       }
     } else {
       debugPrint('Socket is not connected. Cannot send message.');
@@ -983,18 +1128,15 @@ class SocketService with WidgetsBindingObserver {
 
   void deleteMessage(String messageId, String senderId, [String? targetId]) {
     if (_isConnected) {
-      // Create a map with the required parameters
       Map<String, dynamic> messageData = {
         'messageId': messageId,
         'senderId': senderId,
       };
 
-      // Add targetId to the map if it is provided
       if (targetId != null) {
         messageData['targetId'] = targetId;
       }
 
-      // Emit the deleteMessage event with the constructed map
       _socket.emit('deleteMessage', messageData);
       debugPrint("🗑️ Delete message event emitted: $messageId");
     } else {
@@ -1014,6 +1156,9 @@ class SocketService with WidgetsBindingObserver {
       final payload = {
         'channelName': channelName,
         'callerId': callerId,
+        // Also send as senderId so the backend call log stores the caller
+        // as the sender → correct side after reload.
+        'senderId': callerId,
         'callerName': callerName,
         'callId': callId,
         'timestamp': timestamp,
@@ -1083,6 +1228,11 @@ class SocketService with WidgetsBindingObserver {
   void _onAppResumed() {
     if (Platform.isIOS) _endBackgroundTask();
 
+    // Socket events are lost while the app is backgrounded — resync the
+    // notification list so calls received meanwhile show up without a
+    // manual refresh.
+    _pingNotifications('appResumed');
+
     if (!_isConnected) {
       _pendingRejoin = false;
       debugPrint('[SocketService] Resumed — socket dead, reconnecting...');
@@ -1139,6 +1289,8 @@ class SocketService with WidgetsBindingObserver {
       WidgetsBinding.instance.removeObserver(this);
       _observerRegistered = false;
     }
+    // NOTE: _notificationEvents is intentionally NOT closed here — it is
+    // static and NotificationProvider stays subscribed across logout/login.
     if (_isConnected) {
       _socket.clearListeners();
       _statusController.close();
@@ -1147,7 +1299,6 @@ class SocketService with WidgetsBindingObserver {
       debugPrint('🛑🛑 Socket service disposed completely');
     } else {
       _socket.clearListeners();
-      //   _reconnectAttempts = _maxReconnectAttempts;
       debugPrint('🛑 🛑 Socket disposed finally ');
     }
   }
@@ -1155,45 +1306,59 @@ class SocketService with WidgetsBindingObserver {
   Future<void> _chatNotification(Map<String, dynamic> data) async {
     debugPrint(
         '🔔 [Socket] Chat notification (user not on chat screen): $data');
+
+    final bool isCall = _str(data['type']) == 'call';
+    final String? senderKey = _payloadSender(data);
+    final String? targetKey = _str(data['targetId']);
+
     debugPrint(
       '🧭 [CustomerChatTrace][Socket] notification:start '
-      'sender=${data['senderId']} target=${data['targetId']} '
-      'messageId=${data['messageId']}',
+      'sender=$senderKey target=$targetKey messageId=${data['messageId']}',
     );
+
+    // Call logs may arrive without `message` and with the caller only in
+    // `callerId` — don't drop them.
     if (!data.containsKey('type') ||
-        !data.containsKey('senderId') ||
-        !data.containsKey('message')) {
+        senderKey == null ||
+        (!isCall && !data.containsKey('message'))) {
       debugPrint('ℹ️ Ignoring non-chat notification: $data');
       return;
     }
 
     final userType = await LocalDbHelper.getUserType();
-    final String notificationMessage = data['type'] == "product"
-        ? "Shared product"
-        : (data['message'] is String
-            ? data['message'] as String
-            : data['message'].toString());
+    final String notificationMessage = isCall
+        ? _callPreview(data['callStatus'])
+        : data['type'] == "product"
+            ? "Shared product"
+            : (data['message']?.toString() ?? '');
 
     // Persist first so opening the chat immediately after a notification reads
     // the new message from Hive instead of briefly showing stale/empty state.
     String chatBoxName = '';
     try {
-      final timestamp = data['timestamp'] != null
-          ? DateTime.parse(data['timestamp'] as String)
-          : DateTime.now();
+      final timestamp =
+          DateTime.tryParse(data['timestamp']?.toString() ?? '') ??
+              DateTime.now();
+      final callerId = _str(data['callerId']);
       final incoming = ChatMessageModel(
         message: data['message']?.toString() ?? '',
-        sender: data['senderId']?.toString(),
-        type: data['type']?.toString() ?? 'text',
+        // For call logs the caller is the sender → correct side on reload.
+        sender: senderKey,
+        callerId: isCall ? (callerId ?? senderKey) : callerId,
+        type: _str(data['type']) ?? 'text',
         timestamp: timestamp,
         mediaUrl: data['mediaUrl']?.toString(),
-        messageId: data['messageId']?.toString() ?? data['_id']?.toString(),
+        callStatus: data['callStatus']?.toString(),
+        callDuration: data['callDuration']?.toString(),
+        callId: data['callId']?.toString(),
+        messageId: data['messageId']?.toString() ??
+            data['_id']?.toString() ??
+            (isCall ? data['callId']?.toString() : null),
         isDeleted: false,
         read: false,
       );
-      chatBoxName = userType == "0"
-          ? data['targetId']?.toString() ?? ''
-          : '${data['targetId']}${data['senderId']}';
+      chatBoxName =
+          userType == "0" ? (targetKey ?? '') : '${targetKey ?? ''}$senderKey';
       debugPrint(
         '🧭 [CustomerChatTrace][Socket] cache:start '
         'userType=$userType box=$chatBoxName messageId=${incoming.messageId}',
@@ -1212,7 +1377,7 @@ class SocketService with WidgetsBindingObserver {
 
     if (userType == "0") {
       // Customer-side notification logic
-      final currentUserEmail = data["targetId"];
+      final currentUserEmail = targetKey;
       final boxNameWithCount = "${currentUserEmail}count";
       final box = await Hive.openBox<int>(boxNameWithCount);
       int count = box.get('count', defaultValue: 0)! + 1;
@@ -1221,40 +1386,22 @@ class SocketService with WidgetsBindingObserver {
         '🧭 [CustomerChatTrace][Socket] unreadCount:updated '
         'box=$boxNameWithCount count=$count',
       );
-      if (onMessageReceivedCallback != null) {
-        debugPrint(
-          '🧭 [CustomerChatTrace][Socket] callback:onMessageReceived:start',
-        );
-        onMessageReceivedCallback!();
-        debugPrint(
-          '🧭 [CustomerChatTrace][Socket] callback:onMessageReceived:done',
-        );
-      }
+      onMessageReceivedCallback?.call();
     } else {
-      // for agent side
-      final senderId = data['senderId']; // AgentEmail
-      final targetId = data['targetId']; // customerEmail
+      // Agent side
+      if (targetKey != null) {
+        await LocalDbHelper.incrementUnreadCount(targetKey, senderKey);
+      }
 
-      // Increment unread count in the dedicated box
-      await LocalDbHelper.incrementUnreadCount(targetId, senderId);
-
-      // // Also update the individual count box for backward compatibility
-      // final boxNameWithCount = "$targetId${senderId}count";
-      // final box = await Hive.openBox<int>(boxNameWithCount);
-      // int count = box.get('count', defaultValue: 0)! + 1;
-      // await box.put('count', count);
-
-      // Update last message
-      if (data['type'] == "product") {
-        updateLastMessage(data["senderId"], "shared product");
+      if (isCall) {
+        updateLastMessage(senderKey, notificationMessage);
+      } else if (data['type'] == "product") {
+        updateLastMessage(senderKey, "shared product");
       } else {
-        updateLastMessage(data['senderId'], data['message']);
+        updateLastMessage(senderKey, data['message']?.toString() ?? '');
       }
 
-      // Notify the provider to update the UI
-      if (onMessageReceivedCallback != null) {
-        onMessageReceivedCallback!();
-      }
+      onMessageReceivedCallback?.call();
     }
 
     const androidDetails = AndroidNotificationDetails(
@@ -1273,10 +1420,10 @@ class SocketService with WidgetsBindingObserver {
         NotificationDetails(android: androidDetails, iOS: iosDetails);
 
     if (userType != "0") {
-      // Agent-side notification logic
+      // Agent-side consolidated notification
       const consolidatedNotificationId = 999;
       final box = await Hive.openBox<int>(
-          '${LocalDbHelper.unreadCountsBoxKey}_${data['targetId']}');
+          '${LocalDbHelper.unreadCountsBoxKey}_$targetKey');
       final totalUnreadMessages =
           box.values.fold<int>(0, (sum, value) => sum + value);
       final usersWithUnread = box.values.where((count) => count > 0).length;
@@ -1285,16 +1432,18 @@ class SocketService with WidgetsBindingObserver {
       String message;
       String payload;
 
-      if (usersWithUnread == 1) {
-        final unreadCount = await LocalDbHelper.getUnreadCount(
-                data['targetId'], data['senderId']) ??
-            0;
+      if (usersWithUnread <= 1) {
+        final unreadCount = targetKey == null
+            ? 0
+            : await LocalDbHelper.getUnreadCount(targetKey, senderKey) ?? 0;
+        final senderName =
+            _str(data['senderName']) ?? _str(data['callerName']) ?? senderKey;
 
         if (unreadCount > 1) {
-          title = "$unreadCount messages from ${data['senderName']}";
+          title = "$unreadCount messages from $senderName";
           message = "You have $unreadCount unread messages";
         } else {
-          title = "New message from ${data['senderName']}";
+          title = "New message from $senderName";
           message = notificationMessage;
         }
 
@@ -1303,7 +1452,7 @@ class SocketService with WidgetsBindingObserver {
         title =
             "$totalUnreadMessages unread messages from $usersWithUnread users";
         message = "You have $totalUnreadMessages unread messages";
-        payload = "general_chat_summary"; // Special payload
+        payload = "general_chat_summary";
       }
 
       await NotificationService.plugin.show(
@@ -1314,8 +1463,8 @@ class SocketService with WidgetsBindingObserver {
         payload: payload,
       );
     } else {
-      final title = "New Message from Agent";
-      final id = 200;
+      const title = "New Message from Agent";
+      const id = 200;
 
       await NotificationService.plugin.show(
         id,
@@ -1337,7 +1486,6 @@ class SocketService with WidgetsBindingObserver {
   }
 
   /// Handles notifications for group messages when the chat is not open
-  /// Handles notifications for group messages when the chat is not open
   Future<void> _groupChatNotification(Map<String, dynamic> data) async {
     debugPrint('🔔 Group Chat Notification: $data');
 
@@ -1353,7 +1501,6 @@ class SocketService with WidgetsBindingObserver {
       return;
     }
 
-    // Null-safe extraction so a partially-formed payload never crashes below.
     final senderName = data['senderName']?.toString() ?? 'Team';
     final type = data['type']?.toString() ?? 'text';
     final rawMessage = data['message']?.toString() ?? '';
@@ -1379,8 +1526,8 @@ class SocketService with WidgetsBindingObserver {
 
     final now = DateTime.now();
 
-    // ── Unread count & last-message persistence ─────────────────────────────
-    // Done BEFORE the notification so a notification failure never blocks badges.
+    // Unread count & last-message persistence — done BEFORE the notification
+    // so a notification failure never blocks badges.
     try {
       await LocalDbHelper.saveGroupLastMessage(groupId, messageContent, now);
       debugPrint('✅ Saved last message for group $groupId: $messageContent');
@@ -1398,11 +1545,11 @@ class SocketService with WidgetsBindingObserver {
       debugPrint('❌ Error incrementing global group chat unread count: $e');
     }
 
-    // Direct in-memory update — no Hive round-trip needed in the provider.
-    debugPrint('🔁 [Socket] groupListCallback registered: ${_onGroupListUpdateCallback != null}');
+    debugPrint(
+        '🔁 [Socket] groupListCallback registered: ${_onGroupListUpdateCallback != null}');
     _onGroupListUpdateCallback?.call(groupId, messageContent, now);
 
-    // ── Push notification ────────────────────────────────────────────────────
+    // Push notification
     try {
       const androidDetails = AndroidNotificationDetails(
         'group_chat_channel_id',
@@ -1446,10 +1593,9 @@ class SocketService with WidgetsBindingObserver {
       return;
     }
 
-    // If payload is a simple control string, handle it before any JSON parsing.
     if (response.payload == "incoming_call") {
       debugPrint("Incoming call notification tapped — opening the app only.");
-      return; // Do nothing else; MarketingHost will show the overlay when socket event arrives
+      return;
     }
 
     if (response.payload == "general_chat_summary") {
@@ -1457,34 +1603,23 @@ class SocketService with WidgetsBindingObserver {
       return;
     }
 
-    // Attempt JSON decode only for payloads that are actual JSON strings.
-    if (response.payload is String) {
-      try {
-        final Map<String, dynamic> notificationData =
-            jsonDecode(response.payload!);
+    try {
+      final Map<String, dynamic> notificationData =
+          jsonDecode(response.payload!);
 
-        // Handle group message notification
-        if (notificationData['isGroupMessage'] == true) {
-          debugPrint("Group message notification tapped");
-          await handleGroupLocalNotificationTap(navigatorKey, notificationData);
-          return;
-        }
-
-        // Regular message notification
-        if ("0" == await LocalDbHelper.getUserType()) {
-          handleNotificationClickForCustomer(navigatorKey, notificationData);
-        } else {
-          handleNotificationClickForAgent(navigatorKey, notificationData);
-        }
-
-        return;
-      } catch (e) {
-        debugPrint("Not a JSON payload or failed to parse payload: $e");
+      if (notificationData['isGroupMessage'] == true) {
+        debugPrint("Group message notification tapped");
+        await handleGroupLocalNotificationTap(navigatorKey, notificationData);
         return;
       }
-    }
 
-    debugPrint(
-        "Unhandled notification payload type: ${response.payload.runtimeType}");
+      if ("0" == await LocalDbHelper.getUserType()) {
+        handleNotificationClickForCustomer(navigatorKey, notificationData);
+      } else {
+        handleNotificationClickForAgent(navigatorKey, notificationData);
+      }
+    } catch (e) {
+      debugPrint("Not a JSON payload or failed to parse payload: $e");
+    }
   }
 }

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_callkit_incoming/entities/entities.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 import 'package:kkpchatapp/core/services/socket_service.dart';
@@ -21,6 +21,22 @@ class CallKitService {
   // physically respond faster than ~800 ms.
   final Map<String, DateTime> _callShowTimestamps = {};
   StreamSubscription? _eventSubscription;
+
+  // Calls the caller has already hung up / cancelled. Used so that:
+  //   • the native incoming-call UI is dismissed as soon as we hear about it
+  //   • a late "Answer" tap on a dead call does NOT join Agora and sit on
+  //     "Ringing..." forever (the bug seen on the agent side).
+  final Set<String> _terminatedCalls = <String>{};
+
+  bool wasTerminated(String callId) => _terminatedCalls.contains(callId);
+
+  void _markTerminated(String callId) {
+    _terminatedCalls.add(callId);
+    // Keep the set small — we only care about recent calls.
+    if (_terminatedCalls.length > 50) {
+      _terminatedCalls.remove(_terminatedCalls.first);
+    }
+  }
 
   // Prevents the circular loop:
   //   CallProvider.endCall → CallKitService.endCall → actionCallEnded → CallProvider.endCall
@@ -101,6 +117,43 @@ class CallKitService {
     }
   }
 
+  /// The CALLER hung up / cancelled / timed out while this device was still
+  /// showing the incoming-call UI (or before the user's Answer was processed).
+  ///
+  /// [fromCallLog] = the signal came from a "not answered" call log rather
+  /// than a real `callTerminated` event. Those are ignored for the first few
+  /// seconds after the call is shown so a server placeholder log written at
+  /// ring time can never kill a live incoming call.
+  Future<void> dismissCancelledCall(String callId,
+      {bool fromCallLog = false}) async {
+    if (fromCallLog) {
+      final shownAt = _callShowTimestamps[callId];
+      if (shownAt != null &&
+          DateTime.now().difference(shownAt) < const Duration(seconds: 3)) {
+        debugPrint(
+            'CallKitService: ignoring early call-log cancel for $callId');
+        return;
+      }
+    }
+
+    _markTerminated(callId);
+    final wasPending = _pendingCalls.remove(callId) != null;
+    _callShowTimestamps.remove(callId);
+
+    debugPrint('📴 [CallKit] caller cancelled $callId '
+        '(pending=$wasPending, fromCallLog=$fromCallLog) — dismissing UI');
+
+    _endingFromProvider = true;
+    try {
+      // Safe to call even if the id is unknown / already ended.
+      await FlutterCallkitIncoming.endCall(callId);
+    } catch (e) {
+      debugPrint('CallKitService.dismissCancelledCall error: $e');
+    } finally {
+      _endingFromProvider = false;
+    }
+  }
+
   Future<void> endAllCalls() async {
     _pendingCalls.clear();
     _callShowTimestamps.clear();
@@ -175,7 +228,8 @@ class CallKitService {
     final context = navigatorKey.currentContext;
     if (context == null) return;
 
-    debugPrint('🔥 [CallKit] Incoming — pre-warming Agora for channel $channelName');
+    debugPrint(
+        '🔥 [CallKit] Incoming — pre-warming Agora for channel $channelName');
     // ignore: use_build_context_synchronously
     final callProvider = Provider.of<CallProvider>(context, listen: false);
     await callProvider.preWarm(channelName: channelName, uid: uid);
@@ -207,6 +261,16 @@ class CallKitService {
     while (!isAppInitialized && attempts < 80) {
       await Future.delayed(const Duration(milliseconds: 100));
       attempts++;
+    }
+
+    // The caller may have hung up while the banner was still showing, or while
+    // we were waiting for the app to start. Don't join a dead call.
+    if (wasTerminated(callId)) {
+      debugPrint(
+          'CallKitService: accept ignored — caller already ended $callId');
+      await endCall(callId);
+      _showCallEndedMessage();
+      return;
     }
 
     final context = navigatorKey.currentContext;
@@ -256,8 +320,10 @@ class CallKitService {
       debugPrint('CallKitService.decline updateCallData error: $e');
     }
 
-    if (callerId != null && callerId.isNotEmpty &&
-        channelName != null && channelName.isNotEmpty) {
+    if (callerId != null &&
+        callerId.isNotEmpty &&
+        channelName != null &&
+        channelName.isNotEmpty) {
       try {
         SocketService(navigatorKey).terminateCall(
           targetId: callerId,
@@ -291,6 +357,14 @@ class CallKitService {
     }
   }
 
+  void _showCallEndedMessage() {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(content: Text('Call ended by caller')),
+    );
+  }
+
   // Called when the OS ends a call that our app already accepted (e.g. user
   // swipes away the iOS in-call green bar while on AgoraAudioCallScreen).
   Future<void> _endActiveAgoraCallIfRunning() async {
@@ -319,8 +393,7 @@ class CallKitService {
       bool restoredAny = false;
       for (final call in calls) {
         final callMap = (call as Map).cast<String, dynamic>();
-        final callId =
-            callMap['id']?.toString() ?? callMap['uuid']?.toString();
+        final callId = callMap['id']?.toString() ?? callMap['uuid']?.toString();
         if (callId == null) continue;
 
         final isAccepted =
@@ -346,8 +419,7 @@ class CallKitService {
         // uid=0 happens when the FCM background handler couldn't compute the
         // real uid — treat it as stale and end the call.
         if (uid == null || uid <= 0 || channelName.isEmpty) {
-          debugPrint(
-              'CallKitService: clearing invalid accepted call $callId '
+          debugPrint('CallKitService: clearing invalid accepted call $callId '
               '(uid=$uid, channel="$channelName") — prevents Agora memory leak');
           await FlutterCallkitIncoming.endCall(callId);
           continue;

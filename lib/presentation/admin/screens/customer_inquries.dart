@@ -93,6 +93,105 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     return DateFormat('h:mm a').format(parsed); // e.g., "3:45 PM"
   }
 
+  /// Removes the minus sign from any negative number in a value so quantity
+  /// and rate always display as positive.
+  ///   "-500"      → "500"
+  ///   "-500 m"    → "500 m"
+  ///   "Rs -120.5" → "Rs 120.5"
+  ///   "- 45"      → "45"
+  /// A hyphen between two numbers (a range such as "100-200") is kept, because
+  /// it is preceded by a digit rather than being a sign.
+  String _positive(String value) {
+    return value.replaceAll(RegExp(r'(?<![\w.])-\s*(?=\d)'), '');
+  }
+
+  // ─── Packed-field parsing ─────────────────────────────────────────────────
+
+  /// Matches a field label followed by a separator (":", "=", or " - ").
+  /// `\b` stops a key matching inside a longer word (e.g. "rate" in
+  /// "accurate"). Aliases such as "count", "fabric quality", "qty" and "price"
+  /// map onto the canonical keys in [_canonicalKey].
+  static final _fieldKeyPattern = RegExp(
+    r'\b(buyer\s*name|buyer|fabric\s*quality|quality|count|weave|quantity|qty|composition|rate|price)\s*(?:[:=]|-\s)',
+    caseSensitive: false,
+  );
+
+  String _canonicalKey(String name) {
+    final n = name.toLowerCase();
+    if (n.startsWith('buyer')) return 'buyer';
+    if (n.contains('quality') || n == 'count') return 'quality';
+    if (n == 'qty') return 'quantity';
+    if (n == 'price') return 'rate';
+    return n;
+  }
+
+  /// Trims whitespace and stray separators from both ends of a value.
+  String _clean(String s) => s.replaceAll(RegExp(r'^[\s,;|]+|[\s,;|]+$'), '');
+
+  /// Some customer messages arrive with every field packed into `quality`, e.g.
+  /// "buyer name : karan testing , Quality : 60s , weave : banaras".
+  /// This splits that string back into separate fields. A dedicated field that
+  /// already has a value wins over the packed one.
+  ///
+  /// If quality is still empty after parsing, any text that appears BEFORE the
+  /// first "key :" is used as the quality — previously that text was dropped,
+  /// which is why Quality showed N/A.
+  Map<String, String> _fields(FormDataModel inquiry) {
+    final fields = <String, String>{
+      'buyer': inquiry.buyerName,
+      'quality': inquiry.quality,
+      'weave': inquiry.weave,
+      'quantity': inquiry.quantity,
+      'composition': inquiry.composition,
+      'rate': inquiry.rate,
+    };
+
+    final raw = inquiry.quality;
+    final matches = _fieldKeyPattern.allMatches(raw).toList();
+
+    // Only unpack when the quality string actually holds packed keys.
+    if (matches.isNotEmpty) {
+      // The packed string itself isn't a real quality value.
+      fields['quality'] = '';
+
+      for (var i = 0; i < matches.length; i++) {
+        final m = matches[i];
+        final end = i + 1 < matches.length ? matches[i + 1].start : raw.length;
+        final value = _clean(raw.substring(m.end, end));
+        final key = _canonicalKey(m.group(1)!);
+        if (value.isNotEmpty && fields[key]!.trim().isEmpty) {
+          fields[key] = value;
+        }
+      }
+
+      // Recover leading text that sits before the first key.
+      if (fields['quality']!.trim().isEmpty) {
+        final lead = _clean(raw.substring(0, matches.first.start));
+        if (lead.isNotEmpty) fields['quality'] = lead;
+      }
+    }
+
+    // Backend merges quality into composition as "quality / composition",
+    // e.g. "100% linen / 100% cotton" → quality "100% linen",
+    // composition "100% cotton". Same rule the agent Inquiry forms screen
+    // uses, so both screens show identical values.
+    if (fields['quality']!.trim().isEmpty) {
+      final parts = fields['composition']!.split(RegExp(r'\s+/\s+'));
+      if (parts.length == 2) {
+        fields['quality'] = parts[0].trim();
+        fields['composition'] = parts[1].trim();
+      }
+    }
+
+    // Strip leftover separators such as "---10% cotton" → "10% cotton".
+    fields
+        .updateAll((_, v) => _clean(v.replaceAll(RegExp(r'^[\s:=\-–—]+'), '')));
+
+    return fields;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+
   void toggleShowFilters() {
     setState(() {
       showFilters = !showFilters;
@@ -116,6 +215,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
 
       sheet.appendRow([
         TextCellValue('Date'),
+        TextCellValue('Buyer'),
         TextCellValue('Quality'),
         TextCellValue('Weave'),
         TextCellValue('Quantity'),
@@ -130,13 +230,15 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
       ]);
 
       for (var inquiry in inquiries) {
+        final f = _fields(inquiry);
         sheet.appendRow([
           TextCellValue(_getFormattedDate(inquiry.date)),
-          TextCellValue(inquiry.quality),
-          TextCellValue(inquiry.weave),
-          TextCellValue(inquiry.quantity),
-          TextCellValue(inquiry.composition),
-          TextCellValue(inquiry.rate),
+          TextCellValue(f['buyer']!),
+          TextCellValue(f['quality']!),
+          TextCellValue(f['weave']!),
+          TextCellValue(_positive(f['quantity']!)),
+          TextCellValue(f['composition']!),
+          TextCellValue(_positive(f['rate']!)),
           TextCellValue(inquiry.agentName),
           TextCellValue(inquiry.customerName),
           TextCellValue(inquiry.reason),
@@ -164,14 +266,14 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
         debugPrint("⚠️ Could not open Excel file: ${result.message}");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Unable to open the file')),
+            const SnackBar(content: Text('Unable to open the file')),
           );
         }
       }
     } catch (e) {
       debugPrint('Excel generation error: $e');
     } finally {
-      setState(() => isDownloading = false);
+      if (mounted) setState(() => isDownloading = false);
     }
   }
 
@@ -186,12 +288,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
             backgroundColor: AppColors.background,
             title: Text(AppLocalizations.of(context)!.customerInquiries),
             actions: [
-              // Refresh button
-              // if (hasInquiries)
-              //   IconButton(
-              //     onPressed: () => provider.refreshInquiries(),
-              //     icon: const Icon(Icons.refresh),
-              //   ),
               if (hasInquiries && !provider.isLoading)
                 Padding(
                   padding: const EdgeInsets.only(right: 10),
@@ -337,11 +433,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   Widget _buildInquiryList() {
     final inquiries = _inquiryProvider.inquiries;
 
-    if (!_inquiryProvider.hasAnyInquiries) {
-      return const Center(child: EmptyInquriesWidget());
-    }
-
-    if (inquiries.isEmpty) {
+    if (!_inquiryProvider.hasAnyInquiries || inquiries.isEmpty) {
       return const Center(child: EmptyInquriesWidget());
     }
 
@@ -359,11 +451,13 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   Widget _buildInquiryCard(FormDataModel inquiry) {
+    final f = _fields(inquiry);
     final hasReason = inquiry.reason.trim().isNotEmpty;
     final summaryChips = <MapEntry<String, String>>[
-      MapEntry('Buyer', inquiry.buyerName),
-      MapEntry('Quantity', inquiry.quantity),
-      MapEntry('Rate', inquiry.rate),
+      MapEntry('Buyer', f['buyer']!),
+      MapEntry('Quality', f['quality']!),
+      MapEntry('Quantity', _positive(f['quantity']!)),
+      MapEntry('Rate', _positive(f['rate']!)),
     ].where((entry) => entry.value.trim().isNotEmpty).toList();
 
     return Padding(
@@ -436,10 +530,10 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (inquiry.buyerName.trim().isNotEmpty) ...[
+                          if (f['buyer']!.trim().isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Text(
-                              'Buyer: ${inquiry.buyerName}',
+                              'Buyer: ${f['buyer']}',
                               style: AppTextStyles.black12_400.copyWith(
                                   fontSize: 14, color: Colors.black45),
                               maxLines: 1,
@@ -457,9 +551,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                           style: AppTextStyles.black12_400
                               .copyWith(color: Colors.black45),
                         ),
-                        const SizedBox(
-                          height: 8,
-                        ),
+                        const SizedBox(height: 8),
                         Container(
                           margin: const EdgeInsets.only(top: 4),
                           padding: const EdgeInsets.symmetric(
@@ -479,8 +571,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                       ],
                     ),
                     const SizedBox(width: 4),
-                    // The whole card is tappable to expand, but nothing said
-                    // so. The chevron rotates to reflect the current state.
                     AnimatedRotation(
                       duration: const Duration(milliseconds: 200),
                       turns: (expandedStates[inquiry.id] ?? false) ? 0.5 : 0,
@@ -509,7 +599,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
                 ],
                 if (expandedStates[inquiry.id] ?? false) ...[
                   const SizedBox(height: 12),
-                  _buildInquiryDetails(inquiry),
+                  _buildInquiryDetails(inquiry, f),
                 ]
               ],
             ),
@@ -519,7 +609,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
     );
   }
 
-  Widget _buildInquiryDetails(FormDataModel inquiry) {
+  Widget _buildInquiryDetails(FormDataModel inquiry, Map<String, String> f) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -540,17 +630,12 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Buyer leads the list: it identifies the order, and it was
-              // previously missing here entirely — the only place it appeared
-              // was a summary chip that is filtered out whenever the value is
-              // blank, which is every row while the backend returns the
-              // "Unknown Buyer" placeholder.
-              _buildDetailRow('Buyer', inquiry.buyerName),
-              _buildDetailRow('Quality', inquiry.quality),
-              _buildDetailRow('Weave', inquiry.weave),
-              _buildDetailRow('Quantity', inquiry.quantity),
-              _buildDetailRow('Composition', inquiry.composition),
-              _buildDetailRow('Rate', inquiry.rate),
+              _buildDetailRow('Buyer', f['buyer']!),
+              _buildDetailRow('Quality', f['quality']!),
+              _buildDetailRow('Weave', f['weave']!),
+              _buildDetailRow('Quantity', _positive(f['quantity']!)),
+              _buildDetailRow('Composition', f['composition']!),
+              _buildDetailRow('Rate', _positive(f['rate']!)),
               if (inquiry.reason.trim().isNotEmpty)
                 _buildDetailRow('Reason', inquiry.reason),
             ],
@@ -643,9 +728,7 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
   }
 
   /// Label on the left, value on the right — the label column is fixed width so
-  /// every row in a card lines up instead of each value starting at a different
-  /// x-offset. Long values wrap within their own column rather than pushing the
-  /// label around.
+  /// every row in a card lines up. Long values wrap within their own column.
   Widget _buildDetailRow(String label, String value) {
     final isEmpty = value.trim().isEmpty;
 
@@ -672,9 +755,6 @@ class _CustomerInquiriesPageState extends State<CustomerInquiriesPage>
               overflow: TextOverflow.visible,
               textAlign: TextAlign.right,
               style: AppTextStyles.black14_600.copyWith(
-                // Missing values stay muted so a real value reads as the
-                // emphasised one. The old style asked for weight 600 and then
-                // overrode it to w100, so nothing was emphasised at all.
                 color: isEmpty ? Colors.grey.shade400 : const Color(0xFF0F172A),
                 fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
                 fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,

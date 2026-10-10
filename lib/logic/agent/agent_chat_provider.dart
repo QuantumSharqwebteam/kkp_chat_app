@@ -5,10 +5,12 @@ import 'package:flutter/rendering.dart';
 import 'package:hive/hive.dart';
 import 'package:kkpchatapp/core/services/chat_storage_service.dart';
 import 'package:kkpchatapp/core/services/connectivity_service.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
+import 'package:kkpchatapp/main.dart';
 
 /// Owns all message state for the agent chat screen.
 ///
@@ -20,6 +22,12 @@ import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 /// Notifying listeners only when messages actually change means the ListView
 /// rebuilds in isolation — scroll events and date-header visibility never
 /// trigger a full-screen rebuild.
+///
+/// Call logs: the server writes a call as "missed" while it rings and only
+/// later overwrites it with "answered" + duration. Every path that sees the
+/// same callId twice (cache, API, socket, local CallProvider bubble) MERGES
+/// into the one loaded bubble, and a status can only move up:
+///   unknown < missed < not answered/declined < answered
 class AgentChatProvider extends ChangeNotifier {
   final String agentEmail;
   final String customerEmail;
@@ -31,8 +39,16 @@ class AgentChatProvider extends ChangeNotifier {
   static const int _bottomScrollSettleTicks = 8;
   static const int _bottomScrollMaxTicks = 120;
 
+  /// While a recent call still shows the ringing placeholder, re-sync a few
+  /// times so the caller's final "answered" write is picked up without the
+  /// user leaving and re-opening the chat.
+  static const Duration _callRecheckDelay = Duration(seconds: 3);
+  static const int _maxCallRechecks = 5;
+  static const Duration _recentCallWindow = Duration(minutes: 3);
+
   final ChatStorageService _storage = ChatStorageService();
   final ChatRepository _repo = ChatRepository();
+  final SocketService _socket = SocketService(navigatorKey);
   final ScrollController scrollController = ScrollController();
   final ValueNotifier<bool> isAtBottom = ValueNotifier(true);
 
@@ -62,8 +78,19 @@ class AgentChatProvider extends ChangeNotifier {
   /// messageId -> message. O(1) reply lookup and O(1) delete.
   final Map<String, ChatMessageModel> _byId = {};
 
+  /// callId -> the ONE call bubble shown for that call. API call logs carry no
+  /// messageId, so without this index a repaired status could never be found.
+  final Map<String, ChatMessageModel> _byCallId = {};
+
   final Set<String> _loadedMessageIds = {};
   final Set<String> _loadedCallIds = {};
+
+  /// Loaded call bubbles upgraded by a merge that the caller hasn't persisted
+  /// or announced yet. Drained with [_takeRepaired].
+  final List<ChatMessageModel> _repaired = [];
+
+  Timer? _callRecheckTimer;
+  int _callRecheckCount = 0;
 
   StreamSubscription<bool>? _connectivitySub;
 
@@ -81,7 +108,9 @@ class AgentChatProvider extends ChangeNotifier {
 
   String get _boxName => '$agentEmail$customerEmail';
 
-  AgentChatProvider({required this.agentEmail, required this.customerEmail});
+  AgentChatProvider({required this.agentEmail, required this.customerEmail}) {
+    _socket.onCallLogUpdated(_onSocketCallLogUpdated);
+  }
 
   // ── Change notification ───────────────────────────────────────────────────
 
@@ -104,12 +133,148 @@ class AgentChatProvider extends ChangeNotifier {
   void _index(ChatMessageModel msg) {
     final id = msg.messageId;
     if (id != null && id.isNotEmpty) _byId[id] = msg;
+    final callId = msg.callId;
+    if (msg.type == 'call' && callId != null && callId.isNotEmpty) {
+      _byCallId[callId] = msg;
+    }
   }
 
   void _indexAll(Iterable<ChatMessageModel> msgs) {
     for (final msg in msgs) {
       _index(msg);
     }
+  }
+
+  // ── Call-log merging ──────────────────────────────────────────────────────
+
+  static int _callRank(String? status) {
+    switch (status) {
+      case 'answered':
+        return 3;
+      case 'not answered':
+      case 'declined':
+        return 2;
+      case 'missed':
+        return 1;
+      default:
+        return 0; // null / "ringing" / unknown placeholder
+    }
+  }
+
+  /// Copies call fields from [src] into [target] without ever downgrading.
+  /// Returns true when [target] changed.
+  bool _mergeCallFields(ChatMessageModel target, ChatMessageModel src) {
+    var changed = false;
+    final rt = _callRank(target.callStatus);
+    final rs = _callRank(src.callStatus);
+
+    if (src.callStatus != null && rs > rt) {
+      target.callStatus = src.callStatus;
+      changed = true;
+    }
+    if (rs >= rt) {
+      final d = src.callDuration;
+      if (d != null && d.isNotEmpty && d != target.callDuration) {
+        target.callDuration = d;
+        changed = true;
+      }
+    }
+    if ((target.callerId == null || target.callerId!.isEmpty) &&
+        src.callerId != null &&
+        src.callerId!.isNotEmpty) {
+      target.callerId = src.callerId;
+      changed = true;
+    }
+    if (target.callId == null && src.callId != null) {
+      target.callId = src.callId;
+      changed = true;
+    }
+    if (target.messageId == null && src.messageId != null) {
+      target.messageId = src.messageId;
+      _index(target);
+      changed = true;
+    }
+    return changed;
+  }
+
+  void _markRepaired(ChatMessageModel msg) {
+    if (!_repaired.any((m) => identical(m, msg))) _repaired.add(msg);
+  }
+
+  List<ChatMessageModel> _takeRepaired() {
+    final out = List<ChatMessageModel>.from(_repaired);
+    _repaired.clear();
+    return out;
+  }
+
+  /// Socket → a call's final status is known (from our own CallProvider via
+  /// SocketService.patchCallLog, or from a server `callLogUpdated` event).
+  void _onSocketCallLogUpdated(Map<String, dynamic> data) {
+    if (_disposed) return;
+    final peer = data['peerEmail']?.toString();
+    if (peer != null &&
+        peer.isNotEmpty &&
+        peer.toLowerCase() != customerEmail.toLowerCase()) {
+      return; // another conversation
+    }
+    applyCallLogUpdate(data);
+  }
+
+  /// Patches the loaded call bubble matching `callId` / `_id`.
+  /// Returns false when that call isn't in this chat (yet).
+  bool applyCallLogUpdate(Map<String, dynamic> data) {
+    if (_disposed) return false;
+    final callId = data['callId']?.toString();
+    final logId = (data['_id'] ?? data['messageId'])?.toString();
+
+    ChatMessageModel? target =
+        (callId != null && callId.isNotEmpty) ? _byCallId[callId] : null;
+    target ??= (logId != null && logId.isNotEmpty) ? _byId[logId] : null;
+    if (target == null) {
+      // Not loaded yet — pull it in.
+      unawaited(refreshLatest(reason: 'call-log-update'));
+      return false;
+    }
+
+    final src = ChatMessageModel(
+      timestamp: target.timestamp,
+      type: 'call',
+      callStatus: data['callStatus']?.toString(),
+      callDuration: data['callDuration']?.toString(),
+      callId: callId,
+      callerId: data['callerId']?.toString(),
+    );
+    if (!_mergeCallFields(target, src)) return true;
+
+    debugPrint('[AgentChatProvider] call ${target.callId} → '
+        '${target.callStatus} ${target.callDuration ?? ''}');
+    _notifyMessageListChanged();
+    unawaited(_storage.saveMessage(target, _boxName));
+    return true;
+  }
+
+  bool _hasUnfinishedRecentCall() {
+    final now = DateTime.now();
+    return _messages.any((m) =>
+        m.type == 'call' &&
+        _callRank(m.callStatus) <= 1 &&
+        now.difference(m.timestamp).abs() < _recentCallWindow);
+  }
+
+  void _scheduleCallRecheckIfNeeded() {
+    if (_disposed) return;
+    _callRecheckTimer?.cancel();
+    if (!_hasUnfinishedRecentCall()) {
+      _callRecheckCount = 0;
+      return;
+    }
+    if (_callRecheckCount >= _maxCallRechecks) return;
+    _callRecheckCount++;
+    debugPrint('[AgentChatProvider] recent call still unfinished — recheck '
+        '$_callRecheckCount/$_maxCallRechecks in ${_callRecheckDelay.inSeconds}s');
+    _callRecheckTimer = Timer(_callRecheckDelay, () {
+      if (!_disposed) unawaited(refreshLatest(reason: 'call-recheck'));
+    });
   }
 
   // ── Initial load (cache-first → API sync → read-status) ─────────────────
@@ -127,6 +292,11 @@ class AgentChatProvider extends ChangeNotifier {
         _messages = _removeDuplicates(cached)
           ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
         _indexAll(_messages);
+        // Duplicate cache rows of one call were merged — persist the winner.
+        final repaired = _takeRepaired();
+        if (repaired.isNotEmpty) {
+          unawaited(_storage.saveMessages(repaired, _boxName));
+        }
         _isInitialized = true;
         _notifyMessageListChanged();
         _jumpToBottom(markInitial: true);
@@ -140,39 +310,28 @@ class AgentChatProvider extends ChangeNotifier {
       _notifyMessageListChanged();
     }
 
-    // Step 2: Silent background API sync
+    // Step 2: Silent background API sync. Upsert (not skip) so cached rows —
+    // especially call logs cached as "missed" while ringing — get repaired.
     try {
       final fetched = await _repo.fetchCustomerMessages(
         customerEmail: customerEmail,
         limit: _pageSize,
       );
       if (_disposed) return;
-      final chatMessages = fetched.map(_fromModel).toList();
-      final newMessages = _removeDuplicates(chatMessages);
+      final shouldStayAtBottom = shouldAutoScrollForNewMessage;
+      final countBefore = _messages.length;
 
-      if (!boxExists && chatMessages.isNotEmpty) {
-        await _storage.saveMessages(chatMessages, _boxName);
-      } else if (newMessages.isNotEmpty) {
-        await _storage.saveMessages(newMessages, _boxName);
-      }
-      if (_disposed) return;
+      final touched = _upsertFromApi(fetched.map(_fromModel).toList());
+      if (touched.isNotEmpty) {
+        await _storage.saveMessages(touched, _boxName);
+        if (_disposed) return;
 
-      // Cache was already in sync — no rebuild needed, but the read-status
-      // sync below must still run.
-      if (!(_isInitialized && newMessages.isEmpty)) {
-        final shouldStayAtBottom = shouldAutoScrollForNewMessage;
-        if (!_isInitialized) {
-          _messages = chatMessages;
-        } else {
-          _messages.addAll(newMessages);
-        }
         _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _indexAll(newMessages);
-        _isInitialized = true;
         _notifyMessageListChanged();
+        final added = _messages.length > countBefore;
         if (!_hasScrolledToInitial) {
           _jumpToBottom(markInitial: true);
-        } else if (newMessages.isNotEmpty && shouldStayAtBottom) {
+        } else if (added && shouldStayAtBottom) {
           _jumpToBottom();
         }
       }
@@ -187,6 +346,7 @@ class AgentChatProvider extends ChangeNotifier {
 
     if (_disposed) return;
     _oldestCursor = _messages.isEmpty ? null : _messages.first.timestamp;
+    _scheduleCallRecheckIfNeeded();
 
     // Step 3: Read-status sync
     if (_messages.isEmpty) return;
@@ -266,12 +426,15 @@ class AgentChatProvider extends ChangeNotifier {
       }
 
       final unique = _removeDuplicates(older);
-      if (unique.isNotEmpty) {
-        await _storage.saveMessages(unique, _boxName);
+      final repaired = _takeRepaired();
+      if (unique.isNotEmpty || repaired.isNotEmpty) {
+        await _storage.saveMessages([...unique, ...repaired], _boxName);
         if (_disposed) return;
-        _messages.insertAll(0, unique);
-        _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-        _indexAll(unique);
+        if (unique.isNotEmpty) {
+          _messages.insertAll(0, unique);
+          _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          _indexAll(unique);
+        }
         messagesChanged = true;
       }
     } catch (e) {
@@ -308,7 +471,7 @@ class AgentChatProvider extends ChangeNotifier {
       var changed = false;
 
       // 1. Cache — surfaces messages the socket wrote while the chat page was
-      //    flagged closed.
+      //    flagged closed, and call statuses patched by SocketService.
       try {
         final cached =
             await _storage.getMessageWindow(_boxName, limit: _pageSize);
@@ -319,6 +482,7 @@ class AgentChatProvider extends ChangeNotifier {
           _indexAll(fresh);
           changed = true;
         }
+        if (_takeRepaired().isNotEmpty) changed = true;
       } catch (e) {
         debugPrint('[AgentChatProvider] refreshLatest cache read failed: $e');
       }
@@ -362,6 +526,7 @@ class AgentChatProvider extends ChangeNotifier {
       }
     } finally {
       _isRefreshing = false;
+      _scheduleCallRecheckIfNeeded();
     }
   }
 
@@ -386,8 +551,14 @@ class AgentChatProvider extends ChangeNotifier {
     final touched = <ChatMessageModel>[];
 
     for (final msg in incoming) {
+      // Call logs from the API have no messageId — match them by callId.
+      ChatMessageModel? existing;
+      final callId = msg.callId;
+      if (msg.type == 'call' && callId != null && callId.isNotEmpty) {
+        existing = _byCallId[callId];
+      }
       final id = msg.messageId;
-      final existing = (id != null && id.isNotEmpty) ? _byId[id] : null;
+      existing ??= (id != null && id.isNotEmpty) ? _byId[id] : null;
 
       if (existing == null) {
         final fresh = _removeDuplicates([msg]);
@@ -419,18 +590,12 @@ class AgentChatProvider extends ChangeNotifier {
         existing.mediaUrl = msg.mediaUrl;
         changed = true;
       }
-      if (existing.callId == null && msg.callId != null) {
-        existing.callId = msg.callId;
-        changed = true;
+
+      // Call fields: upgrade-only (missed → answered), never the reverse.
+      if (msg.type == 'call' || existing.type == 'call') {
+        if (_mergeCallFields(existing, msg)) changed = true;
       }
-      if (existing.callStatus == null && msg.callStatus != null) {
-        existing.callStatus = msg.callStatus;
-        changed = true;
-      }
-      if (existing.callDuration == null && msg.callDuration != null) {
-        existing.callDuration = msg.callDuration;
-        changed = true;
-      }
+
       if (existing.form == null && msg.form != null) {
         existing.form = msg.form;
         changed = true;
@@ -455,6 +620,9 @@ class AgentChatProvider extends ChangeNotifier {
       if (changed) touched.add(existing);
     }
 
+    for (final r in _takeRepaired()) {
+      if (!touched.any((t) => identical(t, r))) touched.add(r);
+    }
     return touched;
   }
 
@@ -471,6 +639,18 @@ class AgentChatProvider extends ChangeNotifier {
     // The server returns '_id' on some paths; the background writer already
     // hedges the same way, so honour it here or the two disagree and duplicate.
     final messageId = (data['messageId'] ?? data['_id'])?.toString();
+    final type = data['type']?.toString() ?? 'text';
+    final callId = data['callId']?.toString();
+
+    // A call log for a call we already show is an UPDATE, not a new bubble.
+    if (type == 'call' &&
+        callId != null &&
+        callId.isNotEmpty &&
+        (_byCallId.containsKey(callId) || _loadedCallIds.contains(callId))) {
+      applyCallLogUpdate(data);
+      return;
+    }
+
     final tsKey = 'ts:${timestamp.millisecondsSinceEpoch}';
 
     if ((messageId != null && _loadedMessageIds.contains(messageId)) ||
@@ -478,30 +658,38 @@ class AgentChatProvider extends ChangeNotifier {
       return;
     }
 
+    final callerId = data['callerId']?.toString();
     final msg = ChatMessageModel(
-      message: data['message'] as String? ?? '',
+      message: data['message']?.toString() ?? '',
       timestamp: timestamp,
-      sender: data['senderId'] as String? ?? '',
-      type: data['type'] as String? ?? 'text',
-      mediaUrl: data['mediaUrl'] as String?,
-      callStatus: data['callStatus'] as String?,
-      callDuration: data['callDuration'] as String?,
-      callId: data['callId'] as String?,
+      sender: (data['senderId'] ?? callerId)?.toString() ?? '',
+      callerId: type == 'call'
+          ? (callerId ?? data['senderId']?.toString())
+          : callerId,
+      type: type,
+      mediaUrl: data['mediaUrl']?.toString(),
+      callStatus: data['callStatus']?.toString(),
+      callDuration: data['callDuration']?.toString(),
+      callId: callId,
       messageId: messageId,
       isDeleted: data['isDeleted'] as bool? ?? false,
       read: data['read'] as bool?,
-      referenceId: data['referenceId'] as String?,
+      referenceId: data['referenceId']?.toString(),
     );
 
     _messages.add(msg);
     _messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
     if (messageId != null) _loadedMessageIds.add(messageId);
+    if (type == 'call' && callId != null && callId.isNotEmpty) {
+      _loadedCallIds.add(callId);
+    }
     _loadedMessageIds.add(tsKey);
     _index(msg);
     _notifyMessageListChanged();
     if (shouldStayAtBottom) scrollToBottom();
 
     unawaited(_storage.saveMessage(msg, _boxName));
+    if (type == 'call') _scheduleCallRecheckIfNeeded();
   }
 
   // ── Sent message (optimistic add) ────────────────────────────────────────
@@ -517,12 +705,21 @@ class AgentChatProvider extends ChangeNotifier {
     scrollToBottom();
   }
 
-  /// Adds a call bubble, ignoring repeats of the same callId.
+  /// Adds a call bubble, or — when this callId is already shown (e.g. the
+  /// server's "missed" placeholder) — upgrades that bubble in place.
   /// Returns false when this call was already recorded.
   bool addCallMessage(ChatMessageModel msg) {
     if (_disposed) return false;
     final callId = msg.callId;
     if (callId != null) {
+      final existing = _byCallId[callId];
+      if (existing != null) {
+        if (_mergeCallFields(existing, msg)) {
+          _notifyMessageListChanged();
+          persistMessage(existing);
+        }
+        return false;
+      }
       if (_loadedCallIds.contains(callId)) return false;
       _loadedCallIds.add(callId);
     }
@@ -613,34 +810,53 @@ class AgentChatProvider extends ChangeNotifier {
 
   // ── Deduplication ─────────────────────────────────────────────────────────
 
+  /// Filters out rows already shown. A repeated CALL is not simply dropped:
+  /// its status/duration is merged into the bubble already kept (and queued
+  /// in [_repaired]), so whichever copy is newest-and-best wins.
   List<ChatMessageModel> _removeDuplicates(List<ChatMessageModel> list) {
-    return list.where((msg) {
+    final kept = <ChatMessageModel>[];
+    final batchCalls = <String, ChatMessageModel>{};
+
+    for (final msg in list) {
       if (msg.type == 'call') {
-        if (msg.callId == null || _loadedCallIds.contains(msg.callId)) {
-          return false;
+        final callId = msg.callId;
+        if (callId == null || callId.isEmpty) continue;
+
+        final prior = batchCalls[callId] ?? _byCallId[callId];
+        if (prior != null) {
+          if (_mergeCallFields(prior, msg) && !batchCalls.containsKey(callId)) {
+            _markRepaired(prior); // an already-loaded bubble changed
+          }
+          continue;
         }
-        _loadedCallIds.add(msg.callId!);
-        return true;
+        if (_loadedCallIds.contains(callId)) continue;
+
+        _loadedCallIds.add(callId);
+        batchCalls[callId] = msg;
+        kept.add(msg);
+        continue;
       }
+
       final id = msg.messageId;
       final tsKey = 'ts:${msg.timestamp.millisecondsSinceEpoch}';
       if ((id != null && _loadedMessageIds.contains(id)) ||
           _loadedMessageIds.contains(tsKey)) {
-        return false;
+        continue;
       }
       if (id != null) _loadedMessageIds.add(id);
       _loadedMessageIds.add(tsKey);
-      return true;
-    }).toList();
+      kept.add(msg);
+    }
+    return kept;
   }
 
   // ── Model conversion ──────────────────────────────────────────────────────
 
   ChatMessageModel _fromModel(MessageModel m) => ChatMessageModel(
         message: m.message ?? '',
-        timestamp:
-            DateTime.parse(m.timestamp ?? DateTime.now().toIso8601String()),
+        timestamp: DateTime.tryParse(m.timestamp ?? '') ?? DateTime.now(),
         sender: m.senderId ?? '',
+        callerId: m.callerId, // keeps call direction on reload
         type: m.type ?? 'text',
         messageId: m.messageId,
         mediaUrl: m.mediaUrl,
@@ -809,6 +1025,8 @@ class AgentChatProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _socket.offCallLogUpdated(_onSocketCallLogUpdated);
+    _callRecheckTimer?.cancel();
     unawaited(_connectivitySub?.cancel());
     _connectivitySub = null;
     scrollController.dispose();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/services/connectivity_service.dart';
 import 'package:kkpchatapp/data/models/complaint_model.dart';
@@ -12,6 +14,8 @@ class ComplaintsProvider extends ChangeNotifier {
   DataStatus status = DataStatus.loading;
   final _complaintRepository = ComplaintRepository();
   bool complaintSubmitting = false;
+
+  Timer? _autoRefreshTimer;
 
   Future<void> loaddata() async {
     if (status == DataStatus.loading || status == DataStatus.reloading) {
@@ -28,7 +32,8 @@ class ComplaintsProvider extends ChangeNotifier {
           notifyListeners();
         }
         complaints = await _complaintRepository.getAllComplaints();
-        debugPrint('✅ [ComplaintsProvider] Loaded ${complaints?.length ?? 0} complaints');
+        debugPrint(
+            '✅ [ComplaintsProvider] Loaded ${complaints?.length ?? 0} complaints');
         status = DataStatus.successful;
         notifyListeners();
       } catch (e) {
@@ -37,14 +42,38 @@ class ComplaintsProvider extends ChangeNotifier {
         notifyListeners();
       }
     }
+    startAutoRefresh();
   }
 
-  Future<bool> submitComplaint({required String subject, required String description}) async {
+  void startAutoRefresh() {
+    _autoRefreshTimer ??= Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _silentRefresh(),
+    );
+  }
+
+  Future<void> _silentRefresh() async {
+    if (!ConnectivityService.instance.isOnline) return;
+    try {
+      final latest = await _complaintRepository.getAllComplaints();
+      if (latest.length != (complaints?.length ?? 0)) {
+        debugPrint('🔄 [ComplaintsProvider] New complaints: ${latest.length}');
+      }
+      complaints = latest;
+      status = DataStatus.successful;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ [ComplaintsProvider] Silent refresh failed: $e');
+    }
+  }
+
+  Future<bool> submitComplaint(
+      {required String subject, required String description}) async {
     complaintSubmitting = true;
     notifyListeners();
     try {
-      final result =
-          await _complaintRepository.submitComplaint(subject: subject, description: description);
+      final result = await _complaintRepository.submitComplaint(
+          subject: subject, description: description);
       return result;
     } catch (_) {
       return false;
@@ -52,6 +81,12 @@ class ComplaintsProvider extends ChangeNotifier {
       complaintSubmitting = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
   }
 }
 

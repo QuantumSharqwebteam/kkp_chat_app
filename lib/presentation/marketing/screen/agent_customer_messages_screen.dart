@@ -1,13 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:kkpchatapp/config/theme/app_text_styles.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/core/utils/chat_utils.dart';
 import 'package:kkpchatapp/data/models/chat_message_model.dart';
 import 'package:kkpchatapp/data/models/message_model.dart';
 import 'package:kkpchatapp/data/repositories/chat_reopsitory.dart';
 import 'package:kkpchatapp/l10n/generated/app_localizations.dart';
+import 'package:kkpchatapp/main.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/call_message_bubble.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/date_header.dart';
 import 'package:kkpchatapp/presentation/common_widgets/chat/deleted_message_bubble.dart';
@@ -42,20 +45,36 @@ class AgentCustomerMessagesScreen extends StatefulWidget {
 class _AgentCustomerMessagesScreenState
     extends State<AgentCustomerMessagesScreen> {
   final ChatRepository _chatRepository = ChatRepository();
+  late final SocketService _socketService;
   List<ChatMessageModel> messages = [];
   bool _isLoading = true;
   final ScrollController _scrollController = ScrollController();
   bool _isAtBottom = true;
 
+  // ── Call-log freshness ────────────────────────────────────────────────────
+  // The server writes a call log as "missed" while it rings, and the caller
+  // only overwrites it with "answered" + duration after hang-up. If this
+  // screen opens right after a call, the fetch can beat that update, so we
+  // re-check a few times while a recent call still looks unfinished.
+  static const _recheckDelay = Duration(seconds: 3);
+  static const _maxRechecks = 4;
+  static const _recentCallWindow = Duration(minutes: 3);
+  Timer? _recheckTimer;
+  int _recheckCount = 0;
+
   @override
   void initState() {
     super.initState();
+    _socketService = SocketService(navigatorKey);
+    _socketService.onCallLogUpdated(_handleCallLogUpdated);
     _fetchMessages();
     _scrollController.addListener(_checkIfAtBottom);
   }
 
   @override
   void dispose() {
+    _socketService.offCallLogUpdated(_handleCallLogUpdated);
+    _recheckTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -109,9 +128,10 @@ class _AgentCustomerMessagesScreenState
         normalizedForms?.isNotEmpty == true ? normalizedForms!.first : null;
     return ChatMessageModel(
       message: messageJson.message ?? '',
-      timestamp: DateTime.parse(
-          messageJson.timestamp ?? DateTime.now().toIso8601String()),
-      sender: messageJson.senderId!,
+      timestamp:
+          DateTime.tryParse(messageJson.timestamp ?? '') ?? DateTime.now(),
+      sender: messageJson.senderId ?? '', // no more `!` crash
+      callerId: messageJson.callerId, // keeps call direction on reload
       type: messageJson.type,
       mediaUrl: messageJson.mediaUrl,
       form: primaryForm,
@@ -120,20 +140,111 @@ class _AgentCustomerMessagesScreenState
       callStatus: messageJson.callStatus,
       callId: messageJson.callId,
       messageId: messageJson.messageId,
-      isDeleted: messageJson.isDeleted!,
+      isDeleted: messageJson.isDeleted ?? false,
       read: messageJson.read,
     );
   }
 
-  // check if sender is NOT the customer, so messages from ANY agent
-  // (agent head, assigned agent, or any other agent) show on the right side
-  bool _isFromAgentSide(String? sender) {
-    return sender != null && sender != widget.customerEmail;
+  /// Anything NOT owned by the customer is drawn on the agent (right) side,
+  /// so messages from ANY agent (agent head, assigned agent, …) go right.
+  /// For call logs the owner is the caller, not whatever senderId says.
+  bool _isFromAgentSide(ChatMessageModel msg) {
+    final owner = msg.ownerId?.trim().toLowerCase();
+    if (owner == null || owner.isEmpty) return false;
+    return owner != widget.customerEmail.trim().toLowerCase();
   }
 
-  // ← FIX: fetch from BOTH APIs and merge so assigned agent sees
-  //         agent head's previous chats + their own chats with the customer
-  Future<void> _fetchMessages() async {
+  // ── Call-log helpers ──────────────────────────────────────────────────────
+
+  static int _callRank(String? status) {
+    switch (status) {
+      case 'answered':
+        return 3;
+      case 'not answered':
+      case 'declined':
+        return 2;
+      case 'missed':
+        return 1;
+      default:
+        return 0; // null / "ringing" / unknown placeholder
+    }
+  }
+
+  static String? _callKey(ChatMessageModel m) {
+    if (m.type != 'call') return null;
+    final id = m.callId ?? m.messageId;
+    return (id == null || id.isEmpty) ? null : id;
+  }
+
+  /// A recent call whose status may still be the server's ringing placeholder.
+  bool _looksUnfinished(ChatMessageModel m) {
+    if (m.type != 'call') return false;
+    if (_callRank(m.callStatus) > 1) return false;
+    return DateTime.now().difference(m.timestamp).abs() < _recentCallWindow;
+  }
+
+  /// Keep a better status we already know (from a socket update or an earlier
+  /// fetch) if the server response is behind.
+  List<ChatMessageModel> _mergeWithKnown(List<ChatMessageModel> fetched) {
+    final known = <String, ChatMessageModel>{};
+    for (final m in messages) {
+      final k = _callKey(m);
+      if (k != null) known[k] = m;
+    }
+    for (final m in fetched) {
+      final k = _callKey(m);
+      if (k == null) continue;
+      final old = known[k];
+      if (old != null && _callRank(old.callStatus) > _callRank(m.callStatus)) {
+        m.callStatus = old.callStatus;
+        m.callDuration = old.callDuration;
+      }
+    }
+    return fetched;
+  }
+
+  void _handleCallLogUpdated(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final callId = data['callId']?.toString();
+    final logId = data['_id']?.toString();
+    final status = data['callStatus']?.toString();
+    if (status == null) return;
+
+    bool changed = false;
+    for (final m in messages) {
+      if (m.type != 'call') continue;
+      final match = (callId != null && m.callId == callId) ||
+          (logId != null && m.messageId == logId);
+      if (!match) continue;
+      if (_callRank(m.callStatus) > _callRank(status)) continue;
+      m.callStatus = status;
+      final d = data['callDuration']?.toString();
+      if (d != null && d.isNotEmpty) m.callDuration = d;
+      changed = true;
+    }
+
+    if (changed) {
+      setState(() {});
+    } else {
+      // Log not in the list yet (e.g. fetched before it existed) → refetch.
+      _fetchMessages(silent: true);
+    }
+  }
+
+  void _scheduleRecheckIfNeeded() {
+    _recheckTimer?.cancel();
+    if (_recheckCount >= _maxRechecks) return;
+    if (!messages.any(_looksUnfinished)) return;
+
+    _recheckCount++;
+    debugPrint('📞 [History] recent call still unfinished — '
+        'recheck $_recheckCount/$_maxRechecks in ${_recheckDelay.inSeconds}s');
+    _recheckTimer = Timer(_recheckDelay, () {
+      if (mounted) _fetchMessages(silent: true);
+    });
+  }
+
+  Future<void> _fetchMessages({bool silent = false}) async {
     try {
       // Fetch ALL messages for this customer (includes all agents' messages)
       final allChats = await _chatRepository.fetchCustomerMessages(
@@ -141,20 +252,27 @@ class _AgentCustomerMessagesScreenState
         limit: 500,
       );
 
-      // Convert and sort by timestamp
-      final chatMessages = allChats.map(_chatMessageFromModel).toList();
+      final chatMessages =
+          _mergeWithKnown(allChats.map(_chatMessageFromModel).toList());
       chatMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
+      if (!mounted) return;
+      final wasAtBottom = _isAtBottom;
       setState(() {
         messages = chatMessages;
         _isLoading = false;
       });
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
+      if (!silent || wasAtBottom) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      }
+
+      _scheduleRecheckIfNeeded();
     } catch (e) {
       debugPrint("Error fetching messages: $e");
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
@@ -194,7 +312,7 @@ class _AgentCustomerMessagesScreenState
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
                                 final msg = messages[index];
-                                final isAgent = _isFromAgentSide(msg.sender);
+                                final isAgent = _isFromAgentSide(msg);
                                 String? dateHeader;
 
                                 if (index == 0 ||
@@ -254,6 +372,10 @@ class _AgentCustomerMessagesScreenState
                                       )
                                     else if (msg.type == 'call')
                                       CallMessageBubble(
+                                        // Key on status so the bubble rebuilds
+                                        // when "missed" becomes "answered".
+                                        key: ValueKey(
+                                            '${_callKey(msg) ?? index}_${msg.callStatus}_${msg.callDuration}'),
                                         isMe: isAgent,
                                         timestamp: ChatUtils().formatTimestamp(
                                             msg.timestamp.toIso8601String()),
@@ -271,7 +393,7 @@ class _AgentCustomerMessagesScreenState
                                       FillFormButton(
                                         buttonText: locale.updateForm,
                                         onSubmit: () {
-                                          // Only show the widget for history, not to do anything on the agent side
+                                          // History only on the agent side
                                         },
                                       )
                                     else if (msg.type == 'product')
@@ -301,9 +423,7 @@ class _AgentCustomerMessagesScreenState
                                         message: msg,
                                         isMe: isAgent,
                                         read: msg.read,
-                                        onLongPress: () {
-                                          //
-                                        },
+                                        onLongPress: () {},
                                       ),
                                   ],
                                 );
