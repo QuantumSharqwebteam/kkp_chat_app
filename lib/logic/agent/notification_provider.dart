@@ -1,17 +1,42 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:kkpchatapp/core/services/connectivity_service.dart';
+import 'package:kkpchatapp/core/services/socket_service.dart';
 import 'package:kkpchatapp/data/models/notification_model.dart';
 import 'package:kkpchatapp/data/repositories/auth_repository.dart';
 
 class NotificationProvider extends ChangeNotifier {
+  NotificationProvider() {
+    // Realtime: any socket event that can create a server-side notification
+    // (incoming call, call ended / missed, new message) invalidates the cache
+    // and triggers a silent refetch, so the list updates without a manual
+    // pull-to-refresh.
+    _socketSub = SocketService.notificationEvents.listen(_onRealtimeEvent);
+  }
+
   final AuthRepository _authRepo = AuthRepository();
   List<NotificationModel> _notifications = [];
   bool _isLoading = false;
+  bool _disposed = false;
 
   /// The request currently in flight, if any. Several screens can ask for
   /// notifications at once (home init, app resume, returning from the
   /// notification screen); without this each caller fired its own HTTP request.
   Future<void>? _inFlight;
+
+  /// Set when a realtime event arrives while a fetch is already running. That
+  /// fetch may have started before the server saved the new notification, so
+  /// one more fetch is run as soon as it finishes.
+  bool _refetchQueued = false;
+
+  StreamSubscription<String>? _socketSub;
+  Timer? _eventDebounce;
+
+  /// Gives the backend a moment to persist the notification record after it
+  /// emits the socket event, and collapses bursts (call → callTerminated →
+  /// call log) into a single request.
+  static const Duration _eventDelay = Duration(milliseconds: 1200);
 
   /// When the list was last successfully loaded — lets callers decide whether a
   /// refresh is worth making.
@@ -29,6 +54,28 @@ class NotificationProvider extends ChangeNotifier {
   bool get isStale {
     final last = _lastFetchedAt;
     return last == null || DateTime.now().difference(last) > _freshFor;
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  void _onRealtimeEvent(String reason) {
+    if (_disposed) return;
+    debugPrint('🔔 [NotificationProvider] realtime event: $reason');
+
+    // The cached list is no longer trustworthy — the next ensureLoaded()
+    // (e.g. opening the notification screen) must hit the network.
+    _lastFetchedAt = null;
+    if (_inFlight != null) _refetchQueued = true;
+
+    _eventDebounce?.cancel();
+    _eventDebounce = Timer(_eventDelay, () {
+      if (_disposed) return;
+      // Only refetch right away when something is showing the list/badge.
+      // Otherwise the stale flag above makes the next screen open fetch.
+      if (hasListeners) fetchNotifications();
+    });
   }
 
   /// Cache-first entry point for screens.
@@ -52,13 +99,17 @@ class NotificationProvider extends ChangeNotifier {
     _inFlight = request;
     return request.whenComplete(() {
       if (identical(_inFlight, request)) _inFlight = null;
+      if (_refetchQueued && !_disposed) {
+        _refetchQueued = false;
+        fetchNotifications();
+      }
     });
   }
 
   Future<void> _fetchNotifications() async {
     if (!ConnectivityService.instance.isOnline) {
       _isLoading = false;
-      notifyListeners();
+      _notify();
       return;
     }
     // Only advertise loading on a cold cache. A refresh over an existing list
@@ -67,7 +118,7 @@ class NotificationProvider extends ChangeNotifier {
     final showLoading = _notifications.isEmpty;
     if (showLoading) {
       _isLoading = true;
-      notifyListeners();
+      _notify();
     }
     try {
       final notifications = await _authRepo.getParsedNotifications();
@@ -77,12 +128,14 @@ class NotificationProvider extends ChangeNotifier {
         return dateB.compareTo(dateA);
       });
       _notifications = notifications;
-      _lastFetchedAt = DateTime.now();
+      // If an event arrived mid-request, leave the cache stale so the queued
+      // refetch (and any screen open) still goes to the network.
+      if (!_refetchQueued) _lastFetchedAt = DateTime.now();
     } catch (e) {
       debugPrint('Failed to load notifications: $e');
     } finally {
       _isLoading = false;
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -110,7 +163,7 @@ class NotificationProvider extends ChangeNotifier {
           form: original.form,
           v: original.v,
         );
-        notifyListeners();
+        _notify();
       }
 
       // API call
@@ -148,7 +201,7 @@ class NotificationProvider extends ChangeNotifier {
         v: n.v,
       );
     }).toList();
-    notifyListeners();
+    _notify();
 
     // 3. Parallel API calls — all at once, not one-by-one
     try {
@@ -158,12 +211,20 @@ class NotificationProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Failed to mark all notifications as read: $e');
       _notifications = previousNotifications;
-      notifyListeners();
+      _notify();
     }
   }
 
   void addNotification(NotificationModel notification) {
     _notifications.insert(0, notification);
-    notifyListeners();
+    _notify();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _eventDebounce?.cancel();
+    _socketSub?.cancel();
+    super.dispose();
   }
 }

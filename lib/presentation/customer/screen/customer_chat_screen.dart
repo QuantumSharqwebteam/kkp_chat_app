@@ -641,6 +641,16 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
         : (widget.agentName ?? message.sender ?? '');
   }
 
+  /// FIX: call bubble side — right only if the customer placed the call.
+  bool _isMyCall(ChatMessageModel msg) {
+    String norm(String? s) => (s ?? '').trim().toLowerCase();
+    if (kDebugMode) {
+      debugPrint('📞 CALL sender="${msg.sender}" status=${msg.callStatus} '
+          'callId=${msg.callId}');
+    }
+    return norm(msg.sender) == norm(widget.customerEmail);
+  }
+
   void _handleImageLoaded() {
     if (_provider.shouldAutoScrollForNewMessage) {
       _provider.scrollToBottom();
@@ -705,6 +715,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                   callId: callId,
                   isCaller: true,
                   targetUserId: widget.agentEmail,
+                  myUserId: widget.customerEmail, // FIX: caller = customer
                 );
 
                 // 3. ⏳ Wait for call message to be available
@@ -815,6 +826,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       else if (msg.type == 'document')
                                         DocumentMessageBubble(
                                           documentUrl: msg.mediaUrl!,
+                                          read: msg.read,
                                           isMe: msg.sender ==
                                               widget.customerEmail,
                                           timestamp:
@@ -831,6 +843,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                       else if (msg.type == 'voice')
                                         VoiceMessageBubble(
                                           voiceUrl: msg.mediaUrl!,
+                                          read: msg.read,
                                           isMe: msg.sender ==
                                               widget.customerEmail,
                                           timestamp:
@@ -846,9 +859,10 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                         )
                                       else if (msg.type == 'call')
                                         CallMessageBubble(
-                                          isMe: msg.sender == widget.agentEmail,
-                                          timestamp: formatTimestamp(
-                                              msg.timestamp.toIso8601String()),
+                                          // FIX: robust side detection
+                                          isMe: _isMyCall(msg),
+                                          timestamp:
+                                              formatTimestamp(msg.timestamp),
                                           callStatus: msg.callStatus ?? "",
                                           callDuration: msg.callDuration ?? '',
                                         )
@@ -857,6 +871,7 @@ class _CustomerChatScreenState extends State<CustomerChatScreen>
                                                 msg.message!.isNotEmpty)
                                             ? ProductMessageBubble(
                                                 productJson: msg.message!,
+                                                read: msg.read,
                                                 isMe: msg.sender ==
                                                     widget.customerEmail,
                                                 timestamp:

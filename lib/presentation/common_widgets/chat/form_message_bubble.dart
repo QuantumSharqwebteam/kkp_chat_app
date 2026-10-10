@@ -398,7 +398,7 @@ class _FormMessageBubbleState extends State<FormMessageBubble> {
                     widget.timestamp,
                     style: widget.isMe
                         ? AppTextStyles.white8_600.copyWith(fontSize: 10)
-                        : AppTextStyles.greyAAAAAA_10_400,
+                        : const TextStyle(fontSize: 10, color: Colors.black54),
                   ),
                   if (widget.isMe) ...[
                     const SizedBox(width: 4),

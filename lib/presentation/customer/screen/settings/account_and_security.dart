@@ -34,7 +34,7 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
 
   void getRole() async {
     role = await LocalDbHelper.getUserType();
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   @override
@@ -53,8 +53,6 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Text(AppLocalizations.of(context)!.accountAndSecurity,
-              //     style: AppTextStyles.black20_500),
               SizedBox(height: 16),
               Text(AppLocalizations.of(context)!.loginAndRecovery,
                   style: AppTextStyles.black16_500),
@@ -62,7 +60,8 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                 "Manage your account",
                 style: AppTextStyles.black14_400,
               ),
-              Text("Login preference and recovery methods", style: AppTextStyles.black14_400),
+              Text("Login preference and recovery methods",
+                  style: AppTextStyles.black14_400),
               SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
@@ -75,7 +74,8 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                   isDense: true,
                   onTaps: [
                     () {
-                      Navigator.pushNamed(context, CustomerRoutes.changePassword);
+                      Navigator.pushNamed(
+                          context, CustomerRoutes.changePassword);
                     }
                   ],
                 ),
@@ -88,9 +88,13 @@ class _AccountAndSecurityState extends State<AccountAndSecurity> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: SettingsTile(
-                    titles: [AppLocalizations.of(context)!.deleteAccountPermanently],
-                    tileTitleStyle:
-                        TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w700),
+                    titles: [
+                      AppLocalizations.of(context)!.deleteAccountPermanently
+                    ],
+                    tileTitleStyle: TextStyle(
+                        color: Colors.red,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700),
                     numberOfTiles: 1,
                     isDense: true,
                     onTaps: [
@@ -142,7 +146,8 @@ class ConfirmDeleteBottomSheet extends StatefulWidget {
   const ConfirmDeleteBottomSheet({super.key, required this.scaffoldMessenger});
 
   @override
-  State<ConfirmDeleteBottomSheet> createState() => _ConfirmDeleteBottomSheetState();
+  State<ConfirmDeleteBottomSheet> createState() =>
+      _ConfirmDeleteBottomSheetState();
 }
 
 class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
@@ -150,12 +155,99 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
   final TextEditingController password = TextEditingController();
   final TextEditingController feedback = TextEditingController();
 
+  static final RegExp _emailRegex =
+      RegExp(r'^[\w.+\-]+@[a-zA-Z\d\-]+(\.[a-zA-Z\d\-]+)*\.[a-zA-Z]{2,}$');
+
   String? emailError;
   String? passwordError;
   String? feedbackError;
+  String?
+      generalError; // shown inside the sheet (snackbars on parent are hidden behind it)
   bool isLoading = false;
 
+  String? _loggedInEmail;
+
   final AuthApi authApi = AuthApi();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLoggedInEmail();
+
+    // Clear a field's error as soon as the user edits it
+    email.addListener(() {
+      if (emailError != null || generalError != null) {
+        setState(() {
+          emailError = null;
+          generalError = null;
+        });
+      }
+    });
+    password.addListener(() {
+      if (passwordError != null || generalError != null) {
+        setState(() {
+          passwordError = null;
+          generalError = null;
+        });
+      }
+    });
+    feedback.addListener(() {
+      if (feedbackError != null) setState(() => feedbackError = null);
+    });
+  }
+
+  Future<void> _loadLoggedInEmail() async {
+    try {
+      _loggedInEmail = LocalDbHelper.getEmail();
+    } catch (e) {
+      debugPrint("Could not read stored email: $e");
+    }
+  }
+
+  @override
+  void dispose() {
+    email.dispose();
+    password.dispose();
+    feedback.dispose();
+    super.dispose();
+  }
+
+  /// Client-side validation. Returns true if everything is valid.
+  bool _validateInputs() {
+    final enteredEmail = email.text.trim();
+    final enteredPassword = password.text; // don't trim passwords
+    final enteredFeedback = feedback.text.trim();
+
+    String? eErr;
+    if (enteredEmail.isEmpty) {
+      eErr = "Email is required";
+    } else if (!_emailRegex.hasMatch(enteredEmail)) {
+      eErr = "Enter a valid email address";
+    } else if (_loggedInEmail != null &&
+        _loggedInEmail!.isNotEmpty &&
+        enteredEmail.toLowerCase() != _loggedInEmail!.trim().toLowerCase()) {
+      eErr = "This email doesn't match your account";
+    }
+
+    String? pErr;
+    if (enteredPassword.trim().isEmpty) {
+      pErr = "Password is required";
+    }
+
+    String? fErr;
+    if (enteredFeedback.isEmpty) {
+      fErr = "Feedback is required";
+    }
+
+    setState(() {
+      emailError = eErr;
+      passwordError = pErr;
+      feedbackError = fErr;
+      generalError = null;
+    });
+
+    return eErr == null && pErr == null && fErr == null;
+  }
 
   Future<void> _showFinalDeleteConfirmationDialog(
     BuildContext sheetContext,
@@ -173,7 +265,7 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
             TextButton(
               child: const Text("Cancel"),
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // close dialog
+                Navigator.of(dialogContext).pop();
               },
             ),
             TextButton(
@@ -182,8 +274,8 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () {
-                Navigator.of(dialogContext).pop(); // close dialog
-                deleteAccount(sheetContext); // ✅ pass SHEET context
+                Navigator.of(dialogContext).pop();
+                deleteAccount(sheetContext);
               },
             ),
           ],
@@ -192,45 +284,78 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
     );
   }
 
+  /// Maps a failed server response to field-level errors.
+  void _applyServerError(String? message) {
+    final msg = (message ?? "").toLowerCase();
+
+    setState(() {
+      if (msg.contains("email") ||
+          msg.contains("user not found") ||
+          msg.contains("no user")) {
+        emailError = "No account found with this email";
+      } else if (msg.contains("password") ||
+          msg.contains("credential") ||
+          msg.contains("incorrect") ||
+          msg.contains("invalid")) {
+        passwordError = "Incorrect password";
+      } else if (_loggedInEmail != null &&
+          email.text.trim().toLowerCase() ==
+              _loggedInEmail!.trim().toLowerCase()) {
+        // Email already verified locally, so the password must be the problem
+        passwordError = "Incorrect password";
+      } else {
+        emailError = "Incorrect email or password";
+        passwordError = "Incorrect email or password";
+      }
+    });
+  }
+
   Future<void> deleteAccount(BuildContext sheetContext) async {
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+      generalError = null;
+    });
 
     try {
       final response = await authApi.deleteUserAccount(
-        email.text,
+        email.text.trim(),
         password.text,
-        feedback.text,
+        feedback.text.trim(),
       );
 
-      final message = response['message'];
+      final message = response['message']?.toString();
 
       if (message == "User marked as deleted successfully") {
-        // Close bottom sheet first
         if (sheetContext.mounted) {
           Navigator.of(sheetContext).pop();
         }
 
-        // Show success message on parent scaffold
         widget.scaffoldMessenger
           ..hideCurrentSnackBar()
           ..showSnackBar(
             const SnackBar(content: Text("Account deleted successfully")),
           );
 
-        // Keep the message visible briefly before navigation
         await Future.delayed(const Duration(seconds: 1));
 
         await clearHiveStorage();
         await logOut();
       } else {
-        widget.scaffoldMessenger.showSnackBar(
-          const SnackBar(
-            content: Text("Cannot delete account! Incorrect details provided"),
-          ),
-        );
+        _applyServerError(message);
       }
     } catch (e) {
       debugPrint("Error deleting account: $e");
+      // Many APIs throw on 401/400 — still try to show a useful field error
+      final errText = e.toString().toLowerCase();
+      if (errText.contains("401") ||
+          errText.contains("403") ||
+          errText.contains("password") ||
+          errText.contains("credential")) {
+        _applyServerError(errText);
+      } else if (mounted) {
+        setState(
+            () => generalError = "Something went wrong. Please try again.");
+      }
     } finally {
       if (mounted) {
         setState(() => isLoading = false);
@@ -291,6 +416,17 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
               keyboardType: TextInputType.text,
               isPassword: false,
             ),
+            if (generalError != null) ...[
+              SizedBox(height: 12),
+              SizedBox(
+                width: Utils().width(context) * 0.8,
+                child: Text(
+                  generalError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
+                ),
+              ),
+            ],
             SizedBox(height: 20),
             isLoading
                 ? CupertinoActivityIndicator(radius: 20)
@@ -299,17 +435,8 @@ class _ConfirmDeleteBottomSheetState extends State<ConfirmDeleteBottomSheet> {
                     onPressed: isLoading
                         ? null
                         : () {
-                            setState(() {
-                              emailError = email.text.trim().isEmpty ? "Email is required" : null;
-                              passwordError =
-                                  password.text.trim().isEmpty ? "Password is required" : null;
-                              feedbackError =
-                                  feedback.text.trim().isEmpty ? "Feedback is required" : null;
-                            });
-
-                            if (emailError == null &&
-                                passwordError == null &&
-                                feedbackError == null) {
+                            FocusScope.of(context).unfocus();
+                            if (_validateInputs()) {
                               _showFinalDeleteConfirmationDialog(context);
                             }
                           },
@@ -347,4 +474,3 @@ Future<void> logOut() async {
     debugPrint("Error during logout: $e");
   }
 }
-

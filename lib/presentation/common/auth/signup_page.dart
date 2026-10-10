@@ -26,6 +26,15 @@ class _SignupPageState extends State<SignupPage> {
   bool _showPasswordRules = false;
 
   @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _pass.dispose();
+    _repass.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final signupProvider = Provider.of<SignupProvider>(context);
     final l = AppLocalizations.of(context)!;
@@ -70,7 +79,8 @@ class _SignupPageState extends State<SignupPage> {
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
                           l.fullName,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -82,7 +92,8 @@ class _SignupPageState extends State<SignupPage> {
                         hintText: l.enterFullName,
                         onChanged: (value) => signupProvider.setName(value),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'[a-zA-Z\s]')),
                         ],
                       ),
                     ],
@@ -96,7 +107,8 @@ class _SignupPageState extends State<SignupPage> {
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
                           l.email,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -119,7 +131,8 @@ class _SignupPageState extends State<SignupPage> {
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
                           l.password,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -140,10 +153,12 @@ class _SignupPageState extends State<SignupPage> {
                           });
                         },
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4, vertical: 4),
                           child: Row(
                             children: [
-                              Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade600),
+                              Icon(Icons.info_outline,
+                                  size: 16, color: Colors.blueGrey.shade600),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
@@ -176,7 +191,8 @@ class _SignupPageState extends State<SignupPage> {
                           decoration: BoxDecoration(
                             color: Colors.blueGrey.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blueGrey.withValues(alpha: 0.2)),
+                            border: Border.all(
+                                color: Colors.blueGrey.withValues(alpha: 0.2)),
                           ),
                           child: const Text(
                             'Must contain:\n'
@@ -185,7 +201,10 @@ class _SignupPageState extends State<SignupPage> {
                             '- One lowercase letter\n'
                             '- One number\n'
                             '- One special character',
-                            style: TextStyle(fontSize: 12, height: 1.3, color: Colors.black87),
+                            style: TextStyle(
+                                fontSize: 12,
+                                height: 1.3,
+                                color: Colors.black87),
                           ),
                         ),
                         crossFadeState: _showPasswordRules
@@ -204,7 +223,8 @@ class _SignupPageState extends State<SignupPage> {
                         padding: const EdgeInsets.only(left: 5),
                         child: Text(
                           l.confirmPassword,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(height: 5),
@@ -217,7 +237,8 @@ class _SignupPageState extends State<SignupPage> {
                         isPassword: true,
                         keyboardType: TextInputType.visiblePassword,
                         hintText: l.confirmPassword,
-                        onChanged: (value) => signupProvider.setRePassword(value),
+                        onChanged: (value) =>
+                            signupProvider.setRePassword(value),
                       ),
                     ],
                   ),
@@ -226,8 +247,25 @@ class _SignupPageState extends State<SignupPage> {
                       ? CupertinoActivityIndicator(radius: 20)
                       : CustomButton(
                           text: l.createAccount,
-                          onPressed: () {
-                            signupProvider.signup(context);
+                          onPressed: () async {
+                            FocusScope.of(context).unfocus();
+
+                            await signupProvider.signup(context);
+                            if (!context.mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text(
+                                      'Account created successfully. Please log in.')),
+                            );
+
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const LoginPage()),
+                              (route) =>
+                                  false, // clears Signup from the stack so Back won't return to it
+                            );
                           },
                         ),
                   const SizedBox(height: 20),

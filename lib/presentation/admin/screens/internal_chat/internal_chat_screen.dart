@@ -65,6 +65,8 @@ class _InternalChatScreenState extends State<InternalChatScreen>
   bool _isRecording = false;
   GroupMessageModel? _replyToMessage;
   GroupModel? _currentGroup;
+  String? _role;
+  bool _isMember = true;
   int _recordedSeconds = 0;
   Timer? _timer;
   final ValueNotifier<bool> _isAtBottom = ValueNotifier(true);
@@ -86,6 +88,10 @@ class _InternalChatScreenState extends State<InternalChatScreen>
   void initState() {
     super.initState();
     _currentGroup = widget.group;
+    _checkMembership();
+    LocalDbHelper.getUserType().then((r) {
+      if (mounted) setState(() => _role = r);
+    });
     WidgetsBinding.instance.addObserver(this);
     _socketService.setGroupChatPageState(true);
     _socketService.onGroupMessageReceived(_handleIncomingGroupMessage);
@@ -288,6 +294,7 @@ class _InternalChatScreenState extends State<InternalChatScreen>
 
   // --- Handle Incoming Messages ---
   void _handleIncomingGroupMessage(Map<String, dynamic> data) {
+    if (!_isMember) return;
     debugPrint(
         "📨 [InternalChat] Group message received for group ${widget.groupId}: ${data.toString()}");
 
@@ -513,12 +520,28 @@ class _InternalChatScreenState extends State<InternalChatScreen>
     }
   }
 
+  // --- Membership check — blocks sending if removed ---
+  void _checkMembership() {
+    final g = _currentGroup;
+    if (g == null) return;
+    final email = widget.agentEmail;
+    final member = g.members.contains(email) || g.admins.contains(email);
+    if (_isMember != member && mounted) setState(() => _isMember = member);
+  }
+
   // --- Send Message ---
   void _sendGroupMessage({
     required String messageText,
     String type = 'text',
     String? mediaUrl,
   }) {
+    if (!_isMember) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('You are no longer a member of this group')),
+      );
+      return;
+    }
     if (messageText.trim().isEmpty && mediaUrl == null) return;
     final currentTime = DateTime.now();
     final groupId = widget.groupId ?? '';
@@ -639,7 +662,10 @@ class _InternalChatScreenState extends State<InternalChatScreen>
               if (result == true) {
                 navigator.pop();
               } else if (result is GroupModel) {
-                setState(() => _currentGroup = result);
+                setState(() {
+                  _currentGroup = result;
+                  _checkMembership();
+                });
               }
             }
           },
@@ -704,7 +730,7 @@ class _InternalChatScreenState extends State<InternalChatScreen>
                 Expanded(
                   child: _isLoading
                       ? const ShimmerMessageList()
-                      : messages.isEmpty
+                      : (messages.isEmpty || !_isMember)
                           ? const NoChatConversation()
                           : ListView.builder(
                               controller: _scrollController,
@@ -797,7 +823,9 @@ class _InternalChatScreenState extends State<InternalChatScreen>
                                               ? () =>
                                                   _showMessageOptionsBottomSheet(
                                                       context, msg.messageId,
-                                                      textToCopy: msg.message)
+                                                      textToCopy: msg.message,
+                                                      currentMessage:
+                                                          msg.message)
                                               : null,
                                         ),
                                     ],
@@ -806,28 +834,39 @@ class _InternalChatScreenState extends State<InternalChatScreen>
                               },
                             ),
                 ),
-                SafeArea(
-                  minimum: const EdgeInsets.only(bottom: 1),
-                  child: ChatInputField(
-                    controller: _chatController,
-                    replyToSender: _replyToMessage?.senderName,
-                    replyToText: _replyToMessage?.message,
-                    onCancelReply: _cancelReply,
-                    onSend: () =>
-                        _sendGroupMessage(messageText: _chatController.text),
-                    onSendImage: () => _pickAndSendImage(ImageSource.gallery),
-                    onSendDocument: _pickAndSendDocument,
-                    onSendImageByCamera: () =>
-                        _pickAndSendImage(ImageSource.camera),
-                    onSendVoice:
-                        _isRecording ? _stopRecording : _startRecording,
-                    isRecording: _isRecording,
-                    recordedSeconds: _recordedSeconds,
-                    onSendForm: () {},
-                    onShareProduct: () {},
-                    showFormAndProduct: false,
+                if (!_isMember)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    color: Colors.grey[100],
+                    width: double.infinity,
+                    alignment: Alignment.center,
+                    child: const Text(
+                        'You are no longer a member of this group',
+                        style: TextStyle(color: Colors.grey)),
+                  )
+                else
+                  SafeArea(
+                    minimum: const EdgeInsets.only(bottom: 1),
+                    child: ChatInputField(
+                      controller: _chatController,
+                      replyToSender: _replyToMessage?.senderName,
+                      replyToText: _replyToMessage?.message,
+                      onCancelReply: _cancelReply,
+                      onSend: () =>
+                          _sendGroupMessage(messageText: _chatController.text),
+                      onSendImage: () => _pickAndSendImage(ImageSource.gallery),
+                      onSendDocument: _pickAndSendDocument,
+                      onSendImageByCamera: () =>
+                          _pickAndSendImage(ImageSource.camera),
+                      onSendVoice:
+                          _isRecording ? _stopRecording : _startRecording,
+                      isRecording: _isRecording,
+                      recordedSeconds: _recordedSeconds,
+                      onSendForm: () {},
+                      onShareProduct: () {},
+                      showFormAndProduct: false,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 10),
               ],
             ),
@@ -879,14 +918,16 @@ class _InternalChatScreenState extends State<InternalChatScreen>
                   _showEditMessageDialog(messageId, currentMessage ?? "");
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.delete),
-                title: const Text('Delete Message'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteMessage(messageId);
-                },
-              ),
+              // Only Agent Head (role != "2") can delete messages
+              if (_role != "2")
+                ListTile(
+                  leading: const Icon(Icons.delete),
+                  title: const Text('Delete Message'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deleteMessage(messageId);
+                  },
+                ),
             ],
           ),
         );

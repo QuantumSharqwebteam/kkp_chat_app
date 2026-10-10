@@ -33,9 +33,19 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
   bool _isAgentsLoading = false;
   String? _newImageUrl;
   String? role;
+  String? _currentEmail;
   List<Agent> _agents = [];
   final TextEditingController _groupNameController = TextEditingController();
-  final TextEditingController _groupDescriptionController = TextEditingController();
+  final TextEditingController _groupDescriptionController =
+      TextEditingController();
+
+  /// True when the logged-in user is listed as an admin of this group.
+  bool get _isGroupAdmin =>
+      _currentEmail != null && _group.admins.contains(_currentEmail);
+
+  /// Non-agents can always manage; agents (role "2") can manage only the
+  /// groups they have been made admin of.
+  bool get _canManage => role != "2" || _isGroupAdmin;
 
   void _setLoading(bool value) {
     if (!mounted) return;
@@ -51,7 +61,9 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
           content: Row(
             children: [
               Icon(
-                isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
                 color: Colors.white,
                 size: 18,
               ),
@@ -59,9 +71,11 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
               Expanded(child: Text(message)),
             ],
           ),
-          backgroundColor: isError ? AppColors.redF11515 : AppColors.green22C55E,
+          backgroundColor:
+              isError ? AppColors.redF11515 : AppColors.green22C55E,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -71,6 +85,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
   void initState() {
     super.initState();
     _group = widget.group;
+    _currentEmail = LocalDbHelper.getEmail();
     _groupNameController.text = _group.groupName;
     _groupDescriptionController.text = _group.groupDescription;
     WidgetsBinding.instance.addPostFrameCallback((_) => _initializeScreen());
@@ -88,11 +103,38 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
         role = results[0] as String?;
         _agents = results[1] as List<Agent>;
       });
+      await _refreshGroup();
     } catch (e) {
       if (!mounted) return;
       _showSnackBar('Unable to load available agents.', isError: true);
     } finally {
       if (mounted) setState(() => _isAgentsLoading = false);
+    }
+  }
+
+  /// Pulls the latest copy of this group from the server so a user who was
+  /// just promoted to admin gets admin rights (the passed-in group may be a
+  /// stale cached copy from before the promotion).
+  Future<void> _refreshGroup() async {
+    final provider = Provider.of<GroupProvider>(context, listen: false);
+    final email = _currentEmail;
+    try {
+      if (role == "2" && email != null && email.isNotEmpty) {
+        await provider.fetchUsersGroups(email, forceRefresh: true);
+      } else {
+        await provider.fetchAllGroups(forceRefresh: true);
+      }
+      final fresh = [...provider.userGroups, ...provider.groups]
+          .where((g) => g.id == widget.groupId);
+      if (fresh.isNotEmpty && mounted && !_isEditing) {
+        setState(() {
+          _group = fresh.first;
+          _groupNameController.text = _group.groupName;
+          _groupDescriptionController.text = _group.groupDescription;
+        });
+      }
+    } catch (_) {
+      // Keep showing the passed-in group if the refresh fails.
     }
   }
 
@@ -121,15 +163,17 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
             ),
           ),
           actions: [
-            if (!_isEditing)
+            if (!_isEditing && _canManage)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: TextButton.icon(
                   onPressed: () => setState(() => _isEditing = true),
-                  icon: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                  icon: const Icon(Icons.edit_rounded,
+                      color: Colors.white, size: 16),
                   label: const Text(
                     'Edit',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w600),
                   ),
                 ),
               )
@@ -143,7 +187,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
                     _groupNameController.text = _group.groupName;
                     _groupDescriptionController.text = _group.groupDescription;
                   }),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
+                  icon: const Icon(Icons.close_rounded,
+                      color: Colors.white70, size: 16),
                   label: const Text(
                     'Cancel',
                     style: TextStyle(color: Colors.white70),
@@ -157,7 +202,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
             SafeArea(
               bottom: Platform.isAndroid,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+                padding: const EdgeInsets.only(
+                    left: 16, right: 16, top: 16, bottom: 100),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -249,10 +295,11 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildHeaderChip(
-                  Icons.admin_panel_settings_rounded, '${_group.admins.length} Admins'),
+              _buildHeaderChip(Icons.admin_panel_settings_rounded,
+                  '${_group.admins.length} Admins'),
               const SizedBox(width: 10),
-              _buildHeaderChip(Icons.group_rounded, '${_group.members.length} Members'),
+              _buildHeaderChip(
+                  Icons.group_rounded, '${_group.members.length} Members'),
             ],
           ),
         ],
@@ -294,8 +341,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
         children: [
           _sectionLabel('Group Info', Icons.info_outline_rounded),
           const SizedBox(height: 14),
-          _infoRow(
-              Icons.calendar_today_rounded, 'Created', _formatDate(_group.createdAt.toLocal())),
+          _infoRow(Icons.calendar_today_rounded, 'Created',
+              _formatDate(_group.createdAt.toLocal())),
           _divider(),
           _infoRow(Icons.access_time_rounded, 'Last Activity',
               _formatDate(_group.lastActivity.toLocal())),
@@ -391,7 +438,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
         hintStyle: const TextStyle(color: AppColors.greyAAAAAA, fontSize: 13),
         filled: true,
         fillColor: const Color(0xffF5F7FB),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.greyE5E7EB),
@@ -457,7 +505,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
               backgroundColor: AppColors.blue,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: _saveChanges,
             child: const Row(
@@ -480,9 +529,11 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
           child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: AppColors.redF11515,
-              side: BorderSide(color: AppColors.redF11515.withValues(alpha: 0.4)),
+              side:
+                  BorderSide(color: AppColors.redF11515.withValues(alpha: 0.4)),
               backgroundColor: AppColors.redF11515.withValues(alpha: 0.04),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: _showDeleteConfirmation,
             child: const Row(
@@ -667,7 +718,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
                 const SizedBox(height: 2),
                 Text(
                   email,
-                  style: const TextStyle(color: AppColors.grey7B7B7B, fontSize: 12),
+                  style: const TextStyle(
+                      color: AppColors.grey7B7B7B, fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -698,7 +750,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+        style:
+            TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -729,7 +782,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
           title: 'Admins',
           icon: Icons.admin_panel_settings_rounded,
           count: _group.admins.length,
-          onAdd: (_isEditing && role != "2") ? _showAddAdminDialog : null,
+          onAdd: (_isEditing && _canManage) ? _showAddAdminDialog : null,
           addLabel: 'Add Admin',
         ),
         const SizedBox(height: 12),
@@ -738,7 +791,9 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
         else
           ..._group.admins.map((email) => _buildPersonTile(
                 email: email,
-                canRemove: _isEditing && role != "2" && email != LocalDbHelper.getEmail(),
+                canRemove: _isEditing &&
+                    _canManage &&
+                    email != LocalDbHelper.getEmail(),
                 onRemove: () => _removeAdmin(email),
               )),
       ],
@@ -753,7 +808,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
           title: 'Members',
           icon: Icons.group_rounded,
           count: _group.members.length,
-          onAdd: (_isEditing && role != "2") ? _showAddMemberDialog : null,
+          onAdd: (_isEditing && _canManage) ? _showAddMemberDialog : null,
           addLabel: 'Add Member',
         ),
         const SizedBox(height: 12),
@@ -763,7 +818,7 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
           ..._group.members.map((email) => _buildPersonTile(
                 email: email,
                 showAdminBadge: _group.admins.contains(email),
-                canRemove: _isEditing && role != "2",
+                canRemove: _isEditing && _canManage,
                 onRemove: () => _removeMember(email),
               )),
       ],
@@ -774,7 +829,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
 
   Future<void> _showAddAdminDialog() async {
     final groupProvider = Provider.of<GroupProvider>(context, listen: false);
-    final existingEmails = {..._group.admins, ..._group.members};
+    // Only existing admins are excluded, so current members can be promoted.
+    final existingEmails = {..._group.admins};
 
     showDialog(
       context: context,
@@ -929,7 +985,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
         icon: Icons.delete_outline_rounded,
         iconColor: AppColors.redF11515,
         title: 'Delete Group',
-        message: 'Permanently delete "${_group.groupName}"?\nThis action cannot be undone.',
+        message:
+            'Permanently delete "${_group.groupName}"?\nThis action cannot be undone.',
         confirmLabel: 'Delete',
         confirmColor: AppColors.redF11515,
       ),
@@ -964,7 +1021,8 @@ class _GroupDescriptionScreenState extends State<GroupDescriptionScreen> {
       final success = await groupProvider.updateGroup(
         id: widget.groupId,
         groupName: updatedName != _group.groupName ? updatedName : null,
-        groupDescription: updatedDesc != _group.groupDescription ? updatedDesc : null,
+        groupDescription:
+            updatedDesc != _group.groupDescription ? updatedDesc : null,
         groupImage: updatedImage != _group.groupImage ? updatedImage : null,
       );
 
@@ -1061,7 +1119,8 @@ class _ConfirmDialog extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       side: const BorderSide(color: AppColors.greyE5E7EB),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text(
                       'Cancel',
@@ -1081,7 +1140,8 @@ class _ConfirmDialog extends StatelessWidget {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
                       confirmLabel,
@@ -1177,7 +1237,8 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                       color: Colors.white.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: Colors.white, size: 18),
+                    child:
+                        const Icon(Icons.close, color: Colors.white, size: 18),
                   ),
                 ),
               ],
@@ -1191,7 +1252,8 @@ class _AddUserDialogState extends State<_AddUserDialog> {
               color: AppColors.backgroundDCEBFF,
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, size: 16, color: AppColors.blue),
+                  Icon(Icons.info_outline_rounded,
+                      size: 16, color: AppColors.blue),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1241,11 +1303,13 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                         ),
                         itemBuilder: (context, index) {
                           final agent = widget.allAgents[index];
-                          final alreadyAdded = widget.existingEmails.contains(agent.email);
+                          final alreadyAdded =
+                              widget.existingEmails.contains(agent.email);
                           final isRowLoading = _loadingEmail == agent.email;
 
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
                             child: Row(
                               children: [
                                 CircleAvatar(
@@ -1256,7 +1320,9 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                                   child: Text(
                                     _initials(agent.name),
                                     style: TextStyle(
-                                      color: alreadyAdded ? AppColors.grey7B7B7B : AppColors.blue,
+                                      color: alreadyAdded
+                                          ? AppColors.grey7B7B7B
+                                          : AppColors.blue,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -1265,7 +1331,8 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         agent.name,
@@ -1298,8 +1365,10 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                                           alignment: Alignment.center,
                                           decoration: BoxDecoration(
                                             color: AppColors.greyF2F4F7,
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: AppColors.greyE5E7EB),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                                color: AppColors.greyE5E7EB),
                                           ),
                                           child: const Text(
                                             'Added',
@@ -1315,7 +1384,8 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                                               child: SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2.5,
                                                   color: AppColors.blue,
                                                 ),
@@ -1325,22 +1395,30 @@ class _AddUserDialogState extends State<_AddUserDialog> {
                                               onPressed: _loadingEmail != null
                                                   ? null
                                                   : () async {
-                                                      setState(() => _loadingEmail = agent.email);
+                                                      setState(() =>
+                                                          _loadingEmail =
+                                                              agent.email);
                                                       final success =
-                                                          await widget.onAdd(agent.email);
+                                                          await widget.onAdd(
+                                                              agent.email);
                                                       if (mounted) {
-                                                        setState(() => _loadingEmail = null);
+                                                        setState(() =>
+                                                            _loadingEmail =
+                                                                null);
                                                         if (success) {
-                                                          Navigator.pop(context);
+                                                          Navigator.pop(
+                                                              context);
                                                         }
                                                       }
                                                     },
                                               style: FilledButton.styleFrom(
                                                 backgroundColor: AppColors.blue,
-                                                disabledBackgroundColor: AppColors.greyD9D9D9,
+                                                disabledBackgroundColor:
+                                                    AppColors.greyD9D9D9,
                                                 padding: EdgeInsets.zero,
                                                 shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                 ),
                                               ),
                                               child: const Text(

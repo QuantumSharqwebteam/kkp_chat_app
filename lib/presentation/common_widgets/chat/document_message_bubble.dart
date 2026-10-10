@@ -83,13 +83,28 @@ class DocumentMessageBubble extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          if (isMe)
-                            Icon(
-                              (read ?? false) ? Icons.done_all : Icons.done,
-                              color:
-                                  (read ?? false) ? Colors.blue : Colors.grey,
-                              size: 14,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(timestamp,
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: isMe
+                                          ? Colors.white70
+                                          : Colors.black54)),
+                              if (isMe) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                    (read ?? false)
+                                        ? Icons.done_all
+                                        : Icons.done,
+                                    color: (read ?? false)
+                                        ? Colors.blue
+                                        : Colors.grey,
+                                    size: 14),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                     ),

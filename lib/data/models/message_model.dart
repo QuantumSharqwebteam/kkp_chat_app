@@ -1,5 +1,9 @@
 class MessageModel {
   final String? senderId;
+
+  /// Email/ID of whoever PLACED the call (only for type == 'call').
+  final String? callerId;
+
   final String? senderName;
   final String? message;
   final bool? read;
@@ -17,6 +21,7 @@ class MessageModel {
 
   MessageModel({
     this.senderId,
+    this.callerId,
     this.senderName,
     this.message,
     this.read,
@@ -33,23 +38,46 @@ class MessageModel {
     this.referenceId,
   });
 
+  static String? _firstNonEmpty(List<dynamic> values) {
+    for (final v in values) {
+      final s = v?.toString().trim();
+      if (s != null && s.isNotEmpty) return s;
+    }
+    return null;
+  }
+
   factory MessageModel.fromJson(Map<String, dynamic> json, String agentEmail) {
+    final type = json['type']?.toString() ?? 'text';
+    final callerId =
+        _firstNonEmpty([json['callerId'], json['caller'], json['from']]);
+
+    // For call logs the caller IS the owner of the message.
+    final senderId = type == 'call'
+        ? _firstNonEmpty([callerId, json['senderId'], json['senderEmail']])
+        : _firstNonEmpty(
+            [json['senderId'], json['senderEmail'], json['sender']]);
+
+    final me = agentEmail.trim().toLowerCase();
+
     return MessageModel(
-      senderId: json['senderId'] as String?,
-      senderName: json['senderName'] as String?,
-      message: json['message'] as String?,
+      senderId: senderId,
+      callerId: callerId,
+      senderName: json['senderName']?.toString(),
+      message: json['message']?.toString(),
       read: json['read'] as bool? ?? false,
-      type: json['type'] as String? ?? 'text',
-      form: json['form'] as List<dynamic>?,
-      mediaUrl: json['mediaUrl'] as String?,
-      timestamp: json['timestamp'] as String?,
-      isMe: json['senderId'] == agentEmail,
-      callStatus: json['callStatus'] as String?,
-      callDuration: json['callDuration'] as String?,
-      callId: json['callId'] as String?,
-      messageId: json['messageId'] as String?,
+      type: type,
+      form: json['form'] is List
+          ? json['form'] as List<dynamic>
+          : (json['form'] is Map ? [json['form']] : null),
+      mediaUrl: json['mediaUrl']?.toString(),
+      timestamp: json['timestamp']?.toString(),
+      isMe: me.isNotEmpty && senderId?.toLowerCase() == me,
+      callStatus: json['callStatus']?.toString(),
+      callDuration: json['callDuration']?.toString(),
+      callId: json['callId']?.toString(),
+      messageId: json['messageId']?.toString(),
       isDeleted: json['isDeleted'] as bool? ?? false,
-      referenceId: json['referenceId'] as String?,
+      referenceId: json['referenceId']?.toString(),
     );
   }
 }
